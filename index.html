@@ -869,6 +869,37 @@ body{
   font-size:11px;color:var(--muted);font-family:var(--fn);
   cursor:pointer;margin-top:8px;
 }
+
+/* ━━━ PAUSE / HOLD 버튼 ━━━ */
+.sec-pause-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:3px;
+  padding:2px 6px;
+  font-size:7.5px;font-weight:900;
+  color:rgba(255,255,255,.6);
+  font-family:var(--fn);cursor:pointer;
+  margin-right:4px;
+  -webkit-tap-highlight-color:transparent;
+  transition:all .15s;
+  flex-shrink:0;
+}
+.sec-pause-btn:active{opacity:.7;}
+.sec-pause-btn.paused-on{
+  background:rgba(201,151,42,.25);
+  border-color:rgba(201,151,42,.5);
+  color:var(--gold2);
+}
+/* PAUSE된 섹션: 헤더만 보이고 내용 고정 열림 */
+.sec.paused .sec-body{
+  max-height:2000px !important;
+  overflow:visible !important;
+  visibility:visible !important;
+}
+.sec.paused .sec-arr{
+  opacity:0.3;
+}
 </style>
 </head>
 <body>
@@ -1052,7 +1083,7 @@ body{
     <div class="sec-left"><span class="sec-icon">👤</span>
       <div><div class="sec-name">인적사항</div><div class="sec-status" id="st-who">이름·나이를 먼저 입력하세요</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-who">미입력</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-who" onclick="togglePause('who',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-who">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- 기본: 1행=이름 전체, 2행=나이3열 -->
@@ -1131,7 +1162,7 @@ body{
     <div class="sec-left"><span class="sec-icon">💰</span>
       <div><div class="sec-name">금융정보</div><div class="sec-status" id="st-fin">월수입을 입력하세요</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-fin">미입력</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-fin" onclick="togglePause('fin',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-fin">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- 기본: 월수입 + 총자산(입력바) + 총부채(입력바) -->
@@ -1249,7 +1280,7 @@ body{
     <div class="sec-left"><span class="sec-icon">🛡️</span>
       <div><div class="sec-name">기초 — 보험설계 (Foundation)</div><div class="sec-status" id="st-ins">보험 8종 보유 현황</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-ins">0/8</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-ins" onclick="togglePause('ins',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-ins">0/8</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <div style="font-size:9px;color:var(--muted);background:#f8f6f0;padding:7px 9px;border-radius:3px;border:1px solid var(--border2);line-height:1.7;">
@@ -1311,7 +1342,7 @@ body{
     <div class="sec-left"><span class="sec-icon">🏛️</span>
       <div><div class="sec-name">기둥 — I.부채 · II.저축 · III.은퇴</div><div class="sec-status" id="st-pillar">부채·저축·은퇴 설계</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-pillar">0/3</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-pillar" onclick="togglePause('pillar',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-pillar">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- I. 부채 -->
@@ -1415,7 +1446,7 @@ body{
     <div class="sec-left"><span class="sec-icon">📈</span>
       <div><div class="sec-name">지붕·굴뚝 — IV.투자 · V.세금 · VI.부동산</div><div class="sec-status" id="st-roof">투자·세금·부동산 설계</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-roof">0/3</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-roof" onclick="togglePause('roof',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-roof">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- IV. 투자 -->
@@ -1485,7 +1516,7 @@ body{
     <div class="sec-left"><span class="sec-icon">💊</span>
       <div><div class="sec-name">재무검진결과</div><div class="sec-status" id="st-bp">부자지수 · 부채비율 · 비상예비자금</div></div>
     </div>
-    <div class="sec-right"><span class="badge bd-e" id="bd-bp">진단전</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-bp" onclick="togglePause('bp',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-bp">진단전</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body">
     <div class="bp-panel-inner">
@@ -2659,6 +2690,7 @@ function rAll(sec){
   calcIncomeTable();
   const sc=calcScore();
   setBadge('bp',sc>0?sc+'점':'진단전',sc>=80?'bd-d':sc>0?'bd-p':'bd-e');
+  if(typeof autoSave==='function') autoSave();
 }
 function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.textContent=t;el.className='badge '+c;}}
 function rProg(){
@@ -3192,7 +3224,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     b.style.overflow='';
     b.style.visibility='';
   });
-  setTimeout(()=>{runRet();runTax();runIns();calcMonthlySave();calcIncomeTable();},300);
+  setTimeout(()=>{runRet();runTax();runIns();calcMonthlySave();calcIncomeTable();;if(typeof autoLoad==='function')autoLoad();},300);
 });
 
 /* ════════════════════════════════════════
@@ -4153,15 +4185,17 @@ function closeConsultPanel(){
 function shareApp(){
   const url = 'https://financial-house-building.vercel.app';
   const title = '🏠 특허받은 AI 금융집짓기® 시뮬레이터';
-  const text = '세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에';
+  const text = '세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에\n' + url;
 
-  // 카카오·네이티브 공유 API 우선
+  // 네이티브 공유 API (카톡·문자·기타 모두 포함)
   if(navigator.share){
-    navigator.share({ title, text, url })
+    navigator.share({ title, text: text, url })
       .then(()=>showToast('✅ 공유 완료!'))
-      .catch(()=>copyURL(url));
+      .catch((e)=>{
+        // 취소한 경우 외에는 URL 복사
+        if(e.name !== 'AbortError') copyURL(url);
+      });
   } else {
-    // 폴백: URL 복사
     copyURL(url);
   }
 }
@@ -4185,6 +4219,166 @@ function fallbackCopy(url){
   document.execCommand('copy');
   document.body.removeChild(el);
   showToast('🔗 링크가 복사되었습니다! 카톡에 붙여넣기 하세요');
+}
+
+/* ━━━ 자동 저장/복원 ━━━ */
+const AUTO_SAVE_KEY = 'fh_autosave_v20';
+
+function autoSave(){
+  try {
+    const data = {
+      // 인적사항
+      name: document.querySelector('input[placeholder="이름을 입력하세요"]')?.value || '',
+      ageNum: document.getElementById('age-num')?.value || '',
+      retireAge: document.getElementById('retire-age')?.value || '',
+      dieAge: document.getElementById('die-age')?.value || '',
+      // 금융정보 슬라이더값
+      income: document.getElementById('sl-income')?.value || '',
+      totalAsset: document.getElementById('sl-asset')?.value || '',
+      totalDebt: document.getElementById('sl-debt')?.value || '',
+      savings: document.getElementById('sl-save')?.value || '',
+      natPen: document.getElementById('sl-natpen')?.value || '',
+      perPen: document.getElementById('sl-perpen')?.value || '',
+      insPay: document.getElementById('sl-ins')?.value || '',
+      loanPay: document.getElementById('sl-loan')?.value || '',
+      // 저축설계
+      savGoal: document.getElementById('sl-sav-goal')?.value || '',
+      savYr: document.getElementById('sl-sav-yr')?.value || '',
+      // 은퇴설계
+      retLife: document.getElementById('sl-ret-life')?.value || '',
+      retFund: document.getElementById('sl-ret-fund')?.value || '',
+      // 투자
+      safeAsset: document.getElementById('sl-safe')?.value || '',
+      riskAsset: document.getElementById('sl-risk')?.value || '',
+      // 세금
+      taxIncome: document.getElementById('sl-tax-inc')?.value || '',
+      // 부동산
+      homeVal: document.getElementById('sl-home')?.value || '',
+      invVal: document.getElementById('sl-inv-home')?.value || '',
+      // 섹션 열림/닫힘 상태
+      openSecs: Array.from(document.querySelectorAll('.sec.open')).map(s=>s.id),
+      // 보험 체크 상태
+      insChecks: Array.from(document.querySelectorAll('.ins-chk')).map(c=>c.classList.contains('on')),
+      // 고민 체크
+      worries: Array.from(document.querySelectorAll('.worry-btn.active')).map(b=>b.textContent.trim()),
+      // 결혼여부, 맞벌이 등 버튼
+      married: document.querySelector('.marry-btn.active')?.dataset?.val || '',
+      dual: document.querySelector('.dual-btn.active')?.dataset?.val || '',
+      job: document.querySelector('.job-btn.active')?.dataset?.val || '',
+      // 주택
+      hasHome: document.querySelector('.home-btn.active')?.dataset?.val || '',
+      // PAUSE 상태
+      pausedSecs: Array.from(document.querySelectorAll('.sec.paused')).map(s=>s.id),
+      ts: Date.now()
+    };
+    const json = JSON.stringify(data);
+    try { localStorage.setItem(AUTO_SAVE_KEY, json); } catch(e) {
+      try { sessionStorage.setItem(AUTO_SAVE_KEY, json); } catch(e2) {}
+    }
+  } catch(e) {}
+}
+
+function autoLoad(){
+  try {
+    let raw = null;
+    try { raw = localStorage.getItem(AUTO_SAVE_KEY); } catch(e) {}
+    if(!raw) { try { raw = sessionStorage.getItem(AUTO_SAVE_KEY); } catch(e) {} }
+    if(!raw) return;
+
+    const d = JSON.parse(raw);
+
+    // 이름
+    const nameEl = document.querySelector('input[placeholder="이름을 입력하세요"]');
+    if(nameEl && d.name){ nameEl.value = d.name; nameEl.style.color='#1a1a1a'; nameEl.style.fontWeight='700'; }
+
+    // 숫자 슬라이더 복원 헬퍼
+    const restoreSlider = (id, val) => {
+      if(!val) return;
+      const el = document.getElementById(id);
+      if(el){ el.value = val; el.dispatchEvent(new Event('input')); }
+    };
+
+    restoreSlider('age-num', d.ageNum);
+    restoreSlider('retire-age', d.retireAge);
+    restoreSlider('die-age', d.dieAge);
+    restoreSlider('sl-income', d.income);
+    restoreSlider('sl-asset', d.totalAsset);
+    restoreSlider('sl-debt', d.totalDebt);
+    restoreSlider('sl-save', d.savings);
+    restoreSlider('sl-natpen', d.natPen);
+    restoreSlider('sl-perpen', d.perPen);
+    restoreSlider('sl-ins', d.insPay);
+    restoreSlider('sl-loan', d.loanPay);
+    restoreSlider('sl-sav-goal', d.savGoal);
+    restoreSlider('sl-sav-yr', d.savYr);
+    restoreSlider('sl-ret-life', d.retLife);
+    restoreSlider('sl-ret-fund', d.retFund);
+    restoreSlider('sl-safe', d.safeAsset);
+    restoreSlider('sl-risk', d.riskAsset);
+    restoreSlider('sl-tax-inc', d.taxIncome);
+    restoreSlider('sl-home', d.homeVal);
+    restoreSlider('sl-inv-home', d.invVal);
+
+    // 섹션 열림 상태 복원
+    if(d.openSecs) d.openSecs.forEach(id => {
+      const sec = document.getElementById(id);
+      if(sec) sec.classList.add('open');
+    });
+
+    // PAUSE 상태 복원
+    if(d.pausedSecs) d.pausedSecs.forEach(id => {
+      const sec = document.getElementById(id);
+      if(sec) sec.classList.add('paused');
+    });
+
+    // 전체 재계산
+    setTimeout(()=>{ if(typeof rAll==='function') rAll(); }, 300);
+
+    if(d.ts) {
+      const ago = Math.round((Date.now()-d.ts)/60000);
+      if(ago < 1440) showToast('💾 ' + (ago<1?'방금':''+ago+'분 전') + ' 저장된 내용을 불러왔습니다');
+    }
+  } catch(e) {}
+}
+
+/* ─ PAUSE / HOLD 기능 ─ */
+const pausedSecs = new Set();
+
+function togglePause(secId, e){
+  if(e){ e.stopPropagation(); e.preventDefault(); }
+  const sec = document.getElementById('sec-' + secId);
+  const btn = document.getElementById('pause-' + secId);
+  if(!sec || !btn) return;
+
+  if(pausedSecs.has(secId)){
+    // PAUSE 해제
+    pausedSecs.delete(secId);
+    sec.classList.remove('paused');
+    btn.classList.remove('paused-on');
+    btn.textContent = 'HOLD';
+    showToast('🔓 고정 해제 — ' + secId.toUpperCase() + ' 섹션');
+  } else {
+    // PAUSE 설정 — 열린 상태로 고정
+    pausedSecs.add(secId);
+    sec.classList.add('paused');
+    sec.classList.add('open'); // 강제 열기
+    btn.classList.add('paused-on');
+    btn.textContent = '▶ ON';
+    showToast('📌 고정됨 — 스치기만 해도 열린 상태 유지');
+  }
+  autoSave();
+}
+
+// toggleSec 재정의 — PAUSE된 섹션은 닫히지 않게
+const _origToggleSec = typeof toggleSec === 'function' ? toggleSec : null;
+function toggleSec(id){
+  if(pausedSecs.has(id)){
+    // PAUSE 중이면 항상 열린 상태 유지
+    const sec = document.getElementById('sec-' + id);
+    if(sec) sec.classList.add('open');
+    return;
+  }
+  if(_origToggleSec) _origToggleSec(id);
 }
 </script>
 
