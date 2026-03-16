@@ -545,7 +545,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   background:rgba(0,0,0,.65);
   z-index:9999;
 }
-.pay-modal-bg.show{display:block;}
 .pay-modal{
   position:fixed;
   bottom:0;left:0;right:0;
@@ -556,11 +555,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   padding:22px 18px 36px;
   border-top:3px solid var(--gold);
   z-index:10000;
-  transform:translateY(100%);
   transition:transform .35s cubic-bezier(.32,.72,0,1);
-}
-.pay-modal.slide-up{
-  transform:translateY(0) !important;
 }
 .pay-modal-title{font-size:16px;font-weight:900;color:var(--navy);margin-bottom:4px;}
 .pay-modal-sub{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
@@ -671,12 +666,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   background:var(--gold);color:var(--navy);
 }
 
-/* ━━━ 푸터 CTA 버튼 (작게 · 간결) ━━━ */
+/* ━━━ 푸터 CTA 버튼 (터치 영역 확대) ━━━ */
 .footer-cta-btn{
-  border:none;border-radius:3px;
-  padding:3px 8px;font-size:8.5px;font-weight:700;
+  border:none;border-radius:5px;
+  padding:8px 12px;font-size:9px;font-weight:700;
   font-family:var(--fn);cursor:pointer;
   transition:all .15s;white-space:nowrap;
+  min-height:36px;min-width:52px;
+  display:inline-flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
 }
 .footer-cta-btn:active{opacity:.8;transform:scale(.96);}
 .footer-cta-consult{background:rgba(254,229,0,.85);color:#3A1D1D;}
@@ -2196,7 +2195,7 @@ body{
       <span style="font-size:8px;color:rgba(255,255,255,.3);">오원트금융연구소</span>
     </div>
     <!-- 3개 CTA 버튼 (작게 · 간절한 사람 눈에만) -->
-    <div style="display:flex;gap:5px;justify-content:flex-end;">
+    <div style="display:flex;gap:6px;justify-content:flex-end;padding:4px 0;">
       <button class="footer-cta-btn footer-cta-pay" onclick="openPayModal()">
         💳 구독
       </button>
@@ -2724,11 +2723,9 @@ function toggleDet(id,btn){
   btn.textContent=el.classList.contains('open')?'− 접기':'＋ '+btn.textContent.replace(/^[＋−]\s*/,'').replace('접기','').trim();
 }
 function toggleSec(id){
-  // HOLD 상태면 토글 막음
+  // HOLD 상태면 열림/닫힘 모두 막음 (현재 상태 유지)
   if(typeof pausedSecs !== 'undefined' && pausedSecs.has(id)){
-    const sec = document.getElementById('sec-'+id);
-    if(sec) sec.classList.add('open'); // 항상 열린 상태 유지
-    return;
+    return; // 아무것도 안 함 — 현재 상태 그대로
   }
   const sec=document.getElementById('sec-'+id);
   if(!sec) return;
@@ -3993,23 +3990,24 @@ function initSimV2(){
 let selectedPlan = 'month';
 function openPayModal(){
   const bg = document.getElementById('pay-modal-bg');
-  const panel = bg ? bg.querySelector('.pay-modal') : null;
-  if(!bg) return;
+  const panel = document.querySelector('.pay-modal');
+  if(!bg || !panel) { alert('구독 모달 로드 오류'); return; }
+  // 배경
   bg.style.display = 'block';
-  if(panel) panel.classList.remove('slide-up');
+  // 패널: 화면 아래서 올라오기
+  panel.style.transform = 'translateY(100%)';
+  panel.style.display = 'block';
   setTimeout(()=>{
-    bg.classList.add('show');
-    if(panel) panel.classList.add('slide-up');
+    panel.style.transform = 'translateY(0)';
   }, 20);
 }
 function closePayModal(){
   const bg = document.getElementById('pay-modal-bg');
-  const panel = bg ? bg.querySelector('.pay-modal') : null;
-  if(!bg) return;
-  if(panel) panel.classList.remove('slide-up');
+  const panel = document.querySelector('.pay-modal');
+  if(panel) panel.style.transform = 'translateY(100%)';
   setTimeout(()=>{
-    bg.classList.remove('show');
-    bg.style.display = 'none';
+    if(bg) bg.style.display = 'none';
+    if(panel) panel.style.display = 'none';
   }, 350);
 }
 function selectPlan(plan){
@@ -4453,25 +4451,44 @@ function togglePause(secId, e){
     btn.textContent = 'HOLD';
     showToast('🔓 HOLD 해제 — 자유롭게 열고 닫을 수 있습니다');
   } else {
-    // HOLD 설정 — 열린 상태로 고정, 배너 눌러도 안 닫힘
+    // HOLD 설정 — 현재 상태(열림/닫힘) 그대로 고정
     pausedSecs.add(secId);
     sec.classList.add('paused');
-    sec.classList.add('open'); // 강제 열기
-    // sec-body 강제 표시
-    const body = sec.querySelector('.sec-body');
-    if(body){
-      body.style.maxHeight = '3000px';
-      body.style.overflow = 'visible';
-      body.style.visibility = 'visible';
+    // ★ 현재 열려있으면 open 유지, 닫혀있으면 closed 유지
+    // 강제로 열지 않음
+    const isOpen = sec.classList.contains('open');
+    if(isOpen){
+      btn.textContent = '● 열림고정';
+      showToast('📌 HOLD — 열린 상태로 고정됩니다');
+    } else {
+      btn.textContent = '● 닫힘고정';
+      showToast('📌 HOLD — 닫힌 상태로 고정됩니다');
     }
     btn.classList.add('paused-on');
-    btn.textContent = '● ON';
-    showToast('📌 HOLD — 배너를 눌러도 닫히지 않습니다');
   }
   if(typeof autoSave === 'function') autoSave();
 }
 
 /* toggleSec PAUSE 로직은 원본 함수에 통합됨 */
+
+/* ━━━ 푸터 버튼 터치 감도 보강 ━━━ */
+document.addEventListener('DOMContentLoaded', function(){
+  // 푸터 CTA 버튼들에 touchstart 로 즉각 반응
+  document.querySelectorAll('.footer-cta-btn').forEach(function(btn){
+    btn.addEventListener('touchstart', function(e){
+      e.stopPropagation();
+    }, {passive:true});
+    btn.addEventListener('touchend', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // onclick 수동 실행
+      const onclickAttr = btn.getAttribute('onclick');
+      if(onclickAttr){
+        try { eval(onclickAttr); } catch(err){}
+      }
+    }, {passive:false});
+  });
+});
 </script>
 
 <!-- ━━━ 결제 모달 ━━━ -->
