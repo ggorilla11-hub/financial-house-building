@@ -88,11 +88,11 @@ html,body{width:100%;height:100%;overflow:auto;background:var(--cream);font-fami
 .one-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 /* 시뮬레이터 바 */
 .sim-sticky-inner{
-  position:sticky;
-  top:0;
-  z-index:100;
+  flex-shrink:0;
   background:var(--navy);
   border-top:2px solid var(--gold);
+  position:relative;
+  z-index:10;
 }
 .sim-bar{
   display:flex;align-items:center;justify-content:space-between;
@@ -1544,10 +1544,8 @@ body{
 </div>
 
 
-<!-- ━━━ 시뮬레이터 섹션 ━━━ -->
-<div class="sim-wrap open" id="sim-wrap">
-  <!-- 시뮬바+탭바: sticky로 one-scroll 상단 고정 -->
-  <div class="sim-sticky-inner" id="sim-sticky-inner">
+<!-- ━━━ 시뮬레이터 바 + 탭바 (고정) ━━━ -->
+<div class="sim-sticky-inner" id="sim-sticky-inner">
   <div class="sim-bar" onclick="toggleSim()">
     <div class="sim-bar-left">
       <span style="font-size:13px;">🔬</span>
@@ -1561,135 +1559,21 @@ body{
       <span class="sim-bar-arr">▾</span>
     </div>
   </div>
-  <!-- 거시경제 패널 (탭바 위) -->
-  <!-- ━━━ 거시경제 공통 패널 ━━━ -->
-<div class="macro-bar" id="macro-bar">
-  <div class="macro-toggle" onclick="toggleMacro()">
-    <div class="macro-toggle-left">
-      <span style="font-size:14px;">🌐</span>
-      <span class="macro-title">거시경제 변수</span>
-      <span class="macro-scenario sc-normal" id="macro-scenario-badge">기준 시나리오</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:7px;">
-      <span style="font-size:8px;color:rgba(255,255,255,.35);">전 탭 공통 적용</span>
-      <span class="macro-arr" id="macro-arr">▾</span>
-    </div>
-  </div>
-
-  <!-- 접힌 상태: 핵심 지표 한 줄 -->
-  <div class="macro-kpis" id="macro-kpis">
-    <div class="mk"><div class="mk-label">기준금리</div><div class="mk-val mk-neutral" id="mk-rate">3.5%</div></div>
-    <div class="mk"><div class="mk-label">물가상승률</div><div class="mk-val mk-neutral" id="mk-inf">2.5%</div></div>
-    <div class="mk"><div class="mk-label">경제성장률</div><div class="mk-val mk-neutral" id="mk-gdp">2.0%</div></div>
-    <div class="mk"><div class="mk-label">시장변동성</div><div class="mk-val mk-neutral" id="mk-vol">보통</div></div>
-    <div class="mk"><div class="mk-label">실질수익률</div><div class="mk-val mk-neutral" id="mk-real">+0.5%</div></div>
-    <div class="mk"><div class="mk-label">시나리오충격</div><div class="mk-val mk-neutral" id="mk-shock">없음</div></div>
-    <div class="mk"><div class="mk-label">세금환경</div><div class="mk-val mk-neutral" id="mk-tax">현행</div></div>
-  </div>
-
-  <!-- 펼친 상태 -->
-  <div class="macro-body" id="macro-body">
-    <div class="macro-inner">
-
-      <!-- 프리셋 시나리오 -->
-      <div>
-        <div class="macro-sec-title">📋 시나리오 프리셋</div>
-        <div class="preset-row">
-          <div class="preset-btn on" id="preset-normal" onclick="setPreset('normal')">📊 기준<span>현재 수준</span></div>
-          <div class="preset-btn" id="preset-high" onclick="setPreset('high')">🔥 고금리<span>인플레 충격</span></div>
-          <div class="preset-btn" id="preset-low" onclick="setPreset('low')">❄️ 저성장<span>디플레 위험</span></div>
-          <div class="preset-btn" id="preset-crisis" onclick="setPreset('crisis')">💥 위기<span>금융 충격</span></div>
-        </div>
-      </div>
-
-      <!-- 금리·물가 -->
-      <div>
-        <div class="macro-sec-title">📈 금리 · 물가</div>
-        <div class="macro-grid">
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">기준금리</span><span><span class="msl-val mk-neutral" id="mv-rate">3.5</span><span class="msl-unit">%</span></span></div>
-            <input type="range" id="ms-rate" min="0" max="10" step="0.25" value="3.5" oninput="updateMacro()">
-          </div>
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">물가상승률(CPI)</span><span><span class="msl-val mk-neutral" id="mv-inf">2.5</span><span class="msl-unit">%</span></span></div>
-            <input type="range" id="ms-inf" min="0" max="15" step="0.5" value="2.5" oninput="updateMacro()">
-          </div>
-        </div>
-      </div>
-
-      <!-- 경기·성장 -->
-      <div>
-        <div class="macro-sec-title">🏭 경기 · 성장</div>
-        <div class="macro-grid">
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">경제성장률(GDP)</span><span><span class="msl-val mk-neutral" id="mv-gdp">2.0</span><span class="msl-unit">%</span></span></div>
-            <input type="range" id="ms-gdp" min="-3" max="8" step="0.5" value="2" oninput="updateMacro()">
-          </div>
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">실업률</span><span><span class="msl-val mk-neutral" id="mv-unemp">3.5</span><span class="msl-unit">%</span></span></div>
-            <input type="range" id="ms-unemp" min="1" max="12" step="0.5" value="3.5" oninput="updateMacro()">
-          </div>
-        </div>
-      </div>
-
-      <!-- 시장 리스크 -->
-      <div>
-        <div class="macro-sec-title">⚡ 시장 리스크</div>
-        <div class="macro-grid">
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">시장변동성(VIX)</span><span><span class="msl-val mk-neutral" id="mv-vol">20</span><span class="msl-unit">pt</span></span></div>
-            <input type="range" id="ms-vol" min="10" max="80" step="5" value="20" oninput="updateMacro()">
-          </div>
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">충격 발생 확률</span><span><span class="msl-val mk-neutral" id="mv-shock">5</span><span class="msl-unit">%/yr</span></span></div>
-            <input type="range" id="ms-shock" min="0" max="30" step="1" value="5" oninput="updateMacro()">
-          </div>
-        </div>
-      </div>
-
-      <!-- 세금·정책 -->
-      <div>
-        <div class="macro-sec-title">📋 세금 · 정책 환경</div>
-        <div class="macro-grid">
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">금투세 세율 가정</span><span><span class="msl-val mk-neutral" id="mv-taxrate">22</span><span class="msl-unit">%</span></span></div>
-            <input type="range" id="ms-taxrate" min="0" max="45" step="1" value="22" oninput="updateMacro()">
-          </div>
-          <div class="mslid">
-            <div class="msl-top"><span class="msl-name">부동산 규제강도</span><span><span class="msl-val mk-neutral" id="mv-regtax">중립</span></span></div>
-            <input type="range" id="ms-regtax" min="0" max="2" step="1" value="1" oninput="updateMacro()">
-          </div>
-        </div>
-      </div>
-
-      <!-- 전 탭 영향 미리보기 -->
-      <div class="impact-strip">
-        <div class="impact-title">↓ 현재 거시경제 변수가 각 시뮬레이션에 미치는 영향</div>
-        <div class="impact-grid">
-          <div class="impact-item"><span class="impact-icon">🏖️</span><span class="impact-name">은퇴</span><span class="impact-arrow" id="imp-ret">→</span></div>
-          <div class="impact-item"><span class="impact-icon">🏠</span><span class="impact-name">주택</span><span class="impact-arrow" id="imp-re">→</span></div>
-          <div class="impact-item"><span class="impact-icon">📈</span><span class="impact-name">투자</span><span class="impact-arrow" id="imp-inv">→</span></div>
-          <div class="impact-item"><span class="impact-icon">💳</span><span class="impact-name">대출</span><span class="impact-arrow" id="imp-dbt">→</span></div>
-          <div class="impact-item"><span class="impact-icon">💰</span><span class="impact-name">목돈</span><span class="impact-arrow" id="imp-sav">→</span></div>
-          <div class="impact-item"><span class="impact-icon">📋</span><span class="impact-name">세금</span><span class="impact-arrow" id="imp-tax">→</span></div>
-          <div class="impact-item"><span class="impact-icon">🛡️</span><span class="impact-name">보험</span><span class="impact-arrow" id="imp-ins">→</span></div>
-        </div>
-      </div>
-
-    </div>
+  <div class="tab-bar" style="grid-template-columns:repeat(8,1fr);">
+    <button class="tab-btn active" onclick="sTabV2(0,this)"><span class="ti">🏖️</span><span>은퇴</span></button>
+    <button class="tab-btn" onclick="sTabV2(1,this)"><span class="ti">🏠</span><span>주택</span></button>
+    <button class="tab-btn" onclick="sTabV2(2,this)"><span class="ti">📈</span><span>투자</span></button>
+    <button class="tab-btn" onclick="sTabV2(3,this)"><span class="ti">💳</span><span>대출</span></button>
+    <button class="tab-btn" onclick="sTabV2(4,this)"><span class="ti">💰</span><span>목돈</span></button>
+    <button class="tab-btn" onclick="sTabV2(5,this)"><span class="ti">📋</span><span>세금</span></button>
+    <button class="tab-btn" onclick="sTabV2(6,this)"><span class="ti">🛡️</span><span>보험</span></button>
+    <button class="tab-btn ai-tab" onclick="sTabV2(7,this)"><span class="ti">🤖</span><span>AI</span></button>
   </div>
 </div>
-  <div class="tab-bar" style="grid-template-columns:repeat(8,1fr);">
-      <button class="tab-btn active" onclick="sTabV2(0,this)"><span class="ti">🏖️</span><span>은퇴</span></button>
-      <button class="tab-btn" onclick="sTabV2(1,this)"><span class="ti">🏠</span><span>주택</span></button>
-      <button class="tab-btn" onclick="sTabV2(2,this)"><span class="ti">📈</span><span>투자</span></button>
-      <button class="tab-btn" onclick="sTabV2(3,this)"><span class="ti">💳</span><span>대출</span></button>
-      <button class="tab-btn" onclick="sTabV2(4,this)"><span class="ti">💰</span><span>목돈</span></button>
-      <button class="tab-btn" onclick="sTabV2(5,this)"><span class="ti">📋</span><span>세금</span></button>
-      <button class="tab-btn" onclick="sTabV2(6,this)"><span class="ti">🛡️</span><span>보험</span></button>
-      <button class="tab-btn ai-tab" onclick="sTabV2(7,this)"><span class="ti">🤖</span><span>AI</span></button>
-    </div>
-  </div><!-- /sim-sticky-inner -->
+
+<!-- ━━━ 시뮬레이터 섹션 ━━━ -->
+<div class="sim-wrap open" id="sim-wrap">
+  <!-- 시뮬바+탭바: sticky로 one-scroll 상단 고정 -->
   <div class="sim-body" id="sim-body">
 <!-- ══════════════════ 0. 은퇴 ══════════════════ -->
 <div class="sim-panel" id="panel-0">
