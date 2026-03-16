@@ -544,14 +544,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.65);
   z-index:9999;
-  align-items:flex-end;
-  justify-content:center;
 }
-.pay-modal-bg.show{display:flex;}
+.pay-modal-bg.show{display:block;}
 .pay-modal{
-  background:var(--paper);border-radius:16px 16px 0 0;
-  padding:22px 18px 36px;width:100%;max-width:430px;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  width:100%;max-width:430px;
+  margin:0 auto;
+  background:var(--paper);
+  border-radius:16px 16px 0 0;
+  padding:22px 18px 36px;
   border-top:3px solid var(--gold);
+  z-index:10000;
+  transform:translateY(100%);
+  transition:transform .3s ease;
+}
+.pay-modal-bg.show .pay-modal{
+  transform:translateY(0);
 }
 .pay-modal-title{font-size:16px;font-weight:900;color:var(--navy);margin-bottom:4px;}
 .pay-modal-sub{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
@@ -2715,8 +2724,14 @@ function toggleDet(id,btn){
   btn.textContent=el.classList.contains('open')?'− 접기':'＋ '+btn.textContent.replace(/^[＋−]\s*/,'').replace('접기','').trim();
 }
 function toggleSec(id){
+  // HOLD 상태면 토글 막음
+  if(typeof pausedSecs !== 'undefined' && pausedSecs.has(id)){
+    const sec = document.getElementById('sec-'+id);
+    if(sec) sec.classList.add('open'); // 항상 열린 상태 유지
+    return;
+  }
   const sec=document.getElementById('sec-'+id);
-  // style 직접 설정 제거 후 클래스만 토글
+  if(!sec) return;
   const body=sec.querySelector('.sec-body');
   if(body){
     body.style.maxHeight='';
@@ -3978,15 +3993,17 @@ function initSimV2(){
 let selectedPlan = 'month';
 function openPayModal(){
   const modal = document.getElementById('pay-modal-bg');
-  if(modal){
-    modal.style.display = 'flex';
-    modal.style.zIndex = '9999';
-    setTimeout(()=>modal.classList.add('show'), 10);
-  }
+  if(!modal) return;
+  modal.style.display = 'block';
+  modal.style.zIndex = '9999';
+  setTimeout(()=>modal.classList.add('show'), 10);
 }
 function closePayModal(){
   const m=document.getElementById('pay-modal-bg');
-  if(m){m.classList.remove('show');setTimeout(()=>{m.style.display='none';},300);}
+  if(m){
+    m.classList.remove('show');
+    setTimeout(()=>{ m.style.display='none'; }, 350);
+  }
 }
 function selectPlan(plan){
   selectedPlan = plan;
@@ -4422,39 +4439,36 @@ function togglePause(secId, e){
   if(!sec || !btn) return;
 
   if(pausedSecs.has(secId)){
-    // PAUSE 해제
+    // HOLD 해제 — 자유롭게 열고 닫기 가능
     pausedSecs.delete(secId);
     sec.classList.remove('paused');
     btn.classList.remove('paused-on');
     btn.textContent = 'HOLD';
-    showToast('🔓 고정 해제 — ' + secId.toUpperCase() + ' 섹션');
+    showToast('🔓 HOLD 해제 — 자유롭게 열고 닫을 수 있습니다');
   } else {
-    // PAUSE 설정 — 열린 상태로 고정
+    // HOLD 설정 — 열린 상태로 고정, 배너 눌러도 안 닫힘
     pausedSecs.add(secId);
     sec.classList.add('paused');
     sec.classList.add('open'); // 강제 열기
+    // sec-body 강제 표시
+    const body = sec.querySelector('.sec-body');
+    if(body){
+      body.style.maxHeight = '3000px';
+      body.style.overflow = 'visible';
+      body.style.visibility = 'visible';
+    }
     btn.classList.add('paused-on');
-    btn.textContent = '▶ ON';
-    showToast('📌 고정됨 — 스치기만 해도 열린 상태 유지');
+    btn.textContent = '● ON';
+    showToast('📌 HOLD — 배너를 눌러도 닫히지 않습니다');
   }
-  autoSave();
+  if(typeof autoSave === 'function') autoSave();
 }
 
-// toggleSec 재정의 — PAUSE된 섹션은 닫히지 않게
-const _origToggleSec = typeof toggleSec === 'function' ? toggleSec : null;
-function toggleSec(id){
-  if(pausedSecs.has(id)){
-    // PAUSE 중이면 항상 열린 상태 유지
-    const sec = document.getElementById('sec-' + id);
-    if(sec) sec.classList.add('open');
-    return;
-  }
-  if(_origToggleSec) _origToggleSec(id);
-}
+/* toggleSec PAUSE 로직은 원본 함수에 통합됨 */
 </script>
 
 <!-- ━━━ 결제 모달 ━━━ -->
-<div class="pay-modal-bg" id="pay-modal-bg">
+<div class="pay-modal-bg" id="pay-modal-bg" onclick="if(event.target===this)closePayModal()">
   <div class="pay-modal">
     <div class="pay-modal-title">🏠 금융집짓기® 구독</div>
     <div class="pay-modal-sub">7대 영역 전체 + 몬테카를로 + AI분석 + PDF저장<br>언제든 해지 가능 · 카드·카카오페이·네이버페이</div>
