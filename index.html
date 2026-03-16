@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta property="og:description" content="세계 최초 은퇴, 부채, 저축, 투자, 세금, 부동산, 보험설계를 한 화면에서">
-<meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EA%B8%88%EC%9C%B5%EC%A7%91%EC%A7%93%EA%B8%B0_OG%EC%9D%B4%EB%AF%B8%EC%A7%80_1200x630.png?alt=media&token=a67f69c2-febe-471b-a2f3-e6b837801905">
+<meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EA%B8%88%EC%9C%B5%EC%A7%91%EC%A7%93%EA%B8%B0_OG%EC%9D%B4%EB%AF%B8%EC%A7%80_1200x630.png?alt=media&token=fd2487b5-b903-4900-93e4-8bc36f1b41d4">
 <meta property="og:image:width" content="800">
 <meta property="og:image:height" content="400">
 <meta property="og:url" content="https://financial-house-simulator.vercel.app">
@@ -81,11 +81,11 @@ html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;bac
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   background:var(--paper);
-  scrollbar-width:thin;
-  scrollbar-color:var(--border) transparent;
+  scrollbar-width:auto;
+  scrollbar-color:rgba(200,184,130,.6) transparent;
 }
-.one-scroll::-webkit-scrollbar{width:4px;}
-.one-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.one-scroll::-webkit-scrollbar{width:10px;}
+.one-scroll::-webkit-scrollbar-thumb{background:rgba(200,184,130,.6);border-radius:5px;border:2px solid transparent;background-clip:content-box;}
 /* 시뮬레이터 바 */
 .sim-sticky-inner{
   flex-shrink:0;
@@ -96,7 +96,7 @@ html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;bac
 }
 .sim-bar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:8px 12px;cursor:pointer;user-select:none;
+  padding:8px 12px;cursor:default;user-select:none;
   background:var(--navy);
 }
 .sim-bar:active{background:var(--navy2);}
@@ -104,7 +104,7 @@ html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;bac
 .sim-bar-name{font-size:11px;font-weight:700;color:#fff;}
 .sim-bar-sub{font-size:9px;color:var(--gold);}
 .sim-bar-right{display:flex;align-items:center;gap:6px;}
-.sim-bar-arr{font-size:9px;color:rgba(255,255,255,.45);transition:transform .25s;}
+.sim-bar-arr{display:none;}
 .sim-wrap.open .sim-bar-arr{transform:rotate(180deg);}
 /* 시뮬 내용 토글 */
 .sim-body{
@@ -132,7 +132,7 @@ html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;bac
 .sec-left{display:flex;align-items:center;gap:8px;}
 .sec-icon{font-size:13px;}
 .sec-name{font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px;}
-.sec-status{font-size:9px;color:var(--gold);margin-top:1px;}
+.sec-status{font-size:9px;color:var(--gold);margin-top:1px;font-weight:700;}
 .sec-right{display:flex;align-items:center;gap:5px;}
 .badge{font-size:9px;padding:2px 7px;border-radius:3px;font-weight:700;}
 .bd-e{background:rgba(255,255,255,.15);color:rgba(255,255,255,.55);}
@@ -220,7 +220,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .auto-box.green{background:#f0fdf4;border-color:#86efac;}
 .auto-box.red{background:#fef2f2;border-color:#fca5a5;}
 .auto-box.blue{background:#eff6ff;border-color:#93c5fd;}
-.auto-lbl{font-size:9px;font-weight:700;letter-spacing:.05em;margin-bottom:2px;}
+.auto-lbl{font-size:9px;font-weight:900;letter-spacing:.05em;margin-bottom:2px;color:#222;}
 .auto-val{font-size:16px;font-weight:900;}
 
 /* ━━━ 재무혈압 패널 ━━━ */
@@ -259,7 +259,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .sim-sl{margin-bottom:7px;}
 .sim-sl:last-child{margin-bottom:0;}
 .sim-sl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
-.sim-sl-name{font-size:10px;color:var(--muted);font-weight:500;}
+.sim-sl-name{font-size:10px;color:var(--text);font-weight:700;}
 .sim-sl-val{font-size:12px;font-weight:900;color:var(--navy);}
 .sim-sl-unit{font-size:9px;font-weight:400;color:var(--muted);}
 .gauge-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
@@ -283,7 +283,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .result-card-prob{font-size:16px;font-weight:900;color:var(--green);}
 .rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;}
 .rc{background:#f8f6f0;border-radius:3px;padding:6px 9px;border:1px solid var(--border2);}
-.rc-lbl{font-size:9px;color:var(--muted);margin-bottom:2px;font-weight:500;}
+.rc-lbl{font-size:9px;color:#444;margin-bottom:2px;font-weight:700;}
 .rc-val{font-size:12px;font-weight:900;color:var(--text);}
 .rc-val.good{color:var(--green);}
 .rc-val.warn{color:#d97706;}
@@ -382,7 +382,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .preset-btn span{display:block;font-size:8px;font-weight:400;color:rgba(255,255,255,.4);margin-top:2px;}
 .mslid{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:7px 10px;}
 .msl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
-.msl-name{font-size:9.5px;color:rgba(255,255,255,.65);font-weight:500;}
+.msl-name{font-size:9.5px;color:rgba(255,255,255,.9);font-weight:700;}
 .msl-val{font-size:13px;font-weight:900;}
 .msl-unit{font-size:8.5px;color:rgba(255,255,255,.4);margin-left:1px;}
 .macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
@@ -411,7 +411,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px 11px 5px;}
 .kpi{background:#f8f6f0;border:1.5px solid var(--border2);border-radius:4px;padding:7px 9px;}
-.kpi-lbl{font-size:8px;color:var(--muted);font-weight:500;margin-bottom:2px;}
+.kpi-lbl{font-size:8px;color:#444;font-weight:700;margin-bottom:2px;}
 .kpi-val{font-size:15px;font-weight:900;color:var(--navy);line-height:1.1;}
 .kpi-val.good{color:var(--green);}.kpi-val.warn{color:#d97706;}.kpi-val.bad{color:var(--red);}
 .kpi-desc{font-size:7.5px;color:var(--muted);margin-top:2px;}
@@ -1011,7 +1011,7 @@ body{
       <!-- 1행: 이름 -->
       <div style="display:flex;flex-direction:column;gap:2px;">
         <div style="font-size:9px;color:var(--muted);font-weight:500;">이름</div>
-        <input type="text" placeholder="홍길동" style="height:30px;border:1px solid var(--border2);border-radius:3px;font-size:13px;font-family:var(--fn);font-weight:400;padding:0 8px;background:#fff;color:var(--text);outline:none;width:100%;" oninput="D.name=this.value;updateBpTitle();rAll('who')" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
+        <input type="text" placeholder="홍길동" style="height:30px;border:1px solid var(--border2);border-radius:3px;font-size:13px;font-family:var(--fn);font-weight:300;padding:0 8px;background:#fff;color:#bbb;outline:none;width:100%;" placeholder="이름을 입력하세요" oninput="D.name=this.value;updateBpTitle();rAll('who')" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
       </div>
       <!-- 2행: 현재나이·은퇴나이·예상수명 -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
@@ -1538,7 +1538,7 @@ body{
 
 <!-- ━━━ 시뮬레이터 바 + 탭바 (고정) ━━━ -->
 <div class="sim-sticky-inner" id="sim-sticky-inner">
-  <div class="sim-bar" onclick="toggleSim()">
+  <div class="sim-bar">
     <div class="sim-bar-left">
       <span style="font-size:13px;">🔬</span>
       <div>
@@ -1547,7 +1547,6 @@ body{
       </div>
     </div>
     <div class="sim-bar-right">
-      <span class="badge bd-p">v2</span>
       <span class="sim-bar-arr">▾</span>
     </div>
   </div>
@@ -1564,7 +1563,7 @@ body{
 </div>
 
 <!-- ━━━ 시뮬레이터 섹션 ━━━ -->
-<div class="sim-wrap open" id="sim-wrap">
+<div class="sim-wrap" id="sim-wrap">
   <!-- 시뮬바+탭바: sticky로 one-scroll 상단 고정 -->
   <div class="sim-body" id="sim-body">
 <!-- ══════════════════ 0. 은퇴 ══════════════════ -->
@@ -2828,40 +2827,45 @@ function saveSnapshot(){
     String(now.getHours()).padStart(2,'0') + '시 ' +
     String(now.getMinutes()).padStart(2,'0') + '분';
 
-  // 저장할 데이터 구성
-  const snapshot = {
-    ts,
-    timestamp: now.toISOString(),
-    data: Object.assign({}, D),
-    summary: {
-      name: D.name || '미입력',
-      income: D.income || 0,
-      totalAsset: D.totalAssetInput || 0,
-      totalDebt: D.totalDebtInput || 0,
-      score: typeof calcScore === 'function' ? Math.round(calcScore()) : 0,
-      retRate: document.getElementById('kpi-wealth')?.textContent || '—',
-      wealthIdx: document.getElementById('kpi-wealth')?.textContent || '—',
-    }
+  // 핵심 수치만 저장 (용량 최소화)
+  const score = typeof calcScore === 'function' ? Math.round(calcScore()) : 0;
+  const summary = {
+    name:       D.name        || '미입력',
+    income:     D.income      || 0,
+    age:        D.ageNum      || 0,
+    retireAge:  D.retireAge   || 65,
+    totalAsset: D.totalAssetInput || 0,
+    totalDebt:  D.totalDebtInput  || 0,
+    savings:    D.savings     || 0,
+    natPen:     D.natPen      || 0,
+    perPen:     D.perPen      || 0,
+    insPay:     D.insPay      || 0,
+    loanPay:    D.loanPay     || 0,
+    score,
+    wealthIdx:  document.getElementById('kpi-wealth')?.textContent || '—',
+    debtRatio:  document.getElementById('kpi-debt')?.textContent   || '—',
+    insScore:   document.getElementById('ins-score')?.textContent  || '—',
   };
 
-  // localStorage에 저장
-  const key = 'fh_snap_' + now.getTime();
+  // localStorage에 저장 (목록에만 summary 저장 — 별도 키 불필요)
   try {
-    localStorage.setItem(key, JSON.stringify(snapshot));
-
-    // 저장 목록 업데이트
     let snapList = JSON.parse(localStorage.getItem('fh_snap_list') || '[]');
-    snapList.unshift({key, ts, summary: snapshot.summary});
-    if(snapList.length > 20) snapList = snapList.slice(0, 20); // 최대 20개
+    snapList.unshift({ts, summary});
+    if(snapList.length > 10) snapList = snapList.slice(0, 10); // 최대 10개
     localStorage.setItem('fh_snap_list', JSON.stringify(snapList));
 
-    // 성공 토스트
     showToast('💾 저장완료 — ' + ts);
-
-    // AI탭 저장 기록 갱신
     renderSnapList();
   } catch(e) {
-    showToast('⚠️ 저장 실패 — 브라우저 저장공간 부족');
+    // 저장공간 부족 시 오래된 것 지우고 재시도
+    try {
+      localStorage.removeItem('fh_snap_list');
+      localStorage.setItem('fh_snap_list', JSON.stringify([{ts, summary}]));
+      showToast('💾 저장완료 — ' + ts);
+      renderSnapList();
+    } catch(e2) {
+      showToast('⚠️ 저장 실패 — 카톡 인앱브라우저는 저장이 제한됩니다');
+    }
   }
 }
 
@@ -2884,19 +2888,19 @@ function renderSnapList(){
     `<div class="snap-item">
       <div>
         <div style="font-size:10px;font-weight:700;color:var(--navy);">${s.ts}</div>
-        <div style="font-size:8.5px;color:var(--muted);margin-top:1px;">
-          ${s.summary.name} · 재무점수 ${s.summary.score}점 · 월수입 ${s.summary.income}만원
+        <div style="font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.6;">
+          ${s.summary.name} · 재무점수 ${s.summary.score}점<br>
+          월수입 ${s.summary.income}만원 · 부자지수 ${s.summary.wealthIdx}
         </div>
       </div>
-      <button class="snap-del" onclick="delSnap('${s.key}')">삭제</button>
+      <button class="snap-del" onclick="delSnap(${i})">삭제</button>
     </div>`
   ).join('');
 }
 
-function delSnap(key){
-  localStorage.removeItem(key);
+function delSnap(idx){
   let snapList = JSON.parse(localStorage.getItem('fh_snap_list') || '[]');
-  snapList = snapList.filter(s => s.key !== key);
+  snapList.splice(idx, 1);
   localStorage.setItem('fh_snap_list', JSON.stringify(snapList));
   renderSnapList();
   showToast('🗑️ 삭제되었습니다');
@@ -3221,6 +3225,9 @@ function mkBar(id,labels,vals,cols){
   CI2[id]=new Chart(c,{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:cols,borderWidth:0,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'rgba(0,0,0,.35)',font:{size:7.5}},grid:{display:false}},y:{ticks:{color:'rgba(0,0,0,.35)',font:{size:7}},grid:{color:'rgba(0,0,0,.04)'}}}}});}
 
 function sTabV2(idx,btn){
+  // sim-wrap 열기 (탭 클릭 시 최초 오픈)
+  const wrap = document.getElementById('sim-wrap');
+  if(wrap) wrap.classList.add('open');
   // 모든 sim-panel 숨기기
   document.querySelectorAll('.sim-panel').forEach(p=>p.classList.remove('active'));
   // 탭 버튼 비활성
@@ -3961,6 +3968,17 @@ document.addEventListener('DOMContentLoaded', function(){
       e.preventDefault();
       toggleSim();
     }, {passive:false});
+  }
+});
+
+/* 이름 입력칸: 입력 시 글자 진하게 */
+document.addEventListener('DOMContentLoaded', function(){
+  const nameInput = document.querySelector('input[placeholder="이름을 입력하세요"]');
+  if(nameInput){
+    nameInput.addEventListener('input', function(){
+      this.style.color = this.value ? '#1a1a1a' : '#bbb';
+      this.style.fontWeight = this.value ? '700' : '300';
+    });
   }
 });
 </script>
