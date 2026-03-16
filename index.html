@@ -37,8 +37,8 @@
   --fn:'Noto Sans KR',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--cream);font-family:var(--fn);color:var(--text);}
-.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
+html,body{width:100%;height:100%;overflow:auto;background:var(--cream);font-family:var(--fn);color:var(--text);}
+.app{width:100%;max-width:430px;min-height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:visible;}
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
 
