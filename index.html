@@ -676,16 +676,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .footer-cta-share{background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.25);}
 /* ━━━ 강의 선택 미니 팝업 ━━━ */
 .lecture-popup{
-  display:none;position:fixed;
+  display:none;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  width:100%;
+  max-width:430px;
+  margin:0 auto;
   background:var(--paper);
   border-radius:10px 10px 0 0;
   padding:16px 16px 28px;
-  width:100%;max-width:430px;
-  bottom:0;left:50%;transform:translateX(-50%);
-  z-index:310;
+  z-index:9998;
   border-top:2px solid var(--gold);
   box-shadow:0 -8px 30px rgba(0,0,0,.3);
-  animation:slideUp .25s ease;
+  transform:translateY(100%);
+  transition:transform .3s ease;
+}
+.lecture-popup.show{
+  display:block;
+  transform:translateY(0);
 }
 .lecture-popup.show{display:block;}
 .lecture-popup-handle{
@@ -720,7 +730,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 }
 .lecture-popup-bg{
   display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.4);z-index:305;
+  background:rgba(0,0,0,.4);z-index:9997;
 }
 .lecture-popup-bg.show{display:block;}
 
@@ -732,12 +742,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 }
 .cfp-panel-bg.show{display:flex;}
 .cfp-panel{
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  width:100%;max-width:430px;
+  margin:0 auto;
   background:var(--paper);
   border-radius:16px 16px 0 0;
   padding:20px 18px 36px;
-  width:100%;max-width:430px;
   border-top:3px solid var(--gold);
-  animation:slideUp .3s ease;
+  z-index:9999;
+  transform:translateY(100%);
+  transition:transform .3s ease;
+}
+.cfp-panel.show{
+  display:block;
+  transform:translateY(0);
 }
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 .cfp-panel-handle{
@@ -868,17 +888,23 @@ body{
 }
 .consult-panel-bg.show{display:block;}
 .consult-panel{
-  display:none;position:fixed;
-  bottom:0;left:50%;transform:translateX(-50%);
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
   width:100%;max-width:430px;
+  margin:0 auto;
   background:var(--paper);
   border-radius:16px 16px 0 0;
   border-top:3px solid var(--gold);
   padding:20px 18px 36px;
   z-index:9999;
-  animation:slideUp .3s ease;
+  transform:translateY(100%);
+  transition:transform .3s ease;
 }
-.consult-panel.show{display:block;}
+.consult-panel.show{
+  display:block;
+  transform:translateY(0);
+}
 .consult-panel-handle{
   width:36px;height:4px;border-radius:2px;
   background:var(--border);margin:0 auto 16px;
@@ -3953,12 +3979,14 @@ let selectedPlan = 'month';
 function openPayModal(){
   const modal = document.getElementById('pay-modal-bg');
   if(modal){
-    modal.classList.add('show');
+    modal.style.display = 'flex';
     modal.style.zIndex = '9999';
+    setTimeout(()=>modal.classList.add('show'), 10);
   }
 }
 function closePayModal(){
-  document.getElementById('pay-modal-bg').classList.remove('show');
+  const m=document.getElementById('pay-modal-bg');
+  if(m){m.classList.remove('show');setTimeout(()=>{m.style.display='none';},300);}
 }
 function selectPlan(plan){
   selectedPlan = plan;
@@ -4109,12 +4137,16 @@ function simulateMakeWebhook(name, score, ins, ret, wealth){
 
 /* ─ 강의 선택 팝업 ─ */
 function openLectureMenu(){
-  document.getElementById('lecture-popup').classList.add('show');
-  document.getElementById('lecture-popup-bg').classList.add('show');
+  const popup = document.getElementById('lecture-popup');
+  const bg = document.getElementById('lecture-popup-bg');
+  if(popup){ popup.style.display='block'; setTimeout(()=>popup.classList.add('show'),10); }
+  if(bg){ bg.style.display='block'; }
 }
 function closeLectureMenu(){
-  document.getElementById('lecture-popup').classList.remove('show');
-  document.getElementById('lecture-popup-bg').classList.remove('show');
+  const popup = document.getElementById('lecture-popup');
+  const bg = document.getElementById('lecture-popup-bg');
+  if(popup){ popup.classList.remove('show'); setTimeout(()=>{ popup.style.display='none'; },300); }
+  if(bg){ bg.style.display='none'; }
 }
 
 /* ━━━ 카톡 인앱브라우저 JS 최적화 ━━━ */
@@ -4208,12 +4240,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
 /* ─ 1:1 상담 패널 ─ */
 function openConsultPanel(){
-  document.getElementById('consult-panel-bg').classList.add('show');
-  document.getElementById('consult-panel').classList.add('show');
+  const bg = document.getElementById('consult-panel-bg');
+  const panel = document.getElementById('consult-panel');
+  if(bg){ bg.style.display='block'; }
+  if(panel){ panel.style.display='block'; setTimeout(()=>panel.classList.add('show'),10); }
 }
 function closeConsultPanel(){
-  document.getElementById('consult-panel-bg').classList.remove('show');
-  document.getElementById('consult-panel').classList.remove('show');
+  const bg = document.getElementById('consult-panel-bg');
+  const panel = document.getElementById('consult-panel');
+  if(panel){ panel.classList.remove('show'); setTimeout(()=>{ panel.style.display='none'; },300); }
+  if(bg){ bg.style.display='none'; }
 }
 
 /* ─ 공유하기 ─ */
