@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- 카톡 인앱브라우저 최적화 viewport -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -239,7 +239,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 /* ━━━ 탭 바 ━━━ */
 .tab-bar{display:grid;grid-template-columns:repeat(8,1fr);background:var(--navy2);border-top:2px solid var(--gold);}
-.tab-btn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 1px 4px;cursor:pointer;border:none;background:transparent;font-family:var(--fn);font-size:7.5px;font-weight:700;color:rgba(255,255,255,.38);border-bottom:2px solid transparent;transition:all .2s;}
+.tab-btn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px 7px;cursor:pointer;-webkit-tap-highlight-color:transparent;border:none;background:transparent;font-family:var(--fn);font-size:7.5px;font-weight:700;color:rgba(255,255,255,.38);border-bottom:2px solid transparent;transition:all .2s;}
 .tab-btn .ti{font-size:12px;line-height:1;}
 .tab-btn.active{color:var(--gold2);border-bottom-color:var(--gold);}
 @keyframes simP{0%{transform:scale(1)}50%{transform:scale(1.015)}100%{transform:scale(1)}}
@@ -785,17 +785,17 @@ input[type=range]{
   touch-action:pan-x;
 }
 
-/* ⑥ 터치 300ms 딜레이 제거 */
-*{
+/* ⑥ 터치 딜레이 제거 — 클릭 차단 없이 */
+/* tap highlight만 제거, touch-action은 선택적으로 */
+a, button, input, label, select{
   -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
 }
-/* 슬라이더는 pan-x 허용 */
+/* 슬라이더만 pan-x */
 input[type=range]{
   touch-action:pan-x !important;
 }
-/* 스크롤 영역은 pan-y 허용 */
-.one-scroll, .stage-panel, .meta-panel{
+/* 스크롤 영역만 pan-y */
+.one-scroll{
   touch-action:pan-y !important;
 }
 
@@ -3988,6 +3988,34 @@ document.addEventListener('DOMContentLoaded', ()=>{
   enhanceSliders();
   // Chart.js 렌더링을 위한 약간의 지연
   if(isKakao) setTimeout(()=>{ if(typeof updateMacro==='function') updateMacro(); }, 500);
+});
+
+/* ━━━ 카톡 인앱 탭 클릭 보강 ━━━ */
+// 카톡 인앱브라우저에서 onclick이 간헐적으로 무시되는 문제 방지
+document.addEventListener('DOMContentLoaded', function(){
+  // 탭 버튼에 touchend 이벤트도 추가
+  document.querySelectorAll('.tab-btn').forEach(function(btn, idx){
+    btn.addEventListener('touchend', function(e){
+      e.preventDefault();
+      sTabV2(idx, btn);
+    }, {passive:false});
+  });
+  // 섹션 헤더도 동일하게
+  document.querySelectorAll('.sec-hdr').forEach(function(hdr){
+    hdr.addEventListener('touchend', function(e){
+      e.preventDefault();
+      const sec = hdr.parentElement;
+      if(sec) sec.classList.toggle('open');
+    }, {passive:false});
+  });
+  // 시뮬레이터 바
+  const simBar = document.querySelector('.sim-bar');
+  if(simBar){
+    simBar.addEventListener('touchend', function(e){
+      e.preventDefault();
+      toggleSim();
+    }, {passive:false});
+  }
 });
 </script>
 
