@@ -2,6 +2,41 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+
+<!-- 카카오 인앱브라우저 → 외부 브라우저 강제 전환 -->
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isKakao = /KAKAOTALK/i.test(ua);
+  var isInApp = /NAVER|Instagram|FB_IAB|FBAV|Twitter|Line/i.test(ua);
+
+  if(isKakao || isInApp){
+    var url = location.href;
+
+    // 이미 외부브라우저 파라미터 있으면 스킵
+    if(url.indexOf('openExternalBrowser=1') > -1) return;
+
+    // 카카오 공식 외부브라우저 파라미터 추가
+    var sep = url.indexOf('?') > -1 ? '&' : '?';
+    var newUrl = url + sep + 'openExternalBrowser=1';
+
+    // iOS 카카오: kakaotalk://web/openExternal
+    var isIOS = /iPhone|iPad|iPod/i.test(ua);
+    if(isIOS){
+      location.replace(newUrl);
+    } else {
+      // 안드로이드: intent 스킴으로 크롬 강제 실행
+      var intent = 'intent://' +
+        newUrl.replace(/^https?:\/\//, '') +
+        '#Intent;scheme=https;package=com.android.chrome;end';
+      location.href = intent;
+      // intent 실패 시 폴백
+      setTimeout(function(){ location.replace(newUrl); }, 500);
+    }
+  }
+})();
+</script>
+
 <!-- 카톡 인앱브라우저 최적화 viewport -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
