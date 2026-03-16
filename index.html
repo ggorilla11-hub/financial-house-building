@@ -504,10 +504,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 /* ━━━ 결제 모달 ━━━ */
 .pay-modal-bg{
+  display:none;
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.65);
   z-index:9999;
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.65);z-index:300;
-  align-items:flex-end;justify-content:center;
+  align-items:flex-end;
+  justify-content:center;
 }
 .pay-modal-bg.show{display:flex;}
 .pay-modal{
@@ -635,6 +638,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .footer-cta-consult{background:rgba(254,229,0,.85);color:#3A1D1D;}
 .footer-cta-lecture{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);}
 .footer-cta-pay{background:var(--gold);color:var(--navy);}
+.footer-cta-share{background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.25);}
 /* ━━━ 강의 선택 미니 팝업 ━━━ */
 .lecture-popup{
   display:none;position:fixed;
@@ -2100,6 +2104,9 @@ body{
       </button>
       <button class="footer-cta-btn footer-cta-lecture" onclick="openLectureMenu()">
         🎓 강의
+      </button>
+      <button class="footer-cta-btn footer-cta-share" onclick="shareApp()">
+        🔗 공유
       </button>
     </div>
   </div>
@@ -4140,6 +4147,44 @@ function openConsultPanel(){
 function closeConsultPanel(){
   document.getElementById('consult-panel-bg').classList.remove('show');
   document.getElementById('consult-panel').classList.remove('show');
+}
+
+/* ─ 공유하기 ─ */
+function shareApp(){
+  const url = 'https://financial-house-building.vercel.app';
+  const title = '🏠 특허받은 AI 금융집짓기® 시뮬레이터';
+  const text = '세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에';
+
+  // 카카오·네이티브 공유 API 우선
+  if(navigator.share){
+    navigator.share({ title, text, url })
+      .then(()=>showToast('✅ 공유 완료!'))
+      .catch(()=>copyURL(url));
+  } else {
+    // 폴백: URL 복사
+    copyURL(url);
+  }
+}
+
+function copyURL(url){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url)
+      .then(()=>showToast('🔗 링크가 복사되었습니다! 카톡에 붙여넣기 하세요'))
+      .catch(()=>fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+}
+
+function fallbackCopy(url){
+  const el = document.createElement('textarea');
+  el.value = url;
+  el.style.position='fixed';el.style.opacity='0';
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  showToast('🔗 링크가 복사되었습니다! 카톡에 붙여넣기 하세요');
 }
 </script>
 
