@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta property="og:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
-<meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EA%B8%88%EC%9C%B5%EC%A7%91%EC%A7%93%EA%B8%B0_OG%EC%9D%B4%EB%AF%B8%EC%A7%80_1200x630.png?alt=media&token=9cd17271-8eca-41ad-807a-26efdb0276b8">
+<meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EA%B8%88%EC%9C%B5%EC%A7%91%EC%A7%93%EA%B8%B0_OG%EC%9D%B4%EB%AF%B8%EC%A7%80.png?alt=media&token=be92047c-ff02-4112-a374-5279c32f9a03">
 <meta property="og:image:width" content="800">
 <meta property="og:image:height" content="400">
 <meta property="og:url" content="https://financial-house-simulator.vercel.app">
@@ -504,6 +504,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 /* ━━━ 결제 모달 ━━━ */
 .pay-modal-bg{
+  z-index:9999;
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.65);z-index:300;
   align-items:flex-end;justify-content:center;
@@ -820,6 +821,50 @@ body{
   user-select:none;
 }
 
+
+/* ━━━ 1:1 상담 슬라이드업 패널 ━━━ */
+.consult-panel-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.6);z-index:9998;
+}
+.consult-panel-bg.show{display:block;}
+.consult-panel{
+  display:none;position:fixed;
+  bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;
+  background:var(--paper);
+  border-radius:16px 16px 0 0;
+  border-top:3px solid var(--gold);
+  padding:20px 18px 36px;
+  z-index:9999;
+  animation:slideUp .3s ease;
+}
+.consult-panel.show{display:block;}
+.consult-panel-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--border);margin:0 auto 16px;
+}
+.consult-options{display:flex;flex-direction:column;gap:10px;}
+.consult-opt{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:8px;
+  border:1.5px solid var(--border2);background:#fff;
+  cursor:pointer;text-decoration:none;transition:all .15s;
+}
+.consult-opt:active{border-color:var(--navy);background:#eff6ff;}
+.consult-opt-icon{font-size:24px;flex-shrink:0;}
+.consult-opt-title{font-size:12px;font-weight:900;color:var(--navy);}
+.consult-opt-sub{font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.consult-opt-price{
+  margin-left:auto;text-align:right;flex-shrink:0;
+}
+.consult-opt-price-num{font-size:13px;font-weight:900;color:var(--gold);}
+.consult-opt-price-unit{font-size:8px;color:var(--muted);margin-top:2px;}
+.consult-panel-close{
+  width:100%;padding:10px;border:none;background:transparent;
+  font-size:11px;color:var(--muted);font-family:var(--fn);
+  cursor:pointer;margin-top:8px;
+}
 </style>
 </head>
 <body>
@@ -1971,12 +2016,9 @@ body{
       <button class="footer-cta-btn footer-cta-pay" onclick="openPayModal()">
         💳 구독
       </button>
-      <a href="https://link.payple.kr/NzcxOjc2ODQ3NzYyNzY3MDU5"
-         target="_blank" onclick="openExternal('https://link.payple.kr/NzcxOjc2ODQ3NzYyNzY3MDU5');return false;" style="text-decoration:none;">
-        <button class="footer-cta-btn footer-cta-consult">
-          💬 상담
-        </button>
-      </a>
+      <button class="footer-cta-btn footer-cta-consult" onclick="openConsultPanel()">
+        💬 상담
+      </button>
       <button class="footer-cta-btn footer-cta-lecture" onclick="openLectureMenu()">
         🎓 강의
       </button>
@@ -2847,25 +2889,43 @@ function saveSnapshot(){
     insScore:   document.getElementById('ins-score')?.textContent  || '—',
   };
 
-  // localStorage에 저장 (목록에만 summary 저장 — 별도 키 불필요)
+  // localStorage → 실패 시 sessionStorage 폴백 → 실패 시 메모리 저장
+  const snapData = {ts, summary};
+  let saved = false;
+
+  // 1차: localStorage 시도
   try {
     let snapList = JSON.parse(localStorage.getItem('fh_snap_list') || '[]');
-    snapList.unshift({ts, summary});
-    if(snapList.length > 10) snapList = snapList.slice(0, 10); // 최대 10개
+    snapList.unshift(snapData);
+    if(snapList.length > 10) snapList = snapList.slice(0, 10);
     localStorage.setItem('fh_snap_list', JSON.stringify(snapList));
+    saved = true;
+  } catch(e1) {}
 
+  // 2차: sessionStorage 시도 (카톡 인앱 대응)
+  if(!saved){
+    try {
+      let snapList = JSON.parse(sessionStorage.getItem('fh_snap_list') || '[]');
+      snapList.unshift(snapData);
+      if(snapList.length > 10) snapList = snapList.slice(0, 10);
+      sessionStorage.setItem('fh_snap_list', JSON.stringify(snapList));
+      saved = true;
+    } catch(e2) {}
+  }
+
+  // 3차: 메모리 저장 (앱 종료 시 사라지지만 현재 세션은 유지)
+  if(!saved){
+    if(!window._fhSnapList) window._fhSnapList = [];
+    window._fhSnapList.unshift(snapData);
+    if(window._fhSnapList.length > 10) window._fhSnapList = window._fhSnapList.slice(0, 10);
+    saved = true;
+  }
+
+  if(saved){
     showToast('💾 저장완료 — ' + ts);
     renderSnapList();
-  } catch(e) {
-    // 저장공간 부족 시 오래된 것 지우고 재시도
-    try {
-      localStorage.removeItem('fh_snap_list');
-      localStorage.setItem('fh_snap_list', JSON.stringify([{ts, summary}]));
-      showToast('💾 저장완료 — ' + ts);
-      renderSnapList();
-    } catch(e2) {
-      showToast('⚠️ 저장 실패 — 카톡 인앱브라우저는 저장이 제한됩니다');
-    }
+  } else {
+    showToast('⚠️ 저장 실패');
   }
 }
 
@@ -2874,7 +2934,12 @@ function renderSnapList(){
   const statusEl = document.getElementById('snap-status');
   if(!listEl) return;
 
-  const snapList = JSON.parse(localStorage.getItem('fh_snap_list') || '[]');
+    let snapList = [];
+  try { snapList = JSON.parse(localStorage.getItem('fh_snap_list') || '[]'); } catch(e) {}
+  if(!snapList.length) {
+    try { snapList = JSON.parse(sessionStorage.getItem('fh_snap_list') || '[]'); } catch(e) {}
+  }
+  if(!snapList.length && window._fhSnapList) { snapList = window._fhSnapList; }
 
   if(snapList.length === 0){
     listEl.innerHTML = '<div style="text-align:center;padding:8px;color:var(--muted);font-size:10px;">저장 기록 없음</div>';
@@ -3731,7 +3796,11 @@ function initSimV2(){
 /* ─ 결제 모달 ─ */
 let selectedPlan = 'month';
 function openPayModal(){
-  document.getElementById('pay-modal-bg').classList.add('show');
+  const modal = document.getElementById('pay-modal-bg');
+  if(modal){
+    modal.classList.add('show');
+    modal.style.zIndex = '9999';
+  }
 }
 function closePayModal(){
   document.getElementById('pay-modal-bg').classList.remove('show');
@@ -3981,6 +4050,16 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 });
+
+/* ─ 1:1 상담 패널 ─ */
+function openConsultPanel(){
+  document.getElementById('consult-panel-bg').classList.add('show');
+  document.getElementById('consult-panel').classList.add('show');
+}
+function closeConsultPanel(){
+  document.getElementById('consult-panel-bg').classList.remove('show');
+  document.getElementById('consult-panel').classList.remove('show');
+}
 </script>
 
 <!-- ━━━ 결제 모달 ━━━ -->
@@ -4060,6 +4139,59 @@ document.addEventListener('DOMContentLoaded', function(){
     </a>
   </div>
   <button class="lecture-popup-close" onclick="closeLectureMenu()">닫기</button>
+</div>
+
+<!-- ━━━ 1:1 상담 슬라이드업 패널 ━━━ -->
+<div class="consult-panel-bg" id="consult-panel-bg" onclick="closeConsultPanel()"></div>
+<div class="consult-panel" id="consult-panel">
+  <div class="consult-panel-handle"></div>
+  <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:4px;">💬 1:1 재무상담 신청</div>
+  <div style="font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+    오상열 CFP · 20년 경력 · 금융집짓기® 창시자<br>
+    상담 후 필요 시 보험·연금 추가 안내
+  </div>
+  <div class="consult-options">
+    <a class="consult-opt"
+       href="https://link.payple.kr/NzcxOjc2ODQ3NzYyNzY3MDU5"
+       target="_blank" onclick="closeConsultPanel()">
+      <span class="consult-opt-icon">💻</span>
+      <div>
+        <div class="consult-opt-title">비대면 화상 상담</div>
+        <div class="consult-opt-sub">줌(Zoom) · 60분 · 재무설계 전 영역<br>결제 후 일정 협의</div>
+      </div>
+      <div class="consult-opt-price">
+        <div class="consult-opt-price-num">33만원</div>
+        <div class="consult-opt-price-unit">60분</div>
+      </div>
+    </a>
+    <a class="consult-opt"
+       href="https://link.payple.kr/NzcxOjc2ODQ3NzYyNzY3MDU5"
+       target="_blank" onclick="closeConsultPanel()">
+      <span class="consult-opt-icon">🤝</span>
+      <div>
+        <div class="consult-opt-title">대면 방문 상담</div>
+        <div class="consult-opt-sub">강남 테헤란로 빅토리아빌딩 1702호<br>결제 후 일정 협의</div>
+      </div>
+      <div class="consult-opt-price">
+        <div class="consult-opt-price-num">55만원</div>
+        <div class="consult-opt-price-unit">60분</div>
+      </div>
+    </a>
+    <a class="consult-opt"
+       href="https://link.payple.kr/NzcxOjc2ODQ3NzYyNzY3MDU5"
+       target="_blank" onclick="closeConsultPanel()">
+      <span class="consult-opt-icon">👑</span>
+      <div>
+        <div class="consult-opt-title">자산가 심층 상담</div>
+        <div class="consult-opt-sub">금융자산 5억+ · 포트폴리오 전략<br>세금·상속·증여 포함</div>
+      </div>
+      <div class="consult-opt-price">
+        <div class="consult-opt-price-num">110만원</div>
+        <div class="consult-opt-price-unit">90분</div>
+      </div>
+    </a>
+  </div>
+  <button class="consult-panel-close" onclick="closeConsultPanel()">닫기</button>
 </div>
 </body>
 </html>
