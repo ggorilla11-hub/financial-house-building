@@ -112,15 +112,15 @@ html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;bac
 /* ━━━ 단일 스크롤 (헤더+설계도 아래 전체) ━━━ */
 .one-scroll{
   flex:1;
-  overflow-y:auto;
+  overflow-y:scroll !important;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   background:var(--paper);
-  scrollbar-width:auto;
-  scrollbar-color:rgba(200,184,130,.6) transparent;
+  scrollbar-width:thin !important;
+  scrollbar-color:rgba(200,184,130,.8) rgba(0,0,0,.1) !important;
 }
-.one-scroll::-webkit-scrollbar{width:10px;}
-.one-scroll::-webkit-scrollbar-thumb{background:rgba(200,184,130,.6);border-radius:5px;border:2px solid transparent;background-clip:content-box;}
+.one-scroll::-webkit-scrollbar{width:10px !important;display:block !important;}
+.one-scroll::-webkit-scrollbar-thumb{background:rgba(200,184,130,.8) !important;border-radius:5px;border:2px solid transparent;background-clip:content-box;}
 /* 시뮬레이터 바 */
 .sim-sticky-inner{
   flex-shrink:0;
@@ -557,10 +557,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   border-top:3px solid var(--gold);
   z-index:10000;
   transform:translateY(100%);
-  transition:transform .3s ease;
+  transition:transform .35s cubic-bezier(.32,.72,0,1);
 }
-.pay-modal-bg.show .pay-modal{
-  transform:translateY(0);
+.pay-modal.slide-up{
+  transform:translateY(0) !important;
 }
 .pay-modal-title{font-size:16px;font-weight:900;color:var(--navy);margin-bottom:4px;}
 .pay-modal-sub{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
@@ -3992,18 +3992,25 @@ function initSimV2(){
 /* ─ 결제 모달 ─ */
 let selectedPlan = 'month';
 function openPayModal(){
-  const modal = document.getElementById('pay-modal-bg');
-  if(!modal) return;
-  modal.style.display = 'block';
-  modal.style.zIndex = '9999';
-  setTimeout(()=>modal.classList.add('show'), 10);
+  const bg = document.getElementById('pay-modal-bg');
+  const panel = bg ? bg.querySelector('.pay-modal') : null;
+  if(!bg) return;
+  bg.style.display = 'block';
+  if(panel) panel.classList.remove('slide-up');
+  setTimeout(()=>{
+    bg.classList.add('show');
+    if(panel) panel.classList.add('slide-up');
+  }, 20);
 }
 function closePayModal(){
-  const m=document.getElementById('pay-modal-bg');
-  if(m){
-    m.classList.remove('show');
-    setTimeout(()=>{ m.style.display='none'; }, 350);
-  }
+  const bg = document.getElementById('pay-modal-bg');
+  const panel = bg ? bg.querySelector('.pay-modal') : null;
+  if(!bg) return;
+  if(panel) panel.classList.remove('slide-up');
+  setTimeout(()=>{
+    bg.classList.remove('show');
+    bg.style.display = 'none';
+  }, 350);
 }
 function selectPlan(plan){
   selectedPlan = plan;
