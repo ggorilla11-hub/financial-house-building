@@ -856,15 +856,9 @@ a, button, input, label, select{
 input[type=range]{
 }
 /* 스크롤 영역만 pan-y */
-.one-scroll{
-}
 
-/* ⑦ 카카오 인앱 스크롤 버그 방지 */
-.one-scroll{
-  -webkit-overflow-scrolling:touch !important;
-  overflow-y:scroll !important;
-  overscroll-behavior:contain;
-}
+
+/* ⑦ 카카오 인앱 스크롤 버그 방지 — one-scroll 중복 방지, 위 블록에 통합됨 */
 
 /* 버튼·링크 터치 영역 최소 44px (애플 HIG 기준) */
 .hbtn, .tab-btn, .footer-cta-btn, .screen-btn,
