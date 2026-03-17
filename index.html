@@ -2196,16 +2196,16 @@ body{
     </div>
     <!-- 3개 CTA 버튼 (작게 · 간절한 사람 눈에만) -->
     <div style="display:flex;gap:6px;justify-content:flex-end;padding:4px 0;">
-      <button class="footer-cta-btn footer-cta-pay" onclick="openPayModal()">
+      <button class="footer-cta-btn footer-cta-pay" data-action="openPayModal">
         💳 구독
       </button>
-      <button class="footer-cta-btn footer-cta-consult" onclick="openConsultPanel()">
+      <button class="footer-cta-btn footer-cta-consult" data-action="openConsultPanel">
         💬 상담
       </button>
-      <button class="footer-cta-btn footer-cta-lecture" onclick="openLectureMenu()">
+      <button class="footer-cta-btn footer-cta-lecture" data-action="openLectureMenu">
         🎓 강의
       </button>
-      <button class="footer-cta-btn footer-cta-share" onclick="shareApp()">
+      <button class="footer-cta-btn footer-cta-share" data-action="shareApp">
         🔗 공유
       </button>
     </div>
@@ -2723,10 +2723,8 @@ function toggleDet(id,btn){
   btn.textContent=el.classList.contains('open')?'− 접기':'＋ '+btn.textContent.replace(/^[＋−]\s*/,'').replace('접기','').trim();
 }
 function toggleSec(id){
-  // HOLD 상태면 열림/닫힘 모두 막음 (현재 상태 유지)
-  if(typeof pausedSecs !== 'undefined' && pausedSecs.has(id)){
-    return; // 아무것도 안 함 — 현재 상태 그대로
-  }
+  // HOLD 상태면 토글 완전 차단
+  if(typeof pausedSecs !== 'undefined' && pausedSecs.has(id)) return;
   const sec=document.getElementById('sec-'+id);
   if(!sec) return;
   const body=sec.querySelector('.sec-body');
@@ -4238,16 +4236,9 @@ document.addEventListener('DOMContentLoaded', function(){
 function shareApp(){
   const url = 'https://financial-house-building.vercel.app';
   const title = '🏠 특허받은 AI 금융집짓기® 시뮬레이터';
-  const text = '세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에\n' + url;
-
-  // 네이티브 공유 API (카톡·문자·기타 모두 포함)
+  const text = '세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에';
   if(navigator.share){
-    navigator.share({ title, text: text, url })
-      .then(()=>showToast('✅ 공유 완료!'))
-      .catch((e)=>{
-        // 취소한 경우 외에는 URL 복사
-        if(e.name !== 'AbortError') copyURL(url);
-      });
+    navigator.share({title, text, url}).catch(()=>copyURL(url));
   } else {
     copyURL(url);
   }
@@ -4404,51 +4395,28 @@ function togglePause(secId, e){
   if(!sec || !btn) return;
 
   if(pausedSecs.has(secId)){
-    // HOLD 해제 — 자유롭게 열고 닫기 가능
+    // HOLD 해제
     pausedSecs.delete(secId);
     sec.classList.remove('paused');
     btn.classList.remove('paused-on');
     btn.textContent = 'HOLD';
-    showToast('🔓 HOLD 해제 — 자유롭게 열고 닫을 수 있습니다');
+    showToast('🔓 HOLD 해제');
   } else {
-    // HOLD 설정 — 현재 상태(열림/닫힘) 그대로 고정
+    // HOLD 설정 — 현재 열림/닫힘 상태 그대로 고정
+    // 절대 classList 변경 안 함
     pausedSecs.add(secId);
     sec.classList.add('paused');
-    // ★ 현재 열려있으면 open 유지, 닫혀있으면 closed 유지
-    // 강제로 열지 않음
     const isOpen = sec.classList.contains('open');
-    if(isOpen){
-      btn.textContent = '● 열림고정';
-      showToast('📌 HOLD — 열린 상태로 고정됩니다');
-    } else {
-      btn.textContent = '● 닫힘고정';
-      showToast('📌 HOLD — 닫힌 상태로 고정됩니다');
-    }
     btn.classList.add('paused-on');
+    btn.textContent = isOpen ? '● 열림고정' : '● 닫힘고정';
+    showToast(isOpen ? '📌 열린 상태로 고정' : '📌 닫힌 상태로 고정');
   }
-  if(typeof autoSave === 'function') autoSave();
+  if(typeof autoSave==='function') autoSave();
 }
 
 /* toggleSec PAUSE 로직은 원본 함수에 통합됨 */
 
-/* ━━━ 푸터 버튼 터치 감도 보강 ━━━ */
-document.addEventListener('DOMContentLoaded', function(){
-  // 푸터 CTA 버튼들에 touchstart 로 즉각 반응
-  document.querySelectorAll('.footer-cta-btn').forEach(function(btn){
-    btn.addEventListener('touchstart', function(e){
-      e.stopPropagation();
-    }, {passive:true});
-    btn.addEventListener('touchend', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      // onclick 수동 실행
-      const onclickAttr = btn.getAttribute('onclick');
-      if(onclickAttr){
-        try { eval(onclickAttr); } catch(err){}
-      }
-    }, {passive:false});
-  });
-});
+/* touchend 제거 — onclick만 사용 */
 
 /* ━━━ 패널 공통 헬퍼 (CSS 클래스 불필요) ━━━ */
 function showPanel(bgId, panelId){
@@ -4519,6 +4487,41 @@ function closeCFPPanel(e){
   if(e && e.target && e.target.id !== 'cfp-panel-bg') return;
   hidePanel('cfp-panel-bg', 'cfp-panel');
 }
+
+/* ━━━ 푸터 버튼 — touchend 단독 처리 ━━━ */
+document.addEventListener('DOMContentLoaded', function(){
+  var actions = {
+    'openPayModal': openPayModal,
+    'openConsultPanel': openConsultPanel,
+    'openLectureMenu': openLectureMenu,
+    'shareApp': shareApp
+  };
+
+  document.querySelectorAll('[data-action]').forEach(function(btn){
+    var actionName = btn.getAttribute('data-action');
+
+    // 터치 기기: touchend로 즉각 실행, click 이벤트 차단
+    btn.addEventListener('touchend', function(e){
+      e.preventDefault(); // 이후 발생하는 click 이벤트 완전 차단
+      e.stopPropagation();
+      var fn = actions[actionName];
+      if(fn) fn();
+    }, {passive: false});
+
+    // 마우스 기기 (PC): click으로 실행
+    btn.addEventListener('click', function(e){
+      // 터치 기기에서는 touchend가 이미 처리했으므로 스킵
+      if(e.sourceCapabilities && !e.sourceCapabilities.firesTouchEvents){
+        var fn = actions[actionName];
+        if(fn) fn();
+      } else if(!('ontouchstart' in window)){
+        // 터치 없는 기기
+        var fn = actions[actionName];
+        if(fn) fn();
+      }
+    });
+  });
+});
 </script>
 
 <!-- ━━━ 결제 모달 ━━━ -->
