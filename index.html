@@ -1165,30 +1165,7 @@ body{
 @keyframes mpFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .mp-fade-in{animation:mpFadeIn .35s ease forwards;}
 
-/* ━━━ 퍼널 진입 화면 CSS ━━━ */
-/* 퍼널 전용 - 시뮬레이터와 독립 */
-.fn-screen {
-  position: fixed; inset: 0;
-  max-width: 430px; margin: 0 auto;
-  display: flex; flex-direction: column;
-  background: #0B1D3A;
-  z-index: 999;
-  opacity: 0; pointer-events: none;
-  transition: opacity .45s ease, transform .45s cubic-bezier(.32,.72,0,1);
-  transform: translateX(40px);
-  font-family: 'Noto Sans KR', sans-serif;
-}
-.fn-screen.fn-active { opacity: 1; pointer-events: all; transform: translateX(0); }
-.fn-screen.fn-exit   { opacity: 0; transform: translateX(-40px); pointer-events: none; }
 
-/* 퍼널 래퍼 오버레이 */
-#funnel-wrap {
-  position: fixed; inset: 0;
-  max-width: 430px; margin: 0 auto;
-  z-index: 998;
-  display: block;
-}
-#funnel-wrap.fn-hidden { display: none; }
 
 :root {
   --navy:  #0B1D3A;
@@ -1792,9 +1769,408 @@ html, body { width: 100%; height: 100%; font-family: var(--sans); background: va
 }
 .fn-share-link:active { background: #e5dcc0; }
 
+
+/* ── 퍼널 fn-screen 강제 스타일 ── */
+.fn-screen {
+  position: fixed !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  max-width: 430px; margin: 0 auto;
+  display: flex; flex-direction: column;
+  z-index: 999;
+  opacity: 0; pointer-events: none;
+  transition: opacity .4s ease, transform .4s ease;
+  transform: translateX(30px);
+}
+.fn-screen.active {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  transform: translateX(0) !important;
+}
+.fn-screen.exit {
+  opacity: 0; transform: translateX(-30px); pointer-events: none;
+}
+#funnel-wrap {
+  position: fixed; inset: 0;
+  z-index: 998;
+}
+#funnel-wrap.fn-hidden { display: none !important; }
+
 </style>
 </head>
 <body>
+
+<div id="funnel-wrap">
+
+
+<!-- ══ S0: 랜딩 ══ -->
+<div class="fn-screen active" id="fn-s0" class="fn-screen active">
+  <div class="s0-bg"></div>
+  <div class="s0-content">
+
+    <div class="retire-counter">
+      <span class="rc-label">은퇴까지</span>
+      <span class="rc-num" id="rc-num">?</span>
+      <span class="rc-unit">개월 — 지금 확인하세요</span>
+    </div>
+
+    <div class="s0-house-wrap">
+      <span class="s0-house">🏠</span>
+    </div>
+
+    <h1 class="s0-title">
+      당신의 금융집은<br>
+      <span class="accent">완성되어 있나요?</span>
+    </h1>
+    <p class="s0-sub">
+      노동소득이 멈추는 그날,<br>
+      <b>7개 기둥이 하나라도 무너지면</b><br>
+      나머지도 함께 무너집니다.
+    </p>
+
+    <div class="s0-trust">
+      <div class="s0-trust-item">
+        <div class="s0-trust-num">20년</div>
+        <div class="s0-trust-lbl">CFP 경력</div>
+      </div>
+      <div class="s0-trust-item">
+        <div class="s0-trust-num">2,000+</div>
+        <div class="s0-trust-lbl">개인 상담</div>
+      </div>
+      <div class="s0-trust-item">
+        <div class="s0-trust-num">특허</div>
+        <div class="s0-trust-lbl">등록 방법론</div>
+      </div>
+    </div>
+
+    <button class="s0-cta" onclick="fnGoTo(1)">
+      🏥 1분 무료 금융집 진단 시작
+      <span class="s0-cta-sub">나이 · 소득 · 고민 — 3가지만 입력</span>
+    </button>
+    <button class="s0-skip" onclick="skipToSim()">
+      이미 알고 있어요, 시뮬레이터 바로 시작 →
+    </button>
+  </div>
+</div>
+
+<!-- ══ S1: 나이 ══ -->
+<div class="fn-screen q-screen" id="fn-s1" class="fn-screen">
+  <div class="prog-bar"><div class="prog-fill" style="width:25%"></div></div>
+  <div class="q-top">
+    <button class="q-back" onclick="fnGoTo(0)">←</button>
+    <span class="q-step-info">STEP 1 / 3 &nbsp;·&nbsp; 나이</span>
+  </div>
+  <div class="q-body">
+    <span class="q-emoji">👤</span>
+    <h2 class="q-title">지금 몇 살이세요?<br><span class="hl">은퇴 D-카운터</span>를 계산합니다</h2>
+    <p class="q-hint">나이에 따라 재무 긴급도가 완전히 달라집니다</p>
+
+    <div class="age-card">
+      <div class="age-big" id="age-val">39</div>
+      <div class="age-unit">세</div>
+      <div class="age-retire">
+        은퇴까지<br>
+        <b id="age-months">312개월</b> (26년) 남았습니다
+      </div>
+    </div>
+
+    <input type="range" class="q-range" id="age-sl"
+      min="25" max="65" value="39"
+      oninput="onAge(this.value)"
+      style="--p:47%">
+    <div class="q-range-labels">
+      <span>25세</span><span>45세</span><span>65세</span>
+    </div>
+
+    <button class="q-next" onclick="fnGoTo(2)">다음 →</button>
+  </div>
+</div>
+
+<!-- ══ S2: 소득 ══ -->
+<div class="fn-screen q-screen" id="fn-s2" class="fn-screen">
+  <div class="prog-bar"><div class="prog-fill" style="width:50%"></div></div>
+  <div class="q-top">
+    <button class="q-back" onclick="fnGoTo(1)">←</button>
+    <span class="q-step-info">STEP 2 / 3 &nbsp;·&nbsp; 소득</span>
+  </div>
+  <div class="q-body">
+    <span class="q-emoji">💰</span>
+    <h2 class="q-title">월 소득이<br><span class="hl">얼마나 되시나요?</span></h2>
+    <p class="q-hint">세후 실수령 기준 · 대략적인 금액도 괜찮습니다</p>
+
+    <div class="income-card">
+      <div class="income-big" id="inc-val">400만원</div>
+      <div class="income-unit">월 세후 실수령</div>
+      <input type="range" class="q-range" id="inc-sl"
+        min="100" max="1500" value="400" step="50"
+        oninput="onIncome(this.value)"
+        style="--p:21%;width:100%">
+      <div class="q-range-labels" style="margin-top:8px">
+        <span>100만</span><span>800만</span><span>1,500만+</span>
+      </div>
+    </div>
+
+    <div class="choice-list">
+      <div class="choice-card" id="ch-dual" onclick="selDual(true,this)">
+        <span class="choice-icon">👫</span>
+        <div class="choice-info">
+          <div class="choice-title">맞벌이 가구</div>
+          <div class="choice-sub">배우자 소득이 있습니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+      <div class="choice-card" id="ch-single" onclick="selDual(false,this)">
+        <span class="choice-icon">👤</span>
+        <div class="choice-info">
+          <div class="choice-title">외벌이 / 1인 가구</div>
+          <div class="choice-sub">본인 소득만 있습니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+    </div>
+
+    <button class="q-next" onclick="fnGoTo(3)">다음 →</button>
+  </div>
+</div>
+
+<!-- ══ S3: 고민 ══ -->
+<div class="fn-screen q-screen" id="fn-s3" class="fn-screen">
+  <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
+  <div class="q-top">
+    <button class="q-back" onclick="fnGoTo(2)">←</button>
+    <span class="q-step-info">STEP 3 / 3 &nbsp;·&nbsp; 재무 고민</span>
+  </div>
+  <div class="q-body">
+    <span class="q-emoji">🏛</span>
+    <h2 class="q-title">지금 가장 걱정되는<br><span class="hl">재무 고민</span>은?</h2>
+    <p class="q-hint">해당하는 것을 모두 선택해 주세요</p>
+
+    <div class="choice-list">
+      <div class="choice-card multi" onclick="togWorry('retire',this)">
+        <span class="choice-icon">🏖</span>
+        <div class="choice-info">
+          <div class="choice-title">노후 · 은퇴 준비</div>
+          <div class="choice-sub">은퇴 후 생활비가 막막합니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+      <div class="choice-card multi" onclick="togWorry('debt',this)">
+        <span class="choice-icon">💳</span>
+        <div class="choice-info">
+          <div class="choice-title">대출 · 부채 관리</div>
+          <div class="choice-sub">빚이 너무 많은 것 같습니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+      <div class="choice-card multi" onclick="togWorry('invest',this)">
+        <span class="choice-icon">📈</span>
+        <div class="choice-info">
+          <div class="choice-title">투자 · 자산 성장</div>
+          <div class="choice-sub">돈을 어떻게 불려야 할지 모릅니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+      <div class="choice-card multi" onclick="togWorry('insurance',this)">
+        <span class="choice-icon">🛡</span>
+        <div class="choice-info">
+          <div class="choice-title">보험 · 위험 관리</div>
+          <div class="choice-sub">보험이 충분한지 모르겠습니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+      <div class="choice-card multi" onclick="togWorry('tax',this)">
+        <span class="choice-icon">📋</span>
+        <div class="choice-info">
+          <div class="choice-title">세금 · 절세 전략</div>
+          <div class="choice-sub">세금을 너무 많이 내는 것 같습니다</div>
+        </div>
+        <div class="choice-dot">✓</div>
+      </div>
+    </div>
+
+    <button class="q-next" onclick="startAnalysis()">
+      🔍 지금 바로 진단하기
+    </button>
+  </div>
+</div>
+
+<!-- ══ S4: 분석 (3D 큐브) ══ -->
+<div class="fn-screen" id="fn-s4" class="fn-screen">
+  <div class="analyzing-inner">
+    <div class="cube-scene">
+      <div class="cube">
+        <div class="cube-face front">🏠</div>
+        <div class="cube-face back">💰</div>
+        <div class="cube-face right">📈</div>
+        <div class="cube-face left">🛡</div>
+        <div class="cube-face top">🏖</div>
+        <div class="cube-face bottom">📋</div>
+      </div>
+    </div>
+    <h2 class="analyzing-title">금융집 분석 중...</h2>
+    <p class="analyzing-sub">CFP 20년 노하우 기반<br>7대 영역 정밀 점검 중입니다</p>
+
+    <div class="a-steps">
+      <div class="a-step" id="as0">
+        <span class="a-step-icon">💰</span>
+        <span class="a-step-text">소득 · 저축 구조 분석</span>
+        <span class="a-step-ok">✓</span>
+      </div>
+      <div class="a-step" id="as1">
+        <span class="a-step-icon">🏛</span>
+        <span class="a-step-text">7대 영역 긴급도 점검</span>
+        <span class="a-step-ok">✓</span>
+      </div>
+      <div class="a-step" id="as2">
+        <span class="a-step-icon">🏠</span>
+        <span class="a-step-text">금융집 등급 산출</span>
+        <span class="a-step-ok">✓</span>
+      </div>
+      <div class="a-step" id="as3">
+        <span class="a-step-icon">🤖</span>
+        <span class="a-step-text">AI 맞춤 진단 리포트 생성</span>
+        <span class="a-step-ok">✓</span>
+      </div>
+    </div>
+
+    <div class="a-prog-track">
+      <div class="a-prog-fill" id="a-fill"></div>
+    </div>
+    <div class="a-pct" id="a-pct">0%</div>
+  </div>
+</div>
+
+<!-- ══ S5: 결과 ══ -->
+<div class="fn-screen" id="fn-s5" class="fn-screen">
+  <div class="res-header">
+    <div class="res-header-lbl">🏠 금융집짓기® 무료 금융집 진단 결과</div>
+    <div class="res-header-name" id="res-name">회원님의 금융집 진단 완료</div>
+  </div>
+
+  <!-- ① 1순위: D-카운터 (유일한 정직한 숫자) -->
+  <div class="d-hero-card">
+    <div class="dhc-left">
+      <div class="dhc-lbl">⏳ 은퇴까지 남은 시간</div>
+      <div class="dhc-num" id="drc-num">D-312개월</div>
+      <div class="dhc-years" id="drc-years">26년 남았습니다</div>
+      <div class="dhc-basis" id="drc-basis">43세 기준 · 은퇴 73세</div>
+      <div class="dhc-source">출처: 통계청 한국인 실질 은퇴연령 73세</div>
+    </div>
+    <div class="dhc-right">
+      <div class="dhc-urgency" id="dhc-urgency">보통</div>
+      <div class="dhc-urgency-lbl">긴급도</div>
+    </div>
+  </div>
+
+  <!-- ② 2순위: 동년배 평균 (Social Proof) -->
+  <div class="peer-card">
+    <div class="peer-header">
+      <span class="peer-icon">📊</span>
+      <div>
+        <div class="peer-title" id="peer-title">40대 · 월 400만원대 동년배 평균</div>
+        <div class="peer-sub">오상열 CFP 2,000명+ 상담 데이터 기반</div>
+      </div>
+    </div>
+
+    <!-- 평균 점수 + 금융집 나란히 -->
+    <div class="peer-main-row">
+      <!-- 왼쪽: 평균 점수 -->
+      <div class="peer-score-block">
+        <div class="peer-avg-score" id="peer-avg">52</div>
+        <div class="peer-avg-lbl">동년배 평균<br>재무점수</div>
+      </div>
+      <!-- 구분선 -->
+      <div class="peer-divider"></div>
+      <!-- 오른쪽: 금융집 등급 -->
+      <div class="peer-house-block">
+        <div class="peer-house-emoji" id="peer-house-emoji">🏡</div>
+        <div class="peer-house-lbl" id="peer-house-lbl">단독주택 단계</div>
+        <div class="peer-house-sub">동년배 평균 금융집</div>
+      </div>
+    </div>
+
+    <!-- 한 줄 코멘트 -->
+    <div class="peer-my-pos" id="peer-my-pos">
+      📍 <span id="peer-pos-txt">같은 그룹 10명 중 5명은 은퇴 준비가 절반도 안 됩니다.</span>
+    </div>
+  </div>
+
+  <!-- ③ 3순위: 금융집 등급 -->
+  <div class="house-grade-card">
+    <div class="hgc-top">
+      <div class="house-visual">
+        <span class="house-big" id="house-emoji">🏚</span>
+        <span class="house-grade-lbl" id="house-lbl">텐트 단계</span>
+      </div>
+      <div class="hgc-info">
+        <div class="hgc-badge" id="hgc-badge">⚠ 기초 구축 필요</div>
+        <div class="hgc-desc" id="hgc-desc">재무의 기초가 아직 완성되지 않았습니다.</div>
+        <div class="stage-track" id="stage-track" style="margin-top:10px">
+          <div class="stage-item past"><span class="stage-emoji">⛺</span><span class="stage-name">노숙</span></div>
+          <span class="stage-arrow">›</span>
+          <div class="stage-item cur"><span class="stage-emoji">🏚</span><span class="stage-name">텐트</span></div>
+          <span class="stage-arrow">›</span>
+          <div class="stage-item"><span class="stage-emoji">🏡</span><span class="stage-name">단독</span></div>
+          <span class="stage-arrow">›</span>
+          <div class="stage-item"><span class="stage-emoji">🏠</span><span class="stage-name">아파트</span></div>
+          <span class="stage-arrow">›</span>
+          <div class="stage-item"><span class="stage-emoji">🏛</span><span class="stage-name">궁전</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 4순위: 긴급 과제 -->
+  <div class="urgent-card">
+    <div class="urgent-header">🚨 지금 당장 해결해야 할 긴급 과제</div>
+    <div id="urgent-list"></div>
+  </div>
+
+  <!-- ⑤ 5순위: CFP 코멘트 -->
+  <div class="cfp-card">
+    <div class="cfp-av">오</div>
+    <div>
+      <div class="cfp-name">오상열 CFP · 20년 경력 · 특허 방법론</div>
+      <div class="cfp-msg" id="cfp-msg">분석 중...</div>
+    </div>
+  </div>
+
+  <!-- 공유 -->
+    <!-- 카카오 공유 + 링크 공유 -->
+    <div class="fn-share-wrap">
+      <button class="fn-share-kakao" onclick="fnShareKakao()">
+        <span>💬</span> 카카오톡으로 공유하기
+      </button>
+      <button class="fn-share-link" onclick="fnShareLink()">
+        <span>🔗</span> 링크 복사
+      </button>
+    </div>
+
+  <!-- ⑥ CTA — 단 하나 -->
+  <div class="res-cta-wrap">
+    <button class="res-cta-main" onclick="skipToSim()">
+      🏠 금융집짓기 시뮬레이터 시작하기
+      <span class="res-cta-sub">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
+    </button>
+    <div class="res-cta-hint">
+      무료로 시작 · 구독 시 <b>리포트 + AI상담 + 107강</b> 추가 제공
+    </div>
+    <div class="res-consult" onclick="alert('상담 신청으로 이동합니다')">
+      <span style="font-size:22px">💬</span>
+      <div class="res-consult-info">
+        <div class="res-consult-title">오상열 CFP 1:1 직접 상담</div>
+        <div class="res-consult-sub">비대면 화상 · 60분 · 전 영역 설계</div>
+      </div>
+      <div class="res-consult-price">33만원</div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+
+
+
+
 <div class="app">
 
 <!-- ━━━ 헤더 ━━━ -->
@@ -5713,7 +6089,7 @@ function skipToSim() {
 }
 
 // ── 랜딩 카운터 초기화 ──
-document.getElementById('rc-num').textContent = ((73 - 39) * 12).toLocaleString();
+document.getElementById('rc-num').textContent = '?';
 
 // ── Q1: 나이 ──
 function onAge(v) {
@@ -5922,6 +6298,23 @@ function buildResult() {
     tax:       `연간 절세 가능액이 <b>수백만원</b>에 달합니다. IRP·연금저축 한도를 채우고 있는지 시뮬레이터에서 바로 확인하세요.`,
   };
   document.getElementById('cfp-msg').innerHTML = msgs[top] || msgs.retire;
+
+  // ── 고민 연동 CTA 문구 ──
+  const worryLabels = {
+    retire:    '노후 · 은퇴 준비',
+    debt:      '대출 · 부채 관리',
+    invest:    '투자 · 자산 성장',
+    insurance: '보험 · 위험 관리',
+    tax:       '세금 · 절세 전략',
+  };
+  const topWorry = S.worries.length > 0 ? S.worries[0] : 'retire';
+  const worryTxt = worryLabels[topWorry] || '재무 설계';
+  const ctaMsg = document.getElementById('fn-cta-worry-msg');
+  if(ctaMsg) {
+    ctaMsg.innerHTML =
+      '지금 가장 걱정되시는 <b style="color:var(--gold)">' + worryTxt + '</b>을 위해<br>' +
+      '금융집짓기® 시뮬레이터가 필요합니다.';
+  }
 }
 
 
@@ -6556,374 +6949,5 @@ function fnShareLink() {
 <!-- ════════════════════════════════════════
      금융집짓기® 퍼널 진입 화면
 ════════════════════════════════════════ -->
-<div id="funnel-wrap">
-
-
-<!-- ══ S0: 랜딩 ══ -->
-<div class="screen active" id="fn-s0">
-  <div class="s0-bg"></div>
-  <div class="s0-content">
-
-    <div class="retire-counter">
-      <span class="rc-label">은퇴까지</span>
-      <span class="rc-num" id="rc-num">312</span>
-      <span class="rc-unit">개월 남았습니다</span>
-    </div>
-
-    <div class="s0-house-wrap">
-      <span class="s0-house">🏠</span>
-    </div>
-
-    <h1 class="s0-title">
-      당신의 금융집은<br>
-      <span class="accent">완성되어 있나요?</span>
-    </h1>
-    <p class="s0-sub">
-      노동소득이 멈추는 그날,<br>
-      <b>7개 기둥이 하나라도 무너지면</b><br>
-      나머지도 함께 무너집니다.
-    </p>
-
-    <div class="s0-trust">
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">20년</div>
-        <div class="s0-trust-lbl">CFP 경력</div>
-      </div>
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">2,000+</div>
-        <div class="s0-trust-lbl">개인 상담</div>
-      </div>
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">특허</div>
-        <div class="s0-trust-lbl">등록 방법론</div>
-      </div>
-    </div>
-
-    <button class="s0-cta" onclick="goTo(1)">
-      🏥 1분 무료 금융집 진단 시작
-      <span class="s0-cta-sub">나이 · 소득 · 고민 — 3가지만 입력</span>
-    </button>
-    <button class="s0-skip" onclick="skipToSim()">
-      이미 알고 있어요, 시뮬레이터 바로 시작 →
-    </button>
-  </div>
-</div>
-
-<!-- ══ S1: 나이 ══ -->
-<div class="screen q-screen" id="fn-s1">
-  <div class="prog-bar"><div class="prog-fill" style="width:25%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="goTo(0)">←</button>
-    <span class="q-step-info">STEP 1 / 3 &nbsp;·&nbsp; 나이</span>
-  </div>
-  <div class="q-body">
-    <span class="q-emoji">👤</span>
-    <h2 class="q-title">지금 몇 살이세요?<br><span class="hl">은퇴 D-카운터</span>를 계산합니다</h2>
-    <p class="q-hint">나이에 따라 재무 긴급도가 완전히 달라집니다</p>
-
-    <div class="age-card">
-      <div class="age-big" id="age-val">39</div>
-      <div class="age-unit">세</div>
-      <div class="age-retire">
-        은퇴까지<br>
-        <b id="age-months">312개월</b> (26년) 남았습니다
-      </div>
-    </div>
-
-    <input type="range" class="q-range" id="age-sl"
-      min="25" max="65" value="39"
-      oninput="onAge(this.value)"
-      style="--p:47%">
-    <div class="q-range-labels">
-      <span>25세</span><span>45세</span><span>65세</span>
-    </div>
-
-    <button class="q-next" onclick="goTo(2)">다음 →</button>
-  </div>
-</div>
-
-<!-- ══ S2: 소득 ══ -->
-<div class="screen q-screen" id="fn-s2">
-  <div class="prog-bar"><div class="prog-fill" style="width:50%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="goTo(1)">←</button>
-    <span class="q-step-info">STEP 2 / 3 &nbsp;·&nbsp; 소득</span>
-  </div>
-  <div class="q-body">
-    <span class="q-emoji">💰</span>
-    <h2 class="q-title">월 소득이<br><span class="hl">얼마나 되시나요?</span></h2>
-    <p class="q-hint">세후 실수령 기준 · 대략적인 금액도 괜찮습니다</p>
-
-    <div class="income-card">
-      <div class="income-big" id="inc-val">400만원</div>
-      <div class="income-unit">월 세후 실수령</div>
-      <input type="range" class="q-range" id="inc-sl"
-        min="100" max="1500" value="400" step="50"
-        oninput="onIncome(this.value)"
-        style="--p:21%;width:100%">
-      <div class="q-range-labels" style="margin-top:8px">
-        <span>100만</span><span>800만</span><span>1,500만+</span>
-      </div>
-    </div>
-
-    <div class="choice-list">
-      <div class="choice-card" id="ch-dual" onclick="selDual(true,this)">
-        <span class="choice-icon">👫</span>
-        <div class="choice-info">
-          <div class="choice-title">맞벌이 가구</div>
-          <div class="choice-sub">배우자 소득이 있습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card" id="ch-single" onclick="selDual(false,this)">
-        <span class="choice-icon">👤</span>
-        <div class="choice-info">
-          <div class="choice-title">외벌이 / 1인 가구</div>
-          <div class="choice-sub">본인 소득만 있습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-    </div>
-
-    <button class="q-next" onclick="goTo(3)">다음 →</button>
-  </div>
-</div>
-
-<!-- ══ S3: 고민 ══ -->
-<div class="screen q-screen" id="fn-s3">
-  <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="goTo(2)">←</button>
-    <span class="q-step-info">STEP 3 / 3 &nbsp;·&nbsp; 재무 고민</span>
-  </div>
-  <div class="q-body">
-    <span class="q-emoji">🏛</span>
-    <h2 class="q-title">지금 가장 걱정되는<br><span class="hl">재무 고민</span>은?</h2>
-    <p class="q-hint">해당하는 것을 모두 선택해 주세요</p>
-
-    <div class="choice-list">
-      <div class="choice-card multi" onclick="togWorry('retire',this)">
-        <span class="choice-icon">🏖</span>
-        <div class="choice-info">
-          <div class="choice-title">노후 · 은퇴 준비</div>
-          <div class="choice-sub">은퇴 후 생활비가 막막합니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('debt',this)">
-        <span class="choice-icon">💳</span>
-        <div class="choice-info">
-          <div class="choice-title">대출 · 부채 관리</div>
-          <div class="choice-sub">빚이 너무 많은 것 같습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('invest',this)">
-        <span class="choice-icon">📈</span>
-        <div class="choice-info">
-          <div class="choice-title">투자 · 자산 성장</div>
-          <div class="choice-sub">돈을 어떻게 불려야 할지 모릅니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('insurance',this)">
-        <span class="choice-icon">🛡</span>
-        <div class="choice-info">
-          <div class="choice-title">보험 · 위험 관리</div>
-          <div class="choice-sub">보험이 충분한지 모르겠습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('tax',this)">
-        <span class="choice-icon">📋</span>
-        <div class="choice-info">
-          <div class="choice-title">세금 · 절세 전략</div>
-          <div class="choice-sub">세금을 너무 많이 내는 것 같습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-    </div>
-
-    <button class="q-next" onclick="startAnalysis()">
-      🔍 지금 바로 진단하기
-    </button>
-  </div>
-</div>
-
-<!-- ══ S4: 분석 (3D 큐브) ══ -->
-<div class="screen" id="fn-s4">
-  <div class="analyzing-inner">
-    <div class="cube-scene">
-      <div class="cube">
-        <div class="cube-face front">🏠</div>
-        <div class="cube-face back">💰</div>
-        <div class="cube-face right">📈</div>
-        <div class="cube-face left">🛡</div>
-        <div class="cube-face top">🏖</div>
-        <div class="cube-face bottom">📋</div>
-      </div>
-    </div>
-    <h2 class="analyzing-title">금융집 분석 중...</h2>
-    <p class="analyzing-sub">CFP 20년 노하우 기반<br>7대 영역 정밀 점검 중입니다</p>
-
-    <div class="a-steps">
-      <div class="a-step" id="as0">
-        <span class="a-step-icon">💰</span>
-        <span class="a-step-text">소득 · 저축 구조 분석</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as1">
-        <span class="a-step-icon">🏛</span>
-        <span class="a-step-text">7대 영역 긴급도 점검</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as2">
-        <span class="a-step-icon">🏠</span>
-        <span class="a-step-text">금융집 등급 산출</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as3">
-        <span class="a-step-icon">🤖</span>
-        <span class="a-step-text">AI 맞춤 진단 리포트 생성</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-    </div>
-
-    <div class="a-prog-track">
-      <div class="a-prog-fill" id="a-fill"></div>
-    </div>
-    <div class="a-pct" id="a-pct">0%</div>
-  </div>
-</div>
-
-<!-- ══ S5: 결과 ══ -->
-<div class="screen" id="fn-s5">
-  <div class="res-header">
-    <div class="res-header-lbl">🏠 금융집짓기® 무료 금융집 진단 결과</div>
-    <div class="res-header-name" id="res-name">회원님의 금융집 진단 완료</div>
-  </div>
-
-  <!-- ① 1순위: D-카운터 (유일한 정직한 숫자) -->
-  <div class="d-hero-card">
-    <div class="dhc-left">
-      <div class="dhc-lbl">⏳ 은퇴까지 남은 시간</div>
-      <div class="dhc-num" id="drc-num">D-312개월</div>
-      <div class="dhc-years" id="drc-years">26년 남았습니다</div>
-      <div class="dhc-basis" id="drc-basis">43세 기준 · 은퇴 73세</div>
-      <div class="dhc-source">출처: 통계청 한국인 실질 은퇴연령 73세</div>
-    </div>
-    <div class="dhc-right">
-      <div class="dhc-urgency" id="dhc-urgency">보통</div>
-      <div class="dhc-urgency-lbl">긴급도</div>
-    </div>
-  </div>
-
-  <!-- ② 2순위: 동년배 평균 (Social Proof) -->
-  <div class="peer-card">
-    <div class="peer-header">
-      <span class="peer-icon">📊</span>
-      <div>
-        <div class="peer-title" id="peer-title">40대 · 월 400만원대 동년배 평균</div>
-        <div class="peer-sub">오상열 CFP 2,000명+ 상담 데이터 기반</div>
-      </div>
-    </div>
-
-    <!-- 평균 점수 + 금융집 나란히 -->
-    <div class="peer-main-row">
-      <!-- 왼쪽: 평균 점수 -->
-      <div class="peer-score-block">
-        <div class="peer-avg-score" id="peer-avg">52</div>
-        <div class="peer-avg-lbl">동년배 평균<br>재무점수</div>
-      </div>
-      <!-- 구분선 -->
-      <div class="peer-divider"></div>
-      <!-- 오른쪽: 금융집 등급 -->
-      <div class="peer-house-block">
-        <div class="peer-house-emoji" id="peer-house-emoji">🏡</div>
-        <div class="peer-house-lbl" id="peer-house-lbl">단독주택 단계</div>
-        <div class="peer-house-sub">동년배 평균 금융집</div>
-      </div>
-    </div>
-
-    <!-- 한 줄 코멘트 -->
-    <div class="peer-my-pos" id="peer-my-pos">
-      📍 <span id="peer-pos-txt">같은 그룹 10명 중 5명은 은퇴 준비가 절반도 안 됩니다.</span>
-    </div>
-  </div>
-
-  <!-- ③ 3순위: 금융집 등급 -->
-  <div class="house-grade-card">
-    <div class="hgc-top">
-      <div class="house-visual">
-        <span class="house-big" id="house-emoji">🏚</span>
-        <span class="house-grade-lbl" id="house-lbl">텐트 단계</span>
-      </div>
-      <div class="hgc-info">
-        <div class="hgc-badge" id="hgc-badge">⚠ 기초 구축 필요</div>
-        <div class="hgc-desc" id="hgc-desc">재무의 기초가 아직 완성되지 않았습니다.</div>
-        <div class="stage-track" id="stage-track" style="margin-top:10px">
-          <div class="stage-item past"><span class="stage-emoji">⛺</span><span class="stage-name">노숙</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item cur"><span class="stage-emoji">🏚</span><span class="stage-name">텐트</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏡</span><span class="stage-name">단독</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏠</span><span class="stage-name">아파트</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏛</span><span class="stage-name">궁전</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ④ 4순위: 긴급 과제 -->
-  <div class="urgent-card">
-    <div class="urgent-header">🚨 지금 당장 해결해야 할 긴급 과제</div>
-    <div id="urgent-list"></div>
-  </div>
-
-  <!-- ⑤ 5순위: CFP 코멘트 -->
-  <div class="cfp-card">
-    <div class="cfp-av">오</div>
-    <div>
-      <div class="cfp-name">오상열 CFP · 20년 경력 · 특허 방법론</div>
-      <div class="cfp-msg" id="cfp-msg">분석 중...</div>
-    </div>
-  </div>
-
-  <!-- 공유 -->
-    <!-- 카카오 공유 + 링크 공유 -->
-    <div class="fn-share-wrap">
-      <button class="fn-share-kakao" onclick="fnShareKakao()">
-        <span>💬</span> 카카오톡으로 공유하기
-      </button>
-      <button class="fn-share-link" onclick="fnShareLink()">
-        <span>🔗</span> 링크 복사
-      </button>
-    </div>
-
-  <!-- ⑥ CTA — 단 하나 -->
-  <div class="res-cta-wrap">
-    <button class="res-cta-main" onclick="skipToSim()">
-      🏠 금융집짓기 시뮬레이터 시작하기
-      <span class="res-cta-sub">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
-    </button>
-    <div class="res-cta-hint">
-      무료로 시작 · 구독 시 <b>리포트 + AI상담 + 107강</b> 추가 제공
-    </div>
-    <div class="res-consult" onclick="alert('상담 신청으로 이동합니다')">
-      <span style="font-size:22px">💬</span>
-      <div class="res-consult-info">
-        <div class="res-consult-title">오상열 CFP 1:1 직접 상담</div>
-        <div class="res-consult-sub">비대면 화상 · 60분 · 전 영역 설계</div>
-      </div>
-      <div class="res-consult-price">33만원</div>
-    </div>
-  </div>
-</div>
-
-
-</div>
-
 </body>
 </html>
