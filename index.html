@@ -955,11 +955,7 @@ body{
   color:var(--gold2);
 }
 /* PAUSE된 섹션: 헤더만 보이고 내용 고정 열림 */
-.sec.paused .sec-body{
-  max-height:2000px !important;
-  overflow:visible !important;
-  visibility:visible !important;
-}
+/* HOLD: sec-body 강제표시 제거 — JS로만 상태 관리 */
 .sec.paused .sec-arr{
   opacity:0.3;
 }
@@ -1142,11 +1138,11 @@ body{
 
 <!-- ① 인적사항 -->
 <div class="sec" id="sec-who">
-  <div class="sec-hdr" onclick="toggleSec('who')">
+  <div class="sec-hdr" onclick="handleSecClick('who', event)">
     <div class="sec-left"><span class="sec-icon">👤</span>
       <div><div class="sec-name">인적사항</div><div class="sec-status" id="st-who">이름·나이를 먼저 입력하세요</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-who" onclick="togglePause('who',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-who">미입력</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-who" data-hold="who" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-who">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- 기본: 1행=이름 전체, 2행=나이3열 -->
@@ -1221,11 +1217,11 @@ body{
 
 <!-- ② 금융정보 -->
 <div class="sec" id="sec-fin">
-  <div class="sec-hdr" onclick="toggleSec('fin')">
+  <div class="sec-hdr" onclick="handleSecClick('fin', event)">
     <div class="sec-left"><span class="sec-icon">💰</span>
       <div><div class="sec-name">금융정보</div><div class="sec-status" id="st-fin">월수입을 입력하세요</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-fin" onclick="togglePause('fin',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-fin">미입력</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-fin" data-hold="fin" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-fin">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- 기본: 월수입 + 총자산(입력바) + 총부채(입력바) -->
@@ -1339,11 +1335,11 @@ body{
 
 <!-- ③ 기초 — 보험설계 -->
 <div class="sec" id="sec-ins">
-  <div class="sec-hdr" onclick="toggleSec('ins')">
+  <div class="sec-hdr" onclick="handleSecClick('ins', event)">
     <div class="sec-left"><span class="sec-icon">🛡️</span>
       <div><div class="sec-name">기초 — 보험설계 (Foundation)</div><div class="sec-status" id="st-ins">보험 8종 보유 현황</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-ins" onclick="togglePause('ins',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-ins">0/8</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-ins" data-hold="ins" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-ins">0/8</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <div style="font-size:9px;color:var(--muted);background:#f8f6f0;padding:7px 9px;border-radius:3px;border:1px solid var(--border2);line-height:1.7;">
@@ -1401,11 +1397,11 @@ body{
 
 <!-- ④ 기둥 — 부채·저축·은퇴 -->
 <div class="sec" id="sec-pillar">
-  <div class="sec-hdr" onclick="toggleSec('pillar')">
+  <div class="sec-hdr" onclick="handleSecClick('pillar', event)">
     <div class="sec-left"><span class="sec-icon">🏛️</span>
       <div><div class="sec-name">기둥 — I.부채 · II.저축 · III.은퇴</div><div class="sec-status" id="st-pillar">부채·저축·은퇴 설계</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-pillar" onclick="togglePause('pillar',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-pillar">0/3</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-pillar" data-hold="pillar" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-pillar">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- I. 부채 -->
@@ -1505,11 +1501,11 @@ body{
 
 <!-- ⑤ 지붕·굴뚝 — 투자·세금·부동산 -->
 <div class="sec" id="sec-roof">
-  <div class="sec-hdr" onclick="toggleSec('roof')">
+  <div class="sec-hdr" onclick="handleSecClick('roof', event)">
     <div class="sec-left"><span class="sec-icon">📈</span>
       <div><div class="sec-name">지붕·굴뚝 — IV.투자 · V.세금 · VI.부동산</div><div class="sec-status" id="st-roof">투자·세금·부동산 설계</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-roof" onclick="togglePause('roof',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-roof">0/3</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-roof" data-hold="roof" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-roof">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
     <!-- IV. 투자 -->
@@ -1575,11 +1571,11 @@ body{
 
 <!-- ⑥ 재무혈압 진단 -->
 <div class="sec" id="sec-bp">
-  <div class="sec-hdr" onclick="toggleSec('bp')">
+  <div class="sec-hdr" onclick="handleSecClick('bp', event)">
     <div class="sec-left"><span class="sec-icon">💊</span>
       <div><div class="sec-name">재무검진결과</div><div class="sec-status" id="st-bp">부자지수 · 부채비율 · 비상예비자금</div></div>
     </div>
-    <div class="sec-right"><button class="sec-pause-btn" id="pause-bp" onclick="togglePause('bp',event)" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-bp">진단전</span><span class="sec-arr">▾</span></div>
+    <div class="sec-right"><button class="sec-pause-btn" id="pause-bp" data-hold="bp" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-bp">진단전</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body">
     <div class="bp-panel-inner">
@@ -4519,6 +4515,42 @@ document.addEventListener('DOMContentLoaded', function(){
         var fn = actions[actionName];
         if(fn) fn();
       }
+    });
+  });
+});
+
+/* HOLD 버튼 클릭 시 sec-hdr onclick 차단 */
+function handleSecClick(id, e){
+  // HOLD 버튼 또는 그 자식 요소 클릭이면 무시
+  if(e && e.target){
+    var t = e.target;
+    while(t){
+      if(t.classList && t.classList.contains('sec-pause-btn')) return;
+      t = t.parentElement;
+      if(t && t.classList && t.classList.contains('sec-hdr')) break;
+    }
+  }
+  toggleSec(id);
+}
+
+/* ━━━ HOLD 버튼 터치 처리 ━━━ */
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('[data-hold]').forEach(function(btn){
+    btn.addEventListener('touchend', function(e){
+      e.preventDefault();  // click 이벤트 완전 차단
+      e.stopPropagation(); // 부모(sec-hdr)로 전파 차단
+      var secId = btn.getAttribute('data-hold');
+      togglePause(secId, e);
+    }, {passive: false});
+
+    // PC 마우스용 click (터치 기기에선 touchend가 preventDefault로 차단)
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(!e.isTrusted) return; // 중복 실행 방지
+      var secId = btn.getAttribute('data-hold');
+      // 터치 기기에서는 touchend가 이미 처리했으므로 스킵
+      if('ontouchstart' in window) return;
+      togglePause(secId, e);
     });
   });
 });
