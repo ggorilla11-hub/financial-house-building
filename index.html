@@ -72,8 +72,8 @@
   --fn:'Noto Sans KR',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:auto;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:var(--text);}
-.app{width:100%;max-width:430px;min-height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:visible;-webkit-overflow-scrolling:touch;}
+html,body{width:100%;height:100%;overflow:hidden;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:var(--text);}
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
 
@@ -4193,12 +4193,18 @@ document.addEventListener('DOMContentLoaded', function(){
       sTabV2(idx, btn);
     }, {passive:false});
   });
-  // 섹션 헤더도 동일하게
+  // 섹션 헤더 touchend — HOLD 버튼 클릭 시 제외
   document.querySelectorAll('.sec-hdr').forEach(function(hdr){
     hdr.addEventListener('touchend', function(e){
+      // HOLD 버튼 터치면 무시 (togglePause가 처리)
+      if(e.target.classList.contains('sec-pause-btn')) return;
       e.preventDefault();
       const sec = hdr.parentElement;
-      if(sec) sec.classList.toggle('open');
+      if(!sec) return;
+      // HOLD 상태면 토글 차단
+      const secId = sec.id ? sec.id.replace('sec-','') : '';
+      if(typeof pausedSecs !== 'undefined' && pausedSecs.has(secId)) return;
+      sec.classList.toggle('open');
     }, {passive:false});
   });
   // 시뮬레이터 바
