@@ -1858,6 +1858,7 @@ body { color: #1a1a1a; }
   max-width: 430px; margin: 0 auto;
   display: flex; flex-direction: column;
   z-index: 999;
+  background: #0B1D3A;
   opacity: 0; pointer-events: none;
   transition: opacity .4s ease, transform .4s ease;
   transform: translateX(30px);
@@ -1876,7 +1877,34 @@ body { color: #1a1a1a; }
 }
 #funnel-wrap.fn-hidden { display: none !important; }
 
+
+/* ── 퍼널 질문 화면 텍스트 색상 강제 ── */
+#fn-s1 .q-title, #fn-s2 .q-title, #fn-s3 .q-title { color: #ffffff !important; }
+#fn-s1 .q-hint,  #fn-s2 .q-hint,  #fn-s3 .q-hint  { color: rgba(255,255,255,.5) !important; }
+#fn-s1 .q-step-info, #fn-s2 .q-step-info, #fn-s3 .q-step-info { color: rgba(255,255,255,.4) !important; }
+#fn-s1 .q-back, #fn-s2 .q-back, #fn-s3 .q-back { color: rgba(255,255,255,.6) !important; background: rgba(255,255,255,.1) !important; }
+#fn-s1 .hl, #fn-s2 .hl, #fn-s3 .hl { color: #E8B84B !important; }
+#fn-s1 .age-big, #fn-s2 .income-big { color: #E8B84B !important; }
+#fn-s1 .age-unit, #fn-s2 .income-unit { color: rgba(255,255,255,.4) !important; }
+#fn-s1 .age-card, #fn-s2 .income-card {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+#fn-s1 .age-retire { color: rgba(255,255,255,.55) !important; }
+#fn-s1 .age-retire b { color: #E8B84B !important; }
+#fn-s3 .choice-title { color: #ffffff !important; }
+#fn-s3 .choice-sub   { color: rgba(255,255,255,.45) !important; }
+
+
+/* ── 퍼널 z-index 강제 ── */
+#funnel-wrap { position: fixed !important; inset: 0; z-index: 998 !important; max-width: 430px; margin: 0 auto; }
+.fn-screen { z-index: 999 !important; }
+.app { position: relative; z-index: 1; }
+#funnel-wrap.fn-hidden { display: none !important; pointer-events: none !important; }
 </style>
+
+  <!-- 페이플 결제 SDK -->
+  <script src="https://cpay.payple.kr/js/cpay.payple.1.0.1.js"></script>
 </head>
 <body>
 
@@ -1934,7 +1962,7 @@ body { color: #1a1a1a; }
 </div>
 
 <!-- ══ S1: 나이 ══ -->
-<div class="fn-screen q-screen" id="fn-s1" class="fn-screen">
+<div class="fn-screen q-screen" id="fn-s1" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:25%"></div></div>
   <div class="q-top">
     <button class="q-back" onclick="fnGoTo(0)">←</button>
@@ -1967,7 +1995,7 @@ body { color: #1a1a1a; }
 </div>
 
 <!-- ══ S2: 소득 ══ -->
-<div class="fn-screen q-screen" id="fn-s2" class="fn-screen">
+<div class="fn-screen q-screen" id="fn-s2" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:50%"></div></div>
   <div class="q-top">
     <button class="q-back" onclick="fnGoTo(1)">←</button>
@@ -2014,7 +2042,7 @@ body { color: #1a1a1a; }
 </div>
 
 <!-- ══ S3: 고민 ══ -->
-<div class="fn-screen q-screen" id="fn-s3" class="fn-screen">
+<div class="fn-screen q-screen" id="fn-s3" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
   <div class="q-top">
     <button class="q-back" onclick="fnGoTo(2)">←</button>
@@ -2075,7 +2103,7 @@ body { color: #1a1a1a; }
 </div>
 
 <!-- ══ S4: 분석 (3D 큐브) ══ -->
-<div class="fn-screen" id="fn-s4" class="fn-screen">
+<div class="fn-screen" id="fn-s4" class="fn-screen" style="background:#0B1D3A;align-items:center;justify-content:center;padding:40px 24px">
   <div class="analyzing-inner">
     <div class="cube-scene">
       <div class="cube">
@@ -2121,7 +2149,7 @@ body { color: #1a1a1a; }
 </div>
 
 <!-- ══ S5: 결과 ══ -->
-<div class="fn-screen" id="fn-s5" class="fn-screen">
+<div class="fn-screen" id="fn-s5" class="fn-screen" style="background:var(--cream,#fffdf8);overflow-y:auto">
   <div class="res-header">
     <div class="res-header-lbl">🏠 금융집짓기® 무료 금융집 진단 결과</div>
     <div class="res-header-name" id="res-name">회원님의 금융집 진단 완료</div>
@@ -5283,19 +5311,80 @@ function selPayMethod(el){
   document.querySelectorAll('.pay-method-btn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
 }
-function confirmPay(){
-  const price = selectedPlan==='month' ? '₩9,900/월' : '₩99,000/년';
-  // 실제 구현 시: 토스페이먼츠 SDK 호출
-  // 지금은 시뮬레이션
-  closePayModal();
-  showToast('🎉 결제 완료! '+price+' 구독이 시작되었습니다');
-  // 결제 후 헤더 버튼 변경
-  const payBtn = document.querySelector('.hbtn-pay');
-  if(payBtn){
-    payBtn.textContent = '✅ 구독중';
-    payBtn.style.background = 'var(--green)';
-    payBtn.style.color = '#fff';
-    payBtn.style.animation = 'none';
+async function confirmPay(){
+  const btn = document.getElementById('pay-confirm-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '결제 준비 중...'; }
+
+  try {
+    // 서버에서 페이플 인증 토큰 받기 (키 노출 없음)
+    const res = await fetch('https://ohwant-webhook.vercel.app/api/payple-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_code: 'FH_SILVER',
+        payer_name: '',
+        payer_hp: '',
+        payer_email: '',
+      }),
+    });
+    const auth = await res.json();
+
+    if(auth.result !== 'success') {
+      showToast('❌ 결제 준비 실패: ' + (auth.message || '다시 시도해 주세요'));
+      if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
+      return;
+    }
+
+    // 페이플 결제창 호출
+    const payObj = {
+      PCD_PAY_TYPE: 'card',
+      PCD_PAY_WORK: 'CERT',
+      PCD_CARD_VER: '01',
+      PCD_PAY_GOODS: '금융집짓기® 실버 구독',
+      PCD_PAY_TOTAL: '9900',
+      PCD_PAY_OID: auth.PCD_PAY_OID,
+      PCD_PAY_URL: auth.PCD_PAY_URL,
+      PCD_REGULER_FLAG: 'Y',
+      PCD_SIMPLE_FLAG: 'Y',
+      callbackFunction: onPaypleResult,
+    };
+
+    if(typeof PaypleCpayAuthCheck === 'function'){
+      PaypleCpayAuthCheck(payObj);
+    } else {
+      // SDK 미로드 시 fallback
+      showToast('❌ 결제 모듈 로드 실패. 새로고침 후 시도해 주세요.');
+    }
+
+  } catch(e) {
+    showToast('❌ 네트워크 오류. 다시 시도해 주세요.');
+    console.error('[결제 오류]', e);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
+  }
+}
+
+// 페이플 결제 결과 콜백
+function onPaypleResult(data){
+  if(data.PCD_PAY_RST === 'success'){
+    closePayModal();
+    // 구독 상태 저장
+    localStorage.setItem('fh_subscribed', '1');
+    localStorage.setItem('fh_sub_date', new Date().toISOString());
+    localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
+    showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
+    // 헤더 버튼 업데이트
+    const payBtn = document.querySelector('.hbtn-pay');
+    if(payBtn){
+      payBtn.textContent = '👑 회원전용';
+      payBtn.onclick = () => mpOpen();
+      payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+      payBtn.style.animation = 'none';
+    }
+    // 마이페이지 자동 오픈
+    setTimeout(() => mpOpen(), 1500);
+  } else {
+    showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
   }
 }
 
@@ -5893,13 +5982,9 @@ function mpSelectPlan(p) {
     : '지금 ₩99,000/년 구독 시작하기 →';
 }
 function mpCompletePurchase() {
-  // 실제 연동 시 PG 결제 호출
+  // 마이페이지 구독 버튼 → 동일한 결제 흐름 사용
   mpCloseSubscribe();
-  mpIsSubscribed = true;
-  localStorage.setItem(MP_MEMBER_KEY, '1');
-  mpSetMemberButton();
-  showToast('🎉 구독 완료! 환영합니다 👑');
-  setTimeout(() => mpOpen(), 1200);
+  confirmPay();
 }
 
 /* ── 마이페이지 열기/닫기 ── */
@@ -6149,6 +6234,29 @@ function mpSendChat() {
 
 // ── 상태 ──
 const S = { age: 39, income: 400, dual: null, worries: [] };
+
+// ── 구독 상태 복원 ──
+(function initSubscriptionState(){
+  const subscribed = localStorage.getItem('fh_subscribed') === '1';
+  if(subscribed){
+    // 이미 구독 중 → 헤더 버튼 회원전용으로
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const payBtn = document.querySelector('.hbtn-pay');
+        if(payBtn){
+          payBtn.textContent = '👑 회원전용';
+          payBtn.onclick = () => typeof mpOpen === 'function' && mpOpen();
+          payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+          payBtn.style.animation = 'none';
+          payBtn.style.color = 'var(--navy)';
+        }
+        // mpIsSubscribed 동기화
+        if(typeof mpIsSubscribed !== 'undefined') mpIsSubscribed = true;
+        if(typeof MP_MEMBER_KEY !== 'undefined') localStorage.setItem(MP_MEMBER_KEY, '1');
+      }, 500);
+    });
+  }
+})();
 
 // ── 화면 전환 ──
 let fnCur = 0;
