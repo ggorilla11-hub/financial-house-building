@@ -1611,8 +1611,10 @@ body { color: #1a1a1a; }
 .hgc-info { flex: 1; }
 .hgc-badge {
   display: inline-block; background: var(--gold);
-  color: var(--navy); font-size: 9px; font-weight: 900;
-  padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;
+  color: var(--navy); font-size: 10px; font-weight: 900;
+  padding: 5px 14px; border-radius: 20px; margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(201,151,42,.4);
+  letter-spacing: .3px;
 }
 .hgc-score {
   font-family: var(--serif);
@@ -2247,32 +2249,11 @@ body { color: #1a1a1a; }
 
   
     
-    <div class="fn-share-wrap">
-      <button class="fn-share-kakao" onclick="fnShareKakao()">
-        <span>💬</span> 카카오톡으로 공유하기
-      </button>
-      <button class="fn-share-link" onclick="fnShareLink()">
-        <span>🔗</span> 링크 복사
-      </button>
-    </div>
-
-  
   <div class="res-cta-wrap">
     <button class="res-cta-main" onclick="skipToSim()">
       🏠 금융집짓기 시뮬레이터 시작하기
       <span class="res-cta-sub">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
     </button>
-    <div class="res-cta-hint">
-      무료로 시작 · 구독 시 <b>리포트 + AI상담 + 107강</b> 추가 제공
-    </div>
-    <div class="res-consult" onclick="alert('상담 신청으로 이동합니다')">
-      <span style="font-size:22px">💬</span>
-      <div class="res-consult-info">
-        <div class="res-consult-title">오상열 CFP 1:1 직접 상담</div>
-        <div class="res-consult-sub">비대면 화상 · 60분 · 전 영역 설계</div>
-      </div>
-      <div class="res-consult-price">33만원</div>
-    </div>
   </div>
 </div>
 
