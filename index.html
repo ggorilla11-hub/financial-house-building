@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- 카카오 인앱브라우저 → 외부 브라우저 강제 전환 -->
+
 <script>
 (function(){
   var ua = navigator.userAgent || '';
@@ -37,7 +37,7 @@
 })();
 </script>
 
-<!-- 카톡 인앱브라우저 최적화 viewport -->
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -45,7 +45,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>🏠 특허받은 AI 금융집짓기® 시뮬레이터</title>
 
-<!-- ① 카톡 공유 OG 태그 (미리보기 카드) -->
+
 <meta property="og:type" content="website">
 <meta property="og:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta property="og:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
@@ -54,11 +54,11 @@
 <meta property="og:image:height" content="400">
 <meta property="og:url" content="https://financial-house-simulator.vercel.app">
 <meta property="og:site_name" content="오원트금융연구소">
-<!-- 트위터 카드 -->
+
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta name="twitter:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
-<!-- ── DESIGN SYSTEM UPDATE: 폰트 추가 (Noto Serif KR) ── -->
+
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -1903,17 +1903,17 @@ body { color: #1a1a1a; }
 #funnel-wrap.fn-hidden { display: none !important; pointer-events: none !important; }
 </style>
 
-  <!-- jQuery (페이플 SDK 필수 의존성) -->
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <!-- 페이플 결제 SDK -->
-  <script src="https://cpay.payple.kr/js/cpay.payple.1.0.1.js"></script>
+  
+  <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
 </head>
 <body>
 
 <div id="funnel-wrap">
 
 
-<!-- ══ S0: 랜딩 ══ -->
+
 <div class="fn-screen active" id="fn-s0" class="fn-screen active">
   <div class="s0-bg"></div>
   <div class="s0-content">
@@ -1963,7 +1963,7 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ══ S1: 나이 ══ -->
+
 <div class="fn-screen q-screen" id="fn-s1" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:25%"></div></div>
   <div class="q-top">
@@ -1996,7 +1996,7 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ══ S2: 소득 ══ -->
+
 <div class="fn-screen q-screen" id="fn-s2" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:50%"></div></div>
   <div class="q-top">
@@ -2043,7 +2043,7 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ══ S3: 고민 ══ -->
+
 <div class="fn-screen q-screen" id="fn-s3" class="fn-screen q-screen">
   <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
   <div class="q-top">
@@ -2104,7 +2104,7 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ══ S4: 분석 (3D 큐브) ══ -->
+
 <div class="fn-screen" id="fn-s4" class="fn-screen" style="background:#0B1D3A;align-items:center;justify-content:center;padding:40px 24px">
   <div class="analyzing-inner">
     <div class="cube-scene">
@@ -2150,14 +2150,14 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ══ S5: 결과 ══ -->
+
 <div class="fn-screen" id="fn-s5" class="fn-screen" style="background:var(--cream,#fffdf8);overflow-y:auto">
   <div class="res-header">
     <div class="res-header-lbl">🏠 금융집짓기® 무료 금융집 진단 결과</div>
     <div class="res-header-name" id="res-name">회원님의 금융집 진단 완료</div>
   </div>
 
-  <!-- ① 1순위: D-카운터 (유일한 정직한 숫자) -->
+  
   <div class="d-hero-card">
     <div class="dhc-left">
       <div class="dhc-lbl">⏳ 은퇴까지 남은 시간</div>
@@ -2172,7 +2172,7 @@ body { color: #1a1a1a; }
     </div>
   </div>
 
-  <!-- ② 2순위: 동년배 평균 (Social Proof) -->
+  
   <div class="peer-card">
     <div class="peer-header">
       <span class="peer-icon">📊</span>
@@ -2182,16 +2182,16 @@ body { color: #1a1a1a; }
       </div>
     </div>
 
-    <!-- 평균 점수 + 금융집 나란히 -->
+    
     <div class="peer-main-row">
-      <!-- 왼쪽: 평균 점수 -->
+      
       <div class="peer-score-block">
         <div class="peer-avg-score" id="peer-avg">52</div>
         <div class="peer-avg-lbl">동년배 평균<br>재무점수</div>
       </div>
-      <!-- 구분선 -->
+      
       <div class="peer-divider"></div>
-      <!-- 오른쪽: 금융집 등급 -->
+      
       <div class="peer-house-block">
         <div class="peer-house-emoji" id="peer-house-emoji">🏡</div>
         <div class="peer-house-lbl" id="peer-house-lbl">단독주택 단계</div>
@@ -2199,13 +2199,13 @@ body { color: #1a1a1a; }
       </div>
     </div>
 
-    <!-- 한 줄 코멘트 -->
+    
     <div class="peer-my-pos" id="peer-my-pos">
       📍 <span id="peer-pos-txt">같은 그룹 10명 중 5명은 은퇴 준비가 절반도 안 됩니다.</span>
     </div>
   </div>
 
-  <!-- ③ 3순위: 금융집 등급 -->
+  
   <div class="house-grade-card">
     <div class="hgc-top">
       <div class="house-visual">
@@ -2230,13 +2230,13 @@ body { color: #1a1a1a; }
     </div>
   </div>
 
-  <!-- ④ 4순위: 긴급 과제 -->
+  
   <div class="urgent-card">
     <div class="urgent-header">🚨 지금 당장 해결해야 할 긴급 과제</div>
     <div id="urgent-list"></div>
   </div>
 
-  <!-- ⑤ 5순위: CFP 코멘트 -->
+  
   <div class="cfp-card">
     <div class="cfp-av">오</div>
     <div>
@@ -2245,8 +2245,8 @@ body { color: #1a1a1a; }
     </div>
   </div>
 
-  <!-- 공유 -->
-    <!-- 카카오 공유 + 링크 공유 -->
+  
+    
     <div class="fn-share-wrap">
       <button class="fn-share-kakao" onclick="fnShareKakao()">
         <span>💬</span> 카카오톡으로 공유하기
@@ -2256,7 +2256,7 @@ body { color: #1a1a1a; }
       </button>
     </div>
 
-  <!-- ⑥ CTA — 단 하나 -->
+  
   <div class="res-cta-wrap">
     <button class="res-cta-main" onclick="skipToSim()">
       🏠 금융집짓기 시뮬레이터 시작하기
@@ -2284,7 +2284,7 @@ body { color: #1a1a1a; }
 
 <div class="app">
 
-<!-- ━━━ 헤더 ━━━ -->
+
 <div class="header">
   <div class="header-row">
     <div>
@@ -2303,7 +2303,7 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ━━━ 설계도 ━━━ -->
+
 <div class="blueprint" id="blueprint">
   <div class="bp-hdr">
     <div class="bp-title" id="bp-title">금융집짓기® 설계도</div>
@@ -2314,10 +2314,10 @@ body { color: #1a1a1a; }
       <clipPath id="cl-l"><polygon points="190,2 10,92 190,92"/></clipPath>
       <clipPath id="cl-r"><polygon points="190,2 370,92 190,92"/></clipPath>
     </defs>
-    <!-- 잔디 -->
+    
     <rect x="0" y="192" width="380" height="8" fill="#5CB85C"/>
     <rect x="0" y="200" width="380" height="38" fill="#4A9A4A"/>
-    <!-- 하이라이트 -->
+    
     <polygon id="hl-rl" class="hl" points="190,8 10,88 190,88" fill="#E8B84B"/>
     <polygon id="hl-rr" class="hl" points="190,8 370,88 190,88" fill="#E8B84B"/>
     <rect id="hl-ch" class="hl" x="280" y="2" width="82" height="60" fill="#E8B84B"/>
@@ -2325,7 +2325,7 @@ body { color: #1a1a1a; }
     <rect id="hl-wl" class="hl" x="10" y="110" width="180" height="80" fill="#E8B84B"/>
     <rect id="hl-wr" class="hl" x="190" y="110" width="180" height="80" fill="#E8B84B"/>
     <rect id="hl-ins" class="hl" x="10" y="190" width="360" height="40" fill="#E8B84B"/>
-    <!-- ① 기초 (보험) -->
+    
     <g id="bp-f" class="bp-part">
       <rect x="10" y="194" width="360" height="42" fill="#7B5230"/>
       <line x1="10" y1="194" x2="370" y2="194" stroke="#4A2E10" stroke-width="2.5"/>
@@ -2336,10 +2336,10 @@ body { color: #1a1a1a; }
       <line x1="235" y1="194" x2="235" y2="234" stroke="#5A3A18" stroke-width="1"/>
       <line x1="280" y1="194" x2="280" y2="234" stroke="#5A3A18" stroke-width="1"/>
       <line x1="325" y1="194" x2="325" y2="234" stroke="#5A3A18" stroke-width="1"/>
-      <!-- VII.보험 제목 크게 -->
+      
       <text x="32" y="204" text-anchor="middle" font-size="8.5" fill="#FFE8A0" font-family="'Noto Sans KR',sans-serif" font-weight="900">VII.</text>
       <text x="32" y="216" text-anchor="middle" font-size="8.5" fill="#FFE8A0" font-family="'Noto Sans KR',sans-serif" font-weight="900">보험</text>
-      <!-- 사망+장해 합칸 (중복 제거: 77 기준) -->
+      
       <text x="77" y="206" text-anchor="middle" font-size="7" fill="#FFF0CC" font-family="'Noto Sans KR',sans-serif" font-weight="700">사망</text>
       <text x="77" y="215" text-anchor="middle" font-size="7" fill="#FFF0CC" font-family="'Noto Sans KR',sans-serif" font-weight="700">장해</text>
       <text x="122" y="209" text-anchor="middle" font-size="7" fill="#FFF0CC" font-family="'Noto Sans KR',sans-serif" font-weight="700">암진단</text>
@@ -2358,7 +2358,7 @@ body { color: #1a1a1a; }
       <text id="sv-hospital" x="302" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-family="'Noto Sans KR',sans-serif"></text>
       <text id="sv-dementia" x="347" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-family="'Noto Sans KR',sans-serif"></text>
     </g>
-    <!-- ② 기둥 -->
+    
     <g id="bp-w" class="bp-part">
       <polygon points="10,114 190,114 10,194" fill="#F5C518"/>
       <polygon points="10,194 190,114 190,194" fill="#FAE06A"/>
@@ -2376,7 +2376,7 @@ body { color: #1a1a1a; }
       <text id="sv-ret-r" x="280" y="158" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.9)" font-family="'Noto Sans KR',sans-serif"></text>
       <text id="sv-ret-r2" x="280" y="169" text-anchor="middle" font-size="7.5" fill="#FFE08A" font-family="'Noto Sans KR',sans-serif"></text>
     </g>
-    <!-- ③ 처마보 -->
+    
     <g id="bp-tl" class="bp-part">
       <rect x="10" y="92" width="360" height="22" fill="#F5F5F0" stroke="#2C2C2A" stroke-width="2"/>
       <text id="sv-cur-age" x="18" y="107" font-size="9" fill="#1a1a1a" font-family="'Noto Sans KR',sans-serif" font-weight="700"></text>
@@ -2386,17 +2386,17 @@ body { color: #1a1a1a; }
       <rect id="sv-ret-bar" x="10" y="111" width="0" height="2" fill="#C9972A" rx="1"/>
       <polygon points="365,93 370,93 367.5,98" fill="#c0392b"/>
     </g>
-    <!-- ④ 지붕 + 굴뚝 (같은 그룹) -->
+    
     <g id="bp-r" class="bp-part">
-      <!-- 굴뚝을 먼저 그림 (세금 삼각이 위에서 덮어서 색 누출 방지) -->
+      
       <!-- 경사선(우): y=2+0.5*(x-190)
            x=292: y=53 (좌하 경사선 접점)
            굴뚝 상단 y=18 → 세금 삼각 깊숙이 파묻힘 -->
       <polygon points="292,18 332,18 332,75 313,75 292,53"
                fill="#7A4A2E" stroke="none"/>
-      <!-- 굴뚝 상단 강조 띠 -->
+      
       <rect x="289" y="14" width="46" height="7" fill="#4A2E10" rx="1"/>
-      <!-- 굴뚝 창문 (삼각형 위로 나온 부분에만 표시) -->
+      
       <rect x="299" y="20" width="22" height="13" fill="rgba(0,0,0,.3)" rx="2"/>
       <text x="311" y="26" text-anchor="middle" font-size="7.5" fill="#FFDDA0"
             font-family="'Noto Sans KR',sans-serif" font-weight="900">VI.</text>
@@ -2405,30 +2405,30 @@ body { color: #1a1a1a; }
       <text id="sv-re-r" x="311" y="46" text-anchor="middle" font-size="6.5" fill="#FFDDA0"
             font-family="'Noto Sans KR',sans-serif"></text>
 
-      <!-- 좌 삼각: IV.투자 (주황) — 굴뚝 위에 그려서 좌측 영역 덮음 -->
+      
       <polygon points="190,2 10,92 190,92" fill="#F08050"/>
-      <!-- 우 삼각: V.세금 (초록) — 굴뚝 좌하 부분 완전히 덮음 -->
+      
       <polygon points="190,2 370,92 190,92" fill="#6BB86B"/>
 
-      <!-- 지붕 테두리 (꼭짓점 제외) -->
-      <!-- 좌측 경사선 -->
+      
+      
       <line x1="190" y1="2" x2="10" y2="92" stroke="#2C2C2A" stroke-width="2"/>
-      <!-- 우측 경사선 (굴뚝 있는 부분은 더 얇게) -->
+      
       <line x1="190" y1="2" x2="370" y2="92" stroke="#2C2C2A" stroke-width="2"/>
-      <!-- 지붕 밑단 -->
+      
       <line x1="10" y1="92" x2="370" y2="92" stroke="#2C2C2A" stroke-width="2"/>
 
-      <!-- 굴뚝 상단 테두리만 (세금 삼각 위로 나온 머리 부분만) -->
-      <!-- 세금 삼각 경사선 위: x=292,y=53 / x=332,y=73 기준 위쪽만 표시 -->
-      <!-- 굴뚝 좌측 경계(x=292): y=14~53 만 테두리 -->
+      
+      
+      
       <line x1="292" y1="14" x2="292" y2="53" stroke="#4A2E10" stroke-width="1.5"/>
-      <!-- 굴뚝 우측 경계(x=332): y=14~18 만 테두리 (나머지는 세금 삼각 안) -->
+      
       <line x1="332" y1="14" x2="332" y2="18" stroke="#4A2E10" stroke-width="1.5"/>
-      <!-- 굴뚝 상단 선 -->
+      
       <line x1="292" y1="18" x2="332" y2="18" stroke="#4A2E10" stroke-width="1.5"/>
-      <!-- 굴뚝 좌하 대각선 (경사선 부분 — 세금 경계와 일치하므로 생략) -->
+      
 
-      <!-- IV.투자 텍스트 -->
+      
       <g clip-path="url(#cl-l)">
         <text x="132" y="56" text-anchor="middle" font-size="14" fill="#fff"
               font-family="'Noto Sans KR',sans-serif" font-weight="900">IV. 투자</text>
@@ -2436,7 +2436,7 @@ body { color: #1a1a1a; }
               fill="rgba(255,255,255,.95)" font-family="'Noto Sans KR',sans-serif" font-weight="700"></text>
       </g>
 
-      <!-- V.세금 텍스트 (굴뚝 왼쪽) -->
+      
       <g clip-path="url(#cl-r)">
         <text x="225" y="55" text-anchor="middle" font-size="14" fill="#fff"
               font-family="'Noto Sans KR',sans-serif" font-weight="900">V. 세금</text>
@@ -2446,17 +2446,17 @@ body { color: #1a1a1a; }
               fill="rgba(255,255,255,.85)" font-family="'Noto Sans KR',sans-serif"></text>
       </g>
     </g>
-    <!-- ⑥ 고객명 -->
+    
     <g id="bp-n" class="bp-part">
       <text id="sv-client" x="190" y="1" text-anchor="middle" font-size="7" fill="rgba(11,29,58,.8)" font-family="'Noto Sans KR',sans-serif" font-weight="700"></text>
     </g>
   </svg>
 </div>
 
-<!-- ━━━ 단일 스크롤 영역 ━━━ -->
+
 <div class="one-scroll" id="one-scroll" onscroll="this.id">
 
-<!-- ① 인적사항 -->
+
 <div class="sec" id="sec-who">
   <div class="sec-hdr" onclick="handleSecClick('who', event)">
     <div class="sec-left"><span class="sec-icon">👤</span>
@@ -2465,14 +2465,14 @@ body { color: #1a1a1a; }
     <div class="sec-right"><button class="sec-pause-btn" id="pause-who" data-hold="who" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-who">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
-    <!-- 기본: 1행=이름 전체, 2행=나이3열 -->
+    
     <div style="display:flex;flex-direction:column;gap:6px;">
-      <!-- 1행: 이름 -->
+      
       <div style="display:flex;flex-direction:column;gap:2px;">
         <div style="font-size:9px;color:var(--muted);font-weight:500;">이름</div>
         <input type="text" placeholder="홍길동" style="height:30px;border:1px solid var(--border2);border-radius:3px;font-size:13px;font-family:var(--fn);font-weight:300;padding:0 8px;background:#fff;color:#bbb;outline:none;width:100%;" placeholder="이름을 입력하세요" oninput="D.name=this.value;updateBpTitle();rAll('who')" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
       </div>
-      <!-- 2행: 현재나이·은퇴나이·예상수명 -->
+      
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div style="font-size:9px;color:var(--muted);font-weight:500;">현재 나이</div>
@@ -2499,7 +2499,7 @@ body { color: #1a1a1a; }
     </div>
     <span id="sv-retage" style="display:none">65</span>
     <span id="sv-dieage" style="display:none">95</span>
-    <!-- 세부 -->
+    
     <button class="det-btn" onclick="toggleDet('who-det',this)">＋ 세부정보 (결혼·가족·직업·고민)</button>
     <div class="det-sec" id="who-det">
       <div><div class="divlbl">결혼 여부</div><div class="sel-group" style="margin-top:5px;">
@@ -2535,7 +2535,7 @@ body { color: #1a1a1a; }
   </div></div>
 </div>
 
-<!-- ② 금융정보 -->
+
 <div class="sec" id="sec-fin">
   <div class="sec-hdr" onclick="handleSecClick('fin', event)">
     <div class="sec-left"><span class="sec-icon">💰</span>
@@ -2544,7 +2544,7 @@ body { color: #1a1a1a; }
     <div class="sec-right"><button class="sec-pause-btn" id="pause-fin" data-hold="fin" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-fin">미입력</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
-    <!-- 기본: 월수입 + 총자산(입력바) + 총부채(입력바) -->
+    
     <div class="slid">
       <div class="sl-top"><span class="sl-name">월 수입 (실수령)</span><span><span class="sl-val" id="sv-income">500</span><span class="sl-unit">만원</span></span></div>
       <input type="range" min="0" max="3000" step="50" value="500" oninput="D.income=+this.value;document.getElementById('sv-income').textContent=fmt(D.income);rAll('fin')">
@@ -2562,10 +2562,10 @@ body { color: #1a1a1a; }
           oninput="D.totalDebtInput=+this.value;document.getElementById('sv-totaldebt-inp').textContent=fmt(D.totalDebtInput);document.getElementById('sv-totaldebt-inp').style.color='var(--red)';rAll('fin')">
       </div>
     </div>
-    <!-- 총자산 표시 (자동계산용) -->
+    
     <span id="sv-totalasset" style="display:none">0</span>
     <span id="sv-totaldebt-basic" style="display:none">0</span>
-    <!-- 세부 -->
+    
     <button class="det-btn" onclick="toggleDet('fin-det',this)">＋ 세부정보 (지출·자산·대출)</button>
     <div class="det-sec" id="fin-det">
       <div class="divlbl">월 지출 내역</div>
@@ -2592,7 +2592,7 @@ body { color: #1a1a1a; }
           style="accent-color:var(--green);">
         <div style="font-size:8px;color:var(--muted);margin-top:3px;">직접 입력 시 수입−지출 자동 계산을 덮어씁니다</div>
       </div>
-      <!-- 자동계산: 잉여자금 = 생활비 -->
+      
       <div class="auto-box green">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
@@ -2609,7 +2609,7 @@ body { color: #1a1a1a; }
         <div style="font-size:8px;color:var(--green);opacity:.7;margin-top:3px;">수입 − 저축 − 연금 − 보험 − 대출 = 생활비</div>
       </div>
       <span id="sv-living" style="display:none"></span>
-      <!-- 금융자산 -->
+      
       <div class="divlbl">금융 자산</div>
       <div class="fi-2">
         <div class="slid">
@@ -2621,7 +2621,7 @@ body { color: #1a1a1a; }
           <input type="range" min="0" max="50000" step="500" value="2000" oninput="D.riskAsset=+this.value;document.getElementById('sv-risk').textContent=fmt(D.riskAsset);rAll('fin')">
         </div>
       </div>
-      <!-- 부동산자산 -->
+      
       <div class="divlbl">부동산 자산</div>
       <div class="fi-2">
         <div class="slid">
@@ -2633,7 +2633,7 @@ body { color: #1a1a1a; }
           <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv=+this.value;document.getElementById('sv-reinv').textContent=D.reInv.toFixed(1);rAll('fin')">
         </div>
       </div>
-      <!-- 대출 -->
+      
       <div class="divlbl">대출 잔액</div>
       <div class="fi-2">
         <div class="slid">
@@ -2653,7 +2653,7 @@ body { color: #1a1a1a; }
   </div></div>
 </div>
 
-<!-- ③ 기초 — 보험설계 -->
+
 <div class="sec" id="sec-ins">
   <div class="sec-hdr" onclick="handleSecClick('ins', event)">
     <div class="sec-left"><span class="sec-icon">🛡️</span>
@@ -2715,7 +2715,7 @@ body { color: #1a1a1a; }
   </div></div>
 </div>
 
-<!-- ④ 기둥 — 부채·저축·은퇴 -->
+
 <div class="sec" id="sec-pillar">
   <div class="sec-hdr" onclick="handleSecClick('pillar', event)">
     <div class="sec-left"><span class="sec-icon">🏛️</span>
@@ -2724,7 +2724,7 @@ body { color: #1a1a1a; }
     <div class="sec-right"><button class="sec-pause-btn" id="pause-pillar" data-hold="pillar" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-pillar">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
-    <!-- I. 부채 -->
+    
     <div class="divlbl">I. 부채 설계</div>
     <div class="fi-2">
       <div class="slid">
@@ -2742,7 +2742,7 @@ body { color: #1a1a1a; }
         <div style="text-align:right;"><div class="auto-lbl" style="color:var(--red);">부채비율</div><div class="auto-val" id="sv-debtratio" style="font-size:14px;color:var(--red);">—%</div></div>
       </div>
     </div>
-    <!-- II. 저축 -->
+    
     <div class="divlbl">II. 저축 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">목표 금액</span><span><span class="sl-val" id="sv-savetgt">5,000</span><span class="sl-unit">만원</span></span></div>
@@ -2756,7 +2756,7 @@ body { color: #1a1a1a; }
       <div class="sl-top"><span class="sl-name">비상예비자금</span><span><span class="sl-val" id="sv-emergency">0</span><span class="sl-unit">만원</span></span></div>
       <input type="range" min="0" max="10000" step="100" value="0" oninput="D.emergency=+this.value;document.getElementById('sv-emergency').textContent=fmt(D.emergency);rAll('pillar')">
     </div>
-    <!-- 저축설계 자동계산: 월저축액 = 목표금액/기간/12 -->
+    
     <div class="auto-box green">
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
         <div>
@@ -2766,12 +2766,12 @@ body { color: #1a1a1a; }
         <div style="font-size:8px;color:var(--green);opacity:.8;text-align:right;max-width:110px;line-height:1.5;">목표금액/기간/12</div>
       </div>
     </div>
-    <!-- 비상예비자금 판정 -->
+    
     <div class="auto-box" id="emergency-box" style="background:#f8f6f0;border-color:var(--border2);">
       <div class="auto-lbl" style="color:var(--muted);">비상예비자금 충족 여부</div>
       <div class="auto-val" id="sv-emg-status" style="font-size:13px;color:var(--muted);">인적사항에서 맞벌이 여부 입력 필요</div>
     </div>
-    <!-- III. 은퇴 -->
+    
     <div class="divlbl">III. 은퇴 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">노후 월 생활비</span><span><span class="sl-val" id="sv-retexp">300</span><span class="sl-unit">만원</span></span></div>
@@ -2787,7 +2787,7 @@ body { color: #1a1a1a; }
         <input type="range" min="0" max="300" step="10" value="50" oninput="D.perPen=+this.value;document.getElementById('sv-perpen').textContent=D.perPen;calcRetire();rAll('pillar')">
       </div>
     </div>
-    <!-- 퇴직연금 (8번) -->
+    
     <div class="slid" style="border-color:var(--blue);">
       <div class="sl-top"><span class="sl-name" style="color:var(--blue);">퇴직연금 (일시금)</span><span><span class="sl-val" id="sv-retirepen" style="color:var(--blue);">0</span><span class="sl-unit">만원</span></span></div>
       <input type="range" min="0" max="50000" step="500" value="0"
@@ -2807,7 +2807,7 @@ body { color: #1a1a1a; }
           <div style="font-size:8px;color:var(--blue);opacity:.7;margin-top:1px;">순은퇴일시금÷활동기간÷12</div>
         </div>
       </div>
-      <!-- 은퇴일시금 계산 표시 -->
+      
       <div style="background:rgba(26,74,138,.08);border-radius:3px;padding:6px 8px;font-size:9px;color:var(--blue);line-height:1.8;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
           <div>🎯 은퇴일시금: <strong id="sv-retire-lumpsum">—억원</strong></div>
@@ -2819,7 +2819,7 @@ body { color: #1a1a1a; }
   </div></div>
 </div>
 
-<!-- ⑤ 지붕·굴뚝 — 투자·세금·부동산 -->
+
 <div class="sec" id="sec-roof">
   <div class="sec-hdr" onclick="handleSecClick('roof', event)">
     <div class="sec-left"><span class="sec-icon">📈</span>
@@ -2828,7 +2828,7 @@ body { color: #1a1a1a; }
     <div class="sec-right"><button class="sec-pause-btn" id="pause-roof" data-hold="roof" title="열린채로 고정/해제">HOLD</button><span class="badge bd-e" id="bd-roof">0/3</span><span class="sec-arr">▾</span></div>
   </div>
   <div class="sec-body"><div class="sec-inner">
-    <!-- IV. 투자 -->
+    
     <div class="divlbl">IV. 투자 설계</div>
     <div class="fi-2">
       <div class="slid">
@@ -2847,7 +2847,7 @@ body { color: #1a1a1a; }
       </div>
       <div id="sv-wealthlevel" style="font-size:9px;font-weight:700;margin-top:3px;color:var(--blue);"></div>
     </div>
-    <!-- V. 세금 -->
+    
     <div class="divlbl">V. 세금 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">연 소득</span><span><span class="sl-val" id="sv-taxinc">5,000</span><span class="sl-unit">만원</span></span></div>
@@ -2859,7 +2859,7 @@ body { color: #1a1a1a; }
         <div><div class="auto-lbl" style="color:var(--muted);">예상 상속세</div><div class="auto-val" id="sv-inherit" style="font-size:13px;color:var(--muted);">—만원</div></div>
       </div>
     </div>
-    <!-- VI. 부동산 -->
+    
     <div class="divlbl">VI. 부동산 설계</div>
     <div class="fi-2">
       <div class="slid">
@@ -2871,7 +2871,7 @@ body { color: #1a1a1a; }
         <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv2=+this.value;document.getElementById('sv-re-inv2').textContent=D.reInv2.toFixed(1);rAll('roof')">
       </div>
     </div>
-    <!-- 주택보유 보유/미보유 토글 -->
+    
     <div>
       <div class="divlbl">주택 보유 여부</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;" id="house-grp">
@@ -2889,7 +2889,7 @@ body { color: #1a1a1a; }
   </div></div>
 </div>
 
-<!-- ⑥ 재무혈압 진단 -->
+
 <div class="sec" id="sec-bp">
   <div class="sec-hdr" onclick="handleSecClick('bp', event)">
     <div class="sec-left"><span class="sec-icon">💊</span>
@@ -2900,36 +2900,36 @@ body { color: #1a1a1a; }
   <div class="sec-body">
     <div class="bp-panel-inner">
       <div class="bp-panel-title">💊 재무혈압 3대 지표</div>
-      <!-- 3개 KPI -->
+      
       <div class="bp-numbers">
-        <!-- 부자지수 -->
+        
         <div class="bp-kpi">
           <div class="bp-kpi-label">부자지수</div>
           <div class="bp-kpi-val" id="kpi-wealth" style="color:var(--muted)">—%</div>
           <div class="bp-kpi-status" id="kpi-wealth-st" style="color:var(--muted)">입력 필요</div>
         </div>
-        <!-- 부채비율 -->
+        
         <div class="bp-kpi">
           <div class="bp-kpi-label">부채비율</div>
           <div class="bp-kpi-val" id="kpi-debt" style="color:var(--muted)">—%</div>
           <div class="bp-kpi-status" id="kpi-debt-st" style="color:var(--muted)">입력 필요</div>
         </div>
-        <!-- 비상예비자금 -->
+        
         <div class="bp-kpi">
           <div class="bp-kpi-label">비상예비자금</div>
           <div class="bp-kpi-val" id="kpi-emg" style="color:var(--muted);font-size:14px">—</div>
           <div class="bp-kpi-status" id="kpi-emg-st" style="color:var(--muted)">입력 필요</div>
         </div>
       </div>
-      <!-- 수축기/이완기 혈압계 (부자지수 기준) -->
+      
       <div style="font-size:8.5px;color:var(--muted);margin-bottom:3px;font-weight:500;">📊 부자지수 혈압계</div>
       <div class="bp-gauge"><div class="bp-needle" id="bp-needle" style="left:5%"></div></div>
       <div class="bp-gauge-lbl"><span>위험(0~50)</span><span>보통(51~100)</span><span>양호(101~200)</span><span>매우양호</span></div>
       <div id="bp-advice" class="bp-advice">정보를 입력하면 재무 진단이 시작됩니다.</div>
 
-      <!-- ━━━ 수입지출 분석표 ━━━ -->
+      
       <div style="margin-top:12px;">
-        <!-- 헤더행 -->
+        
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:16px;">📋</span>
@@ -2940,7 +2940,7 @@ body { color: #1a1a1a; }
           </div>
           <div id="ia-income-badge" style="background:var(--navy);color:var(--gold2);font-size:11px;font-weight:900;padding:4px 10px;border-radius:14px;white-space:nowrap;">—</div>
         </div>
-        <!-- 가족수 -->
+        
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;padding:5px 7px;background:#f8f6f0;border-radius:4px;border:1px solid var(--border2);">
           <span style="font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0;">가족수</span>
           <div style="display:flex;gap:3px;flex:1;">
@@ -2951,9 +2951,9 @@ body { color: #1a1a1a; }
             <button onclick="setIAFamily(5,this)" class="ia-fam-btn">5인</button>
           </div>
         </div>
-        <!-- 표 전체 (수입칸 + 내용) -->
+        
         <div style="border:1px solid #c8d8e8;border-radius:4px;overflow:hidden;">
-          <!-- 헤더 행 -->
+          
           <div style="display:flex;background:var(--navy);">
             <div style="width:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;color:rgba(255,255,255,.75);font-weight:700;border-right:1px solid rgba(255,255,255,.15);padding:5px 4px;text-align:center;">수입</div>
             <div style="flex:1;display:grid;grid-template-columns:26% 18% 12% 18% 26%;padding:5px 6px 5px 4px;">
@@ -2964,20 +2964,20 @@ body { color: #1a1a1a; }
               <div style="font-size:8.5px;color:rgba(255,255,255,.75);font-weight:700;text-align:center;">진단</div>
             </div>
           </div>
-          <!-- 내용 행: 수입칸(통합) + 항목들 -->
+          
           <div style="display:flex;border-top:none;">
-            <!-- 수입 통합칸 (세로 전체) -->
+            
             <div id="ia-income-col" style="width:58px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0f4ff;border-right:1px solid #c8d8e8;padding:8px 4px;text-align:center;">
               <div style="font-size:8px;color:var(--muted);font-weight:700;margin-bottom:3px;">월수입</div>
               <div id="ia-income-col-val" style="font-size:12px;font-weight:900;color:var(--navy);line-height:1.2;">—</div>
               <div style="font-size:8px;color:var(--muted);margin-top:1px;">만원</div>
             </div>
-            <!-- 항목 내용 -->
+            
             <div id="ia-tbody" style="flex:1;background:#fff;">
               <div style="text-align:center;padding:16px 8px;font-size:10px;color:var(--muted);">월수입을 입력해 주세요</div>
             </div>
           </div>
-          <!-- 합계 행 -->
+          
           <div style="display:flex;background:#eff6ff;border-top:2px solid #93c5fd;">
             <div style="width:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:var(--blue);border-right:1px solid #93c5fd;padding:6px 4px;text-align:center;">합계</div>
             <div style="flex:1;display:grid;grid-template-columns:26% 18% 12% 18% 26%;padding:6px 6px 6px 4px;align-items:center;">
@@ -2995,7 +2995,7 @@ body { color: #1a1a1a; }
 </div>
 
 
-<!-- ━━━ 시뮬레이터 바 + 탭바 (고정) ━━━ -->
+
 <div class="sim-sticky-inner" id="sim-sticky-inner">
   <div class="sim-bar">
     <div class="sim-bar-left">
@@ -3009,7 +3009,7 @@ body { color: #1a1a1a; }
     </div>
   </div>
 
-  <!-- ━━━ 거시경제 공통 패널 ━━━ -->
+  
   <div class="macro-bar" id="macro-bar">
     <div class="macro-toggle" onclick="toggleMacro()">
       <div class="macro-toggle-left">
@@ -3022,7 +3022,7 @@ body { color: #1a1a1a; }
         <span class="macro-arr" id="macro-arr">▾</span>
       </div>
     </div>
-    <!-- 접힌 상태: 핵심 지표 -->
+    
     <div class="macro-kpis" id="macro-kpis">
       <div class="mk"><div class="mk-label">기준금리</div><div class="mk-val mk-neutral" id="mk-rate">3.5%</div></div>
       <div class="mk"><div class="mk-label">물가상승률</div><div class="mk-val mk-neutral" id="mk-inf">2.5%</div></div>
@@ -3032,7 +3032,7 @@ body { color: #1a1a1a; }
       <div class="mk"><div class="mk-label">충격확률</div><div class="mk-val mk-neutral" id="mk-shock">없음</div></div>
       <div class="mk"><div class="mk-label">세금환경</div><div class="mk-val mk-neutral" id="mk-tax">현행</div></div>
     </div>
-    <!-- 펼친 상태 -->
+    
     <div class="macro-body" id="macro-body">
       <div class="macro-inner">
         <div>
@@ -3072,7 +3072,7 @@ body { color: #1a1a1a; }
             <div class="mslid"><div class="msl-top"><span class="msl-name">부동산 규제강도</span><span><span class="msl-val mk-neutral" id="mv-regtax">중립</span></span></div><input type="range" id="ms-regtax" min="0" max="2" step="1" value="1" oninput="updateMacro()"></div>
           </div>
         </div>
-        <!-- 영향 미리보기 -->
+        
         <div class="impact-strip">
           <div class="impact-title">↓ 현재 거시경제 변수가 각 시뮬레이션에 미치는 영향</div>
           <div class="impact-grid">
@@ -3100,11 +3100,11 @@ body { color: #1a1a1a; }
   </div>
 </div>
 
-<!-- ━━━ 시뮬레이터 섹션 ━━━ -->
+
 <div class="sim-wrap" id="sim-wrap">
-  <!-- 시뮬바+탭바: sticky로 one-scroll 상단 고정 -->
+  
   <div class="sim-body" id="sim-body">
-<!-- ══════════════════ 0. 은퇴 ══════════════════ -->
+
 <div class="sim-panel" id="panel-0">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3154,7 +3154,7 @@ body { color: #1a1a1a; }
   <div class="scenario-card" style="margin-bottom:8px;"><div class="sc-title">🌐 거시경제 변수 반영 방식 (은퇴)</div><div class="sc-list"><div class="sc-item"><div class="sc-dot"></div>수익률 = 설정값 − 물가상승률 + GDP 성장률 조정</div><div class="sc-item"><div class="sc-dot"></div>생활비 = 입력값 × (1+CPI)^은퇴기간 자동 반영</div><div class="sc-item"><div class="sc-dot"></div>시장충격 확률로 연간 자산 급락 이벤트 시뮬레이션</div><div class="sc-item"><div class="sc-dot"></div>VIX → 수익률 변동성 계수로 직결 반영</div></div></div>
 </div>
 
-<!-- ══════════════════ 1. 주택 ══════════════════ -->
+
 <div class="sim-panel" id="panel-1">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3197,7 +3197,7 @@ body { color: #1a1a1a; }
   <div class="scenario-card" style="margin-bottom:8px;"><div class="sc-title">🌐 거시경제 변수 반영 방식 (주택)</div><div class="sc-list"><div class="sc-item"><div class="sc-dot"></div>금리 → 대출이자 자동 계산, 실질 비용 반영</div><div class="sc-item"><div class="sc-dot"></div>물가 → 집값 상승률 조정 (명목 vs 실질 분리)</div><div class="sc-item"><div class="sc-dot"></div>규제강도 → 취득세·거래비용 시뮬레이션 반영</div></div></div>
 </div>
 
-<!-- ══════════════════ 2. 투자 ══════════════════ -->
+
 <div class="sim-panel" id="panel-2">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3240,7 +3240,7 @@ body { color: #1a1a1a; }
   <div class="scenario-card" style="margin-bottom:8px;"><div class="sc-title">🌐 거시경제 변수 반영 방식 (투자)</div><div class="sc-list"><div class="sc-item"><div class="sc-dot"></div>VIX 지수 → 주식 수익률 표준편차 직접 반영</div><div class="sc-item"><div class="sc-dot"></div>기준금리 → 채권 수익률 자동 조정</div><div class="sc-item"><div class="sc-dot"></div>충격 확률 → 연간 -20~-40% 급락 이벤트 시뮬레이션</div><div class="sc-item"><div class="sc-dot"></div>실질수익률 = 명목수익률 - 물가상승률</div></div></div>
 </div>
 
-<!-- ══════════════════ 3. 대출 ══════════════════ -->
+
 <div class="sim-panel" id="panel-3">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3284,7 +3284,7 @@ body { color: #1a1a1a; }
   <div class="scenario-card" style="margin-bottom:8px;"><div class="sc-title">🌐 거시경제 변수 반영 방식 (대출)</div><div class="sc-list"><div class="sc-item"><div class="sc-dot"></div>기준금리 변동 → 변동금리 대출 시뮬레이션</div><div class="sc-item"><div class="sc-dot"></div>경기충격 → 금리 급등 이벤트 확률 반영</div></div></div>
 </div>
 
-<!-- ══════════════════ 4. 목돈 ══════════════════ -->
+
 <div class="sim-panel" id="panel-4">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3327,7 +3327,7 @@ body { color: #1a1a1a; }
   <button class="run-btn" id="btn-sav4" onclick="runSav4()">🎲 10,000회 시뮬레이션 실행</button>
 </div>
 
-<!-- ══════════════════ 5. 세금 ══════════════════ -->
+
 <div class="sim-panel" id="panel-5">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3349,7 +3349,7 @@ body { color: #1a1a1a; }
     <div class="kpi"><div class="kpi-lbl">실효세율</div><div class="kpi-val" id="tax5-effrate">—</div><div class="kpi-desc">소득 대비 실제 세율</div></div>
     <div class="kpi"><div class="kpi-lbl">10년 누적 절세액</div><div class="kpi-val good" id="tax5-10yr">—</div><div class="kpi-desc">복리 운용 시 효과</div></div>
   </div>
-  <!-- 세금 Before/After 비교 -->
+  
   <div class="tax-compare">
     <div class="tax-col tax-col-before">
       <div class="tax-col-title tx-b">📛 절세 전</div>
@@ -3388,7 +3388,7 @@ body { color: #1a1a1a; }
   <div class="scenario-card" style="margin-bottom:8px;"><div class="sc-title">🌐 거시경제 변수 반영 방식 (세금)</div><div class="sc-list"><div class="sc-item"><div class="sc-dot"></div>금투세율(거시 설정) → 금융소득세 직접 적용</div><div class="sc-item"><div class="sc-dot"></div>물가상승 → 소득세 구간 실질 부담 증가 시뮬레이션</div><div class="sc-item"><div class="sc-dot"></div>10,000회: 세율 변동 시나리오별 절세 효과 분포</div><div class="sc-item"><div class="sc-dot"></div>규제강도 → 부동산 양도세·보유세 부담 추정</div></div></div>
 </div>
 
-<!-- ══════════════════ 6. 보험 ══════════════════ -->
+
 <div class="sim-panel" id="panel-6">
   <div class="macro-impact-banner">
     <span class="mib-icon">🌐</span>
@@ -3410,7 +3410,7 @@ body { color: #1a1a1a; }
     <div class="kpi"><div class="kpi-lbl">5년 후 보험료(물가)</div><div class="kpi-val warn" id="ins6-5yr">—</div><div class="kpi-desc">물가 반영 예상</div></div>
     <div class="kpi"><div class="kpi-lbl">보험 대비 자산보호율</div><div class="kpi-val good" id="ins6-protect">—</div><div class="kpi-desc">보장액/위험자산 비율</div></div>
   </div>
-  <!-- 8대 보험 체크 -->
+  
   <div style="padding:5px 11px 3px;font-size:9px;font-weight:900;color:var(--navy);letter-spacing:.06em;">📋 8대 보험 가입 현황 (클릭하여 체크)</div>
   <div class="ins-check-grid" id="ins-grid">
     <div class="ins-item" id="ii-death" onclick="toggleIns('death',this)"><div class="ii-name">💀 사망보험</div><div class="ii-need" id="in-death">기준: —만원</div><div class="ii-status ii-gap" id="is-death">미가입</div></div>
@@ -3444,7 +3444,7 @@ body { color: #1a1a1a; }
 </div>
 
 
-<!-- 7. AI 분석 -->
+
     <div class="sim-panel" id="panel-7">
       <div class="panel-grid">
         <div class="card" style="background:var(--navy);border-color:var(--gold);">
@@ -3493,18 +3493,18 @@ body { color: #1a1a1a; }
     </div>
     <div style="height:12px;"></div>
     <div style="height:12px;"></div>
-  </div><!-- /sim-body -->
-</div><!-- /sim-wrap -->
+  </div>
+</div>
 
 
-<!-- ━━━ 푸터 ━━━ -->
+
 <div class="footer">
   <div class="footer-top" style="flex-direction:column;align-items:stretch;gap:8px;">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div class="footer-logo">금융집짓기<span>®</span></div>
       <span style="font-size:8px;color:rgba(255,255,255,.3);">오원트금융연구소</span>
     </div>
-    <!-- 3개 CTA 버튼 (작게 · 간절한 사람 눈에만) -->
+    
     <div style="display:flex;gap:6px;justify-content:flex-end;padding:4px 0;">
       <button class="footer-cta-btn footer-cta-pay" data-action="openPayModal">
         💳 구독
@@ -3527,10 +3527,10 @@ body { color: #1a1a1a; }
   <div class="footer-copy">Copyright 2013. 오원트금융연구소 · 금융집짓기® 특허·상표권 All rights reserved.</div>
 </div>
 
-</div><!-- /one-scroll -->
-</div><!-- /app -->
+</div>
+</div>
 
-<!-- 리셋 모달 -->
+
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-title">다시 시작할까요?</div>
@@ -5313,55 +5313,37 @@ function selPayMethod(el){
   document.querySelectorAll('.pay-method-btn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
 }
-async function confirmPay(){
+function confirmPay(){
   const btn = document.getElementById('pay-confirm-btn');
   if(btn){ btn.disabled = true; btn.textContent = '결제 준비 중...'; }
 
   try {
-    // 서버에서 페이플 인증 토큰 받기 (키 노출 없음)
-    const res = await fetch('https://ohwant-webhook.vercel.app/api/payple-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_code: 'FH_SILVER',
-        payer_name: '',
-        payer_hp: '',
-        payer_email: '',
-      }),
-    });
-    const auth = await res.json();
+    const order_id = 'FH_SILVER_' + Date.now();
 
-    if(auth.result !== 'success') {
-      showToast('❌ 결제 준비 실패: ' + (auth.message || '다시 시도해 주세요'));
-      if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
-      return;
-    }
-
-    // 페이플 결제창 호출
-    const payObj = {
-      PCD_PAY_TYPE: 'card',
-      PCD_PAY_WORK: 'CERT',
-      PCD_CARD_VER: '01',
-      PCD_PAY_GOODS: '금융집짓기® 실버 구독',
-      PCD_PAY_TOTAL: '9900',
-      PCD_PAY_OID: auth.PCD_PAY_OID,
-      PCD_PAY_URL: auth.PCD_PAY_URL,
-      PCD_REGULER_FLAG: 'Y',
-      PCD_SIMPLE_FLAG: 'Y',
-      callbackFunction: onPaypleResult,
-    };
+    // clientKey 방식 - 서버 인증 불필요
+    const obj = {};
+    obj.clientKey  = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
+    obj.PCD_PAY_TYPE  = 'card';
+    obj.PCD_PAY_WORK  = 'CERT';
+    obj.PCD_CARD_VER  = '01';
+    obj.PCD_PAY_GOODS = '금융집짓기 실버 구독';
+    obj.PCD_PAY_TOTAL = 9900;
+    obj.PCD_PAY_OID   = order_id;
+    obj.PCD_REGULER_FLAG = 'Y';
+    obj.PCD_SIMPLE_FLAG  = 'Y';
+    obj.PCD_RST_URL   = '/';
+    obj.callbackFunction = onPaypleResult;
 
     if(typeof PaypleCpayAuthCheck === 'function'){
-      PaypleCpayAuthCheck(payObj);
+      PaypleCpayAuthCheck(obj);
     } else {
-      // SDK 미로드 시 fallback
-      showToast('❌ 결제 모듈 로드 실패. 새로고침 후 시도해 주세요.');
+      showToast('결제 모듈 로드 중입니다. 새로고침 후 다시 시도해주세요.');
+      if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
     }
 
   } catch(e) {
-    showToast('❌ 네트워크 오류. 다시 시도해 주세요.');
+    showToast('오류가 발생했습니다. 다시 시도해 주세요.');
     console.error('[결제 오류]', e);
-  } finally {
     if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
   }
 }
@@ -6542,13 +6524,13 @@ function fnShareLink() {
 
 </script>
 
-<!-- ━━━ 결제 모달 ━━━ -->
+
 <div class="pay-modal-bg" id="pay-modal-bg" onclick="closePayModal(event)">
   <div class="pay-modal" id="pay-modal-inner">
     <div class="pay-modal-title">🏠 금융집짓기® 구독</div>
     <div class="pay-modal-sub">7대 영역 전체 + 몬테카를로 + AI분석 + PDF저장<br>언제든 해지 가능 · 카드·카카오페이·네이버페이</div>
 
-    <!-- 요금제 선택 -->
+    
     <div class="pay-plans">
       <div class="pay-plan selected" id="plan-month" onclick="selectPlan('month')">
         <div class="pay-plan-type">월간 구독</div>
@@ -6565,14 +6547,14 @@ function fnShareLink() {
       </div>
     </div>
 
-    <!-- 결제 방법 -->
+    
     <div class="pay-methods">
       <button class="pay-method-btn on" onclick="selPayMethod(this)">💳 카드</button>
       <button class="pay-method-btn" onclick="selPayMethod(this)">🟡 카카오페이</button>
       <button class="pay-method-btn" onclick="selPayMethod(this)">🟢 네이버페이</button>
     </div>
 
-    <!-- 확인 버튼 -->
+    
     <button class="pay-confirm-btn" id="pay-confirm-btn" onclick="confirmPay()">
       지금 ₩9,900/월 구독 시작하기 →
     </button>
@@ -6581,16 +6563,16 @@ function fnShareLink() {
   </div>
 </div>
 
-<!-- ━━━ 자동 알림 토스트 ━━━ -->
+
 <div class="auto-toast" id="auto-toast">
   <span class="auto-toast-icon">🔔</span>
   <span id="auto-toast-msg">CFP 알림 발송 완료</span>
 </div>
 
-<!-- ━━━ 강의 선택 팝업 배경 ━━━ -->
+
 <div class="lecture-popup-bg" id="lecture-popup-bg" onclick="closeLectureMenu()"></div>
 
-<!-- ━━━ 강의 선택 미니 팝업 ━━━ -->
+
 <div class="lecture-popup" id="lecture-popup">
   <div class="lecture-popup-handle"></div>
   <div class="lecture-popup-title">🎓 강의 선택</div>
@@ -6621,7 +6603,7 @@ function fnShareLink() {
   <button class="lecture-popup-close" onclick="closeLectureMenu()">닫기</button>
 </div>
 
-<!-- ━━━ 1:1 상담 슬라이드업 패널 ━━━ -->
+
 <div class="consult-panel-bg" id="consult-panel-bg" onclick="closeConsultPanel(event)"></div>
 <div class="consult-panel" id="consult-panel">
   <div class="consult-panel-handle"></div>
@@ -6678,10 +6660,10 @@ function fnShareLink() {
      금융집짓기® 회원전용 마이페이지
 ════════════════════════════════════════ -->
 
-<!-- 구독 모달 배경 -->
+
 <div class="mp-sub-bg" id="mp-sub-bg" onclick="mpCloseSubscribe()"></div>
 
-<!-- 구독 모달 -->
+
 <div class="mp-sub-modal" id="mp-sub-modal">
   <div class="mp-sub-handle"></div>
   <div class="mp-sub-title">🏠 금융집짓기® 구독</div>
@@ -6715,10 +6697,10 @@ function fnShareLink() {
   </button>
 </div>
 
-<!-- 마이페이지 풀스크린 오버레이 -->
+
 <div class="mypage-overlay" id="mypageOverlay">
 
-  <!-- 마이페이지 헤더 -->
+  
   <div class="mp-header">
     <div class="mp-header-row">
       <button class="mp-back-btn" onclick="mpClose()">← 돌아가기</button>
@@ -6727,7 +6709,7 @@ function fnShareLink() {
     </div>
   </div>
 
-  <!-- 탭 바 -->
+  
   <div class="mp-tabs">
     <button class="mp-tab-btn mp-active" onclick="mpTab(0,this)">🏠 홈</button>
     <button class="mp-tab-btn" onclick="mpTab(1,this)">📈 히스토리</button>
@@ -6737,10 +6719,10 @@ function fnShareLink() {
     <button class="mp-tab-btn" onclick="mpTab(5,this)">⚙️ 계정</button>
   </div>
 
-  <!-- 콘텐츠 영역 -->
+  
   <div class="mp-content">
 
-    <!-- ══ 홈 탭 ══ -->
+    
     <div class="mp-panel mp-active" id="mp-panel-0">
       <div class="mp-welcome mp-fade-in">
         <div class="mp-wb-grade">🥈 실버 회원</div>
@@ -6811,7 +6793,7 @@ function fnShareLink() {
       <div style="height:12px"></div>
     </div>
 
-    <!-- ══ 히스토리 탭 ══ -->
+    
     <div class="mp-panel" id="mp-panel-1">
       <div class="mp-history-banner mp-fade-in">
         <div style="font-size:28px;margin-bottom:7px">📈</div>
@@ -6869,7 +6851,7 @@ function fnShareLink() {
       <div style="height:12px"></div>
     </div>
 
-    <!-- ══ AI 상담 탭 ══ -->
+    
     <div class="mp-panel" id="mp-panel-2">
       <div class="mp-quota-bar">
         <div>
@@ -6911,7 +6893,7 @@ function fnShareLink() {
       <div style="height:12px"></div>
     </div>
 
-    <!-- ══ 리포트 탭 ══ -->
+    
     <div class="mp-panel" id="mp-panel-3">
       <div style="padding:10px 12px 8px;font-size:9.5px;color:var(--muted)">
         구독 기간 중 생성된 종합재무설계 리포트입니다.
@@ -6953,7 +6935,7 @@ function fnShareLink() {
       <div style="height:12px"></div>
     </div>
 
-    <!-- ══ 콘텐츠 탭 ══ -->
+    
     <div class="mp-panel" id="mp-panel-4">
       <div class="mp-content-sec">
         <div class="mp-content-sec-title">📢 공지사항</div>
@@ -7041,7 +7023,7 @@ function fnShareLink() {
       <div style="height:12px"></div>
     </div>
 
-    <!-- ══ 계정 탭 ══ -->
+    
     <div class="mp-panel" id="mp-panel-5">
       <div class="mp-profile mp-fade-in">
         <div class="mp-profile-av" id="mp-profile-av">?</div>
@@ -7133,8 +7115,8 @@ function fnShareLink() {
       <div style="height:20px"></div>
     </div>
 
-  </div><!-- /mp-content -->
-</div><!-- /mypage-overlay -->
+  </div>
+</div>
 
 
 <!-- ════════════════════════════════════════
