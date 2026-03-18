@@ -5332,6 +5332,10 @@ function confirmPay(){
     obj.PCD_REGULER_FLAG = 'Y';
     obj.PCD_SIMPLE_FLAG  = 'Y';
     obj.PCD_RST_URL   = '/';
+    // 정기결제 중복방지 년월 (필수)
+    const _now = new Date();
+    obj.PCD_PAY_YEAR  = String(_now.getFullYear());
+    obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
     obj.callbackFunction = onPaypleResult;
 
     if(typeof PaypleCpayAuthCheck === 'function'){
