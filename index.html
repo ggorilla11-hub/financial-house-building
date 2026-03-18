@@ -1903,6 +1903,64 @@ body { color: #1a1a1a; }
 .fn-screen { z-index: 999 !important; }
 .app { position: relative; z-index: 1; }
 #funnel-wrap.fn-hidden { display: none !important; pointer-events: none !important; }
+
+/* ═══ 원트큐브 퍼널 CSS ═══ */
+@keyframes fnBorderGlow {
+  0%,100% { border-color: rgba(212,168,83,.4); }
+  50%      { border-color: rgba(212,168,83,.9); box-shadow: 0 0 12px rgba(212,168,83,.2); }
+}
+@keyframes fnCubeSpin {
+  0%   { transform: rotateX(0) rotateY(0); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+.fn-screen.active {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  transform: translateX(0) !important;
+}
+.fn-screen.fn-exit {
+  opacity: 0 !important;
+  transform: translateX(-30px) !important;
+  pointer-events: none !important;
+}
+.fnCubeFace {
+  position: absolute; width: 160px; height: 160px;
+  border: 2px solid rgba(255,255,255,.1);
+  display: grid; grid-template-columns: repeat(3,1fr);
+  grid-template-rows: repeat(3,1fr); gap: 2px; padding: 3px;
+}
+.fnCubeFace.fn-face-left  { background: rgba(27,108,176,.3); }
+.fnCubeFace.fn-face-right { background: rgba(231,76,60,.3); }
+.fnCubeFace.fn-face-other { background: rgba(212,168,83,.15); }
+.fn-cube-cell {
+  background: rgba(255,255,255,.07); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: rgba(255,255,255,.4); transition: all .4s;
+}
+.fn-cube-cell.fn-hl {
+  background: #D4A853; color: #1a1a2e; font-weight: 700;
+  box-shadow: 0 0 12px rgba(212,168,83,.6);
+  animation: fnPulse 1.5s infinite;
+}
+@keyframes fnPulse {
+  0%,100% { box-shadow: 0 0 10px rgba(212,168,83,.4); }
+  50%      { box-shadow: 0 0 20px rgba(212,168,83,.8); }
+}
+.fn-choice-btn {
+  background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.12);
+  border-radius: 14px; padding: 14px 18px; color: #fff; font-size: 15px;
+  font-weight: 500; cursor: pointer; transition: all .25s; text-align: left;
+  display: flex; align-items: center; gap: 12px; font-family: 'Noto Sans KR', sans-serif;
+  width: 100%;
+}
+.fn-choice-btn:active { border-color: #D4A853; background: rgba(212,168,83,.12); transform: scale(.99); }
+.fn-insight-item {
+  display: flex; gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-size: 12px; line-height: 1.6; color: rgba(255,255,255,.75);
+}
+.fn-insight-num { color: #D4A853; font-weight: 700; font-size: 13px; min-width: 18px; flex-shrink: 0; }
+
 </style>
 
   
@@ -1912,351 +1970,142 @@ body { color: #1a1a1a; }
 </head>
 <body>
 
+
 <div id="funnel-wrap">
 
+<!-- ═══════════════════════════════════════
+     S0: 랜딩
+═══════════════════════════════════════ -->
+<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
 
-
-<div class="fn-screen active" id="fn-s0" class="fn-screen active">
-  <div class="s0-bg"></div>
-  <div class="s0-content">
-
-    <div class="retire-counter">
-      <span class="rc-label">은퇴까지</span>
-      <span class="rc-num" id="rc-num">?</span>
-      <span class="rc-unit">개월 — 지금 확인하세요</span>
-    </div>
-
-    <div class="s0-house-wrap">
-      <span class="s0-house">🏠</span>
-    </div>
-
-    <h1 class="s0-title">
-      당신의 금융집은<br>
-      <span class="accent">완성되어 있나요?</span>
-    </h1>
-    <p class="s0-sub">
-      노동소득이 멈추는 그날,<br>
-      <b>7개 기둥이 하나라도 무너지면</b><br>
-      나머지도 함께 무너집니다.
-    </p>
-
-    <div class="s0-trust">
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">20년</div>
-        <div class="s0-trust-lbl">CFP 경력</div>
-      </div>
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">2,000+</div>
-        <div class="s0-trust-lbl">개인 상담</div>
-      </div>
-      <div class="s0-trust-item">
-        <div class="s0-trust-num">특허</div>
-        <div class="s0-trust-lbl">등록 방법론</div>
-      </div>
-    </div>
-
-    <button class="s0-cta" onclick="fnGoTo(1)">
-      🏥 1분 무료 금융집 진단 시작
-      <span class="s0-cta-sub">나이 · 소득 · 고민 — 3가지만 입력</span>
-    </button>
-    <button class="s0-skip" onclick="skipToSim()">
-      이미 알고 있어요, 시뮬레이터 바로 시작 →
-    </button>
+  <!-- 은퇴 D-카운터 (최상단 강조) -->
+  <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
+    <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;">만약 은퇴까지 남은 기간이 </span>
+    <span id="fn-d-landing" style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#E8B84B;">D-25년</span>
+    <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;"> 이라면</span>
   </div>
+
+  <!-- 타이틀 -->
+  <div style="font-size:13px;background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.25);color:#D4A853;padding:7px 16px;border-radius:20px;font-weight:600;margin-bottom:18px;">⏱️ 딱 6번 클릭 · 30초 완성</div>
+
+  <h1 style="font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1.4;margin-bottom:14px;color:#fff;">
+    은퇴 전<br>당신이 가장 먼저 해야 할<br><span style="color:#D4A853;">재무목표</span>는?
+  </h1>
+  <p style="font-size:15px;opacity:.8;line-height:1.7;margin-bottom:24px;color:#fff;max-width:320px;">
+    729가지 조합 중 당신에게 딱 맞는<br>최우선 재무목표를 찾아드립니다
+  </p>
+
+  <!-- 신뢰 지표 -->
+  <div style="display:flex;justify-content:center;gap:28px;margin-bottom:28px;">
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:900;color:#D4A853;">2,000+</div>
+      <div style="font-size:12px;opacity:.6;margin-top:2px;">상담 데이터</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:900;color:#D4A853;">20년</div>
+      <div style="font-size:12px;opacity:.6;margin-top:2px;">CFP 경험</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:900;color:#D4A853;">729</div>
+      <div style="font-size:12px;opacity:.6;margin-top:2px;">분석 조합</div>
+    </div>
+  </div>
+
+  <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;">
+    내 재무목표 찾기 →
+  </button>
+
+  <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
+    이미 알고 있어요, 시뮬레이터 바로 시작 →
+  </button>
 </div>
 
+<!-- ═══════════════════════════════════════
+     S1~S6: 원트큐브 6개 질문
+═══════════════════════════════════════ -->
+<div id="fn-s1" class="fn-screen" style="background:linear-gradient(135deg,#1a1a2e,#16213e);position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(30px);">
 
-<div class="fn-screen q-screen" id="fn-s1" class="fn-screen q-screen">
-  <div class="prog-bar"><div class="prog-fill" style="width:25%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="fnGoTo(0)">←</button>
-    <span class="q-step-info">STEP 1 / 3 &nbsp;·&nbsp; 나이</span>
+  <!-- 진행 바 -->
+  <div style="padding:16px 20px 0;flex-shrink:0;">
+    <div id="fn-step-prog" style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;"></div>
+    <div id="fn-step-label" style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px;"></div>
   </div>
-  <div class="q-body">
-    <span class="q-emoji">👤</span>
-    <h2 class="q-title">지금 몇 살이세요?<br><span class="hl">은퇴 D-카운터</span>를 계산합니다</h2>
-    <p class="q-hint">나이에 따라 재무 긴급도가 완전히 달라집니다</p>
 
-    <div class="age-card">
-      <div class="age-big" id="age-val">39</div>
-      <div class="age-unit">세</div>
-      <div class="age-retire">
-        은퇴까지<br>
-        <b id="age-months">312개월</b> (26년) 남았습니다
+  <!-- 큐브 -->
+  <div style="display:flex;justify-content:center;padding:20px 0 0;">
+    <div style="perspective:800px;">
+      <div id="fn-cube3d" style="width:160px;height:160px;position:relative;transform-style:preserve-3d;transform:rotateX(-15deg) rotateY(25deg);transition:transform .8s ease;">
+        <div class="fnCubeFace" id="fnFront"  style="transform:translateZ(80px);"></div>
+        <div class="fnCubeFace" id="fnBack"   style="transform:rotateY(180deg) translateZ(80px);"></div>
+        <div class="fnCubeFace" id="fnRight"  style="transform:rotateY(90deg) translateZ(80px);"></div>
+        <div class="fnCubeFace" id="fnLeft"   style="transform:rotateY(-90deg) translateZ(80px);"></div>
+        <div class="fnCubeFace" id="fnTop"    style="transform:rotateX(90deg) translateZ(80px);"></div>
+        <div class="fnCubeFace" id="fnBottom" style="transform:rotateX(-90deg) translateZ(80px);"></div>
       </div>
     </div>
-
-    <input type="range" class="q-range" id="age-sl"
-      min="25" max="65" value="39"
-      oninput="onAge(this.value)"
-      style="--p:47%">
-    <div class="q-range-labels">
-      <span>25세</span><span>45세</span><span>65세</span>
-    </div>
-
-    <button class="q-next" onclick="fnGoTo(2)">다음 →</button>
   </div>
+
+  <!-- 질문 -->
+  <div id="fn-step-q" style="font-family:'Black Han Sans',sans-serif;font-size:20px;text-align:center;padding:44px 20px 16px;line-height:1.4;color:#fff;flex-shrink:0;"></div>
+
+  <!-- 선택지 -->
+  <div id="fn-choices" style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:10px;"></div>
 </div>
 
-
-<div class="fn-screen q-screen" id="fn-s2" class="fn-screen q-screen">
-  <div class="prog-bar"><div class="prog-fill" style="width:50%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="fnGoTo(1)">←</button>
-    <span class="q-step-info">STEP 2 / 3 &nbsp;·&nbsp; 소득</span>
-  </div>
-  <div class="q-body">
-    <span class="q-emoji">💰</span>
-    <h2 class="q-title">월 소득이<br><span class="hl">얼마나 되시나요?</span></h2>
-    <p class="q-hint">세후 실수령 기준 · 대략적인 금액도 괜찮습니다</p>
-
-    <div class="income-card">
-      <div class="income-big" id="inc-val">400만원</div>
-      <div class="income-unit">월 세후 실수령</div>
-      <input type="range" class="q-range" id="inc-sl"
-        min="100" max="1500" value="400" step="50"
-        oninput="onIncome(this.value)"
-        style="--p:21%;width:100%">
-      <div class="q-range-labels" style="margin-top:8px">
-        <span>100만</span><span>800만</span><span>1,500만+</span>
-      </div>
+<!-- ═══════════════════════════════════════
+     S7: 분석 중
+═══════════════════════════════════════ -->
+<div id="fn-s7" class="fn-screen" style="background:linear-gradient(135deg,#1a1a2e,#16213e);position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(30px);">
+  <div style="perspective:600px;margin-bottom:24px;">
+    <div style="width:120px;height:120px;position:relative;transform-style:preserve-3d;animation:fnCubeSpin 2s linear infinite;">
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:translateZ(60px);"></div>
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:rotateY(180deg) translateZ(60px);"></div>
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:rotateY(90deg) translateZ(60px);"></div>
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:rotateY(-90deg) translateZ(60px);"></div>
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:rotateX(90deg) translateZ(60px);"></div>
+      <div style="position:absolute;width:120px;height:120px;border:2px solid rgba(212,168,83,.5);background:rgba(212,168,83,.1);transform:rotateX(-90deg) translateZ(60px);"></div>
     </div>
-
-    <div class="choice-list">
-      <div class="choice-card" id="ch-dual" onclick="selDual(true,this)">
-        <span class="choice-icon">👫</span>
-        <div class="choice-info">
-          <div class="choice-title">맞벌이 가구</div>
-          <div class="choice-sub">배우자 소득이 있습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card" id="ch-single" onclick="selDual(false,this)">
-        <span class="choice-icon">👤</span>
-        <div class="choice-info">
-          <div class="choice-title">외벌이 / 1인 가구</div>
-          <div class="choice-sub">본인 소득만 있습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-    </div>
-
-    <button class="q-next" onclick="fnGoTo(3)">다음 →</button>
   </div>
+  <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:#fff;margin-bottom:8px;">원트큐브 분석 중...</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.4);">729가지 조합에서 최적 매칭 중</div>
 </div>
 
+<!-- ═══════════════════════════════════════
+     S8: 결과
+═══════════════════════════════════════ -->
+<div id="fn-s8" class="fn-screen" style="background:linear-gradient(135deg,#1a1a2e,#16213e);position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(30px);overflow-y:auto;">
 
-<div class="fn-screen q-screen" id="fn-s3" class="fn-screen q-screen">
-  <div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div>
-  <div class="q-top">
-    <button class="q-back" onclick="fnGoTo(2)">←</button>
-    <span class="q-step-info">STEP 3 / 3 &nbsp;·&nbsp; 재무 고민</span>
+  <!-- D-카운터 (결과 최상단) -->
+  <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:3px solid #C9972A;padding:14px 20px;flex-shrink:0;">
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px;">⏳ 은퇴까지 남은 시간</div>
+    <div id="fn-result-d" style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:900;color:#E8B84B;line-height:1;">D-?개월</div>
+    <div id="fn-result-d-sub" style="font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;"></div>
   </div>
-  <div class="q-body">
-    <span class="q-emoji">🏛</span>
-    <h2 class="q-title">지금 가장 걱정되는<br><span class="hl">재무 고민</span>은?</h2>
-    <p class="q-hint">해당하는 것을 모두 선택해 주세요</p>
 
-    <div class="choice-list">
-      <div class="choice-card multi" onclick="togWorry('retire',this)">
-        <span class="choice-icon">🏖</span>
-        <div class="choice-info">
-          <div class="choice-title">노후 · 은퇴 준비</div>
-          <div class="choice-sub">은퇴 후 생활비가 막막합니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('debt',this)">
-        <span class="choice-icon">💳</span>
-        <div class="choice-info">
-          <div class="choice-title">대출 · 부채 관리</div>
-          <div class="choice-sub">빚이 너무 많은 것 같습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('invest',this)">
-        <span class="choice-icon">📈</span>
-        <div class="choice-info">
-          <div class="choice-title">투자 · 자산 성장</div>
-          <div class="choice-sub">돈을 어떻게 불려야 할지 모릅니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('insurance',this)">
-        <span class="choice-icon">🛡</span>
-        <div class="choice-info">
-          <div class="choice-title">보험 · 위험 관리</div>
-          <div class="choice-sub">보험이 충분한지 모르겠습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
-      <div class="choice-card multi" onclick="togWorry('tax',this)">
-        <span class="choice-icon">📋</span>
-        <div class="choice-info">
-          <div class="choice-title">세금 · 절세 전략</div>
-          <div class="choice-sub">세금을 너무 많이 내는 것 같습니다</div>
-        </div>
-        <div class="choice-dot">✓</div>
-      </div>
+  <!-- 결과 카드 -->
+  <div style="padding:20px;">
+    <!-- 최우선 재무목표 -->
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;">
+      <div id="fn-r-emoji" style="font-size:56px;margin-bottom:10px;"></div>
+      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 최우선 재무목표</div>
+      <div id="fn-r-title" style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:#fff;margin-bottom:8px;"></div>
+      <div id="fn-r-sub" style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;"></div>
     </div>
 
-    <button class="q-next" onclick="startAnalysis()">
-      🔍 지금 바로 진단하기
-    </button>
+    <!-- 숨김 처리 (JS에서만 사용) -->
+    <div id="fn-r-stat" style="display:flex;justify-content:center;gap:16px;background:rgba(212,168,83,.08);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
+    <div id="fn-r-insights" style="display:none;"></div>
+
+    <!-- 고민 연동 메시지 + CTA -->
+    <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.4);border-radius:14px;padding:16px;margin-bottom:12px;">
+      <div id="fn-r-worry-msg" style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:14px;text-align:center;"></div>
+      <button onclick="fnSkipToSim()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
+        🏠 금융집짓기 시뮬레이터 시작하기
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
+      </button>
+    </div>
   </div>
 </div>
-
-
-<div class="fn-screen" id="fn-s4" class="fn-screen" style="background:#0B1D3A;align-items:center;justify-content:center;padding:40px 24px">
-  <div class="analyzing-inner">
-    <div class="cube-scene">
-      <div class="cube">
-        <div class="cube-face front">🏠</div>
-        <div class="cube-face back">💰</div>
-        <div class="cube-face right">📈</div>
-        <div class="cube-face left">🛡</div>
-        <div class="cube-face top">🏖</div>
-        <div class="cube-face bottom">📋</div>
-      </div>
-    </div>
-    <h2 class="analyzing-title">금융집 분석 중...</h2>
-    <p class="analyzing-sub">CFP 20년 노하우 기반<br>7대 영역 정밀 점검 중입니다</p>
-
-    <div class="a-steps">
-      <div class="a-step" id="as0">
-        <span class="a-step-icon">💰</span>
-        <span class="a-step-text">소득 · 저축 구조 분석</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as1">
-        <span class="a-step-icon">🏛</span>
-        <span class="a-step-text">7대 영역 긴급도 점검</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as2">
-        <span class="a-step-icon">🏠</span>
-        <span class="a-step-text">금융집 등급 산출</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-      <div class="a-step" id="as3">
-        <span class="a-step-icon">🤖</span>
-        <span class="a-step-text">AI 맞춤 진단 리포트 생성</span>
-        <span class="a-step-ok">✓</span>
-      </div>
-    </div>
-
-    <div class="a-prog-track">
-      <div class="a-prog-fill" id="a-fill"></div>
-    </div>
-    <div class="a-pct" id="a-pct">0%</div>
-  </div>
-</div>
-
-
-<div class="fn-screen" id="fn-s5" class="fn-screen" style="background:var(--cream,#fffdf8);overflow-y:auto">
-  <div class="res-header">
-    <div class="res-header-lbl">🏠 금융집짓기® 무료 금융집 진단 결과</div>
-    <div class="res-header-name" id="res-name">회원님의 금융집 진단 완료</div>
-  </div>
-
-  
-  <div class="d-hero-card">
-    <div class="dhc-left">
-      <div class="dhc-lbl">⏳ 은퇴까지 남은 시간</div>
-      <div class="dhc-num" id="drc-num">D-312개월</div>
-      <div class="dhc-years" id="drc-years">26년 남았습니다</div>
-      <div class="dhc-basis" id="drc-basis">43세 기준 · 은퇴 73세</div>
-      <div class="dhc-source">출처: 통계청 한국인 실질 은퇴연령 73세</div>
-    </div>
-    <div class="dhc-right">
-      <div class="dhc-urgency" id="dhc-urgency">보통</div>
-      <div class="dhc-urgency-lbl">긴급도</div>
-    </div>
-  </div>
-
-  
-  <div class="peer-card">
-    <div class="peer-header">
-      <span class="peer-icon">📊</span>
-      <div>
-        <div class="peer-title" id="peer-title">40대 · 월 400만원대 동년배 평균</div>
-        <div class="peer-sub">오상열 CFP 2,000명+ 상담 데이터 기반</div>
-      </div>
-    </div>
-
-    
-    <div class="peer-main-row">
-      
-      <div class="peer-score-block">
-        <div class="peer-avg-score" id="peer-avg">52</div>
-        <div class="peer-avg-lbl">동년배 평균<br>재무점수</div>
-      </div>
-      
-      <div class="peer-divider"></div>
-      
-      <div class="peer-house-block">
-        <div class="peer-house-emoji" id="peer-house-emoji">🏡</div>
-        <div class="peer-house-lbl" id="peer-house-lbl">단독주택 단계</div>
-        <div class="peer-house-sub">동년배 평균 금융집</div>
-      </div>
-    </div>
-
-    
-    <div class="peer-my-pos" id="peer-my-pos">
-      📍 <span id="peer-pos-txt">같은 그룹 10명 중 5명은 은퇴 준비가 절반도 안 됩니다.</span>
-    </div>
-  </div>
-
-  
-  <div class="house-grade-card">
-    <div class="hgc-top">
-      <div class="house-visual">
-        <span class="house-big" id="house-emoji">🏚</span>
-        <span class="house-grade-lbl" id="house-lbl">텐트 단계</span>
-      </div>
-      <div class="hgc-info">
-        <div class="hgc-badge" id="hgc-badge">⚠ 기초 구축 필요</div>
-        <div class="hgc-desc" id="hgc-desc">재무의 기초가 아직 완성되지 않았습니다.</div>
-        <div class="stage-track" id="stage-track" style="margin-top:10px">
-          <div class="stage-item past"><span class="stage-emoji">⛺</span><span class="stage-name">노숙</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item cur"><span class="stage-emoji">🏚</span><span class="stage-name">텐트</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏡</span><span class="stage-name">단독</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏠</span><span class="stage-name">아파트</span></div>
-          <span class="stage-arrow">›</span>
-          <div class="stage-item"><span class="stage-emoji">🏛</span><span class="stage-name">궁전</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="urgent-card">
-    <div class="urgent-header">🚨 지금 당장 해결해야 할 긴급 과제</div>
-    <div id="urgent-list"></div>
-  </div>
-
-  
-  <div class="cfp-card">
-    <div class="cfp-av">오</div>
-    <div>
-      <div class="cfp-name">오상열 CFP · 20년 경력 · 특허 방법론</div>
-      <div class="cfp-msg" id="cfp-msg">분석 중...</div>
-    </div>
-  </div>
-
-  
-    
-  <div class="res-cta-wrap">
-    <button class="res-cta-main" onclick="skipToSim()">
-      🏠 금융집짓기 시뮬레이터 시작하기
-      <span class="res-cta-sub">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
-    </button>
-  </div>
-</div>
-
 
 </div>
 
@@ -6197,284 +6046,247 @@ function mpSendChat() {
 }
 
 
-/* ════════════════════════════════════════
-   금융집짓기® 퍼널 JS
-════════════════════════════════════════ */
 
-// ── 상태 ──
-const S = { age: 39, income: 400, dual: null, worries: [] };
+/* ═══════════════════════════════════════
+   원트큐브 퍼널 JS
+═══════════════════════════════════════ */
 
-// ── 구독 상태 복원 ──
-(function initSubscriptionState(){
-  const subscribed = localStorage.getItem('fh_subscribed') === '1';
-  if(subscribed){
-    // 이미 구독 중 → 헤더 버튼 회원전용으로
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const payBtn = document.querySelector('.hbtn-pay');
-        if(payBtn){
-          payBtn.textContent = '👑 회원전용';
-          payBtn.onclick = () => typeof mpOpen === 'function' && mpOpen();
-          payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-          payBtn.style.animation = 'none';
-          payBtn.style.color = 'var(--navy)';
-        }
-        // mpIsSubscribed 동기화
-        if(typeof mpIsSubscribed !== 'undefined') mpIsSubscribed = true;
-        if(typeof MP_MEMBER_KEY !== 'undefined') localStorage.setItem(MP_MEMBER_KEY, '1');
-      }, 500);
-    });
-  }
-})();
-
-// ── 화면 전환 ──
-let fnCur = 0;
-function fnGoTo(n) {
-  const c = document.getElementById('fn-s' + fnCur);
-  const t = document.getElementById('fn-s' + n);
-  if(!c || !t) return;
-  c.classList.remove('active'); c.classList.add('exit');
-  setTimeout(() => c.classList.remove('exit'), 450);
-  t.classList.add('active');
-  if(t.scrollTop !== undefined) t.scrollTop = 0;
-  fnCur = n;
-}
-
-function skipToSim() {
-  // 퍼널 숨기기
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  // 시뮬레이터 표시 (이미 뒤에 있음)
-}
-
-// ── 랜딩 카운터 초기화 ──
-document.getElementById('rc-num').textContent = '?';
-
-// ── Q1: 나이 ──
-function onAge(v) {
-  S.age = +v;
-  const m = Math.max(0, (73 - S.age) * 12);
-  document.getElementById('age-val').textContent = S.age;
-  document.getElementById('age-months').textContent = m.toLocaleString() + '개월';
-  const p = ((S.age - 25) / 40 * 100).toFixed(1);
-  document.getElementById('age-sl').style.setProperty('--p', p + '%');
-  document.getElementById('rc-num').textContent = m.toLocaleString();
-}
-
-// ── Q2: 소득 ──
-function onIncome(v) {
-  S.income = +v;
-  const txt = S.income >= 1000
-    ? (S.income / 100).toFixed(1) + '억원'
-    : S.income + '만원';
-  document.getElementById('inc-val').textContent = txt;
-  const p = ((S.income - 100) / 1400 * 100).toFixed(1);
-  document.getElementById('inc-sl').style.setProperty('--p', p + '%');
-}
-
-function selDual(isDual, el) {
-  S.dual = isDual;
-  ['ch-dual', 'ch-single'].forEach(id => document.getElementById(id).classList.remove('on'));
-  el.classList.add('on');
-}
-
-// ── Q3: 고민 ──
-function togWorry(key, el) {
-  el.classList.toggle('on');
-  const i = S.worries.indexOf(key);
-  if(i > -1) S.worries.splice(i, 1);
-  else S.worries.push(key);
-}
-
-// ── 분석 시작 ──
-function startAnalysis() {
-  fnGoTo(4);
-  const fill = document.getElementById('a-fill');
-  const pct  = document.getElementById('a-pct');
-  const steps = ['as0','as1','as2','as3'];
-  let p = 0;
-
-  const iv = setInterval(() => {
-    p += 1.8;
-    if(fill) fill.style.width = Math.min(p, 100) + '%';
-    if(pct)  pct.textContent = Math.min(Math.floor(p), 100) + '%';
-    if(p >= 25)  document.getElementById('as0')?.classList.add('lit');
-    if(p >= 50)  document.getElementById('as1')?.classList.add('lit');
-    if(p >= 75)  document.getElementById('as2')?.classList.add('lit');
-    if(p >= 95)  document.getElementById('as3')?.classList.add('lit');
-    if(p >= 100) {
-      clearInterval(iv);
-      setTimeout(() => { buildResult(); fnGoTo(5); }, 600);
-    }
-  }, 28);
-}
-
-// ── 동년배 평균 데이터 (오상열 CFP 2,000명 상담 기반) ──
-// [연령대][소득구간] = { avg, top25, bot25 }
-const PEER_DATA = {
-  '20s': {
-    low:  { avg: 62, top: 78, bot: 44 },
-    mid:  { avg: 68, top: 83, bot: 51 },
-    high: { avg: 74, top: 88, bot: 58 },
-  },
-  '30s': {
-    low:  { avg: 54, top: 71, bot: 36 },
-    mid:  { avg: 61, top: 76, bot: 44 },
-    high: { avg: 69, top: 82, bot: 53 },
-  },
-  '40s': {
-    low:  { avg: 44, top: 63, bot: 27 },
-    mid:  { avg: 52, top: 70, bot: 33 },
-    high: { avg: 61, top: 77, bot: 43 },
-  },
-  '50s': {
-    low:  { avg: 33, top: 52, bot: 18 },
-    mid:  { avg: 41, top: 59, bot: 24 },
-    high: { avg: 51, top: 67, bot: 33 },
-  },
-  '60s': {
-    low:  { avg: 28, top: 44, bot: 14 },
-    mid:  { avg: 35, top: 51, bot: 20 },
-    high: { avg: 44, top: 60, bot: 27 },
-  },
-};
-
-function getPeerGroup(age, income) {
-  const decade = age < 30 ? '20s' : age < 40 ? '30s' : age < 50 ? '40s' : age < 60 ? '50s' : '60s';
-  const tier   = income < 350 ? 'low' : income < 700 ? 'mid' : 'high';
-  return { group: PEER_DATA[decade][tier], decade, tier };
-}
-
-function getPeerLabel(age, income) {
-  const decade = age < 30 ? '20대' : age < 40 ? '30대' : age < 50 ? '40대' : age < 60 ? '50대' : '60대';
-  const tier   = income < 350 ? '300만원대 이하' : income < 700 ? `${income}만원대` : '700만원 이상';
-  return `${decade} · 월 ${tier} 동년배 평균`;
-}
-
-// ── 결과 생성 ──
-const STAGES = [
-  { score: 0,  emoji: '⛺', lbl: '노숙 단계',    badge: '🆘 즉시 재설계 필요', desc: '재무 설계를 처음부터 시작해야 합니다.' },
-  { score: 28, emoji: '🏚', lbl: '텐트 단계',    badge: '⚠ 기초 구축 필요',   desc: '재무의 기초가 아직 완성되지 않았습니다.' },
-  { score: 44, emoji: '🏡', lbl: '단독주택 단계', badge: '🔧 보완 진행 중',    desc: '절반은 완성됐습니다. 지금이 가장 중요한 시기입니다.' },
-  { score: 60, emoji: '🏠', lbl: '아파트 단계',   badge: '✅ 기본 완성',       desc: '기본은 갖춰졌습니다. 최적화 단계로 넘어가세요.' },
-  { score: 76, emoji: '🏛', lbl: '궁전 단계',    badge: '🏆 탁월한 재무 구조', desc: '재무 설계가 탄탄합니다. 투자 고도화를 검토하세요.' },
+// ── 원트큐브 데이터 ──
+const FN_STEPS = [
+  { label:'인적정보 1/3', q:'나이가 어떻게 되시나요?', face:'left',
+    options:[{icon:'🧑',text:'20~30대',val:'young'},{icon:'👨',text:'40~50대',val:'mid'},{icon:'👴',text:'60대 이상',val:'senior'}]},
+  { label:'인적정보 2/3', q:'현재 직업은 무엇인가요?', face:'left',
+    options:[{icon:'💼',text:'직장인',val:'worker'},{icon:'🏢',text:'사업가/자영업',val:'business'},{icon:'🌅',text:'은퇴자/주부',val:'retired'}]},
+  { label:'인적정보 3/3', q:'자녀가 있으신가요?', face:'left',
+    options:[{icon:'👤',text:'없음',val:'none'},{icon:'👶',text:'1명',val:'one'},{icon:'👨‍👩‍👧‍👦',text:'2명 이상',val:'many'}]},
+  { label:'재무정보 1/3', q:'월 소득은 얼마인가요?', face:'right',
+    options:[{icon:'💵',text:'500만원 이하',val:'low'},{icon:'💰',text:'500~1,000만원',val:'mid'},{icon:'💎',text:'1,000만원 초과',val:'high'}]},
+  { label:'재무정보 2/3', q:'총 자산은 얼마인가요?', face:'right',
+    options:[{icon:'🏦',text:'5억 이하',val:'low'},{icon:'🏛',text:'5~10억',val:'mid'},{icon:'🏰',text:'10억 초과',val:'high'}]},
+  { label:'재무정보 3/3', q:'주택을 보유하고 계신가요?', face:'right',
+    options:[{icon:'🏚',text:'무주택',val:'none'},{icon:'🏠',text:'1주택',val:'one'},{icon:'🏘',text:'2주택 이상/건물',val:'many'}]}
 ];
 
-// 점수로 집 단계 반환
-function getPeerStage(score) {
-  if(score >= 76) return { emoji:'🏛', lbl:'궁전 단계' };
-  if(score >= 60) return { emoji:'🏠', lbl:'아파트 단계' };
-  if(score >= 44) return { emoji:'🏡', lbl:'단독주택 단계' };
-  if(score >= 28) return { emoji:'🏚', lbl:'텐트 단계' };
-  return { emoji:'⛺', lbl:'노숙 단계' };
+const FN_RESULTS = {
+  seed:      {emoji:'🌱',title:'목돈마련',sub:'종잣돈이 최우선! 저축 구조를 먼저 만들어야 합니다',insights:['같은 연령대의 68%가 종잣돈 부족을 느낍니다','월 소득의 30% 이상 저축하면 3년 안에 1억 가능','금융집짓기의 저축 설계가 시급합니다']},
+  invest:    {emoji:'📈',title:'투자전략',sub:'자산을 키울 투자 포트폴리오가 필요합니다',insights:['현재 자산 수준에서 연 7% 수익이면 10년 후 2배','분산투자로 리스크를 줄이면서 수익을 극대화','금융집짓기의 투자 설계를 시작하세요']},
+  retire:    {emoji:'🌅',title:'노후준비',sub:'연금 갭을 메우는 것이 가장 급합니다',insights:['국민연금만으로는 희망생활비의 30%만 충당 가능','지금 시작하면 월 50만원으로 노후 격차 해소 가능','금융집짓기의 연금 설계를 서두르세요']},
+  debt:      {emoji:'⚖️',title:'대출관리',sub:'부채 구조를 먼저 정리해야 자산이 늘어납니다',insights:['대출 이자만 줄여도 연 100~300만원 절약 가능','부채비율 40% 이하가 건강한 재무의 기준','금융집짓기의 부채 정리가 최우선입니다']},
+  insurance: {emoji:'🛡',title:'보험정비',sub:'보장 구조를 점검해야 큰 돈이 새지 않습니다',insights:['보험 5개 이상이면 중복보장 확률 80%','불필요한 보험료만 줄여도 월 20~30만원 절약','금융집짓기의 보험 기초공사를 점검하세요']},
+  tax:       {emoji:'🧾',title:'세금절세',sub:'절세 전략이 수익률보다 확실한 수익입니다',insights:['연말정산 최적화만으로 연 66만원 환급 가능','사업소득 절세 구조를 만들면 실질소득 10% 상승','금융집짓기의 세금 설계로 새는 돈을 막으세요']},
+  realestate:{emoji:'🏠',title:'부동산전략',sub:'자산 중 부동산 비중을 조정해야 합니다',insights:['자산의 80% 이상이 부동산이면 유동성 위험','부동산+금융자산 균형이 안정적 자산 성장의 핵심','금융집짓기의 주택 설계를 재점검하세요']},
+  inherit:   {emoji:'👨‍👩‍👧',title:'상속증여',sub:'자산 이전 설계를 시작해야 할 때입니다',insights:['사전 증여는 10년 단위, 일찍 시작할수록 유리','상속세 절세 구조를 미리 만들면 수억 절약 가능','금융집짓기의 자산이전 설계가 시급합니다']},
+  saving:    {emoji:'💰',title:'재테크시작',sub:'체계적인 재테크 습관을 만들어야 합니다',insights:['20~30대 재테크 시작이 40대 시작보다 2배 유리','적금 → 펀드 → ETF 단계적 전환이 최적 경로','금융집짓기의 저축 → 투자 로드맵을 세우세요']}
+};
+
+// ── 상태 ──
+let fnStep = 0;
+let fnAnswers = [];
+let fnResultKey = '';
+let fnCurrentScreen = 's0';
+
+// ── D-카운터 (나이 미입력 시 ? 표시) ──
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('fn-d-landing');
+  if(el) el.textContent = 'D-25년';
+});
+
+// ── 화면 전환 ──
+function fnGoTo(id) {
+  const cur = document.getElementById('fn-' + fnCurrentScreen);
+  const next = document.getElementById('fn-' + id);
+  if(!cur || !next) return;
+  cur.classList.remove('active');
+  cur.classList.add('fn-exit');
+  setTimeout(() => cur.classList.remove('fn-exit'), 400);
+  next.classList.add('active');
+  if(next.scrollTop !== undefined) next.scrollTop = 0;
+  fnCurrentScreen = id;
 }
 
-function buildResult() {
-  // ── ① D-카운터 (은퇴 73세 기준) ──
-  const RETIRE_AGE = 73;
-  const months = Math.max(0, (RETIRE_AGE - S.age) * 12);
-  const years  = Math.floor(months / 12);
+function fnSkipToSim() {
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+}
 
-  document.getElementById('drc-num').textContent   = 'D-' + months.toLocaleString() + '개월';
-  document.getElementById('drc-years').textContent = years + '년 남았습니다';
-  document.getElementById('drc-basis').textContent = S.age + '세 기준 · 은퇴 ' + RETIRE_AGE + '세';
-  const srcEl = document.querySelector('.dhc-source'); if(srcEl) srcEl.textContent = '출처: 통계청 한국인 실질 은퇴연령 73세';
+// ── 큐브 초기화 ──
+const FN_TOP_LABELS = ['목돈','재테크','대출','투자','노후','보험','세금','부동산','상속'];
 
-  // 긴급도 (73세 기준으로 재설정)
-  const urgEl = document.getElementById('dhc-urgency');
-  let urgClass, urgTxt;
-  if(months >= 420)      { urgTxt = '여유'; urgClass = 'urgency-low'; }
-  else if(months >= 240) { urgTxt = '보통'; urgClass = 'urgency-mid'; }
-  else if(months >= 120) { urgTxt = '긴급'; urgClass = 'urgency-high'; }
-  else                   { urgTxt = '위기'; urgClass = 'urgency-crisis'; }
-  urgEl.textContent = urgTxt;
-  urgEl.className   = 'dhc-urgency ' + urgClass;
-
-  // ── ② 동년배 평균 (상위/하위 삭제, 평균+집등급만) ──
-  const { group } = getPeerGroup(S.age, S.income);
-  document.getElementById('peer-title').textContent = getPeerLabel(S.age, S.income);
-  document.getElementById('peer-avg').textContent   = group.avg;
-
-  // 동년배 평균 점수 → 금융집 등급
-  const peerStage = getPeerStage(group.avg);
-  document.getElementById('peer-house-emoji').textContent = peerStage.emoji;
-  document.getElementById('peer-house-lbl').textContent   = peerStage.lbl;
-
-  // 코멘트
-  const posMsg = document.getElementById('peer-my-pos');
-  if(group.avg < 40)
-    posMsg.innerHTML = `📍 같은 그룹 대부분이 <b>은퇴 준비 초기 단계</b>입니다. 지금 시작하면 앞서 나갈 수 있습니다.`;
-  else if(group.avg < 55)
-    posMsg.innerHTML = `📍 같은 그룹 10명 중 <b>5명은 은퇴 준비가 절반도 안 됩니다.</b> 지금이 가장 중요한 시기입니다.`;
-  else
-    posMsg.innerHTML = `📍 같은 그룹은 <b>기본 준비는 됐지만</b> 최적화가 부족한 단계입니다. 시뮬레이터로 빈 곳을 채우세요.`;
-
-  // ── ③ 금융집 등급 ──
-  // 동년배 평균 대비로 등급 표현 (점수 숫자 없이)
-  let stage = STAGES[0];
-  // 동년배 평균 기준으로 등급 산출
-  const relScore = group.avg; // 평균값 기준
-  for(const s of STAGES) { if(relScore >= s.score) stage = s; }
-
-  document.getElementById('house-emoji').textContent = stage.emoji;
-  document.getElementById('house-lbl').textContent   = stage.lbl;
-  document.getElementById('hgc-badge').textContent   = stage.badge;
-  document.getElementById('hgc-desc').textContent    = stage.desc;
-
-  // 단계 바
-  const stageIdx = STAGES.indexOf(stage);
-  document.querySelectorAll('.stage-item').forEach((el, i) => {
-    el.classList.remove('cur','past');
-    if(i === stageIdx)      el.classList.add('cur');
-    else if(i < stageIdx)  el.classList.add('past');
+function fnInitCube() {
+  const faceMap = {fnFront:'fn-face-other',fnBack:'fn-face-other',fnRight:'fn-face-right',fnLeft:'fn-face-left',fnTop:'fn-face-other',fnBottom:'fn-face-other'};
+  Object.entries(faceMap).forEach(([id, cls]) => {
+    const face = document.getElementById(id);
+    if(!face) return;
+    face.className = 'fnCubeFace ' + cls;
+    face.innerHTML = '';
+    const labels = id === 'fnTop' ? FN_TOP_LABELS : Array(9).fill('');
+    labels.forEach(l => {
+      const cell = document.createElement('div');
+      cell.className = 'fn-cube-cell';
+      cell.textContent = l;
+      face.appendChild(cell);
+    });
   });
+}
 
-  // ── ④ 긴급 과제 ──
-  const urgents = [];
-  if(S.worries.includes('debt'))
-    urgents.push({ t: '부채 비율 점검', d: '빚이 자산의 50%를 넘으면 둑이 무너집니다. 지금 부채비율을 확인하세요.' });
-  if(S.worries.includes('insurance') || S.age > 40)
-    urgents.push({ t: '보험 8종 점검', d: '뇌혈관·심혈관 미가입 시 소득 12개월치 리스크가 노출됩니다.' });
-  if(S.worries.includes('retire') || S.age > 45)
-    urgents.push({ t: '은퇴 준비율 계산', d: `은퇴까지 ${months}개월. 지금 준비율이 몇 %인지 바로 확인하세요.` });
-  if(urgents.length === 0)
-    urgents.push({ t: 'IRP·연금저축 최적화', d: 'IRP 700만원 한도 내 납입 시 최대 115만원 세액공제 가능합니다.' });
-
-  const ul = document.getElementById('urgent-list');
-  if(ul) ul.innerHTML = urgents.slice(0,3).map((u,i) => `
-    <div class="urgent-item">
-      <div class="urgent-num">${i+1}</div>
-      <div class="urgent-text"><b>${u.t}</b><br>${u.d}</div>
-    </div>`).join('');
-
-  // ── ⑤ CFP 코멘트 ──
-  const top = S.worries[0] || 'retire';
-  const msgs = {
-    debt:      `<b>부채가 가장 긴급합니다.</b> 은퇴까지 ${months}개월인데 지금 부채부터 해결하지 않으면 나머지를 아무리 잘해도 둑이 무너집니다. 시뮬레이터에서 최적 상환 전략을 확인하세요.`,
-    retire:    `은퇴까지 ${months}개월. <b>지금 매월 얼마를 어디에 넣어야 하는지</b> 시뮬레이터가 정확히 계산해 드립니다. 시작이 늦을수록 매월 납입액이 기하급수로 늘어납니다.`,
-    insurance: `보험은 <b>금융집의 Foundation(기초)</b>입니다. 땅이 흔들리면 집 전체가 무너집니다. 8종 중 무엇이 빠져 있는지 지금 확인하세요.`,
-    invest:    `월 ${S.income}만원 소득 기준, <b>투자 전에 순서가 먼저입니다.</b> 부채 → 비상자금 → 보험 → 투자. 순서가 틀리면 아무리 열심히 해도 한 군데서 펑크납니다.`,
-    tax:       `연간 절세 가능액이 <b>수백만원</b>에 달합니다. IRP·연금저축 한도를 채우고 있는지 시뮬레이터에서 바로 확인하세요.`,
+function fnRotateCube(face) {
+  const cube = document.getElementById('fn-cube3d');
+  if(!cube) return;
+  const rots = {
+    left:  'rotateX(-15deg) rotateY(70deg)',
+    right: 'rotateX(-15deg) rotateY(-40deg)',
+    top:   'rotateX(-50deg) rotateY(25deg)',
+    front: 'rotateX(-15deg) rotateY(25deg)'
   };
-  document.getElementById('cfp-msg').innerHTML = msgs[top] || msgs.retire;
+  cube.style.transform = rots[face] || rots.front;
+}
 
-  // ── 고민 연동 CTA 문구 ──
-  const worryLabels = {
-    retire:    '노후 · 은퇴 준비',
-    debt:      '대출 · 부채 관리',
-    invest:    '투자 · 자산 성장',
-    insurance: '보험 · 위험 관리',
-    tax:       '세금 · 절세 전략',
-  };
-  const topWorry = S.worries.length > 0 ? S.worries[0] : 'retire';
-  const worryTxt = worryLabels[topWorry] || '재무 설계';
-  const ctaMsg = document.getElementById('fn-cta-worry-msg');
-  if(ctaMsg) {
-    ctaMsg.innerHTML =
-      '지금 가장 걱정되시는 <b style="color:var(--gold)">' + worryTxt + '</b>을 위해<br>' +
-      '금융집짓기® 시뮬레이터가 필요합니다.';
+// ── 퍼널 시작 ──
+function fnStartCube() {
+  fnStep = 0;
+  fnAnswers = [];
+  fnInitCube();
+  fnRenderStep();
+  fnGoTo('s1');
+}
+
+// ── 스텝 렌더 ──
+function fnRenderStep() {
+  const step = FN_STEPS[fnStep];
+  if(!step) return;
+
+  // 진행 바
+  const prog = document.getElementById('fn-step-prog');
+  if(prog) {
+    prog.innerHTML = '';
+    for(let i=0; i<6; i++) {
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:${i===fnStep?'44px':'32px'};height:4px;border-radius:2px;background:${i<fnStep?'#D4A853':i===fnStep?'#D4A853':'rgba(255,255,255,.15)'};transition:all .3s;`;
+      prog.appendChild(dot);
+    }
+  }
+
+  // 레이블 + 질문
+  const lbl = document.getElementById('fn-step-label');
+  const q   = document.getElementById('fn-step-q');
+  if(lbl) lbl.textContent = step.label;
+  if(q)   q.textContent   = step.q;
+
+  // 큐브 회전
+  fnRotateCube(step.face);
+
+  // 선택지
+  const choicesEl = document.getElementById('fn-choices');
+  if(!choicesEl) return;
+  choicesEl.innerHTML = '';
+  step.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'fn-choice-btn';
+    btn.innerHTML = `<span style="font-size:22px;">${opt.icon}</span><span>${opt.text}</span>`;
+    btn.onclick = () => fnSelectChoice(opt.val, i);
+    choicesEl.appendChild(btn);
+  });
+}
+
+// ── 선택 ──
+function fnSelectChoice(val, idx) {
+  fnAnswers.push(val);
+
+  // 큐브 셀 하이라이트
+  const step = FN_STEPS[fnStep];
+  const faceId = step.face === 'left' ? 'fnLeft' : 'fnRight';
+  const face = document.getElementById(faceId);
+  if(face) {
+    const cells = face.querySelectorAll('.fn-cube-cell');
+    const row = fnStep % 3;
+    if(cells[row*3 + idx]) cells[row*3 + idx].classList.add('fn-hl');
+  }
+
+  fnStep++;
+  if(fnStep < 6) {
+    setTimeout(fnRenderStep, 300);
+  } else {
+    fnShowAnalyzing();
   }
 }
 
+// ── 분석 ──
+function fnShowAnalyzing() {
+  fnGoTo('s7');
+  setTimeout(() => {
+    fnResultKey = fnCalcResult(fnAnswers);
+    fnShowResult();
+  }, 2800);
+}
+
+// ── 결과 계산 (원트큐브 알고리즘 동일) ──
+function fnCalcResult(answers) {
+  const scores = {seed:0,invest:0,retire:0,debt:0,insurance:0,tax:0,realestate:0,inherit:0,saving:0};
+  const [age,job,child,income,asset,house] = answers;
+  if(age==='young'){scores.seed+=3;scores.saving+=3;scores.invest+=1;}
+  else if(age==='mid'){scores.retire+=3;scores.invest+=2;scores.tax+=1;scores.insurance+=1;}
+  else{scores.retire+=3;scores.inherit+=3;scores.insurance+=1;}
+  if(job==='worker'){scores.retire+=2;scores.saving+=1;}
+  else if(job==='business'){scores.tax+=3;scores.invest+=1;}
+  else{scores.retire+=2;scores.inherit+=2;scores.insurance+=1;}
+  if(child==='none'){scores.seed+=1;scores.invest+=1;}
+  else if(child==='one'){scores.insurance+=1;scores.saving+=1;}
+  else{scores.insurance+=2;scores.inherit+=1;}
+  if(income==='low'){scores.seed+=2;scores.debt+=1;}
+  else if(income==='mid'){scores.invest+=2;scores.tax+=1;}
+  else{scores.tax+=3;scores.invest+=2;scores.inherit+=1;}
+  if(asset==='low'){scores.seed+=2;scores.saving+=2;}
+  else if(asset==='mid'){scores.invest+=2;scores.realestate+=1;}
+  else{scores.inherit+=3;scores.tax+=2;scores.realestate+=2;}
+  if(house==='none'){scores.seed+=2;scores.realestate+=1;}
+  else if(house==='one'){scores.retire+=1;scores.invest+=1;}
+  else{scores.realestate+=3;scores.inherit+=2;scores.tax+=1;}
+  let maxKey='seed',maxVal=0;
+  for(const [k,v] of Object.entries(scores)){if(v>maxVal){maxVal=v;maxKey=k;}}
+  return maxKey;
+}
+
+// ── 결과 화면 ──
+function fnShowResult() {
+  fnGoTo('s8');
+  const r = FN_RESULTS[fnResultKey];
+
+  // D-카운터 연수 하드코딩 (연령대별)
+  const yearMap = {young:'D-35년', mid:'D-25년', senior:'D-5년'};
+  const subMap  = {young:'20~30대 기준 · 은퇴 73세', mid:'40~50대 기준 · 은퇴 73세', senior:'60~70대 기준 · 은퇴 73세'};
+  const dEl = document.getElementById('fn-result-d');
+  const dSub = document.getElementById('fn-result-d-sub');
+  if(dEl)  dEl.textContent  = yearMap[fnAnswers[0]] || 'D-25년';
+  if(dSub) dSub.textContent = (subMap[fnAnswers[0]] || '40~50대 기준 · 은퇴 73세') + ' (출처: 통계청)';
+
+  // 결과 내용
+  const eEl = document.getElementById('fn-r-emoji');
+  const tEl = document.getElementById('fn-r-title');
+  const sEl = document.getElementById('fn-r-sub');
+  if(eEl) eEl.textContent = r.emoji;
+  if(tEl) tEl.textContent = r.title;
+  if(sEl) sEl.textContent = r.sub;
+
+  // 스탯 (연령대/소득/직업)
+  const ageLabel    = fnAnswers[0]==='young'?'20~30대':fnAnswers[0]==='mid'?'40~50대':'60대+';
+  const incomeLabel = fnAnswers[3]==='low'?'500만원 이하':fnAnswers[3]==='mid'?'500~1,000만원':'1,000만원+';
+  const jobLabel    = fnAnswers[1]==='worker'?'직장인':fnAnswers[1]==='business'?'사업가':'은퇴자';
+  const statEl = document.getElementById('fn-r-stat');
+  if(statEl) {
+    statEl.style.display = 'flex';
+    statEl.innerHTML = [
+      {val:ageLabel,    lbl:'연령대'},
+      {val:incomeLabel, lbl:'월소득'},
+      {val:jobLabel,    lbl:'직업'}
+    ].map(s=>`<div style="text-align:center;"><div style="font-size:14px;font-weight:900;color:#D4A853;">${s.val}</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">${s.lbl}</div></div>`).join('');
+  }
+
+  // 인사이트 비표시
+
+  // 고민 연동 메시지
+  const worryEl = document.getElementById('fn-r-worry-msg');
+  if(worryEl) worryEl.innerHTML =
+    `<b style="color:#E8B84B;">${r.title}</b>을 해결하려면<br>먼저 정확한 재무 현황 파악이 필요합니다.<br>금융집짓기 시뮬레이터로 지금 바로 확인하세요.`;
+}
 
 /* ── 퍼널 공유 함수 ── */
 function fnShareKakao() {
