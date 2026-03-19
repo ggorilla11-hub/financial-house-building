@@ -2056,7 +2056,6 @@ body { color: #1a1a1a; }
     fbAuth.onAuthStateChanged(function(user) {
       fbCurrentUser = user;
       if(user) {
-        // 로그인 상태 → 구독 확인
         fbCheckSubscription(user);
       }
     });
@@ -2080,34 +2079,23 @@ body { color: #1a1a1a; }
     }
 
     // Google 로그인 실행 (리다이렉트 방식 - COOP 정책 대응)
-    // Google 로그인 - 리다이렉트 방식만 사용 (COOP 정책 대응)
-    function fbGoogleLogin() {
-      localStorage.setItem('fh_login_pending', '1');
-      localStorage.setItem('fh_login_plan', mpSelectedPlan || 'month');
-      fbAuth.signInWithRedirect(googleProvider);
+    // Google 로그인 - 팝업 방식 (vercel.json COOP 해제 후)
+    async function fbGoogleLogin() {
+      try {
+        const result = await fbAuth.signInWithPopup(googleProvider);
+        return result.user;
+      } catch(e) {
+        console.error('Google 로그인 실패:', e.code, e.message);
+        showToast('로그인에 실패했습니다. 다시 시도해주세요.');
+        return null;
+      }
     }
 
-    // 리다이렉트 로그인 결과 처리
-    fbAuth.getRedirectResult().then(function(result) {
-      if(result && result.user) {
-        console.log('✅ 리다이렉트 로그인 성공:', result.user.email);
-        fbCurrentUser = result.user;
-        mpShowLoggedInUser(result.user);
-
-        // 이전에 결제 진행 중이었으면 모달 다시 오픈
-        const pending = localStorage.getItem('fh_login_pending');
-        const plan    = localStorage.getItem('fh_login_plan') || 'month';
-        if(pending === '1') {
-          localStorage.removeItem('fh_login_pending');
-          localStorage.removeItem('fh_login_plan');
-          mpSelectedPlan = plan;
-          setTimeout(function() {
-            mpOpenSubscribe();
-          }, 500);
-        }
+    // 리다이렉트 결과 (에러 처리용)
+    fbAuth.getRedirectResult().catch(function(e) {
+      if(e.code !== 'auth/no-current-user') {
+        console.log('리다이렉트 오류:', e.code);
       }
-    }).catch(function(e) {
-      console.log('리다이렉트 결과 없음 (정상):', e.code);
     });
 
     // 결제 후 Firebase에 구독자 저장
@@ -6965,12 +6953,22 @@ document.addEventListener('DOMContentLoaded', function() {
    Google 로그인 + 결제 연동
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-// Google 로그인 시작 (리다이렉트 방식)
-function mpGoogleLoginAndPay() {
+// Google 로그인 후 결제 진행
+async function mpGoogleLoginAndPay() {
   const btn = document.querySelector('#mp-before-login button');
-  if(btn) { btn.disabled = true; btn.textContent = 'Google 로그인 페이지로 이동 중...'; }
-  showToast('Google 로그인 페이지로 이동합니다 🔐');
-  setTimeout(function() { fbGoogleLogin(); }, 800);
+  if(btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
+
+  try {
+    const user = await fbGoogleLogin();
+    if(!user) {
+      if(btn) { btn.disabled = false; btn.textContent = 'Google로 안전하게 시작하기'; }
+      return;
+    }
+    mpShowLoggedInUser(user);
+  } catch(e) {
+    showToast('로그인 오류가 발생했습니다.');
+    if(btn) { btn.disabled = false; btn.textContent = 'Google로 안전하게 시작하기'; }
+  }
 }
 
 // 로그인 사용자 UI 표시
