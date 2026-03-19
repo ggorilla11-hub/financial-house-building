@@ -5332,15 +5332,15 @@ function confirmPay(plan){
     const obj = {};
     obj.clientKey  = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE  = 'card';
-    obj.PCD_PAY_WORK  = 'PAY';
+    obj.PCD_PAY_WORK  = isYearly ? 'PAY' : 'CERT'; // 월간=정기CERT, 연간=단건PAY
     obj.PCD_CARD_VER  = '01';
     obj.PCD_PAY_GOODS = '금융집짓기® 실버 ' + planName + ' 구독';
     obj.PCD_PAY_TOTAL = payAmount;
     obj.PCD_PAY_OID   = order_id;
-    obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y'; // 연간=단건, 월간=정기
+    obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
     obj.PCD_SIMPLE_FLAG  = 'Y';
     obj.PCD_RST_URL   = '/';
-    // 정기결제 중복방지 년월 (월간만 필요)
+    // 정기결제 중복방지 년월
     const _now = new Date();
     obj.PCD_PAY_YEAR  = String(_now.getFullYear());
     obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
@@ -6002,9 +6002,16 @@ function mpSelectPlan(p) {
   document.getElementById('mp-plan-month').classList.toggle('mp-selected', p==='month');
   document.getElementById('mp-plan-year').classList.toggle('mp-selected', p==='year');
   const cta = document.getElementById('mp-sub-cta');
+  const plan = getEarlyBirdPlan();
   if(cta) cta.textContent = p==='month'
-    ? '지금 ₩' + getEarlyBirdPlan().monthly.toLocaleString() + '/월 구독 시작하기 →'
-    : '지금 ₩' + getEarlyBirdPlan().annual.toLocaleString() + '/년 구독 시작하기 →';
+    ? '지금 ₩' + plan.monthly.toLocaleString() + '/월 구독 시작하기 →'
+    : '지금 ₩' + plan.annual.toLocaleString() + '/년 구독 시작하기 →';
+
+  // 안내 문구: 월간만 표시 (정기결제), 연간은 숨김 (단건결제)
+  const notice = document.getElementById('mp-cert-notice');
+  const amountEl = document.getElementById('mp-cert-amount');
+  if(notice) notice.style.display = p==='month' ? 'flex' : 'none';
+  if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
 }
 function mpCompletePurchase() {
   mpCloseSubscribe();
@@ -7264,6 +7271,18 @@ function mpResetLoginUI() {
           style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 6px">
           변경
         </button>
+      </div>
+      <!-- 정기결제 안내 문구 -->
+      <div id="mp-cert-notice" style="display:flex;align-items:flex-start;gap:7px;
+        background:#FFF8E7;border:1px solid #FFE082;border-radius:8px;
+        padding:8px 11px;margin-bottom:8px">
+        <span style="font-size:13px;flex-shrink:0">ℹ️</span>
+        <div style="font-size:9.5px;color:#7B5800;line-height:1.6">
+          <strong>카드 확인 안내:</strong> 정기결제 등록을 위해
+          100원이 승인 후 즉시 취소됩니다.
+          실제 청구 금액은 <strong id="mp-cert-amount">₩9,900</strong>이며,
+          카드 확인 완료 후 즉시 청구됩니다.
+        </div>
       </div>
       <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
         지금 ₩9,900/월 구독 시작하기 →
