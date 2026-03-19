@@ -2028,6 +2028,7 @@ body { color: #1a1a1a; }
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script>
     // Firebase 초기화
@@ -5971,12 +5972,8 @@ function mpOpenSubscribe() {
   if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
   if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
-  // Google 로그인 상태 확인 (무한루프 없이 직접 처리)
-  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
-    mpShowLoggedInUser(fbCurrentUser);
-  } else {
-    mpResetLoginUI();
-  }
+  // 입력 폼 초기화
+  mpResetLoginUI();
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
 }
