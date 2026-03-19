@@ -2028,7 +2028,6 @@ body { color: #1a1a1a; }
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script>
     // Firebase 초기화
@@ -2098,52 +2097,24 @@ body { color: #1a1a1a; }
       }
     });
 
-    // 결제 후 Firebase에 구독자 저장
+    // 결제 후 Firebase에 구독자 저장 (로그인 없이)
     async function fbSaveSubscriber(payData) {
-      const user = fbCurrentUser;
-      if(!user) return;
       try {
-        await fbDb.collection('subscribers').doc(user.uid).set({
-          uid: user.uid,
-          name: user.displayName || '',
-          email: user.email || '',
-          photo: user.photoURL || '',
+        const name  = localStorage.getItem('fh_payer_name')  || '';
+        const email = localStorage.getItem('fh_payer_email') || '';
+        const docId = 'sub_' + Date.now();
+
+        await fbDb.collection('subscribers').doc(docId).set({
+          name, email,
           isActive: true,
           plan: payData.plan || 'silver-monthly',
           amount: payData.amount || 9900,
           subscribedAt: new Date().toISOString(),
           orderId: payData.orderId || '',
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-
+        });
         console.log('✅ Firebase 구독자 저장 완료');
-
-        // 감사 이메일 발송 (웹훅 서버 경유)
-        fbSendWelcomeEmail(user, payData);
-
       } catch(e) {
         console.error('Firebase 저장 오류:', e);
-      }
-    }
-
-    // 감사 이메일 발송 요청
-    async function fbSendWelcomeEmail(user, payData) {
-      try {
-        await fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: user.displayName || '고객',
-            email: user.email,
-            plan: payData.plan || 'silver-monthly',
-            amount: payData.amount || 9900,
-            orderId: payData.orderId || '',
-            subscribedAt: new Date().toISOString()
-          })
-        });
-        console.log('✅ 감사 이메일 발송 요청 완료');
-      } catch(e) {
-        console.error('이메일 발송 오류:', e);
       }
     }
   </script>
@@ -5389,18 +5360,14 @@ function onPaypleResult(data){
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
-    // Firebase 구독자 저장 + 감사 이메일
-    if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
-      fbSaveSubscriber({
-        plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
-        amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
-        orderId: data.PCD_PAY_OID || ''
-      });
-      const _uName = fbCurrentUser.displayName || '회원';
-      showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
-    } else {
-      showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
-    }
+    // Firebase 구독자 저장
+    fbSaveSubscriber({
+      plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
+      amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
+      orderId: data.PCD_PAY_OID || ''
+    });
+    const _uName = localStorage.getItem('fh_payer_name') || '회원';
+    showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
     // 헤더 버튼 업데이트
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
@@ -6034,9 +6001,24 @@ function mpSelectPlan(p) {
   if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
 }
 function mpCompletePurchase() {
-  // 모달은 열어둔 채로 결제 실행
-  // (페이플 팝업이 모달 위에 뜸)
-  // 결제 완료 후 onPaypleResult에서 모달 닫음
+  const name  = document.getElementById('mp-payer-name')?.value?.trim();
+  const email = document.getElementById('mp-payer-email')?.value?.trim();
+
+  if(!name) {
+    showToast('이름을 입력해주세요');
+    document.getElementById('mp-payer-name')?.focus();
+    return;
+  }
+  if(!email || !email.includes('@')) {
+    showToast('이메일을 올바르게 입력해주세요');
+    document.getElementById('mp-payer-email')?.focus();
+    return;
+  }
+
+  // 입력값 저장
+  localStorage.setItem('fh_payer_name',  name);
+  localStorage.setItem('fh_payer_email', email);
+
   confirmPay(mpSelectedPlan);
 }
 
@@ -6950,54 +6932,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Google 로그인 + 결제 연동
+   결제자 정보 입력 + 결제 연동
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-// Google 로그인 후 결제 진행
-async function mpGoogleLoginAndPay() {
-  const btn = document.querySelector('#mp-before-login button');
-  if(btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
-
-  try {
-    const user = await fbGoogleLogin();
-    if(!user) {
-      if(btn) { btn.disabled = false; btn.textContent = 'Google로 안전하게 시작하기'; }
-      return;
-    }
-    mpShowLoggedInUser(user);
-  } catch(e) {
-    showToast('로그인 오류가 발생했습니다.');
-    if(btn) { btn.disabled = false; btn.textContent = 'Google로 안전하게 시작하기'; }
-  }
-}
-
-// 로그인 사용자 UI 표시
-function mpShowLoggedInUser(user) {
-  const before = document.getElementById('mp-before-login');
-  const after  = document.getElementById('mp-after-login');
-  if(before) before.style.display = 'none';
-  if(after)  after.style.display  = 'block';
-
-  // 사용자 정보 표시
-  const photoEl = document.getElementById('mp-user-photo');
-  const nameEl  = document.getElementById('mp-user-name');
-  const emailEl = document.getElementById('mp-user-email');
-  if(photoEl && user.photoURL) photoEl.src = user.photoURL;
-  if(photoEl && !user.photoURL) photoEl.style.display = 'none';
-  if(nameEl)  nameEl.textContent  = user.displayName || '사용자';
-  if(emailEl) emailEl.textContent = user.email || '';
-
-  // CTA 버튼 가격 업데이트
-  mpSelectPlan(mpSelectedPlan);
-}
-
-// 로그인 UI 리셋
+// 입력 정보 확인 후 결제 진행
 function mpResetLoginUI() {
-  const before = document.getElementById('mp-before-login');
-  const after  = document.getElementById('mp-after-login');
-  if(before) before.style.display = 'block';
-  if(after)  after.style.display  = 'none';
-  fbCurrentUser = null;
+  // 입력 폼 초기화
+  const nameInput  = document.getElementById('mp-payer-name');
+  const emailInput = document.getElementById('mp-payer-email');
+  if(nameInput)  nameInput.value  = '';
+  if(emailInput) emailInput.value = '';
 }
 
 // 구독 모달 Google 로그인 상태 확인은 원본 함수에 통합됨
