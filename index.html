@@ -5319,51 +5319,66 @@ function selPayMethod(el){
 }
 function confirmPay(plan){
   const isYearly = (plan === 'year');
-  const btn = document.getElementById('pay-confirm-btn');
-  if(btn){ btn.disabled = true; btn.textContent = '결제 준비 중...'; }
+
+  // ── 페이플 SDK 로드 확인 ──
+  if(typeof PaypleCpayAuthCheck !== 'function'){
+    showToast('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+    console.error('[오류] 페이플 SDK 미로드 - PaypleCpayAuthCheck 없음');
+    return;
+  }
 
   try {
-    const earlyPlan = getEarlyBirdPlan();
-    const payAmount = isYearly ? earlyPlan.annual : earlyPlan.monthly;
-    const planName  = isYearly ? '연간' : '월간';
-    const order_id  = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
+    const earlyPlan  = getEarlyBirdPlan();
+    const payAmount  = isYearly ? earlyPlan.annual : earlyPlan.monthly;
+    const planName   = isYearly ? '연간' : '월간';
+    const order_id   = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
+    const currentUrl = window.location.href.split('?')[0];
 
-    // clientKey 방식 - 서버 인증 불필요
+    // ── 페이플 공식 파라미터 (문서 기준) ──
     const obj = {};
-    obj.clientKey  = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
-    obj.PCD_PAY_TYPE  = 'card';
-    obj.PCD_PAY_WORK  = isYearly ? 'PAY' : 'CERT'; // 월간=정기CERT, 연간=단건PAY
-    obj.PCD_CARD_VER  = '01';
-    obj.PCD_PAY_GOODS = '금융집짓기® 실버 ' + planName + ' 구독';
-    obj.PCD_PAY_TOTAL = payAmount;
-    obj.PCD_PAY_OID   = order_id;
+    obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
+    obj.PCD_PAY_TYPE     = 'card';
+    obj.PCD_PAY_WORK     = isYearly ? 'PAY' : 'CERT';
+    obj.PCD_CARD_VER     = '01';
+    obj.PCD_PAY_GOODS    = '금융집짓기 실버 ' + planName + ' 구독'; // ® 특수문자 제거
+    obj.PCD_PAY_TOTAL    = payAmount;
+    obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
     obj.PCD_SIMPLE_FLAG  = 'Y';
-    obj.PCD_RST_URL   = '/';
-    // 정기결제 중복방지 년월
-    const _now = new Date();
-    obj.PCD_PAY_YEAR  = String(_now.getFullYear());
-    obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
+    obj.PCD_RST_URL      = currentUrl; // '/' 대신 실제 현재 URL
     obj.callbackFunction = onPaypleResult;
 
-    if(typeof PaypleCpayAuthCheck === 'function'){
-      PaypleCpayAuthCheck(obj);
-    } else {
-      showToast('결제 모듈 로드 중입니다. 새로고침 후 다시 시도해주세요.');
-      if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
+    // 정기결제 중복방지 (CERT 방식 필수)
+    if(!isYearly) {
+      const _now = new Date();
+      obj.PCD_PAY_YEAR  = String(_now.getFullYear());
+      obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
     }
 
+    console.log('[페이플 결제 요청]', {
+      work: obj.PCD_PAY_WORK,
+      amount: obj.PCD_PAY_TOTAL,
+      orderId: obj.PCD_PAY_OID,
+      rstUrl: obj.PCD_RST_URL
+    });
+
+    // ── 결제창 호출 ──
+    PaypleCpayAuthCheck(obj);
+
   } catch(e) {
-    showToast('오류가 발생했습니다. 다시 시도해 주세요.');
+    showToast('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
     console.error('[결제 오류]', e);
-    if(btn){ btn.disabled = false; btn.textContent = '결제하기'; }
   }
 }
 
 // 페이플 결제 결과 콜백
 function onPaypleResult(data){
   if(data.PCD_PAY_RST === 'success'){
-    closePayModal();
+    // 모달 닫기 (있으면 닫고 없으면 무시)
+    if(typeof closePayModal === 'function') {
+      try { closePayModal(); } catch(e) {}
+    }
+    try { mpCloseSubscribe(); } catch(e) {}
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
@@ -6014,8 +6029,9 @@ function mpSelectPlan(p) {
   if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
 }
 function mpCompletePurchase() {
-  mpCloseSubscribe();
-  // 월간/연간 모두 페이플 팝업으로 통일
+  // 모달은 열어둔 채로 결제 실행
+  // (페이플 팝업이 모달 위에 뜸)
+  // 결제 완료 후 onPaypleResult에서 모달 닫음
   confirmPay(mpSelectedPlan);
 }
 
