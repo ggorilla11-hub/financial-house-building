@@ -2026,59 +2026,7 @@ body { color: #1a1a1a; }
   
   <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
 
-  <!-- Firebase SDK - 순차 로드 방식 -->
-    <!-- Firebase SDK - 순차 로드 방식 -->
-  <script>
-    function loadFirebaseSDKs() {
-      var urls = [
-        'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-app-compat.min.js',
-        'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-auth-compat.min.js',
-        'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-firestore-compat.min.js'
-      ];
-      var i = 0;
-      function next() {
-        if(i >= urls.length) { startFirebase(); return; }
-        var s = document.createElement('script');
-        s.src = urls[i++];
-        s.onload = next;
-        s.onerror = function(){ console.warn('Firebase SDK 로드 실패'); next(); };
-        document.head.appendChild(s);
-      }
-      next();
-    }
 
-    function startFirebase() {
-      try {
-        var cfg = {
-          apiKey: "AIzaSyBiMmPrfOzU9raSBWL1W3_aFX5IRvkzJPA",
-          authDomain: "moneya-72fe6.firebaseapp.com",
-          projectId: "moneya-72fe6",
-          storageBucket: "moneya-72fe6.firebasestorage.app",
-          messagingSenderId: "688215695102",
-          appId: "1:688215695102:web:bfbbf70f2ddbf47aa44faf"
-        };
-        if(!firebase.apps.length) firebase.initializeApp(cfg);
-        window._fbAuth = firebase.auth();
-        window._fbDb   = firebase.firestore();
-        console.log('✅ Firebase 초기화 완료');
-        window._fbAuth.onAuthStateChanged(function(user) {
-          window._fbUser = user;
-          if(user) {
-            if(typeof fbCheckSubscription === 'function') fbCheckSubscription(user);
-          } else {
-            if(localStorage.getItem('fh_sub_date') && typeof mpSetMemberButton === 'function') {
-              mpIsSubscribed = true;
-              mpSetMemberButton();
-            }
-          }
-        });
-      } catch(e) {
-        console.warn('Firebase 초기화 오류:', e.message);
-      }
-    }
-
-    window.addEventListener('load', loadFirebaseSDKs);
-  </script>
 
 </head>
 <body>
@@ -5322,13 +5270,13 @@ function onPaypleResult(data){
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
     // Firebase 구독자 저장 + 감사 이메일
-    if(typeof window._fbUser !== 'undefined' && window._fbUser) {
+    if(typeof null !== 'undefined' && null) {
       fbSaveSubscriber({
         plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
         amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
         orderId: data.PCD_PAY_OID || ''
       });
-      const _uName = window._fbUser.displayName || '회원';
+      const _uName = null.displayName || '회원';
       showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
     } else {
       showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
@@ -5937,8 +5885,8 @@ function mpOpenSubscribe() {
   if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
   // Google 로그인 상태 확인 (무한루프 없이 직접 처리)
-  if(typeof window._fbUser !== 'undefined' && window._fbUser) {
-    mpShowLoggedInUser(window._fbUser);
+  if(typeof null !== 'undefined' && null) {
+    mpShowLoggedInUser(null);
   } else {
     mpResetLoginUI();
   }
@@ -6885,25 +6833,8 @@ document.addEventListener('DOMContentLoaded', function() {
    Google 로그인 + 결제 연동
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-// Google 로그인 후 결제 진행
-async function mpGoogleLoginAndPay() {
-  const btn = document.querySelector('#mp-before-login button');
-  if(btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
-
-  try {
-    const user = await fbGoogleLogin();
-    if(!user) {
-      if(btn) { btn.disabled = false; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 안전하게 시작하기'; }
-      return;
-    }
-
-    // 로그인 성공 → UI 업데이트
-    mpShowLoggedInUser(user);
-
-  } catch(e) {
-    showToast('로그인 오류가 발생했습니다.');
-    if(btn) { btn.disabled = false; }
-  }
+function mpGoogleLoginAndPay() {
+  mpCompletePurchase();
 }
 
 // 로그인 사용자 UI 표시
@@ -6926,13 +6857,11 @@ function mpShowLoggedInUser(user) {
   mpSelectPlan(mpSelectedPlan);
 }
 
-// 로그인 UI 리셋
 function mpResetLoginUI() {
-  const before = document.getElementById('mp-before-login');
-  const after  = document.getElementById('mp-after-login');
-  if(before) before.style.display = 'block';
-  if(after)  after.style.display  = 'none';
-  window.window._fbUser = null;
+  var n = document.getElementById("mp-payer-name");
+  var e = document.getElementById("mp-payer-email");
+  if(n) n.value = "";
+  if(e) e.value = "";
 }
 
 // 구독 모달 Google 로그인 상태 확인은 원본 함수에 통합됨
@@ -6973,8 +6902,8 @@ function mpLogout() {
 
 function mpDoLogout() {
   // Google 로그아웃
-  if(typeof window._fbAuth !== 'undefined') {
-    window._fbAuth.signOut().catch(e => console.log('Firebase 로그아웃:', e));
+  if(typeof null !== 'undefined') {
+    console.log().catch(e => console.log('Firebase 로그아웃:', e));
   }
   // localStorage 구독 상태는 유지 (재로그인 시 복원)
   // 단, 현재 세션만 초기화
@@ -7041,8 +6970,8 @@ function mpDoCancelSubscription() {
     localStorage.removeItem(k);
   });
   // Firebase 구독 상태 업데이트
-  if(typeof window._fbUser !== 'undefined' && window._fbUser && typeof window._fbDb !== 'undefined') {
-    window._fbDb.collection('subscribers').doc(window._fbUser.uid).update({
+  if(typeof null !== 'undefined' && null && typeof null !== 'undefined') {
+    null.collection('subscribers').doc(null.uid).update({
       isActive: false,
       cancelledAt: new Date().toISOString()
     }).catch(e => console.log('Firebase 취소 업데이트:', e));
@@ -7098,18 +7027,18 @@ function mpDoWithdraw() {
   // 모든 데이터 삭제
   localStorage.clear();
   // Firebase 계정 삭제
-  if(typeof window._fbUser !== 'undefined' && window._fbUser) {
+  if(typeof null !== 'undefined' && null) {
     // Firestore 데이터 삭제
-    if(typeof window._fbDb !== 'undefined') {
-      window._fbDb.collection('subscribers').doc(window._fbUser.uid).delete()
+    if(typeof null !== 'undefined') {
+      null.collection('subscribers').doc(null.uid).delete()
         .catch(e => console.log('Firestore 삭제:', e));
     }
     // Firebase Auth 계정 삭제
-    window._fbUser.delete().catch(e => {
+    null.delete().catch(e => {
       console.log('Firebase 계정 삭제 오류 (재로그인 필요):', e);
     });
-    if(typeof window._fbAuth !== 'undefined') {
-      window._fbAuth.signOut().catch(e => {});
+    if(typeof null !== 'undefined') {
+      console.log().catch(e => {});
     }
   }
   document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
@@ -7365,64 +7294,37 @@ function mpDoWithdraw() {
     </div>
 
   </div>
-  <!-- Google 로그인 영역 -->
-  <div id="mp-login-section">
-    <!-- 로그인 전 -->
-    <div id="mp-before-login">
-      <button onclick="mpGoogleLoginAndPay()"
-        style="width:100%;padding:13px;border-radius:12px;border:2px solid #e0e0e0;
-        background:#fff;font-size:14px;font-weight:700;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;gap:10px;
-        font-family:var(--fn);color:#3c4043;margin-bottom:8px;
-        box-shadow:0 1px 4px rgba(0,0,0,.12)">
-        <svg width="20" height="20" viewBox="0 0 48 48">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          <path fill="none" d="M0 0h48v48H0z"/>
-        </svg>
-        Google로 안전하게 시작하기
-      </button>
-      <div style="text-align:center;font-size:9px;color:var(--muted);line-height:1.5">
-        🔒 Google 계정으로 본인 인증 후 결제합니다<br>
-        별도 회원가입 없이 안전하게 이용 가능합니다
-      </div>
+  <!-- 결제자 정보 입력 -->
+  <div style="margin-bottom:10px">
+    <div style="margin-bottom:6px">
+      <label style="font-size:10px;font-weight:700;color:var(--navy);display:block;margin-bottom:3px">
+        이름 <span style="color:red">*</span>
+      </label>
+      <input id="mp-payer-name" type="text" placeholder="홍길동"
+        style="width:100%;padding:10px 12px;border-radius:8px;
+        border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);
+        box-sizing:border-box;outline:none"
+        onfocus="this.style.borderColor='#C9972A'"
+        onblur="this.style.borderColor='#ddd'">
     </div>
-
-    <!-- 로그인 후 -->
-    <div id="mp-after-login" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-        background:#f8f9fa;border-radius:10px;margin-bottom:10px">
-        <img id="mp-user-photo" src="" alt=""
-          style="width:32px;height:32px;border-radius:50%;object-fit:cover">
-        <div style="flex:1">
-          <div id="mp-user-name" style="font-size:12px;font-weight:700;color:var(--navy)"></div>
-          <div id="mp-user-email" style="font-size:9.5px;color:var(--muted)"></div>
-        </div>
-        <button onclick="fbAuth.signOut();mpResetLoginUI()"
-          style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 6px">
-          변경
-        </button>
-      </div>
-      <!-- 정기결제 안내 문구 -->
-      <div id="mp-cert-notice" style="display:flex;align-items:flex-start;gap:7px;
-        background:#FFF8E7;border:1px solid #FFE082;border-radius:8px;
-        padding:8px 11px;margin-bottom:8px">
-        <span style="font-size:13px;flex-shrink:0">ℹ️</span>
-        <div style="font-size:9.5px;color:#7B5800;line-height:1.6">
-          <strong>카드 확인 안내:</strong> 정기결제 등록을 위해
-          100원이 승인 후 즉시 취소됩니다.
-          실제 청구 금액은 <strong id="mp-cert-amount">₩9,900</strong>이며,
-          카드 확인 완료 후 즉시 청구됩니다.
-        </div>
-      </div>
-      <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
-        지금 ₩9,900/월 구독 시작하기 →
-      </button>
+    <div>
+      <label style="font-size:10px;font-weight:700;color:var(--navy);display:block;margin-bottom:3px">
+        이메일 <span style="color:red">*</span>
+      </label>
+      <input id="mp-payer-email" type="email" placeholder="example@email.com"
+        style="width:100%;padding:10px 12px;border-radius:8px;
+        border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);
+        box-sizing:border-box;outline:none"
+        onfocus="this.style.borderColor='#C9972A'"
+        onblur="this.style.borderColor='#ddd'">
+    </div>
+    <div style="font-size:9px;color:#999;margin-top:5px">
+      🔒 구독 관리 및 안내에만 사용됩니다
     </div>
   </div>
-</div>
+  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
+    지금 ₩9,900/월 구독 시작하기 →
+  </button>
 
 
 <div class="mypage-overlay" id="mypageOverlay">
