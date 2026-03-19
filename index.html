@@ -2052,17 +2052,10 @@ body { color: #1a1a1a; }
     // 현재 로그인 사용자
     let fbCurrentUser = null;
 
-    // 테스트용 강제 로그아웃
-    if(window._doSignOut) {
-      fbAuth.signOut().then(function() {
-        console.log('✅ Firebase 로그아웃 완료');
-      });
-    }
-
     // 인증 상태 감지
     fbAuth.onAuthStateChanged(function(user) {
       fbCurrentUser = user;
-      if(user && !window._doSignOut) {
+      if(user) {
         // 로그인 상태 → 구독 확인
         fbCheckSubscription(user);
       }
@@ -2087,27 +2080,11 @@ body { color: #1a1a1a; }
     }
 
     // Google 로그인 실행 (리다이렉트 방식 - COOP 정책 대응)
-    async function fbGoogleLogin() {
-      try {
-        // 팝업 먼저 시도, 실패 시 리다이렉트로 전환
-        const result = await fbAuth.signInWithPopup(googleProvider);
-        return result.user;
-      } catch(e) {
-        if(e.code === 'auth/popup-blocked' || 
-           e.code === 'auth/popup-closed-by-user' ||
-           e.message.includes('Cross-Origin') ||
-           e.message.includes('COOP')) {
-          // 리다이렉트 방식으로 전환
-          console.log('팝업 차단 → 리다이렉트 방식으로 전환');
-          localStorage.setItem('fh_login_pending', '1');
-          localStorage.setItem('fh_login_plan', mpSelectedPlan || 'month');
-          await fbAuth.signInWithRedirect(googleProvider);
-          return null;
-        }
-        console.error('Google 로그인 실패:', e);
-        showToast('로그인에 실패했습니다. 다시 시도해주세요.');
-        return null;
-      }
+    // Google 로그인 - 리다이렉트 방식만 사용 (COOP 정책 대응)
+    function fbGoogleLogin() {
+      localStorage.setItem('fh_login_pending', '1');
+      localStorage.setItem('fh_login_plan', mpSelectedPlan || 'month');
+      fbAuth.signInWithRedirect(googleProvider);
     }
 
     // 리다이렉트 로그인 결과 처리
@@ -2185,16 +2162,6 @@ body { color: #1a1a1a; }
 
 </head>
 <body>
-<script>
-// ⚠️ 테스트용 완전 초기화
-localStorage.removeItem('fh_subscribed');
-localStorage.removeItem('fh_member_v1');
-localStorage.removeItem('fh_sub_date');
-localStorage.removeItem('fh_sub_oid');
-// Firebase 로그아웃은 SDK 로드 후 처리
-window._doSignOut = true;
-console.log('✅ 구독 상태 초기화');
-</script>
 
 
 <div id="funnel-wrap">
@@ -6998,25 +6965,12 @@ document.addEventListener('DOMContentLoaded', function() {
    Google 로그인 + 결제 연동
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-// Google 로그인 후 결제 진행
-async function mpGoogleLoginAndPay() {
+// Google 로그인 시작 (리다이렉트 방식)
+function mpGoogleLoginAndPay() {
   const btn = document.querySelector('#mp-before-login button');
-  if(btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
-
-  try {
-    const user = await fbGoogleLogin();
-    if(!user) {
-      if(btn) { btn.disabled = false; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 안전하게 시작하기'; }
-      return;
-    }
-
-    // 로그인 성공 → UI 업데이트
-    mpShowLoggedInUser(user);
-
-  } catch(e) {
-    showToast('로그인 오류가 발생했습니다.');
-    if(btn) { btn.disabled = false; }
-  }
+  if(btn) { btn.disabled = true; btn.textContent = 'Google 로그인 페이지로 이동 중...'; }
+  showToast('Google 로그인 페이지로 이동합니다 🔐');
+  setTimeout(function() { fbGoogleLogin(); }, 800);
 }
 
 // 로그인 사용자 UI 표시
