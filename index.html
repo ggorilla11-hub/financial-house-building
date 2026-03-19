@@ -2052,10 +2052,17 @@ body { color: #1a1a1a; }
     // 현재 로그인 사용자
     let fbCurrentUser = null;
 
+    // 테스트용 강제 로그아웃
+    if(window._doSignOut) {
+      fbAuth.signOut().then(function() {
+        console.log('✅ Firebase 로그아웃 완료');
+      });
+    }
+
     // 인증 상태 감지
     fbAuth.onAuthStateChanged(function(user) {
       fbCurrentUser = user;
-      if(user) {
+      if(user && !window._doSignOut) {
         // 로그인 상태 → 구독 확인
         fbCheckSubscription(user);
       }
@@ -2144,12 +2151,14 @@ body { color: #1a1a1a; }
 </head>
 <body>
 <script>
-// ⚠️ 테스트용 초기화 - 확인 후 제거
+// ⚠️ 테스트용 완전 초기화
 localStorage.removeItem('fh_subscribed');
 localStorage.removeItem('fh_member_v1');
 localStorage.removeItem('fh_sub_date');
 localStorage.removeItem('fh_sub_oid');
-console.log('✅ 구독 상태 초기화 완료 - 테스트 모드');
+// Firebase 로그아웃은 SDK 로드 후 처리
+window._doSignOut = true;
+console.log('✅ 구독 상태 초기화');
 </script>
 
 
@@ -7010,6 +7019,186 @@ function mpResetLoginUI() {
 
 // onPaypleResult Firebase 연동은 원본 함수에 통합됨
 
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   계정 관리 기능
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// ── 로그아웃 ──
+function mpLogout() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--navy);border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">🚪</div>
+      <div style="font-size:15px;font-weight:900;color:var(--paper);margin-bottom:8px">로그아웃</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+        로그아웃 하시겠습니까?<br>구독은 유지됩니다.
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="this.closest('div[style*=fixed]').remove()"
+          style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+          background:transparent;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:var(--fn)">
+          취소
+        </button>
+        <button onclick="mpDoLogout()"
+          style="flex:1;padding:12px;border-radius:10px;border:none;
+          background:rgba(255,59,48,.8);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fn)">
+          로그아웃
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function mpDoLogout() {
+  // Google 로그아웃
+  if(typeof fbAuth !== 'undefined') {
+    fbAuth.signOut().catch(e => console.log('Firebase 로그아웃:', e));
+  }
+  // localStorage 구독 상태는 유지 (재로그인 시 복원)
+  // 단, 현재 세션만 초기화
+  mpIsSubscribed = false;
+  // 헤더 버튼 원래대로
+  const btn = document.getElementById('btn-header-main');
+  if(btn) {
+    btn.className = 'hbtn hbtn-subscribe';
+    btn.textContent = '💳 구독하기';
+    btn.onclick = headerMainAction;
+  }
+  // 모달 닫기
+  document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
+  mpClose();
+  showToast('로그아웃 되었습니다. 다음 방문 시 자동 로그인됩니다.');
+}
+
+// ── 구독 취소 ──
+function mpCancelSubscription() {
+  const subDate = localStorage.getItem('fh_sub_date');
+  const nextBill = subDate ? (() => {
+    const d = new Date(subDate);
+    d.setMonth(d.getMonth() + 1);
+    return d.toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+  })() : '이번 달 말';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--navy);border-radius:16px;padding:24px;max-width:320px;width:100%">
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">💳</div>
+      <div style="font-size:15px;font-weight:900;color:var(--paper);margin-bottom:8px;text-align:center">구독 취소</div>
+      <div style="background:rgba(255,107,0,.1);border:1px solid rgba(255,107,0,.3);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;color:#FF6B00;font-weight:700;margin-bottom:4px">⚠️ 취소 시 유의사항</div>
+        <div style="font-size:9.5px;color:var(--muted);line-height:1.6">
+          • ${nextBill}까지 이용 가능합니다<br>
+          • 취소 후 재구독 시 가격이 변경될 수 있습니다<br>
+          • 히스토리 데이터는 유지됩니다
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px">
+        취소 후 페이플 자동결제가 중단됩니다.<br>
+        더 자세한 문의: <strong style="color:var(--gold)">010-5424-5332</strong>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="this.closest('div[style*=fixed]').remove()"
+          style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+          background:transparent;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:var(--fn)">
+          유지하기
+        </button>
+        <button onclick="mpDoCancelSubscription()"
+          style="flex:1;padding:12px;border-radius:10px;border:none;
+          background:rgba(255,107,0,.8);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fn)">
+          취소하기
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function mpDoCancelSubscription() {
+  // 구독 상태 초기화
+  ['fh_subscribed','fh_member_v1','fh_sub_date','fh_sub_oid'].forEach(k => {
+    localStorage.removeItem(k);
+  });
+  // Firebase 구독 상태 업데이트
+  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser && typeof fbDb !== 'undefined') {
+    fbDb.collection('subscribers').doc(fbCurrentUser.uid).update({
+      isActive: false,
+      cancelledAt: new Date().toISOString()
+    }).catch(e => console.log('Firebase 취소 업데이트:', e));
+  }
+  mpIsSubscribed = false;
+  // 헤더 버튼 원래대로
+  const btn = document.getElementById('btn-header-main');
+  if(btn) {
+    btn.className = 'hbtn hbtn-subscribe';
+    btn.textContent = '💳 구독하기';
+    btn.onclick = headerMainAction;
+  }
+  document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
+  mpClose();
+  showToast('구독이 취소되었습니다. 이번 달 말까지 이용 가능합니다.');
+}
+
+// ── 회원탈퇴 ──
+function mpWithdraw() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--navy);border-radius:16px;padding:24px;max-width:320px;width:100%">
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">⚠️</div>
+      <div style="font-size:15px;font-weight:900;color:#FF3B30;margin-bottom:8px;text-align:center">회원탈퇴</div>
+      <div style="background:rgba(255,59,48,.1);border:1px solid rgba(255,59,48,.3);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;color:#FF3B30;font-weight:700;margin-bottom:4px">⚠️ 탈퇴 시 삭제되는 데이터</div>
+        <div style="font-size:9.5px;color:var(--muted);line-height:1.6">
+          • 모든 재무 시뮬레이션 데이터<br>
+          • 히스토리 대시보드 기록 전체<br>
+          • AI 진단 대화 내역<br>
+          • 구독 정보 및 결제 내역<br>
+          <strong style="color:#FF3B30">이 작업은 되돌릴 수 없습니다!</strong>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="this.closest('div[style*=fixed]').remove()"
+          style="flex:2;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+          background:transparent;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:var(--fn)">
+          취소
+        </button>
+        <button onclick="mpDoWithdraw()"
+          style="flex:1;padding:12px;border-radius:10px;border:none;
+          background:#FF3B30;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fn)">
+          탈퇴
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function mpDoWithdraw() {
+  // 모든 데이터 삭제
+  localStorage.clear();
+  // Firebase 계정 삭제
+  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
+    // Firestore 데이터 삭제
+    if(typeof fbDb !== 'undefined') {
+      fbDb.collection('subscribers').doc(fbCurrentUser.uid).delete()
+        .catch(e => console.log('Firestore 삭제:', e));
+    }
+    // Firebase Auth 계정 삭제
+    fbCurrentUser.delete().catch(e => {
+      console.log('Firebase 계정 삭제 오류 (재로그인 필요):', e);
+    });
+    if(typeof fbAuth !== 'undefined') {
+      fbAuth.signOut().catch(e => {});
+    }
+  }
+  document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
+  mpClose();
+  showToast('탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
+  // 3초 후 퍼널 처음으로
+  setTimeout(() => location.reload(), 2000);
+}
+
 </script>
 
 
@@ -7862,10 +8051,15 @@ function mpResetLoginUI() {
         <div class="mp-menu-item" onclick="mpShareApp()">
           <span class="mp-menu-icon">🔗</span><span class="mp-menu-lbl">친구에게 공유하기</span><span class="mp-menu-arr">›</span>
         </div>
-        <div class="mp-menu-item mp-danger" onclick="showToast('로그아웃 처리합니다')">
+        <div class="mp-menu-item mp-danger" onclick="mpLogout()">
           <span class="mp-menu-icon">🚪</span><span class="mp-menu-lbl">로그아웃</span>
         </div>
-        <div class="mp-menu-item mp-danger" onclick="showToast('탈퇴 처리를 진행합니다')">
+        <div class="mp-menu-item" onclick="mpCancelSubscription()">
+          <span class="mp-menu-icon">💳</span>
+          <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소</div><div class="mp-menu-sub">취소 후 이번 달 말까지 이용 가능</div></div>
+          <span class="mp-menu-arr">›</span>
+        </div>
+        <div class="mp-menu-item mp-danger" onclick="mpWithdraw()">
           <span class="mp-menu-icon">🗑️</span><span class="mp-menu-lbl">회원탈퇴</span>
         </div>
       </div>
