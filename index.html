@@ -2025,6 +2025,122 @@ body { color: #1a1a1a; }
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   
   <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase 초기화
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiMmPrfOzU9raSBWL1W3_aFX5IRvkzJPA",
+      authDomain: "moneya-72fe6.firebaseapp.com",
+      projectId: "moneya-72fe6",
+      storageBucket: "moneya-72fe6.firebasestorage.app",
+      messagingSenderId: "688215695102",
+      appId: "1:688215695102:web:bfbbf70f2ddbf47aa44faf",
+      measurementId: "G-JS2JR4VFKK"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const fbAuth = firebase.auth();
+    const fbDb   = firebase.firestore();
+
+    // Google 로그인 프로바이더
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+    // 현재 로그인 사용자
+    let fbCurrentUser = null;
+
+    // 인증 상태 감지
+    fbAuth.onAuthStateChanged(function(user) {
+      fbCurrentUser = user;
+      if(user) {
+        // 로그인 상태 → 구독 확인
+        fbCheckSubscription(user);
+      }
+    });
+
+    // 구독 상태 Firebase에서 확인
+    async function fbCheckSubscription(user) {
+      try {
+        const doc = await fbDb.collection('subscribers').doc(user.uid).get();
+        if(doc.exists && doc.data().isActive) {
+          // 구독 중 → 회원전용 버튼으로 변경
+          mpIsSubscribed = true;
+          mpSetMemberButton();
+          // localStorage에도 저장 (하위 호환)
+          localStorage.setItem('fh_member_v1', '1');
+          localStorage.setItem('fh_subscribed', '1');
+          localStorage.setItem('fh_sub_date', doc.data().subscribedAt || new Date().toISOString());
+        }
+      } catch(e) {
+        console.log('구독 확인 오류:', e);
+      }
+    }
+
+    // Google 로그인 실행
+    async function fbGoogleLogin() {
+      try {
+        const result = await fbAuth.signInWithPopup(googleProvider);
+        return result.user;
+      } catch(e) {
+        console.error('Google 로그인 실패:', e);
+        showToast('로그인에 실패했습니다. 다시 시도해주세요.');
+        return null;
+      }
+    }
+
+    // 결제 후 Firebase에 구독자 저장
+    async function fbSaveSubscriber(payData) {
+      const user = fbCurrentUser;
+      if(!user) return;
+      try {
+        await fbDb.collection('subscribers').doc(user.uid).set({
+          uid: user.uid,
+          name: user.displayName || '',
+          email: user.email || '',
+          photo: user.photoURL || '',
+          isActive: true,
+          plan: payData.plan || 'silver-monthly',
+          amount: payData.amount || 9900,
+          subscribedAt: new Date().toISOString(),
+          orderId: payData.orderId || '',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        console.log('✅ Firebase 구독자 저장 완료');
+
+        // 감사 이메일 발송 (웹훅 서버 경유)
+        fbSendWelcomeEmail(user, payData);
+
+      } catch(e) {
+        console.error('Firebase 저장 오류:', e);
+      }
+    }
+
+    // 감사 이메일 발송 요청
+    async function fbSendWelcomeEmail(user, payData) {
+      try {
+        await fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: user.displayName || '고객',
+            email: user.email,
+            plan: payData.plan || 'silver-monthly',
+            amount: payData.amount || 9900,
+            orderId: payData.orderId || '',
+            subscribedAt: new Date().toISOString()
+          })
+        });
+        console.log('✅ 감사 이메일 발송 요청 완료');
+      } catch(e) {
+        console.error('이메일 발송 오류:', e);
+      }
+    }
+  </script>
+
 </head>
 <body>
 
@@ -6795,6 +6911,92 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 100);
 });
 
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Google 로그인 + 결제 연동
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// Google 로그인 후 결제 진행
+async function mpGoogleLoginAndPay() {
+  const btn = document.querySelector('#mp-before-login button');
+  if(btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
+
+  try {
+    const user = await fbGoogleLogin();
+    if(!user) {
+      if(btn) { btn.disabled = false; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 안전하게 시작하기'; }
+      return;
+    }
+
+    // 로그인 성공 → UI 업데이트
+    mpShowLoggedInUser(user);
+
+  } catch(e) {
+    showToast('로그인 오류가 발생했습니다.');
+    if(btn) { btn.disabled = false; }
+  }
+}
+
+// 로그인 사용자 UI 표시
+function mpShowLoggedInUser(user) {
+  const before = document.getElementById('mp-before-login');
+  const after  = document.getElementById('mp-after-login');
+  if(before) before.style.display = 'none';
+  if(after)  after.style.display  = 'block';
+
+  // 사용자 정보 표시
+  const photoEl = document.getElementById('mp-user-photo');
+  const nameEl  = document.getElementById('mp-user-name');
+  const emailEl = document.getElementById('mp-user-email');
+  if(photoEl && user.photoURL) photoEl.src = user.photoURL;
+  if(photoEl && !user.photoURL) photoEl.style.display = 'none';
+  if(nameEl)  nameEl.textContent  = user.displayName || '사용자';
+  if(emailEl) emailEl.textContent = user.email || '';
+
+  // CTA 버튼 가격 업데이트
+  mpSelectPlan(mpSelectedPlan);
+}
+
+// 로그인 UI 리셋
+function mpResetLoginUI() {
+  const before = document.getElementById('mp-before-login');
+  const after  = document.getElementById('mp-after-login');
+  if(before) before.style.display = 'block';
+  if(after)  after.style.display  = 'none';
+  fbCurrentUser = null;
+}
+
+// 구독 모달 열릴 때 로그인 상태 확인
+const _origOpenSubscribe = mpOpenSubscribe;
+function mpOpenSubscribe() {
+  // 이미 로그인 되어 있으면 바로 로그인 UI 표시
+  if(fbCurrentUser) {
+    mpShowLoggedInUser(fbCurrentUser);
+  } else {
+    mpResetLoginUI();
+  }
+  _origOpenSubscribe();
+}
+
+// 결제 완료 후 Firebase 저장 연동
+const _origOnPaypleResult = onPaypleResult;
+function onPaypleResult(data) {
+  _origOnPaypleResult(data);
+  if(data.PCD_PAY_RST === 'success' && fbCurrentUser) {
+    // Firebase에 구독자 저장 + 감사 이메일 발송
+    fbSaveSubscriber({
+      plan: mpSelectedPlan === 'year' ? 'silver-annual' : 'silver-monthly',
+      amount: mpSelectedPlan === 'year'
+        ? getEarlyBirdPlan().annual
+        : getEarlyBirdPlan().monthly,
+      orderId: data.PCD_PAY_OID || ''
+    });
+    // 사용자 이름으로 환영 메시지
+    const userName = fbCurrentUser.displayName || '회원';
+    showToast('🎉 ' + userName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
+  }
+}
+
 </script>
 
 
@@ -7041,9 +7243,51 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
   </div>
-  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
-    지금 ₩9,900/월 구독 시작하기 →
-  </button>
+  <!-- Google 로그인 영역 -->
+  <div id="mp-login-section">
+    <!-- 로그인 전 -->
+    <div id="mp-before-login">
+      <button onclick="mpGoogleLoginAndPay()"
+        style="width:100%;padding:13px;border-radius:12px;border:2px solid #e0e0e0;
+        background:#fff;font-size:14px;font-weight:700;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:10px;
+        font-family:var(--fn);color:#3c4043;margin-bottom:8px;
+        box-shadow:0 1px 4px rgba(0,0,0,.12)">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Google로 안전하게 시작하기
+      </button>
+      <div style="text-align:center;font-size:9px;color:var(--muted);line-height:1.5">
+        🔒 Google 계정으로 본인 인증 후 결제합니다<br>
+        별도 회원가입 없이 안전하게 이용 가능합니다
+      </div>
+    </div>
+
+    <!-- 로그인 후 -->
+    <div id="mp-after-login" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+        background:#f8f9fa;border-radius:10px;margin-bottom:10px">
+        <img id="mp-user-photo" src="" alt=""
+          style="width:32px;height:32px;border-radius:50%;object-fit:cover">
+        <div style="flex:1">
+          <div id="mp-user-name" style="font-size:12px;font-weight:700;color:var(--navy)"></div>
+          <div id="mp-user-email" style="font-size:9.5px;color:var(--muted)"></div>
+        </div>
+        <button onclick="fbAuth.signOut();mpResetLoginUI()"
+          style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 6px">
+          변경
+        </button>
+      </div>
+      <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
+        지금 ₩9,900/월 구독 시작하기 →
+      </button>
+    </div>
+  </div>
 </div>
 
 
