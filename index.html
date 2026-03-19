@@ -5365,7 +5365,20 @@ function onPaypleResult(data){
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
-    showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
+    // Firebase 구독자 저장 + 감사 이메일
+    if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
+      fbSaveSubscriber({
+        plan: mpSelectedPlan === 'year' ? 'silver-annual' : 'silver-monthly',
+        amount: mpSelectedPlan === 'year'
+          ? getEarlyBirdPlan().annual
+          : getEarlyBirdPlan().monthly,
+        orderId: data.PCD_PAY_OID || ''
+      });
+      const _uName = fbCurrentUser.displayName || '회원';
+      showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
+    } else {
+      showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
+    }
     // 헤더 버튼 업데이트
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
@@ -5969,6 +5982,12 @@ function mpOpenSubscribe() {
   if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
   if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
+  // Google 로그인 상태 확인 (무한루프 없이 직접 처리)
+  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
+    mpShowLoggedInUser(fbCurrentUser);
+  } else {
+    mpResetLoginUI();
+  }
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
 }
@@ -6966,36 +6985,9 @@ function mpResetLoginUI() {
   fbCurrentUser = null;
 }
 
-// 구독 모달 열릴 때 로그인 상태 확인
-const _origOpenSubscribe = mpOpenSubscribe;
-function mpOpenSubscribe() {
-  // 이미 로그인 되어 있으면 바로 로그인 UI 표시
-  if(fbCurrentUser) {
-    mpShowLoggedInUser(fbCurrentUser);
-  } else {
-    mpResetLoginUI();
-  }
-  _origOpenSubscribe();
-}
+// 구독 모달 Google 로그인 상태 확인은 원본 함수에 통합됨
 
-// 결제 완료 후 Firebase 저장 연동
-const _origOnPaypleResult = onPaypleResult;
-function onPaypleResult(data) {
-  _origOnPaypleResult(data);
-  if(data.PCD_PAY_RST === 'success' && fbCurrentUser) {
-    // Firebase에 구독자 저장 + 감사 이메일 발송
-    fbSaveSubscriber({
-      plan: mpSelectedPlan === 'year' ? 'silver-annual' : 'silver-monthly',
-      amount: mpSelectedPlan === 'year'
-        ? getEarlyBirdPlan().annual
-        : getEarlyBirdPlan().monthly,
-      orderId: data.PCD_PAY_OID || ''
-    });
-    // 사용자 이름으로 환영 메시지
-    const userName = fbCurrentUser.displayName || '회원';
-    showToast('🎉 ' + userName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
-  }
-}
+// onPaypleResult Firebase 연동은 원본 함수에 통합됨
 
 </script>
 
