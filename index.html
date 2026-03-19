@@ -2027,32 +2027,29 @@ body { color: #1a1a1a; }
   <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
 
   <!-- Firebase SDK - 순차 로드 방식 -->
+    <!-- Firebase SDK - 순차 로드 방식 -->
   <script>
-    window.fbAuth = null;
-    window.fbDb = null;
-    window.fbCurrentUser = null;
-
     function loadFirebaseSDKs() {
-      var scripts = [
+      var urls = [
         'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-app-compat.min.js',
         'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-auth-compat.min.js',
         'https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-firestore-compat.min.js'
       ];
-      var idx = 0;
-      function loadNext() {
-        if(idx >= scripts.length) { initFirebaseApp(); return; }
+      var i = 0;
+      function next() {
+        if(i >= urls.length) { startFirebase(); return; }
         var s = document.createElement('script');
-        s.src = scripts[idx++];
-        s.onload = loadNext;
-        s.onerror = function() { console.error('Firebase SDK 로드 실패:', scripts[idx-1]); };
+        s.src = urls[i++];
+        s.onload = next;
+        s.onerror = function(){ console.warn('Firebase SDK 로드 실패'); next(); };
         document.head.appendChild(s);
       }
-      loadNext();
+      next();
     }
 
-    function initFirebaseApp() {
+    function startFirebase() {
       try {
-        var config = {
+        var cfg = {
           apiKey: "AIzaSyBiMmPrfOzU9raSBWL1W3_aFX5IRvkzJPA",
           authDomain: "moneya-72fe6.firebaseapp.com",
           projectId: "moneya-72fe6",
@@ -2060,24 +2057,23 @@ body { color: #1a1a1a; }
           messagingSenderId: "688215695102",
           appId: "1:688215695102:web:bfbbf70f2ddbf47aa44faf"
         };
-        if(!firebase.apps.length) firebase.initializeApp(config);
-        window.fbAuth = firebase.auth();
-        window.fbDb = firebase.firestore();
+        if(!firebase.apps.length) firebase.initializeApp(cfg);
+        window._fbAuth = firebase.auth();
+        window._fbDb   = firebase.firestore();
         console.log('✅ Firebase 초기화 완료');
-        fbAuth.onAuthStateChanged(function(user) {
-          window.fbCurrentUser = user;
+        window._fbAuth.onAuthStateChanged(function(user) {
+          window._fbUser = user;
           if(user) {
-            fbCheckSubscription(user);
+            if(typeof fbCheckSubscription === 'function') fbCheckSubscription(user);
           } else {
-            var subDate = localStorage.getItem('fh_sub_date');
-            if(subDate && typeof mpSetMemberButton === 'function') {
+            if(localStorage.getItem('fh_sub_date') && typeof mpSetMemberButton === 'function') {
               mpIsSubscribed = true;
               mpSetMemberButton();
             }
           }
         });
       } catch(e) {
-        console.error('Firebase 초기화 오류:', e.message);
+        console.warn('Firebase 초기화 오류:', e.message);
       }
     }
 
@@ -5326,13 +5322,13 @@ function onPaypleResult(data){
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
     // Firebase 구독자 저장 + 감사 이메일
-    if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
+    if(typeof window._fbUser !== 'undefined' && window._fbUser) {
       fbSaveSubscriber({
         plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
         amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
         orderId: data.PCD_PAY_OID || ''
       });
-      const _uName = fbCurrentUser.displayName || '회원';
+      const _uName = window._fbUser.displayName || '회원';
       showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
     } else {
       showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
@@ -5941,8 +5937,8 @@ function mpOpenSubscribe() {
   if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
   // Google 로그인 상태 확인 (무한루프 없이 직접 처리)
-  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
-    mpShowLoggedInUser(fbCurrentUser);
+  if(typeof window._fbUser !== 'undefined' && window._fbUser) {
+    mpShowLoggedInUser(window._fbUser);
   } else {
     mpResetLoginUI();
   }
@@ -6936,7 +6932,7 @@ function mpResetLoginUI() {
   const after  = document.getElementById('mp-after-login');
   if(before) before.style.display = 'block';
   if(after)  after.style.display  = 'none';
-  window.fbCurrentUser = null;
+  window.window._fbUser = null;
 }
 
 // 구독 모달 Google 로그인 상태 확인은 원본 함수에 통합됨
@@ -6977,8 +6973,8 @@ function mpLogout() {
 
 function mpDoLogout() {
   // Google 로그아웃
-  if(typeof fbAuth !== 'undefined') {
-    fbAuth.signOut().catch(e => console.log('Firebase 로그아웃:', e));
+  if(typeof window._fbAuth !== 'undefined') {
+    window._fbAuth.signOut().catch(e => console.log('Firebase 로그아웃:', e));
   }
   // localStorage 구독 상태는 유지 (재로그인 시 복원)
   // 단, 현재 세션만 초기화
@@ -7045,8 +7041,8 @@ function mpDoCancelSubscription() {
     localStorage.removeItem(k);
   });
   // Firebase 구독 상태 업데이트
-  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser && typeof fbDb !== 'undefined') {
-    fbDb.collection('subscribers').doc(fbCurrentUser.uid).update({
+  if(typeof window._fbUser !== 'undefined' && window._fbUser && typeof window._fbDb !== 'undefined') {
+    window._fbDb.collection('subscribers').doc(window._fbUser.uid).update({
       isActive: false,
       cancelledAt: new Date().toISOString()
     }).catch(e => console.log('Firebase 취소 업데이트:', e));
@@ -7102,18 +7098,18 @@ function mpDoWithdraw() {
   // 모든 데이터 삭제
   localStorage.clear();
   // Firebase 계정 삭제
-  if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
+  if(typeof window._fbUser !== 'undefined' && window._fbUser) {
     // Firestore 데이터 삭제
-    if(typeof fbDb !== 'undefined') {
-      fbDb.collection('subscribers').doc(fbCurrentUser.uid).delete()
+    if(typeof window._fbDb !== 'undefined') {
+      window._fbDb.collection('subscribers').doc(window._fbUser.uid).delete()
         .catch(e => console.log('Firestore 삭제:', e));
     }
     // Firebase Auth 계정 삭제
-    fbCurrentUser.delete().catch(e => {
+    window._fbUser.delete().catch(e => {
       console.log('Firebase 계정 삭제 오류 (재로그인 필요):', e);
     });
-    if(typeof fbAuth !== 'undefined') {
-      fbAuth.signOut().catch(e => {});
+    if(typeof window._fbAuth !== 'undefined') {
+      window._fbAuth.signOut().catch(e => {});
     }
   }
   document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
