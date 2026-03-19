@@ -2028,9 +2028,9 @@ body { color: #1a1a1a; }
 
   <!-- Firebase SDK - 순차 로드 방식 -->
   <script>
-    var fbAuth = null;
-    var fbDb   = null;
-    var fbCurrentUser = null;
+    window.fbAuth = null;
+    window.fbDb = null;
+    window.fbCurrentUser = null;
 
     function loadFirebaseSDKs() {
       var scripts = [
@@ -2061,11 +2061,11 @@ body { color: #1a1a1a; }
           appId: "1:688215695102:web:bfbbf70f2ddbf47aa44faf"
         };
         if(!firebase.apps.length) firebase.initializeApp(config);
-        fbAuth = firebase.auth();
-        fbDb   = firebase.firestore();
+        window.fbAuth = firebase.auth();
+        window.fbDb = firebase.firestore();
         console.log('✅ Firebase 초기화 완료');
         fbAuth.onAuthStateChanged(function(user) {
-          fbCurrentUser = user;
+          window.fbCurrentUser = user;
           if(user) {
             fbCheckSubscription(user);
           } else {
@@ -6936,7 +6936,7 @@ function mpResetLoginUI() {
   const after  = document.getElementById('mp-after-login');
   if(before) before.style.display = 'block';
   if(after)  after.style.display  = 'none';
-  fbCurrentUser = null;
+  window.fbCurrentUser = null;
 }
 
 // 구독 모달 Google 로그인 상태 확인은 원본 함수에 통합됨
