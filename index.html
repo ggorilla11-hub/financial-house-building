@@ -2086,17 +2086,52 @@ body { color: #1a1a1a; }
       }
     }
 
-    // Google 로그인 실행
+    // Google 로그인 실행 (리다이렉트 방식 - COOP 정책 대응)
     async function fbGoogleLogin() {
       try {
+        // 팝업 먼저 시도, 실패 시 리다이렉트로 전환
         const result = await fbAuth.signInWithPopup(googleProvider);
         return result.user;
       } catch(e) {
+        if(e.code === 'auth/popup-blocked' || 
+           e.code === 'auth/popup-closed-by-user' ||
+           e.message.includes('Cross-Origin') ||
+           e.message.includes('COOP')) {
+          // 리다이렉트 방식으로 전환
+          console.log('팝업 차단 → 리다이렉트 방식으로 전환');
+          localStorage.setItem('fh_login_pending', '1');
+          localStorage.setItem('fh_login_plan', mpSelectedPlan || 'month');
+          await fbAuth.signInWithRedirect(googleProvider);
+          return null;
+        }
         console.error('Google 로그인 실패:', e);
         showToast('로그인에 실패했습니다. 다시 시도해주세요.');
         return null;
       }
     }
+
+    // 리다이렉트 로그인 결과 처리
+    fbAuth.getRedirectResult().then(function(result) {
+      if(result && result.user) {
+        console.log('✅ 리다이렉트 로그인 성공:', result.user.email);
+        fbCurrentUser = result.user;
+        mpShowLoggedInUser(result.user);
+
+        // 이전에 결제 진행 중이었으면 모달 다시 오픈
+        const pending = localStorage.getItem('fh_login_pending');
+        const plan    = localStorage.getItem('fh_login_plan') || 'month';
+        if(pending === '1') {
+          localStorage.removeItem('fh_login_pending');
+          localStorage.removeItem('fh_login_plan');
+          mpSelectedPlan = plan;
+          setTimeout(function() {
+            mpOpenSubscribe();
+          }, 500);
+        }
+      }
+    }).catch(function(e) {
+      console.log('리다이렉트 결과 없음 (정상):', e.code);
+    });
 
     // 결제 후 Firebase에 구독자 저장
     async function fbSaveSubscriber(payData) {
