@@ -5349,8 +5349,6 @@ function confirmPay(plan){
     const payAmount  = isYearly ? earlyPlan.annual : earlyPlan.monthly;
     const planName   = isYearly ? '연간' : '월간';
     const order_id   = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
-    const currentUrl = window.location.href.split('?')[0];
-
     // ── 페이플 공식 파라미터 (문서 기준) ──
     const obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
@@ -5362,7 +5360,7 @@ function confirmPay(plan){
     obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
     obj.PCD_SIMPLE_FLAG  = 'Y';
-    obj.PCD_RST_URL      = currentUrl; // '/' 대신 실제 현재 URL
+    obj.PCD_RST_URL      = 'https://ohwant-webhook.vercel.app/api/payple';
     obj.callbackFunction = onPaypleResult;
 
     // 정기결제 중복방지 (CERT 방식 필수)
