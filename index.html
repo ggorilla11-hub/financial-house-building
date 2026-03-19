@@ -2426,19 +2426,19 @@ body { color: #1a1a1a; }
     
     <div class="slid">
       <div class="sl-top"><span class="sl-name">월 수입 (실수령)</span><span><span class="sl-val" id="sv-income">500</span><span class="sl-unit">만원</span></span></div>
-      <input type="range" min="0" max="3000" step="50" value="500" oninput="D.income=+this.value;document.getElementById('sv-income').textContent=fmt(D.income);rAll('fin')">
+      <input type="range" min="0" max="3000" step="50" value="500" oninput="D.income=+this.value;const _el_sv_income=document.getElementById('sv-income');if(_el_sv_income)_el_sv_income.textContent=fmt(D.income);rAll('fin')">
     </div>
     <div class="fi-2">
       <div class="slid">
         <div class="sl-top"><span class="sl-name">총 자산</span><span><span class="sl-val" id="sv-totalasset-inp">0</span><span class="sl-unit">만원</span></span></div>
         <input type="range" min="0" max="200000" step="1000" value="0" id="inp-totalasset"
-          oninput="D.totalAssetInput=+this.value;document.getElementById('sv-totalasset-inp').textContent=fmt(D.totalAssetInput);rAll('fin')">
+          oninput="D.totalAssetInput=+this.value;const _el_sv_totalasset_inp=document.getElementById('sv-totalasset-inp');if(_el_sv_totalasset_inp)_el_sv_totalasset_inp.textContent=fmt(D.totalAssetInput);rAll('fin')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">총 부채</span><span><span class="sl-val" id="sv-totaldebt-inp">0</span><span class="sl-unit" style="color:var(--red);">만원</span></span></div>
         <input type="range" min="0" max="100000" step="500" value="0" id="inp-totaldebt"
           style="accent-color:var(--red);"
-          oninput="D.totalDebtInput=+this.value;document.getElementById('sv-totaldebt-inp').textContent=fmt(D.totalDebtInput);document.getElementById('sv-totaldebt-inp').style.color='var(--red)';rAll('fin')">
+          oninput="D.totalDebtInput=+this.value;const _el_sv_totaldebt_inp=document.getElementById('sv-totaldebt-inp');if(_el_sv_totaldebt_inp)_el_sv_totaldebt_inp.textContent=fmt(D.totalDebtInput);document.getElementById('sv-totaldebt-inp').style.color='var(--red)';rAll('fin')">
       </div>
     </div>
     
@@ -2450,24 +2450,24 @@ body { color: #1a1a1a; }
       <div class="divlbl">월 지출 내역</div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">월 저축·투자</span><span><span class="sl-val" id="sv-savings">50</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="500" step="10" value="50" oninput="D.savings=+this.value;document.getElementById('sv-savings').textContent=D.savings;calcSurplus();rAll('fin')">
+        <input type="range" min="0" max="500" step="10" value="50" oninput="D.savings=+this.value;const _el_sv_savings=document.getElementById('sv-savings');if(_el_sv_savings)_el_sv_savings.textContent=D.savings;calcSurplus();rAll('fin')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">월 노후연금 납입</span><span><span class="sl-val" id="sv-pension">50</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="300" step="10" value="50" oninput="D.natPen=+this.value;document.getElementById('sv-pension').textContent=D.natPen;calcSurplus();rAll('fin')">
+        <input type="range" min="0" max="300" step="10" value="50" oninput="D.natPen=+this.value;const _el_sv_pension=document.getElementById('sv-pension');if(_el_sv_pension)_el_sv_pension.textContent=D.natPen;calcSurplus();rAll('fin')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">월 보장성 보험료</span><span><span class="sl-val" id="sv-inspay">15</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="100" step="5" value="15" oninput="D.insPay=+this.value;document.getElementById('sv-inspay').textContent=D.insPay;calcSurplus();rAll('fin')">
+        <input type="range" min="0" max="100" step="5" value="15" oninput="D.insPay=+this.value;const _el_sv_inspay=document.getElementById('sv-inspay');if(_el_sv_inspay)_el_sv_inspay.textContent=D.insPay;calcSurplus();rAll('fin')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">월 대출 원리금</span><span><span class="sl-val" id="sv-loanpay">0</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="500" step="10" value="0" oninput="D.loanPay=+this.value;document.getElementById('sv-loanpay').textContent=D.loanPay;calcSurplus();rAll('fin')">
+        <input type="range" min="0" max="500" step="10" value="0" oninput="D.loanPay=+this.value;const _el_sv_loanpay=document.getElementById('sv-loanpay');if(_el_sv_loanpay)_el_sv_loanpay.textContent=D.loanPay;calcSurplus();rAll('fin')">
       </div>
       <div class="slid" style="border-color:var(--green);">
         <div class="sl-top"><span class="sl-name" style="color:var(--green);font-weight:700;">월 잉여자금 (직접 입력)</span><span><span class="sl-val" id="sv-surplus-inp" style="color:var(--green);">0</span><span class="sl-unit">만원</span></span></div>
         <input type="range" min="0" max="1000" step="10" value="0"
-          oninput="D.surplusInput=+this.value;document.getElementById('sv-surplus-inp').textContent=D.surplusInput;calcSurplusFromInput();rAll('fin')"
+          oninput="D.surplusInput=+this.value;const _el_sv_surplus_inp=document.getElementById('sv-surplus-inp');if(_el_sv_surplus_inp)_el_sv_surplus_inp.textContent=D.surplusInput;calcSurplusFromInput();rAll('fin')"
           style="accent-color:var(--green);">
         <div style="font-size:8px;color:var(--muted);margin-top:3px;">직접 입력 시 수입−지출 자동 계산을 덮어씁니다</div>
       </div>
@@ -2493,11 +2493,11 @@ body { color: #1a1a1a; }
       <div class="fi-2">
         <div class="slid">
           <div class="sl-top"><span class="sl-name">안전자산</span><span><span class="sl-val" id="sv-safe">3,000</span><span class="sl-unit">만원</span></span></div>
-          <input type="range" min="0" max="50000" step="500" value="3000" oninput="D.safeAsset=+this.value;document.getElementById('sv-safe').textContent=fmt(D.safeAsset);rAll('fin')">
+          <input type="range" min="0" max="50000" step="500" value="3000" oninput="D.safeAsset=+this.value;const _el_sv_safe=document.getElementById('sv-safe');if(_el_sv_safe)_el_sv_safe.textContent=fmt(D.safeAsset);rAll('fin')">
         </div>
         <div class="slid">
           <div class="sl-top"><span class="sl-name">위험자산</span><span><span class="sl-val" id="sv-risk">2,000</span><span class="sl-unit">만원</span></span></div>
-          <input type="range" min="0" max="50000" step="500" value="2000" oninput="D.riskAsset=+this.value;document.getElementById('sv-risk').textContent=fmt(D.riskAsset);rAll('fin')">
+          <input type="range" min="0" max="50000" step="500" value="2000" oninput="D.riskAsset=+this.value;const _el_sv_risk=document.getElementById('sv-risk');if(_el_sv_risk)_el_sv_risk.textContent=fmt(D.riskAsset);rAll('fin')">
         </div>
       </div>
       
@@ -2505,11 +2505,11 @@ body { color: #1a1a1a; }
       <div class="fi-2">
         <div class="slid">
           <div class="sl-top"><span class="sl-name">거주용</span><span><span class="sl-val" id="sv-rehome">0</span><span class="sl-unit">억원</span></span></div>
-          <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reHome=+this.value;document.getElementById('sv-rehome').textContent=D.reHome.toFixed(1);rAll('fin')">
+          <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reHome=+this.value;const _el_sv_rehome=document.getElementById('sv-rehome');if(_el_sv_rehome)_el_sv_rehome.textContent=D.reHome.toFixed(1);rAll('fin')">
         </div>
         <div class="slid">
           <div class="sl-top"><span class="sl-name">투자용</span><span><span class="sl-val" id="sv-reinv">0</span><span class="sl-unit">억원</span></span></div>
-          <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv=+this.value;document.getElementById('sv-reinv').textContent=D.reInv.toFixed(1);rAll('fin')">
+          <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv=+this.value;const _el_sv_reinv=document.getElementById('sv-reinv');if(_el_sv_reinv)_el_sv_reinv.textContent=D.reInv.toFixed(1);rAll('fin')">
         </div>
       </div>
       
@@ -2517,11 +2517,11 @@ body { color: #1a1a1a; }
       <div class="fi-2">
         <div class="slid">
           <div class="sl-top"><span class="sl-name">담보대출</span><span><span class="sl-val" id="sv-ll">0</span><span class="sl-unit">만원</span></span></div>
-          <input type="range" min="0" max="100000" step="1000" value="0" oninput="D.loanCollat=+this.value;document.getElementById('sv-ll').textContent=fmt(D.loanCollat);rAll('fin')">
+          <input type="range" min="0" max="100000" step="1000" value="0" oninput="D.loanCollat=+this.value;const _el_sv_ll=document.getElementById('sv-ll');if(_el_sv_ll)_el_sv_ll.textContent=fmt(D.loanCollat);rAll('fin')">
         </div>
         <div class="slid">
           <div class="sl-top"><span class="sl-name">신용대출</span><span><span class="sl-val" id="sv-lc">0</span><span class="sl-unit">만원</span></span></div>
-          <input type="range" min="0" max="20000" step="500" value="0" oninput="D.loanCredit=+this.value;document.getElementById('sv-lc').textContent=fmt(D.loanCredit);rAll('fin')">
+          <input type="range" min="0" max="20000" step="500" value="0" oninput="D.loanCredit=+this.value;const _el_sv_lc=document.getElementById('sv-lc');if(_el_sv_lc)_el_sv_lc.textContent=fmt(D.loanCredit);rAll('fin')">
         </div>
       </div>
       <div class="auto-box red">
@@ -2608,11 +2608,11 @@ body { color: #1a1a1a; }
     <div class="fi-2">
       <div class="slid">
         <div class="sl-top"><span class="sl-name">신용대출</span><span><span class="sl-val" id="sv-dbt-credit">0</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="20000" step="500" value="0" oninput="D.debtCredit=+this.value;document.getElementById('sv-dbt-credit').textContent=fmt(D.debtCredit);calcDebt();rAll('pillar')">
+        <input type="range" min="0" max="20000" step="500" value="0" oninput="D.debtCredit=+this.value;const _el_sv_dbt_credit=document.getElementById('sv-dbt-credit');if(_el_sv_dbt_credit)_el_sv_dbt_credit.textContent=fmt(D.debtCredit);calcDebt();rAll('pillar')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">담보대출</span><span><span class="sl-val" id="sv-dbt-collat">0</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="100000" step="1000" value="0" oninput="D.debtCollat=+this.value;document.getElementById('sv-dbt-collat').textContent=fmt(D.debtCollat);calcDebt();rAll('pillar')">
+        <input type="range" min="0" max="100000" step="1000" value="0" oninput="D.debtCollat=+this.value;const _el_sv_dbt_collat=document.getElementById('sv-dbt-collat');if(_el_sv_dbt_collat)_el_sv_dbt_collat.textContent=fmt(D.debtCollat);calcDebt();rAll('pillar')">
       </div>
     </div>
     <div class="auto-box red">
@@ -2625,15 +2625,15 @@ body { color: #1a1a1a; }
     <div class="divlbl">II. 저축 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">목표 금액</span><span><span class="sl-val" id="sv-savetgt">5,000</span><span class="sl-unit">만원</span></span></div>
-      <input type="range" min="500" max="50000" step="500" value="5000" oninput="D.saveTgt=+this.value;document.getElementById('sv-savetgt').textContent=fmt(D.saveTgt);calcMonthlySave();rAll('pillar')">
+      <input type="range" min="500" max="50000" step="500" value="5000" oninput="D.saveTgt=+this.value;const _el_sv_savetgt=document.getElementById('sv-savetgt');if(_el_sv_savetgt)_el_sv_savetgt.textContent=fmt(D.saveTgt);calcMonthlySave();rAll('pillar')">
     </div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">저축 기간</span><span><span class="sl-val" id="sv-saveyr">10</span><span class="sl-unit">년</span></span></div>
-      <input type="range" min="1" max="30" value="10" oninput="D.saveYr=+this.value;document.getElementById('sv-saveyr').textContent=D.saveYr;calcMonthlySave();rAll('pillar')">
+      <input type="range" min="1" max="30" value="10" oninput="D.saveYr=+this.value;const _el_sv_saveyr=document.getElementById('sv-saveyr');if(_el_sv_saveyr)_el_sv_saveyr.textContent=D.saveYr;calcMonthlySave();rAll('pillar')">
     </div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">비상예비자금</span><span><span class="sl-val" id="sv-emergency">0</span><span class="sl-unit">만원</span></span></div>
-      <input type="range" min="0" max="10000" step="100" value="0" oninput="D.emergency=+this.value;document.getElementById('sv-emergency').textContent=fmt(D.emergency);rAll('pillar')">
+      <input type="range" min="0" max="10000" step="100" value="0" oninput="D.emergency=+this.value;const _el_sv_emergency=document.getElementById('sv-emergency');if(_el_sv_emergency)_el_sv_emergency.textContent=fmt(D.emergency);rAll('pillar')">
     </div>
     
     <div class="auto-box green">
@@ -2654,23 +2654,23 @@ body { color: #1a1a1a; }
     <div class="divlbl">III. 은퇴 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">노후 월 생활비</span><span><span class="sl-val" id="sv-retexp">300</span><span class="sl-unit">만원</span></span></div>
-      <input type="range" min="100" max="600" step="10" value="300" oninput="D.retExp=+this.value;document.getElementById('sv-retexp').textContent=D.retExp;calcRetire();rAll('pillar')">
+      <input type="range" min="100" max="600" step="10" value="300" oninput="D.retExp=+this.value;const _el_sv_retexp=document.getElementById('sv-retexp');if(_el_sv_retexp)_el_sv_retexp.textContent=D.retExp;calcRetire();rAll('pillar')">
     </div>
     <div class="fi-2">
       <div class="slid">
         <div class="sl-top"><span class="sl-name">국민연금(월)</span><span><span class="sl-val" id="sv-natpen">80</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="300" step="10" value="80" oninput="D.natPenAmt=+this.value;document.getElementById('sv-natpen').textContent=D.natPenAmt;calcRetire();rAll('pillar')">
+        <input type="range" min="0" max="300" step="10" value="80" oninput="D.natPenAmt=+this.value;const _el_sv_natpen=document.getElementById('sv-natpen');if(_el_sv_natpen)_el_sv_natpen.textContent=D.natPenAmt;calcRetire();rAll('pillar')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">개인연금(월)</span><span><span class="sl-val" id="sv-perpen">50</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="300" step="10" value="50" oninput="D.perPen=+this.value;document.getElementById('sv-perpen').textContent=D.perPen;calcRetire();rAll('pillar')">
+        <input type="range" min="0" max="300" step="10" value="50" oninput="D.perPen=+this.value;const _el_sv_perpen=document.getElementById('sv-perpen');if(_el_sv_perpen)_el_sv_perpen.textContent=D.perPen;calcRetire();rAll('pillar')">
       </div>
     </div>
     
     <div class="slid" style="border-color:var(--blue);">
       <div class="sl-top"><span class="sl-name" style="color:var(--blue);">퇴직연금 (일시금)</span><span><span class="sl-val" id="sv-retirepen" style="color:var(--blue);">0</span><span class="sl-unit">만원</span></span></div>
       <input type="range" min="0" max="50000" step="500" value="0"
-        oninput="D.retirePension=+this.value;document.getElementById('sv-retirepen').textContent=fmt(D.retirePension);calcRetire();rAll('pillar')"
+        oninput="D.retirePension=+this.value;const _el_sv_retirepen=document.getElementById('sv-retirepen');if(_el_sv_retirepen)_el_sv_retirepen.textContent=fmt(D.retirePension);calcRetire();rAll('pillar')"
         style="accent-color:var(--blue);">
     </div>
     <div class="auto-box blue">
@@ -2712,11 +2712,11 @@ body { color: #1a1a1a; }
     <div class="fi-2">
       <div class="slid">
         <div class="sl-top"><span class="sl-name">안전자산</span><span><span class="sl-val" id="sv-inv-safe">0</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="50000" step="500" value="0" oninput="D.invSafe=+this.value;document.getElementById('sv-inv-safe').textContent=fmt(D.invSafe);calcWealthIdx();rAll('roof')">
+        <input type="range" min="0" max="50000" step="500" value="0" oninput="D.invSafe=+this.value;const _el_sv_inv_safe=document.getElementById('sv-inv-safe');if(_el_sv_inv_safe)_el_sv_inv_safe.textContent=fmt(D.invSafe);calcWealthIdx();rAll('roof')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">위험자산</span><span><span class="sl-val" id="sv-inv-risk">0</span><span class="sl-unit">만원</span></span></div>
-        <input type="range" min="0" max="50000" step="500" value="0" oninput="D.invRisk=+this.value;document.getElementById('sv-inv-risk').textContent=fmt(D.invRisk);calcWealthIdx();rAll('roof')">
+        <input type="range" min="0" max="50000" step="500" value="0" oninput="D.invRisk=+this.value;const _el_sv_inv_risk=document.getElementById('sv-inv-risk');if(_el_sv_inv_risk)_el_sv_inv_risk.textContent=fmt(D.invRisk);calcWealthIdx();rAll('roof')">
       </div>
     </div>
     <div class="auto-box blue">
@@ -2730,7 +2730,7 @@ body { color: #1a1a1a; }
     <div class="divlbl">V. 세금 설계</div>
     <div class="slid">
       <div class="sl-top"><span class="sl-name">연 소득</span><span><span class="sl-val" id="sv-taxinc">5,000</span><span class="sl-unit">만원</span></span></div>
-      <input type="range" min="1000" max="30000" step="500" value="5000" oninput="D.taxInc=+this.value;document.getElementById('sv-taxinc').textContent=fmt(D.taxInc);calcTaxAmt();rAll('roof')">
+      <input type="range" min="1000" max="30000" step="500" value="5000" oninput="D.taxInc=+this.value;const _el_sv_taxinc=document.getElementById('sv-taxinc');if(_el_sv_taxinc)_el_sv_taxinc.textContent=fmt(D.taxInc);calcTaxAmt();rAll('roof')">
     </div>
     <div class="auto-box red">
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
@@ -2743,11 +2743,11 @@ body { color: #1a1a1a; }
     <div class="fi-2">
       <div class="slid">
         <div class="sl-top"><span class="sl-name">주거용</span><span><span class="sl-val" id="sv-re-home2">0</span><span class="sl-unit">억원</span></span></div>
-        <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reHome2=+this.value;document.getElementById('sv-re-home2').textContent=D.reHome2.toFixed(1);rAll('roof')">
+        <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reHome2=+this.value;const _el_sv_re_home2=document.getElementById('sv-re-home2');if(_el_sv_re_home2)_el_sv_re_home2.textContent=D.reHome2.toFixed(1);rAll('roof')">
       </div>
       <div class="slid">
         <div class="sl-top"><span class="sl-name">투자용</span><span><span class="sl-val" id="sv-re-inv2">0</span><span class="sl-unit">억원</span></span></div>
-        <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv2=+this.value;document.getElementById('sv-re-inv2').textContent=D.reInv2.toFixed(1);rAll('roof')">
+        <input type="range" min="0" max="30" step="0.5" value="0" oninput="D.reInv2=+this.value;const _el_sv_re_inv2=document.getElementById('sv-re-inv2');if(_el_sv_re_inv2)_el_sv_re_inv2.textContent=D.reInv2.toFixed(1);rAll('roof')">
       </div>
     </div>
     
@@ -3928,7 +3928,7 @@ function tIns(k,el){
   D.ins[k]=!D.ins[k];el.classList.toggle('on');touched.ins=true;
   const cnt=Object.values(D.ins).filter(v=>v).length;
   setBadge('ins',cnt+'/8',cnt>=8?'bd-d':cnt>0?'bd-p':'bd-e');
-  document.getElementById('st-ins').textContent=cnt>0?cnt+'종 보유':'보험 8종 보유 현황';
+  const _el_st_ins=document.getElementById('st-ins');if(_el_st_ins)_el_st_ins.textContent=cnt>0?cnt+'종 보유':'보험 8종 보유 현황';
   rebuildHouse();rProg();
 }
 function rAll(sec){
@@ -3938,9 +3938,9 @@ function rAll(sec){
   // 배지 업데이트
   const cf=!!(D.name||D.ageNum);
   setBadge('who',cf?'입력됨':'미입력',cf?'bd-d':'bd-e');
-  if(cf)document.getElementById('st-who').textContent=(D.name||'고객')+(D.ageNum?' · '+D.ageNum+'세':'')+(D.married?' · '+D.married:'');
+  if(cf)const _el_st_who=document.getElementById('st-who');if(_el_st_who)_el_st_who.textContent=(D.name||'고객')+(D.ageNum?' · '+D.ageNum+'세':'')+(D.married?' · '+D.married:'');
   setBadge('fin',D.income>0?'입력됨':'미입력',D.income>0?'bd-d':'bd-e');
-  if(D.income>0)document.getElementById('st-fin').textContent='월 '+fmt(D.income)+'만원 수입';
+  if(D.income>0)const _el_st_fin=document.getElementById('st-fin');if(_el_st_fin)_el_st_fin.textContent='월 '+fmt(D.income)+'만원 수입';
   const pc=[D.debtCredit>0||D.debtCollat>0,D.saveTgt>0,D.retExp>0].filter(v=>v).length;
   setBadge('pillar',pc+'/3',pc>=3?'bd-d':pc>0?'bd-p':'bd-e');
   const rc=[D.invSafe>0||D.invRisk>0,D.taxInc>0,D.reHome2>0||D.reInv2>0].filter(v=>v).length;
@@ -3956,7 +3956,7 @@ function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.t
 function rProg(){
   const sc=calcScore();
   document.getElementById('prog-fill').style.width=sc+'%';
-  document.getElementById('prog-lbl').textContent=sc+'%';
+  const _el_prog_lbl=document.getElementById('prog-lbl');if(_el_prog_lbl)_el_prog_lbl.textContent=sc+'%';
 }
 
 /* ══ 탭 전환 ══ */
@@ -4041,7 +4041,7 @@ function runRet(){
     st('ret-r2',dep.length?mD+'세 고갈':'고갈없음',dep.length?'warn':'good');
     st('ret-r3',addS>0?'+'+addS+'만/월':'충분',addS>0?'warn':'good');st('ret-r4',fmt(Math.round(need/10000))+'만원');
     dHist('ret-chart',sf.map(v=>v/10000).filter(v=>v<999999));
-    document.getElementById('ret-comment').textContent=sr>=80?`은퇴 플랜 탄탄! 성공 ${sr.toFixed(0)}%.`:sr>=50?`월 ${Math.max(30,addS)}만원 추가 저축 권장.`:`자금 부족! 즉시 증액 필요.`;
+    const _rcEl=document.getElementById('ret-comment');if(_rcEl)_rcEl.textContent=sr>=80?`은퇴 플랜 탄탄! 성공 ${sr.toFixed(0)}%.`:sr>=50?`월 ${Math.max(30,addS)}만원 추가 저축 권장.`:`자금 부족! 즉시 증액 필요.`;
     // 2번: SVG 설계도 III.은퇴 실시간 업데이트
     const ra2=gv('r-ra'),exp2=gv('r-exp'),np2=gv('r-np'),pp2=gv('r-pp');
     const totalPen2=np2+pp2;
@@ -4068,7 +4068,7 @@ function runDbt(){
     st('dbt-r4',fmt(Math.round(tot*mr))+'만원/월');
     const path=[];let b=tot;for(let m=0;m<Math.min(med+1,360);m++){b=Math.max(0,b*(1+mr)-(pay+ext));path.push(b);}
     mkLine('dbt-chart',path,path.map((_,i)=>i%24===0?Math.floor(i/12)+'년':''),'#c0392b');
-    document.getElementById('dbt-comment').textContent=p6>=70?`${goalYr}년 내 상환 ${p6.toFixed(0)}%.`:`${Math.floor(med/12)}년 예상. 추가 상환 권장.`;
+    const _el_dbt_comment=document.getElementById('dbt-comment');if(_el_dbt_comment)_el_dbt_comment.textContent=p6>=70?`${goalYr}년 내 상환 ${p6.toFixed(0)}%.`:`${Math.floor(med/12)}년 예상. 추가 상환 권장.`;
     // SVG I.부채 상환기간 표시
     const dbtR=document.getElementById('sv-dbt-r');if(dbtR)dbtR.textContent=`상환 ${Math.floor(med/12)}년${med%12?med%12+'개월':''}`;
     rProg();
@@ -4087,7 +4087,7 @@ function runSav(){
     st('sav-r4',mn2<1200?Math.round(mn2/12*10)/10+'년':'30년+');
     const path=[];let w=0;for(let m=0;m<yr*12;m++){w=w*(1+mr)+amt;if(m%6===0)path.push(Math.round(w));}
     mkLine('sav-chart',path,path.map((_,i)=>i%4===0?(i/2)+'년':''));
-    document.getElementById('sav-comment').textContent=sr>=70?`목표 달성 ${sr.toFixed(0)}%!`:`저축 증액 또는 기간 연장 권장.`;
+    const _el_sav_comment=document.getElementById('sav-comment');if(_el_sav_comment)_el_sav_comment.textContent=sr>=70?`목표 달성 ${sr.toFixed(0)}%!`:`저축 증액 또는 기간 연장 권장.`;
     // SVG II.저축 월저축액 표시
     const savR=document.getElementById('sv-sav-r');if(savR)savR.textContent=`월저축 ${gv('s-amt')}만원`;
     rProg();
@@ -4107,7 +4107,7 @@ function runInv(){
     st('inv-r1',(med/10000).toFixed(0)+'만원',colI);
     st('inv-r2','-'+(mm*100).toFixed(1)+'%','warn');st('inv-r3',sh,parseFloat(sh)>=1?'good':'warn');st('inv-r4',ar.toFixed(1)+'%',ar>=5?'good':'warn');
     dHist('inv-chart',res.map(r=>(r.w/Math.max(ti,1)-1)*100).sort((a,b)=>a-b));
-    document.getElementById('inv-comment').textContent=`${yr}년후 중앙값 ${(med/10000).toFixed(0)}만원.`;rProg();
+    const _el_inv_comment=document.getElementById('inv-comment');if(_el_inv_comment)_el_inv_comment.textContent=`${yr}년후 중앙값 ${(med/10000).toFixed(0)}만원.`;rProg();
   });
 }
 function runTax(){
@@ -4118,7 +4118,7 @@ function runTax(){
   st('tax-r1',fmt(Math.round(base))+'만원','bad');st('tax-r2',fmt(Math.round(opt))+'만원','good');
   st('tax-r3',fmt(Math.round(saved))+'만원','good');st('tax-r4',eff.toFixed(1)+'%',eff<15?'good':'warn');
   mkBar('tax-chart',['IRP','연금저축','의료비'],[irpC,pen*cr,medC].map(v=>Math.max(.1,v)),['rgba(26,107,60,.8)','rgba(26,74,138,.8)','rgba(201,151,42,.8)']);
-  document.getElementById('tax-comment').textContent=saved>=100?`절세 ${fmt(Math.round(saved))}만원!`:`IRP+연금저축 900만원 납입 권장.`;rProg();
+  const _tcEl=document.getElementById('tax-comment');if(_tcEl)_tcEl.textContent=saved>=100?`절세 ${fmt(Math.round(saved))}만원!`:`IRP+연금저축 900만원 납입 권장.`;rProg();
 }
 function runRE(){
   const price=gv('re-price')*10000,save=gv('re-save'),rise=gv('re-rise')/100,msv=gv('re-msv');
@@ -4134,7 +4134,7 @@ function runRE(){
     st('re-r4',bY?bY+'년차':'20년+');
     const bp=[],rp=[];for(let y=1;y<=10;y++){rp.push(Math.round(y*rm*12));bp.push(Math.round((price*Math.pow(1+rise,y)-la2)/10000)*10000);}
     mkChart('re-chart','line',Array.from({length:10},(_,i)=>(i+1)+'년'),[{data:bp,borderColor:'#1a6b3c',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3},{data:rp,borderColor:'#c0392b',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.3}],{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'rgba(0,0,0,.4)',font:{size:7}},grid:{display:false}},y:{ticks:{color:'rgba(0,0,0,.4)',font:{size:7}},grid:{color:'rgba(0,0,0,.04)'}}  }});
-    document.getElementById('re-comment').textContent=medM<=36?`${Math.floor(medM/12)}년 내 매수 가능!`:`${Math.floor(medM/12)}년 후 매수 예상.`;rProg();
+    const _el_re_comment=document.getElementById('re-comment');if(_el_re_comment)_el_re_comment.textContent=medM<=36?`${Math.floor(medM/12)}년 내 매수 가능!`:`${Math.floor(medM/12)}년 후 매수 예상.`;rProg();
   });
 }
 function runIns(){
@@ -4228,7 +4228,7 @@ function runIns(){
   st('ins-gap',   gap>0?fmt(gap)+'만원':'충족', gap>0?'bad':'good');
   st('ins-add',   addPay>0?'+'+fmt(addPay)+'만원/월':'충분', addPay>0?'warn':'good');
 
-  document.getElementById('ins-comment').textContent =
+  const _el_ins_comment=document.getElementById('ins-comment');if(_el_ins_comment)_el_ins_comment.textContent=
     fulfilledCount>=6 ? `보장 양호! ${fulfilledCount}종 보유 · 사망보험 ${h1>0?fmt(h1)+'만원 준비':'미준비'}.`
     : `${8-fulfilledCount}종 미가입 · 보장 보완 필요.`;
   rProg();
@@ -4739,8 +4739,8 @@ function runRet0(){
     const sF=n=>[...Array(300)].map(()=>sim(n)).filter(r=>r.s).length/300*100;
     const s3=sF(Math.max(.005,.03+a.invAdj/100)),s5=sF(Math.max(.005,.05+a.invAdj/100)),s7=sF(Math.max(.005,.07+a.invAdj/100));
     setProb('ret0-prob','ret0-gauge',sr);
-    document.getElementById('ret0-sub').textContent=dep.length?mD+'세 고갈 위험':'충분합니다 ('+die+'세까지)';
-    document.getElementById('ret0-med').textContent=fmt(Math.round(med/10000))+'만원';
+    const _el_ret0_sub=document.getElementById('ret0-sub');if(_el_ret0_sub)_el_ret0_sub.textContent=dep.length?mD+'세 고갈 위험':'충분합니다 ('+die+'세까지)';
+    const _el_ret0_med=document.getElementById('ret0-med');if(_el_ret0_med)_el_ret0_med.textContent=fmt(Math.round(med/10000))+'만원';
     setKpi('ret0-dep',dep.length?mD+'세 고갈':'고갈 없음',dep.length?'bad':'good');
     setKpi('ret0-gap',addS>0?'+'+addS+'만원/월':'충분',addS>0?'bad':'good');
     setKpi('ret0-lump',fmt(Math.round(need/10000))+'만원','');
@@ -4786,8 +4786,8 @@ function runRE1(){
     let bepY=0;for(let y=1;y<=20;y++){if(price*Math.pow(1+adjRise,y)-loan>y*rentM*12){bepY=y;break;}}
     const simRE=(ms,n)=>{let sc=0;for(let i=0;i<n;i++){let s=saveBal,m=0;while(s<down*regCost&&m<360){s=s*(1+(adjSrate+nrV2()*.04)/12)+ms;m++;}if(m<360)sc++;}return sc/n*100;};
     setProb('re1-prob','re1-gauge',succ);
-    document.getElementById('re1-time').textContent=medM<360?Math.floor(medM/12)+'년'+medM%12+'개월':'30년+';
-    document.getElementById('re1-sub').textContent=`금리 ${MAC.rate}%·규제 ${['완화','중립','규제'][MAC.regtax]} 반영`;
+    const _el_re1_time=document.getElementById('re1-time');if(_el_re1_time)_el_re1_time.textContent=medM<360?Math.floor(medM/12)+'년'+medM%12+'개월':'30년+';
+    const _el_re1_sub=document.getElementById('re1-sub');if(_el_re1_sub)_el_re1_sub.textContent=`금리 ${MAC.rate}%·규제 ${['완화','중립','규제'][MAC.regtax]} 반영`;
     setKpi('re1-down',fmt(Math.round(down*regCost))+'만원','');
     setKpi('re1-pay',fmt(Math.round(lm))+'만원/월','bad');
     setKpi('re1-bep',bepY?bepY+'년차':'20년+','');
@@ -4841,8 +4841,8 @@ function runInv2(){
     const sh=((ar/100-0.035)/Math.max(stk*0.18*a.volMult+bnd*0.06,0.01)).toFixed(2);
     const simI=(sW,n)=>{const bW=Math.max(0,(1-sW)*.8);let sc=0;for(let i=0;i<n;i++){let w=prin;for(let m=0;m<yr*12;m++){w=w*(1+sW*(stkMu+nrV2()*stkSig)+bW*(bndMu+nrV2()*bndSig))+mon;if(Math.random()<a.shockProb/12)w*=(1-(0.15+Math.random()*0.25));}if(w>=tgt)sc++;}return sc/n*100;};
     setProb('inv2-prob','inv2-gauge',succ);
-    document.getElementById('inv2-sub').textContent=`VIX ${MAC.vol}·충격확률 ${MAC.shock}% 반영`;
-    document.getElementById('inv2-med').textContent=fmt(Math.round(med/10000))+'만원';
+    const _el_inv2_sub=document.getElementById('inv2-sub');if(_el_inv2_sub)_el_inv2_sub.textContent=`VIX ${MAC.vol}·충격확률 ${MAC.shock}% 반영`;
+    const _el_inv2_med=document.getElementById('inv2-med');if(_el_inv2_med)_el_inv2_med.textContent=fmt(Math.round(med/10000))+'만원';
     setKpi('inv2-mdd','-'+(mdd*100).toFixed(1)+'%','bad');
     setKpi('inv2-sharp',sh,parseFloat(sh)>=1?'good':'warn');
     setKpi('inv2-ar',ar.toFixed(1)+'%',ar>=5?'good':ar>=2?'warn':'bad');
@@ -4892,8 +4892,8 @@ function runDbt3(){
     // 총 이자 절약
     const noExtI=res.filter(r=>r.ok).reduce((s,r)=>s+r.i,0)/Math.max(res.filter(r=>r.ok).length,1);
     setProb('dbt3-prob','dbt3-gauge',succ);
-    document.getElementById('dbt3-time').textContent=Math.floor(med/12)+'년'+med%12+'개월';
-    document.getElementById('dbt3-sub').textContent=`금리 ${(adjRate*100).toFixed(1)}% 적용 (기준 ${MAC.rate}%)`;
+    const _el_dbt3_time=document.getElementById('dbt3-time');if(_el_dbt3_time)_el_dbt3_time.textContent=Math.floor(med/12)+'년'+med%12+'개월';
+    const _el_dbt3_sub=document.getElementById('dbt3-sub');if(_el_dbt3_sub)_el_dbt3_sub.textContent=`금리 ${(adjRate*100).toFixed(1)}% 적용 (기준 ${MAC.rate}%)`;
     setKpi('dbt3-int',fmt(Math.round(mi))+'만원','bad');
     setKpi('dbt3-save',fmt(Math.round(Math.max(0,mi-noExtI)))+'만원','good');
     setKpi('dbt3-dsr',dsr.toFixed(1)+'%',dsr<=30?'good':dsr<=40?'warn':'bad');
@@ -4937,8 +4937,8 @@ function runSav4(){
     const simS=(s,n)=>{let sc=0;for(let i=0;i<n;i++){let w=cur;for(let m2=0;m2<yr*12;m2++){w=w*(1+(adjRate+nrV2()*.05)/12)+s;if(Math.random()<a.shockProb/12)w*=(1-.07);}if(w>=tgt)sc++;}return sc/n*100;};
     setProb('sav4-prob','sav4-gauge',succ);
     const simYr=simpleM/12;
-    document.getElementById('sav4-time').textContent=simYr<=yr?Math.ceil(simYr*10)/10+'년':yr+'년+ 초과';
-    document.getElementById('sav4-sub').textContent=`실질수익률 ${(adjRate*100).toFixed(1)}% (물가 ${MAC.inf}% 반영)`;
+    const _el_sav4_time=document.getElementById('sav4-time');if(_el_sav4_time)_el_sav4_time.textContent=simYr<=yr?Math.ceil(simYr*10)/10+'년':yr+'년+ 초과';
+    const _el_sav4_sub=document.getElementById('sav4-sub');if(_el_sav4_sub)_el_sav4_sub.textContent=`실질수익률 ${(adjRate*100).toFixed(1)}% (물가 ${MAC.inf}% 반영)`;
     setKpi('sav4-med',fmt(Math.round(med))+'만원','good');
     setKpi('sav4-real',fmt(Math.round(realMed))+'만원',realMed>=tgt?'good':'warn');
     setKpi('sav4-compound',fmt(Math.round(compoundEffect))+'만원','good');
@@ -4950,7 +4950,7 @@ function runSav4(){
     const path=[cur];let w=cur;
     for(let y=1;y<=yr;y++){for(let m=0;m<12;m++){w=w*(1+mr)+save;}path.push(Math.round(w));}
     mkLine('sav4-chart',[{data:path,borderColor:'#1a4a8a',backgroundColor:'rgba(26,74,138,.1)',fill:true,borderWidth:2,pointRadius:0,tension:.4},{data:Array(yr+1).fill(tgt),borderColor:'#C9972A',backgroundColor:'transparent',borderWidth:1,pointRadius:0,borderDash:[4,4]}],path.map((_,i)=>i+'년'));
-    document.getElementById('sav4-la').textContent='현재('+save+'만)';
+    const _el_sav4_la=document.getElementById('sav4-la');if(_el_sav4_la)_el_sav4_la.textContent='현재('+save+'만)';
     setSens('sav4-s0',simS(save,400));setSens('sav4-s1',simS(save+30,400));setSens('sav4-s2',simS(save+60,400));
     setComment('sav4-comment',succ>=70?`<strong>목표 달성 ${succ.toFixed(0)}%!</strong> 거시 조정 실질수익률 ${(adjRate*100).toFixed(1)}% 반영. 물가(${MAC.inf}%)를 감안한 실질 자산은 ${fmt(Math.round(realMed))}만원입니다.`:succ>=40?`<strong>주의.</strong> 물가 ${MAC.inf}%로 실질수익률이 낮아졌습니다. 월 저축 30만원 증액 또는 고수익 자산 비중 확대를 검토하세요.`:`<strong>목표 재설정 필요.</strong> 현재 거시 환경에서 달성 확률이 ${succ.toFixed(0)}%입니다.`);
     btn.classList.remove('running');btn.textContent='🎲 10,000회 시뮬레이션 실행';
@@ -5006,22 +5006,22 @@ function runTax5(){
     const yr10=saved*10*(1+MAC.rate/100/2);// 절세액 10년 복리
 
     setProb('tax5-prob','tax5-gauge',good);
-    document.getElementById('tax5-save').textContent=fmt(Math.round(saved))+'만원';
-    document.getElementById('tax5-sub').textContent=`금투세 ${MAC.taxrate}% 적용 기준`;
+    const _el_tax5_save=document.getElementById('tax5-save');if(_el_tax5_save)_el_tax5_save.textContent=fmt(Math.round(saved))+'만원';
+    const _el_tax5_sub=document.getElementById('tax5-sub');if(_el_tax5_sub)_el_tax5_sub.textContent=`금투세 ${MAC.taxrate}% 적용 기준`;
     setKpi('tax5-before',fmt(Math.round(beforeTotal))+'만원','bad');
     setKpi('tax5-after',fmt(Math.round(afterTotal))+'만원','good');
     setKpi('tax5-effrate',effRate.toFixed(1)+'%',effRate<15?'good':effRate<25?'warn':'bad');
     setKpi('tax5-10yr',fmt(Math.round(yr10))+'만원','good');
 
     // Before/After 상세
-    document.getElementById('tx-b-inc').textContent=fmt(Math.round(base))+'만원';
-    document.getElementById('tx-b-fin').textContent=fmt(Math.round(finTax))+'만원';
-    document.getElementById('tx-b-nhis').textContent=fmt(Math.round(nhis))+'만원';
-    document.getElementById('tx-b-total').textContent=fmt(Math.round(beforeTotal))+'만원';
-    document.getElementById('tx-a-irp').textContent='-'+fmt(Math.round(irpC))+'만원';
-    document.getElementById('tx-a-pen').textContent='-'+fmt(Math.round(Math.min(pen,600)*cr))+'만원';
-    document.getElementById('tx-a-med').textContent='-'+fmt(Math.round(medC+depC))+'만원';
-    document.getElementById('tx-a-total').textContent=fmt(Math.round(saved))+'만원';
+    const _el_tx_b_inc=document.getElementById('tx-b-inc');if(_el_tx_b_inc)_el_tx_b_inc.textContent=fmt(Math.round(base))+'만원';
+    const _el_tx_b_fin=document.getElementById('tx-b-fin');if(_el_tx_b_fin)_el_tx_b_fin.textContent=fmt(Math.round(finTax))+'만원';
+    const _el_tx_b_nhis=document.getElementById('tx-b-nhis');if(_el_tx_b_nhis)_el_tx_b_nhis.textContent=fmt(Math.round(nhis))+'만원';
+    const _el_tx_b_total=document.getElementById('tx-b-total');if(_el_tx_b_total)_el_tx_b_total.textContent=fmt(Math.round(beforeTotal))+'만원';
+    const _el_tx_a_irp=document.getElementById('tx-a-irp');if(_el_tx_a_irp)_el_tx_a_irp.textContent='-'+fmt(Math.round(irpC))+'만원';
+    const _el_tx_a_pen=document.getElementById('tx-a-pen');if(_el_tx_a_pen)_el_tx_a_pen.textContent='-'+fmt(Math.round(Math.min(pen,600)*cr))+'만원';
+    const _el_tx_a_med=document.getElementById('tx-a-med');if(_el_tx_a_med)_el_tx_a_med.textContent='-'+fmt(Math.round(medC+depC))+'만원';
+    const _el_tx_a_total=document.getElementById('tx-a-total');if(_el_tx_a_total)_el_tx_a_total.textContent=fmt(Math.round(saved))+'만원';
 
     // 분포
     const bad2=res.filter(r=>r.rate>MAC.taxrate+3).length/res.length*100;
@@ -5055,13 +5055,13 @@ function updateInsNeeds(){
   const needDeath=fmt(Math.round(inc*36+debt));
   const needCancer=fmt(Math.round(inc*24));
   const needBrain=fmt(Math.round(inc*12));
-  document.getElementById('in-death').textContent='기준: '+needDeath+'만원';
-  document.getElementById('in-dis').textContent='기준: '+needDeath+'만원';
-  document.getElementById('in-cancer').textContent='기준: '+needCancer+'만원';
-  document.getElementById('in-stroke').textContent='기준: '+needBrain+'만원';
-  document.getElementById('in-heart').textContent='기준: '+needBrain+'만원';
-  document.getElementById('in-crit').textContent='기준: '+needCancer+'만원';
-  document.getElementById('in-dem').textContent='기준: '+needBrain+'만원';
+  const _el_in_death=document.getElementById('in-death');if(_el_in_death)_el_in_death.textContent='기준: '+needDeath+'만원';
+  const _el_in_dis=document.getElementById('in-dis');if(_el_in_dis)_el_in_dis.textContent='기준: '+needDeath+'만원';
+  const _el_in_cancer=document.getElementById('in-cancer');if(_el_in_cancer)_el_in_cancer.textContent='기준: '+needCancer+'만원';
+  const _el_in_stroke=document.getElementById('in-stroke');if(_el_in_stroke)_el_in_stroke.textContent='기준: '+needBrain+'만원';
+  const _el_in_heart=document.getElementById('in-heart');if(_el_in_heart)_el_in_heart.textContent='기준: '+needBrain+'만원';
+  const _el_in_crit=document.getElementById('in-crit');if(_el_in_crit)_el_in_crit.textContent='기준: '+needCancer+'만원';
+  const _el_in_dem=document.getElementById('in-dem');if(_el_in_dem)_el_in_dem.textContent='기준: '+needBrain+'만원';
 }
 
 function runIns6(){
@@ -5116,8 +5116,8 @@ function runIns6(){
     const protectRate=riskAsset>0?Math.min(100,(needDeath-gaps.death)/Math.max(needDeath,1)*100):0;
 
     setProb('ins6-prob','ins6-gauge',coverRate);
-    document.getElementById('ins6-sub').textContent=coveredCount+'/8종 가입, 충격확률 '+MAC.shock+'% 반영';
-    document.getElementById('ins6-ideal').textContent=fmt(Math.round(idealPay))+'만원';
+    const _el_ins6_sub=document.getElementById('ins6-sub');if(_el_ins6_sub)_el_ins6_sub.textContent=coveredCount+'/8종 가입, 충격확률 '+MAC.shock+'% 반영';
+    const _el_ins6_ideal=document.getElementById('ins6-ideal');if(_el_ins6_ideal)_el_ins6_ideal.textContent=fmt(Math.round(idealPay))+'만원';
     setKpi('ins6-risk',fmt(Math.round(totalGap))+'만원','bad');
     setKpi('ins6-cur',pay+'만원','');
     setKpi('ins6-5yr',fmt(Math.round(insIn5))+'만원','warn');
