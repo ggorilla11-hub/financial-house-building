@@ -5844,6 +5844,15 @@ function headerMainAction() {
 
 /* ── 구독 모달 ── */
 function mpOpenSubscribe() {
+  // 얼리버드 가격 업데이트
+  const _plan = getEarlyBirdPlan();
+  const _yEl = document.getElementById('mp-year-price');
+  const _yUEl = document.getElementById('mp-year-unit');
+  const _mPrice = document.querySelector('#mp-plan-month .mp-plan-price');
+  if(_yEl) _yEl.textContent = '₩' + _plan.annual.toLocaleString();
+  if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
+  if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
+  updateEarlyBirdCounter();
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
 }
@@ -5857,13 +5866,25 @@ function mpSelectPlan(p) {
   document.getElementById('mp-plan-year').classList.toggle('mp-selected', p==='year');
   const cta = document.getElementById('mp-sub-cta');
   if(cta) cta.textContent = p==='month'
-    ? '지금 ₩9,900/월 구독 시작하기 →'
-    : '지금 ₩99,000/년 구독 시작하기 →';
+    ? '지금 ₩' + getEarlyBirdPlan().monthly.toLocaleString() + '/월 구독 시작하기 →'
+    : '지금 ₩' + getEarlyBirdPlan().annual.toLocaleString() + '/년 구독 시작하기 →';
 }
 function mpCompletePurchase() {
-  // 마이페이지 구독 버튼 → 동일한 결제 흐름 사용
   mpCloseSubscribe();
-  confirmPay();
+  if(mpSelectedPlan === 'year') {
+    // 연간 구독 → 페이플 단일 결제 URL로 이동
+    const plan = getEarlyBirdPlan();
+    const annualUrl = plan.annualUrl;
+    if(annualUrl) {
+      showToast('연간 결제 페이지로 이동합니다 💳');
+      setTimeout(() => window.open(annualUrl, '_blank'), 600);
+    } else {
+      showToast('연간 결제 URL 준비 중입니다. 월간 구독을 이용해 주세요.');
+    }
+  } else {
+    // 월간 구독 → 페이플 정기결제
+    confirmPay();
+  }
 }
 
 /* ── 마이페이지 열기/닫기 ── */
@@ -6950,8 +6971,8 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="mp-plan-card" id="mp-plan-year" onclick="mpSelectPlan('year')">
       <div class="mp-plan-badge">2개월 무료</div>
       <div class="mp-plan-type">연간 구독</div>
-      <div class="mp-plan-price">₩99,000</div>
-      <div class="mp-plan-unit">/ 년 (₩8,250/월)</div>
+      <div class="mp-plan-price" id="mp-year-price">₩99,000</div>
+      <div class="mp-plan-unit" id="mp-year-unit">/ 년 (₩8,250/월)</div>
       <div class="mp-plan-save">₩19,800 절약</div>
     </div>
   </div>
