@@ -2143,6 +2143,14 @@ body { color: #1a1a1a; }
 
 </head>
 <body>
+<script>
+// ⚠️ 테스트용 초기화 - 확인 후 제거
+localStorage.removeItem('fh_subscribed');
+localStorage.removeItem('fh_member_v1');
+localStorage.removeItem('fh_sub_date');
+localStorage.removeItem('fh_sub_oid');
+console.log('✅ 구독 상태 초기화 완료 - 테스트 모드');
+</script>
 
 
 <div id="funnel-wrap">
