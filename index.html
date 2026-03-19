@@ -5317,12 +5317,16 @@ function selPayMethod(el){
   document.querySelectorAll('.pay-method-btn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
 }
-function confirmPay(){
+function confirmPay(plan){
+  const isYearly = (plan === 'year');
   const btn = document.getElementById('pay-confirm-btn');
   if(btn){ btn.disabled = true; btn.textContent = '결제 준비 중...'; }
 
   try {
-    const order_id = 'FH_SILVER_' + Date.now();
+    const earlyPlan = getEarlyBirdPlan();
+    const payAmount = isYearly ? earlyPlan.annual : earlyPlan.monthly;
+    const planName  = isYearly ? '연간' : '월간';
+    const order_id  = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
 
     // clientKey 방식 - 서버 인증 불필요
     const obj = {};
@@ -5330,13 +5334,13 @@ function confirmPay(){
     obj.PCD_PAY_TYPE  = 'card';
     obj.PCD_PAY_WORK  = 'PAY';
     obj.PCD_CARD_VER  = '01';
-    obj.PCD_PAY_GOODS = '금융집짓기® ' + getEarlyBirdPlan().name + ' 구독';
-    obj.PCD_PAY_TOTAL = getEarlyBirdPlan().monthly;
+    obj.PCD_PAY_GOODS = '금융집짓기® 실버 ' + planName + ' 구독';
+    obj.PCD_PAY_TOTAL = payAmount;
     obj.PCD_PAY_OID   = order_id;
-    obj.PCD_REGULER_FLAG = 'Y';
+    obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y'; // 연간=단건, 월간=정기
     obj.PCD_SIMPLE_FLAG  = 'Y';
     obj.PCD_RST_URL   = '/';
-    // 정기결제 중복방지 년월 (필수)
+    // 정기결제 중복방지 년월 (월간만 필요)
     const _now = new Date();
     obj.PCD_PAY_YEAR  = String(_now.getFullYear());
     obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
@@ -5368,10 +5372,8 @@ function onPaypleResult(data){
     // Firebase 구독자 저장 + 감사 이메일
     if(typeof fbCurrentUser !== 'undefined' && fbCurrentUser) {
       fbSaveSubscriber({
-        plan: mpSelectedPlan === 'year' ? 'silver-annual' : 'silver-monthly',
-        amount: mpSelectedPlan === 'year'
-          ? getEarlyBirdPlan().annual
-          : getEarlyBirdPlan().monthly,
+        plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
+        amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
         orderId: data.PCD_PAY_OID || ''
       });
       const _uName = fbCurrentUser.displayName || '회원';
@@ -6006,20 +6008,8 @@ function mpSelectPlan(p) {
 }
 function mpCompletePurchase() {
   mpCloseSubscribe();
-  if(mpSelectedPlan === 'year') {
-    // 연간 구독 → 페이플 단일 결제 URL로 이동
-    const plan = getEarlyBirdPlan();
-    const annualUrl = plan.annualUrl;
-    if(annualUrl) {
-      showToast('연간 결제 페이지로 이동합니다 💳');
-      setTimeout(() => window.open(annualUrl, '_blank'), 600);
-    } else {
-      showToast('연간 결제 URL 준비 중입니다. 월간 구독을 이용해 주세요.');
-    }
-  } else {
-    // 월간 구독 → 페이플 정기결제
-    confirmPay();
-  }
+  // 월간/연간 모두 페이플 팝업으로 통일
+  confirmPay(mpSelectedPlan);
 }
 
 /* ── 마이페이지 열기/닫기 ── */
