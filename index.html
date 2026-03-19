@@ -2042,7 +2042,7 @@ body { color: #1a1a1a; }
   </div>
 
   <!-- 얼리버드 카운터 -->
-  <div style="margin:0 0 20px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:12px;padding:10px 16px;width:100%;max-width:320px">
+  <div style="margin:0 0 20px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:12px;padding:10px 16px;width:100%;max-width:320px;pointer-events:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <div>
         <div style="font-size:8px;color:rgba(255,255,255,.45);margin-bottom:2px">🔥 얼리버드 특가 · 평생 고정</div>
@@ -2060,7 +2060,7 @@ body { color: #1a1a1a; }
     <div style="text-align:center;font-size:7.5px;color:rgba(255,255,255,.35);margin-top:4px">1,000명 초과 시 ₩19,000 · 10,000명 초과 시 ₩29,000으로 자동 변경</div>
   </div>
 
-  <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;">
+  <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
     내 재무목표 찾기 →
   </button>
 
@@ -6758,8 +6758,11 @@ function updateProgressBar() {
 }
 // DOMContentLoaded 에 추가
 document.addEventListener('DOMContentLoaded', function() {
-  updateEarlyBirdCounter();
-  updateProgressBar();
+  // 얼리버드 카운터는 지연 실행 (reflow 방지)
+  setTimeout(function() {
+    updateEarlyBirdCounter();
+    updateProgressBar();
+  }, 100);
 });
 
 </script>
