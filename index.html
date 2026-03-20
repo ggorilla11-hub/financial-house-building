@@ -5219,6 +5219,19 @@ function confirmPay(plan){
     const payAmount  = isYearly ? earlyPlan.annual : earlyPlan.monthly;
     const planName   = isYearly ? '연간' : '월간';
     const order_id   = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
+
+    // 결제자 이름/이메일 (mpCompletePurchase에서 저장된 값)
+    const _payerName  = sessionStorage.getItem('fh_payer_name')  || '';
+    const _payerEmail = sessionStorage.getItem('fh_payer_email') || '';
+
+    // ── 연간: annualUrl이 있으면 페이플 링크로 이동 ──
+    if(isYearly && earlyPlan.annualUrl) {
+      window.open(earlyPlan.annualUrl, '_blank');
+      // 링크 결제는 콜백 없으므로 일단 임시 저장만
+      showToast('연간 결제 페이지로 이동합니다. 결제 완료 후 문자로 확인됩니다.');
+      return;
+    }
+
     // ── 페이플 공식 파라미터 (문서 기준) ──
     const obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
@@ -5233,6 +5246,10 @@ function confirmPay(plan){
     obj.PCD_RST_URL      = 'https://ohwant-webhook.vercel.app/api/payple';
     obj.callbackFunction = onPaypleResult;
 
+    // 결제자 정보 (페이플 결제창 자동 입력 + 웹훅 전달)
+    if(_payerName)  obj.PCD_PAYER_NAME  = _payerName;
+    if(_payerEmail) obj.PCD_PAYER_EMAIL = _payerEmail;
+
     // 정기결제 중복방지 (CERT 방식 필수)
     if(!isYearly) {
       const _now = new Date();
@@ -5244,6 +5261,7 @@ function confirmPay(plan){
       work: obj.PCD_PAY_WORK,
       amount: obj.PCD_PAY_TOTAL,
       orderId: obj.PCD_PAY_OID,
+      payerName: _payerName,
       rstUrl: obj.PCD_RST_URL
     });
 
@@ -5264,31 +5282,46 @@ function onPaypleResult(data){
       try { closePayModal(); } catch(e) {}
     }
     try { mpCloseSubscribe(); } catch(e) {}
+
+    // 결제자 이름/이메일 확정 저장
+    const _pName  = sessionStorage.getItem('fh_payer_name')  || '';
+    const _pEmail = sessionStorage.getItem('fh_payer_email') || '';
+    if(_pName)  localStorage.setItem('fh_user_name',  _pName);
+    if(_pEmail) localStorage.setItem('fh_user_email', _pEmail);
+    sessionStorage.removeItem('fh_payer_name');
+    sessionStorage.removeItem('fh_payer_email');
+
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
-    // Firebase 구독자 저장 + 감사 이메일
-    if(typeof null !== 'undefined' && null) {
-      fbSaveSubscriber({
-        plan: (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
-        amount: parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
-        orderId: data.PCD_PAY_OID || ''
-      });
-      const _uName = null.displayName || '회원';
-      showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
-    } else {
-      showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
-    }
+
+    const _uName = _pName || '회원';
+    showToast('🎉 ' + _uName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑');
+
+    // 구독자 카운터 +1 (로컬)
+    const _curCount = parseInt(localStorage.getItem('fh_subscriber_count') || '247');
+    localStorage.setItem('fh_subscriber_count', String(_curCount + 1));
+    updateEarlyBirdCounter();
+
+    // 웹훅 서버에 신규 구독자 알림 (비동기, 실패해도 결제는 완료)
+    fetch('https://ohwant-webhook.vercel.app/api/new-subscriber', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:    _pName,
+        email:   _pEmail,
+        plan:    (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
+        amount:  data.PCD_PAY_TOTAL || '',
+        orderId: data.PCD_PAY_OID  || '',
+        subDate: new Date().toISOString()
+      })
+    }).catch(e => console.log('[웹훅 알림 실패 — 결제는 정상]', e));
+
     // 헤더 버튼 업데이트
-    const payBtn = document.querySelector('.hbtn-pay');
-    if(payBtn){
-      payBtn.textContent = '👑 회원전용';
-      payBtn.onclick = () => mpOpen();
-      payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-      payBtn.style.animation = 'none';
-    }
+    mpIsSubscribed = true;
+    mpSetMemberButton();
     // 마이페이지 자동 오픈
     setTimeout(() => mpOpen(), 1500);
   } else {
@@ -5884,12 +5917,8 @@ function mpOpenSubscribe() {
   if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
   if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
-  // Google 로그인 상태 확인 (무한루프 없이 직접 처리)
-  if(typeof null !== 'undefined' && null) {
-    mpShowLoggedInUser(null);
-  } else {
-    mpResetLoginUI();
-  }
+  // 이름+이메일 직접 입력 방식으로 운영
+  mpResetLoginUI();
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
 }
@@ -5914,6 +5943,27 @@ function mpSelectPlan(p) {
   if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
 }
 function mpCompletePurchase() {
+  // 이름 / 이메일 검증
+  const _nameEl  = document.getElementById('mp-payer-name');
+  const _emailEl = document.getElementById('mp-payer-email');
+  const _nameVal  = _nameEl  ? _nameEl.value.trim()  : '';
+  const _emailVal = _emailEl ? _emailEl.value.trim() : '';
+
+  if(!_nameVal) {
+    showToast('이름을 입력해 주세요');
+    if(_nameEl) _nameEl.focus();
+    return;
+  }
+  if(!_emailVal || !_emailVal.includes('@')) {
+    showToast('올바른 이메일을 입력해 주세요');
+    if(_emailEl) _emailEl.focus();
+    return;
+  }
+
+  // 결제 전 이름/이메일 임시 저장 (결제 완료 후 확정)
+  sessionStorage.setItem('fh_payer_name',  _nameVal);
+  sessionStorage.setItem('fh_payer_email', _emailVal);
+
   // 모달은 열어둔 채로 결제 실행
   // (페이플 팝업이 모달 위에 뜸)
   // 결제 완료 후 onPaypleResult에서 모달 닫음
@@ -5942,7 +5992,8 @@ function mpTab(idx, btn) {
 /* ── 실시간 데이터 반영 ── */
 function mpRefreshData() {
   const score = typeof calcScore === 'function' ? Math.round(calcScore()) : 0;
-  const name = D.name || '회원';
+  // 시뮬레이터 입력 이름 > localStorage 저장 이름 > 기본값 순서로 사용
+  const name = D.name || localStorage.getItem('fh_user_name') || '회원';
 
   // 웰컴 배너
   const wbName = document.getElementById('mp-wb-name');
@@ -5955,6 +6006,13 @@ function mpRefreshData() {
   if(av) av.textContent = name ? name[0] : '?';
   const pName = document.getElementById('mp-profile-name');
   if(pName) pName.textContent = name;
+
+  // 이메일 표시
+  const pEmail = document.getElementById('mp-profile-email');
+  if(pEmail) {
+    const savedEmail = localStorage.getItem('fh_user_email') || '';
+    if(savedEmail) pEmail.textContent = savedEmail;
+  }
 
   // KPI
   const netAsset = (D.safeAsset||0)+(D.riskAsset||0)+((D.reHome||0)+(D.reInv||0))*10000
@@ -5979,6 +6037,20 @@ function mpRefreshData() {
 
   // CFP 과제
   mpUpdateTasks(score);
+
+  // 구독 일수 / 다음 결제일 갱신
+  const _subDate = localStorage.getItem('fh_sub_date');
+  if(_subDate) {
+    const _days = Math.floor((Date.now() - new Date(_subDate).getTime()) / 86400000);
+    ['mp-sub-days','mp-sub-days2'].forEach(id => {
+      const _el = document.getElementById(id);
+      if(_el) _el.textContent = _days;
+    });
+    const _bill = new Date(_subDate);
+    _bill.setMonth(_bill.getMonth() + 1);
+    const _billEl = document.getElementById('mp-next-bill');
+    if(_billEl) _billEl.textContent = _bill.toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'});
+  }
 }
 
 function mpUpdateTasks(score) {
@@ -6901,10 +6973,6 @@ function mpLogout() {
 }
 
 function mpDoLogout() {
-  // Google 로그아웃
-  if(typeof null !== 'undefined') {
-    console.log().catch(e => console.log('Firebase 로그아웃:', e));
-  }
   // localStorage 구독 상태는 유지 (재로그인 시 복원)
   // 단, 현재 세션만 초기화
   mpIsSubscribed = false;
@@ -6969,13 +7037,7 @@ function mpDoCancelSubscription() {
   ['fh_subscribed','fh_member_v1','fh_sub_date','fh_sub_oid'].forEach(k => {
     localStorage.removeItem(k);
   });
-  // Firebase 구독 상태 업데이트
-  if(typeof null !== 'undefined' && null && typeof null !== 'undefined') {
-    null.collection('subscribers').doc(null.uid).update({
-      isActive: false,
-      cancelledAt: new Date().toISOString()
-    }).catch(e => console.log('Firebase 취소 업데이트:', e));
-  }
+  // (Firebase 연동 추후 추가 예정)
   mpIsSubscribed = false;
   // 헤더 버튼 원래대로
   const btn = document.getElementById('btn-header-main');
@@ -7026,25 +7088,11 @@ function mpWithdraw() {
 function mpDoWithdraw() {
   // 모든 데이터 삭제
   localStorage.clear();
-  // Firebase 계정 삭제
-  if(typeof null !== 'undefined' && null) {
-    // Firestore 데이터 삭제
-    if(typeof null !== 'undefined') {
-      null.collection('subscribers').doc(null.uid).delete()
-        .catch(e => console.log('Firestore 삭제:', e));
-    }
-    // Firebase Auth 계정 삭제
-    null.delete().catch(e => {
-      console.log('Firebase 계정 삭제 오류 (재로그인 필요):', e);
-    });
-    if(typeof null !== 'undefined') {
-      console.log().catch(e => {});
-    }
-  }
+  // (Firebase 계정 삭제는 추후 연동 예정)
   document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
   mpClose();
   showToast('탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
-  // 3초 후 퍼널 처음으로
+  // 2초 후 새로고침
   setTimeout(() => location.reload(), 2000);
 }
 
@@ -7804,7 +7852,7 @@ function mpDoWithdraw() {
       <div class="mpc mp-fade-in" style="margin:8px 12px">
         <div class="mpc-hd"><span class="mpc-icon">💬</span><span class="mpc-title">1:1 문의하기</span></div>
         <div class="mpc-bd">
-          <button onclick="window.open('mailto:ggorilla11@gmail.com?subject=[금융집짓기] 1:1 문의','_blank')" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--paper);font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer">✉️ 이메일 문의 · ggorilla11@gmail.com</button>
+          <button onclick="window.open('mailto:ggorilla11@gmail.com?subject=[금융집짓기] 1:1 문의','_blank')" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--paper);font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer">✉️ 이메일 문의 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="81e6e6eef3e8edede0b0b0c1e6ece0e8edafe2eeec">[email&#160;protected]</a></button>
           <button onclick="window.open('tel:01054245332')" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--paper);font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer">📞 전화 문의 · 010-5424-5332</button>
         </div>
       </div>
@@ -7819,7 +7867,7 @@ function mpDoWithdraw() {
         <div class="mp-profile-av" id="mp-profile-av">?</div>
         <div>
           <div class="mp-profile-name" id="mp-profile-name">회원</div>
-          <div class="mp-profile-email">ggorilla11@gmail.com</div>
+          <div class="mp-profile-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c7a0a0a8b5aeababa6f6f687a0aaa6aeabe9a4a8aa">[email&#160;protected]</a></div>
           <div class="mp-profile-since">🥈 실버 회원 · 구독 D+<span id="mp-sub-days2">0</span>일</div>
         </div>
       </div>
@@ -7893,15 +7941,4 @@ function mpDoWithdraw() {
       </div>
 
       <div style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)">앱 버전 v2.8.1 (금융집짓기®)</div>
-      <div style="height:12px"></div>
-    </div>
-
-  </div>
-</div>
-
-
-
-
-<!-- ════════════════════════════════════════
-     금융집짓기® 퍼널 진입 화면
-════�
+      <di
