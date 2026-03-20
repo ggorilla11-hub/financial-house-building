@@ -5223,22 +5223,16 @@ function confirmPay(plan){
     const obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
-    obj.PCD_PAY_WORK     = isYearly ? 'PAY' : 'CERT';
+    obj.PCD_PAY_WORK     = 'PAY';   // PAY: 즉시결제 (카드사 문자 발송됨)
     obj.PCD_CARD_VER     = '01';
-    obj.PCD_PAY_GOODS    = '금융집짓기 실버 ' + planName + ' 구독'; // ® 특수문자 제거
+    obj.PCD_PAY_GOODS    = '금융집짓기 실버 ' + planName + ' 구독';
     obj.PCD_PAY_TOTAL    = payAmount;
     obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
     obj.PCD_SIMPLE_FLAG  = 'Y';
+    // PCD_RST_URL: 웹훅 서버로 결제 데이터 전송 후 callbackFunction으로 앱에 결과 반환
     obj.PCD_RST_URL      = 'https://ohwant-webhook.vercel.app/api/payple';
     obj.callbackFunction = onPaypleResult;
-
-    // 정기결제 중복방지 (CERT 방식 필수)
-    if(!isYearly) {
-      const _now = new Date();
-      obj.PCD_PAY_YEAR  = String(_now.getFullYear());
-      obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
-    }
 
     console.log('[페이플 결제 요청]', {
       work: obj.PCD_PAY_WORK,
@@ -6870,6 +6864,31 @@ function showMilestoneModal(title, msg) {
 
 // 페이지 로드 시 카운터 업데이트
 document.addEventListener('DOMContentLoaded', updateEarlyBirdCounter);
+
+// ── URL 파라미터로 결제 결과 처리 (페이플 리다이렉트 방식 대응)
+document.addEventListener('DOMContentLoaded', function() {
+  var params = new URLSearchParams(window.location.search);
+  var payResult = params.get('pay_result');
+  if (payResult === 'success') {
+    var oid = params.get('oid') || '';
+    // 구독 상태 저장 (팝업 방식에서 callbackFunction 미실행 시 대비)
+    localStorage.setItem('fh_subscribed', '1');
+    localStorage.setItem('fh_member_v1', '1');
+    localStorage.setItem('fh_sub_date', new Date().toISOString());
+    if (oid) localStorage.setItem('fh_sub_oid', oid);
+    mpIsSubscribed = true;
+    mpSetMemberButton();
+    showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
+    // URL 파라미터 제거 (주소창 정리)
+    window.history.replaceState({}, '', window.location.pathname);
+    // 1.5초 후 마이페이지 오픈
+    setTimeout(function() { mpOpen(); }, 1500);
+  } else if (payResult === 'fail') {
+    var failMsg = params.get('msg') || '결제가 취소되었습니다.';
+    showToast('❌ ' + failMsg);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+});
 
 
 // 진행바 퍼센트 업데이트
