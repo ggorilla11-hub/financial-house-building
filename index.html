@@ -2026,6 +2026,11 @@ body { color: #1a1a1a; }
   
   <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
 
+  <!-- Firebase SDK (Google 로그인) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+
 
 
 </head>
@@ -5874,7 +5879,7 @@ const MP_MEMBER_KEY = 'fh_member_v1';
 // 스키마 버전 관리 — 버전이 바뀌면 구독 세션 키만 자동 초기화
 // 히스토리/스냅샷 데이터는 절대 삭제하지 않음
 // ─────────────────────────────────────────
-const FH_SCHEMA_VERSION = '20260320c';
+const FH_SCHEMA_VERSION = '20260320d';
 const FH_VERSION_KEY    = 'fh_schema_ver';
 
 (function fhVersionGuard() {
@@ -5957,31 +5962,30 @@ function mpSelectPlan(p) {
   if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
 }
 function mpCompletePurchase() {
-  var nameVal  = (document.getElementById('mp-payer-name')  || {}).value || '';
-  var emailVal = (document.getElementById('mp-payer-email') || {}).value || '';
-  nameVal  = nameVal.trim();
-  emailVal = emailVal.trim();
-
-  if(!nameVal) {
-    showToast('이름을 입력해 주세요.');
-    var nEl = document.getElementById('mp-payer-name');
-    if(nEl) { nEl.focus(); nEl.style.borderColor = '#e53e3e'; }
+  // Google 로그인 확인
+  var user = window._fhCurrentUser || null;
+  if (!user) {
+    showToast('Google 계정으로 먼저 로그인해 주세요.');
+    // 로그인 버튼 강조
+    var beforeEl = document.getElementById('fh-before-login');
+    if (beforeEl) {
+      beforeEl.style.animation = 'none';
+      beforeEl.offsetHeight; // reflow
+      beforeEl.style.transition = 'box-shadow .2s';
+      beforeEl.style.boxShadow = '0 0 0 2px #C9972A';
+      setTimeout(function() { beforeEl.style.boxShadow = 'none'; }, 1500);
+    }
     return;
   }
-  if(!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-    showToast('올바른 이메일을 입력해 주세요.');
-    var eEl = document.getElementById('mp-payer-email');
-    if(eEl) { eEl.focus(); eEl.style.borderColor = '#e53e3e'; }
+
+  // 결제자 정보 확인 (onAuthStateChanged에서 이미 설정됨)
+  if (!window._fhPayerEmail) {
+    showToast('로그인 정보를 확인할 수 없습니다. 다시 로그인해 주세요.');
+    fhGoogleLogout();
     return;
   }
 
-  // 결제자 정보 임시 저장 (onPaypleResult에서 사용)
-  window._fhPayerName  = nameVal;
-  window._fhPayerEmail = emailVal;
-
-  // 모달은 열어둔 채로 결제 실행
-  // (페이플 팝업이 모달 위에 뜸)
-  // 결제 완료 후 onPaypleResult에서 모달 닫음
+  // 결제 실행
   confirmPay(mpSelectedPlan);
 }
 
@@ -7002,9 +7006,13 @@ function mpLogout() {
 }
 
 function mpDoLogout() {
-  // 로컬 세션 초기화
-  window._fhPayerName  = '';
-  window._fhPayerEmail = '';
+  // Google 로그아웃 + 로컬 세션 초기화
+  if (window._fhAuth) {
+    window._fhAuth.signOut().catch(function(){});
+  }
+  window._fhCurrentUser = null;
+  window._fhPayerName   = '';
+  window._fhPayerEmail  = '';
   // localStorage 구독 상태는 유지 (재로그인 시 복원)
   // 단, 현재 세션만 초기화
   mpIsSubscribed = false;
@@ -7127,6 +7135,89 @@ function mpDoWithdraw() {
   // 3초 후 퍼널 처음으로
   setTimeout(() => location.reload(), 2000);
 }
+
+
+
+    // Firebase 초기화 (전역 단 1회)
+    if (!window._fhFirebaseApp) {
+      window._fhFirebaseApp = firebase.initializeApp({
+        apiKey:            "AIzaSyBiMmPrfOzU9raSBWL1W3_aFX5IRvkzJPA",
+        authDomain:        "moneya-72fe6.firebaseapp.com",
+        projectId:         "moneya-72fe6",
+        storageBucket:     "moneya-72fe6.firebasestorage.app",
+        messagingSenderId: "688215695102",
+        appId:             "1:688215695102:web:bfbbf70f2ddbf47aa44faf"
+      });
+    }
+    window._fhAuth     = firebase.auth();
+    window._fhProvider = new firebase.auth.GoogleAuthProvider();
+
+    // 로그인 상태 감지
+    window._fhAuth.onAuthStateChanged(function(user) {
+      window._fhCurrentUser = user || null;
+      if (user) {
+        window._fhPayerName  = user.displayName || '';
+        window._fhPayerEmail = user.email || '';
+        // 구독 모달이 열려 있으면 UI 업데이트
+        fhUpdateLoginUI(user);
+      } else {
+        window._fhPayerName  = '';
+        window._fhPayerEmail = '';
+        fhUpdateLoginUI(null);
+      }
+    });
+
+    // 로그인 UI 업데이트
+    function fhUpdateLoginUI(user) {
+      var beforeEl = document.getElementById('fh-before-login');
+      var afterEl  = document.getElementById('fh-after-login');
+      if (!beforeEl || !afterEl) return;
+      if (user) {
+        beforeEl.style.display = 'none';
+        afterEl.style.display  = 'block';
+        var nameEl  = document.getElementById('fh-login-name');
+        var emailEl = document.getElementById('fh-login-email');
+        var photoEl = document.getElementById('fh-login-photo');
+        if (nameEl)  nameEl.textContent  = user.displayName || '사용자';
+        if (emailEl) emailEl.textContent = user.email || '';
+        if (photoEl && user.photoURL) {
+          photoEl.src = user.photoURL;
+          photoEl.style.display = 'block';
+        }
+      } else {
+        beforeEl.style.display = 'block';
+        afterEl.style.display  = 'none';
+      }
+    }
+
+    // Google 로그인 실행
+    function fhGoogleLogin() {
+      window._fhAuth.signInWithPopup(window._fhProvider)
+        .then(function(result) {
+          var user = result.user;
+          window._fhPayerName  = user.displayName || '';
+          window._fhPayerEmail = user.email || '';
+          fhUpdateLoginUI(user);
+        })
+        .catch(function(err) {
+          console.error('[Google 로그인 오류]', err.code, err.message);
+          if (err.code === 'auth/popup-blocked') {
+            showToast('팝업이 차단되었습니다. 브라우저 팝업 허용 후 다시 시도해주세요.');
+          } else {
+            showToast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+          }
+        });
+    }
+
+    // Google 로그아웃
+    function fhGoogleLogout() {
+      window._fhAuth.signOut().then(function() {
+        window._fhCurrentUser = null;
+        window._fhPayerName   = '';
+        window._fhPayerEmail  = '';
+        fhUpdateLoginUI(null);
+      });
+    }
 
 </script>
 
@@ -7374,33 +7465,61 @@ function mpDoWithdraw() {
     </div>
 
   </div>
-  <!-- 결제자 정보 입력 -->
+  <!-- Google 로그인 -->
   <div style="margin-bottom:10px">
-    <div style="margin-bottom:6px">
-      <label style="font-size:10px;font-weight:700;color:var(--navy);display:block;margin-bottom:3px">
-        이름 <span style="color:red">*</span>
-      </label>
-      <input id="mp-payer-name" type="text" placeholder="홍길동"
-        style="width:100%;padding:10px 12px;border-radius:8px;
-        border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);
-        box-sizing:border-box;outline:none"
-        onfocus="this.style.borderColor='#C9972A'"
-        onblur="this.style.borderColor='#ddd'">
+
+    <!-- 로그인 전 -->
+    <div id="fh-before-login">
+      <button onclick="fhGoogleLogin()"
+        style="width:100%;padding:11px 12px;border-radius:10px;
+        border:1.5px solid #ddd;background:#fff;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        font-size:13px;font-weight:700;color:#3c4043;
+        font-family:var(--fn);cursor:pointer;transition:all .15s;"
+        onmouseover="this.style.background='#f8f8f8';this.style.borderColor='#C9972A'"
+        onmouseout="this.style.background='#fff';this.style.borderColor='#ddd'">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Google 계정으로 로그인
+      </button>
+      <div style="font-size:9px;color:#999;margin-top:5px;text-align:center">
+        🔒 로그인 정보는 구독 관리 및 안내에만 사용됩니다
+      </div>
     </div>
-    <div>
-      <label style="font-size:10px;font-weight:700;color:var(--navy);display:block;margin-bottom:3px">
-        이메일 <span style="color:red">*</span>
-      </label>
-      <input id="mp-payer-email" type="email" placeholder="example@email.com"
-        style="width:100%;padding:10px 12px;border-radius:8px;
-        border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);
-        box-sizing:border-box;outline:none"
-        onfocus="this.style.borderColor='#C9972A'"
-        onblur="this.style.borderColor='#ddd'">
+
+    <!-- 로그인 후 -->
+    <div id="fh-after-login" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:10px;
+        background:rgba(11,29,58,0.04);border:1.5px solid rgba(201,151,42,0.4);">
+        <img id="fh-login-photo" src="" alt=""
+          style="width:32px;height:32px;border-radius:50%;display:none;object-fit:cover;">
+        <div style="flex:1;min-width:0;">
+          <div id="fh-login-name"
+            style="font-size:13px;font-weight:700;color:var(--navy);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="fh-login-email"
+            style="font-size:10px;color:#888;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+        <button onclick="fhGoogleLogout()"
+          style="font-size:10px;color:#888;background:none;border:none;
+          cursor:pointer;padding:2px 6px;border-radius:4px;white-space:nowrap"
+          onmouseover="this.style.color='#e53e3e'"
+          onmouseout="this.style.color='#888'">
+          로그아웃
+        </button>
+      </div>
+      <div style="font-size:9px;color:var(--gold);font-weight:700;margin-top:5px;text-align:center">
+        ✓ 이 계정으로 구독이 진행됩니다
+      </div>
     </div>
-    <div style="font-size:9px;color:#999;margin-top:5px">
-      🔒 구독 관리 및 안내에만 사용됩니다
-    </div>
+
   </div>
   <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
     지금 ₩9,900/월 구독 시작하기 →
