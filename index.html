@@ -2084,6 +2084,31 @@ body { color: #1a1a1a; }
   <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
     이미 알고 있어요, 시뮬레이터 바로 시작 →
   </button>
+
+  <!-- 개발자 초기화 버튼 (5회 탭으로 표시) -->
+  <div id="fh-dev-tap-area" onclick="fhDevTap()"
+    style="margin-top:8px;padding:10px;cursor:default;">
+    <span style="font-size:9px;color:rgba(255,255,255,0.08);">v</span>
+  </div>
+  <div id="fh-dev-panel-s0" style="display:none;margin:0 20px 16px;padding:14px;
+    background:rgba(255,59,48,0.12);border:1.5px solid rgba(255,59,48,0.4);
+    border-radius:12px;position:relative;z-index:1001;">
+    <div style="font-size:11px;font-weight:700;color:#FF6B6B;margin-bottom:10px;">
+      🛠️ 개발자 메뉴
+    </div>
+    <button onclick="fhDevReset()"
+      style="width:100%;padding:10px;border-radius:8px;border:none;
+      background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
+      font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+      🔄 구독 상태 초기화
+    </button>
+    <button onclick="fhDevClose()"
+      style="width:100%;padding:8px;border-radius:8px;
+      border:1px solid rgba(255,59,48,0.4);background:transparent;
+      color:#FF6B6B;font-size:12px;font-family:var(--fn);cursor:pointer;">
+      닫기
+    </button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -7268,8 +7293,11 @@ function fhDevReset() {
 }
 
 function fhDevClose() {
-  var panel = document.getElementById('fh-dev-panel');
-  if (panel) panel.style.display = 'none';
+  // S0 패널 + 마이페이지 패널 모두 닫기
+  ['fh-dev-panel', 'fh-dev-panel-s0'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   _fhDevTapCount = 0;
 }
 
