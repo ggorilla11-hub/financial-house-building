@@ -5879,7 +5879,7 @@ const MP_MEMBER_KEY = 'fh_member_v1';
 // 스키마 버전 관리 — 버전이 바뀌면 구독 세션 키만 자동 초기화
 // 히스토리/스냅샷 데이터는 절대 삭제하지 않음
 // ─────────────────────────────────────────
-const FH_SCHEMA_VERSION = '20260320e';
+const FH_SCHEMA_VERSION = '20260320f';
 const FH_VERSION_KEY    = 'fh_schema_ver';
 
 (function fhVersionGuard() {
@@ -7219,6 +7219,60 @@ function mpDoWithdraw() {
       });
     }
 
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   개발자 메뉴 (앱 버전 5회 탭)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var _fhDevTapCount = 0;
+var _fhDevTapTimer = null;
+
+function fhDevTap() {
+  _fhDevTapCount++;
+  clearTimeout(_fhDevTapTimer);
+  _fhDevTapTimer = setTimeout(function() {
+    _fhDevTapCount = 0;
+  }, 2000);
+
+  if (_fhDevTapCount >= 5) {
+    _fhDevTapCount = 0;
+    var panel = document.getElementById('fh-dev-panel');
+    if (panel) panel.style.display = 'block';
+  }
+}
+
+function fhDevReset() {
+  // 구독 세션 키 초기화
+  var SESSION_KEYS = [
+    'fh_subscribed', 'fh_member_v1', 'fh_sub_date',
+    'fh_sub_oid', 'fh_payer_name', 'fh_payer_email', 'fh_schema_ver'
+  ];
+  SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+  // Google 로그아웃
+  if (window._fhAuth) {
+    window._fhAuth.signOut().catch(function(){});
+  }
+  window._fhCurrentUser = null;
+  window._fhPayerName   = '';
+  window._fhPayerEmail  = '';
+  // 패널 닫기
+  fhDevClose();
+  // 헤더 버튼 원복
+  var btn = document.getElementById('btn-header-main');
+  if (btn) {
+    btn.className  = 'hbtn hbtn-subscribe';
+    btn.textContent = '💳 구독하기';
+    btn.onclick    = headerMainAction;
+  }
+  mpIsSubscribed = false;
+  showToast('✅ 초기화 완료! 구독하기 상태로 돌아왔습니다.');
+}
+
+function fhDevClose() {
+  var panel = document.getElementById('fh-dev-panel');
+  if (panel) panel.style.display = 'none';
+  _fhDevTapCount = 0;
+}
+
 </script>
 
 
@@ -8093,5 +8147,27 @@ function mpDoWithdraw() {
         <div id="mp-faq-list"></div>
       </div>
 
-      <div style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)">앱 버전 v2.8.1 (금융집짓기®)</div>
+      <div id="fh-dev-version" style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)"
+        onclick="fhDevTap()" title="개발자 메뉴">앱 버전 v2.8.1 (금융집짓기®)</div>
+
+      <!-- 개발자 초기화 패널 (숨김) -->
+      <div id="fh-dev-panel" style="display:none;margin:0 12px 12px;padding:14px;
+        background:rgba(255,59,48,0.08);border:1.5px solid rgba(255,59,48,0.3);
+        border-radius:12px;">
+        <div style="font-size:11px;font-weight:700;color:#FF3B30;margin-bottom:10px;">
+          🛠️ 개발자 메뉴 (5회 탭으로 열림)
+        </div>
+        <button onclick="fhDevReset()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;
+          background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
+          font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+          🔄 구독 상태 초기화 (테스트용)
+        </button>
+        <button onclick="fhDevClose()"
+          style="width:100%;padding:8px;border-radius:8px;
+          border:1px solid rgba(255,59,48,0.3);background:transparent;
+          color:#FF3B30;font-size:12px;font-family:var(--fn);cursor:pointer;">
+          닫기
+        </button>
+      </div>
       <di
