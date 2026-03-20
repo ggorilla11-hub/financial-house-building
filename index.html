@@ -2038,14 +2038,7 @@ body { color: #1a1a1a; }
 <script>
 (function(){
   if (!window.location.hostname.includes('-dev.vercel.app')) return;
-  // 방어선 1-A: CSS로 funnel-wrap 즉시 숨김 (JS/DOM 실행 전)
-  var style = document.createElement('style');
-  style.id = 'dev-override';
-  style.textContent =
-    '#funnel-wrap { display: none !important; }' +
-    '#btn-header-main { display: inline-flex !important; }';
-  document.head.appendChild(style);
-  // 방어선 1-B: localStorage 구독 상태 선제 저장
+  // develop: localStorage 구독 상태 선제 저장 (퍼널은 정상 표시)
   try {
     localStorage.setItem('fh_member_v1',  '1');
     localStorage.setItem('fh_subscribed', '1');
@@ -5936,34 +5929,35 @@ let mpIsSubscribed = false;
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    DEVELOP 자동 회원전용 (방어선 2)
    - financial-house-building-dev.vercel.app 에서만 동작
-   - main(고객용)에는 전혀 영향 없음
+   - 퍼널은 정상 표시, 퍼널 완료 시 자동 회원전용 전환
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 (function() {
   if (!window.location.hostname.includes('-dev.vercel.app')) return;
 
-  // 즉시 구독 상태 true (함수 호이스팅으로 mpSetMemberButton 사용 가능)
   mpIsSubscribed = true;
 
   document.addEventListener('DOMContentLoaded', function() {
     mpIsSubscribed = true;
 
-    // ① funnel-wrap + 모든 fn-screen 직접 숨김
-    var funnel = document.getElementById('funnel-wrap');
-    if (funnel) {
-      funnel.style.setProperty('display', 'none', 'important');
-      funnel.classList.add('fn-hidden');
-    }
-    // fn-screen도 개별 숨김 (position:fixed 독립 요소 대비)
-    document.querySelectorAll('.fn-screen').forEach(function(el) {
-      el.style.setProperty('display', 'none', 'important');
-    });
-
-    // ② 버튼 즉시 변경 + setInterval로 덮어쓰기 방지
+    // 버튼 즉시 변경 + setInterval로 덮어쓰기 방지
     function forceDevBtn() {
       mpIsSubscribed = true;
       var btn = document.getElementById('btn-header-main');
       if (btn) {
         btn.className   = 'hbtn hbtn-member';
+        btn.textContent = '👑 회원전용';
+        btn.onclick     = mpOpen;
+      }
+    }
+    forceDevBtn();
+    var tries = 0;
+    var devInterval = setInterval(function() {
+      forceDevBtn();
+      tries++;
+      if (tries >= 20) clearInterval(devInterval);
+    }, 500);
+  });
+})();
         btn.textContent = '👑 회원전용';
         btn.onclick     = mpOpen;
       }
@@ -6374,6 +6368,11 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  // develop: 결제 없이 바로 회원전용 전환
+  if (window.location.hostname.includes('-dev.vercel.app')) {
+    mpIsSubscribed = true;
+    if (typeof mpSetMemberButton === 'function') mpSetMemberButton();
+  }
 }
 
 // ── 큐브 초기화 ──
@@ -7806,12 +7805,6 @@ function fhDevClose() {
   if (!window.location.hostname.includes('-dev.vercel.app')) return;
   function applyDev() {
     mpIsSubscribed = true;
-    // funnel 숨김
-    var funnel = document.getElementById('funnel-wrap');
-    if (funnel) funnel.style.setProperty('display','none','important');
-    document.querySelectorAll('.fn-screen').forEach(function(el){
-      el.style.setProperty('display','none','important');
-    });
     // 버튼 변경
     var btn = document.getElementById('btn-header-main');
     if (btn) {
@@ -7828,10 +7821,9 @@ function fhDevClose() {
   } else {
     applyDev();
   }
-  // window.onload 후 1회 (Firebase 포함 모든 리소스 로드 완료)
+  // window.onload 후 1회
   window.addEventListener('load', function() {
     applyDev();
-    // 추가 2초 후 최종 확인
     setTimeout(applyDev, 2000);
   });
 })();
