@@ -7516,8 +7516,11 @@ function fhDevTap() {
 
   if (_fhDevTapCount >= 3) {
     _fhDevTapCount = 0;
-    var panel = document.getElementById('fh-dev-panel-s0');
-    if (panel) panel.style.display = 'block';
+    // 퍼널 패널 + 마이페이지 패널 둘 다 열기
+    var p1 = document.getElementById('fh-dev-panel-s0');
+    var p2 = document.getElementById('fh-dev-panel');
+    if (p1) p1.style.display = 'block';
+    if (p2) p2.style.display = 'block';
   }
 }
 
