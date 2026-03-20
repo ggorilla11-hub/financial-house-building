@@ -5934,7 +5934,7 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
     SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
     localStorage.setItem(FH_VERSION_KEY, FH_SCHEMA_VERSION);
   }
-  /* ── DEVELOP 전용: 버전가드 이후 무조건 구독 상태 강제 설정 ── */
+  /* ── DEVELOP 전용: 항상 무조건 구독 강제 ── */
   localStorage.setItem('fh_schema_ver',  '20260320f');
   localStorage.setItem('fh_member_v1',   '1');
   localStorage.setItem('fh_subscribed',  '1');
@@ -5942,6 +5942,14 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
   localStorage.setItem('fh_payer_name',  '개발테스트');
   localStorage.setItem('fh_payer_email', 'dev@test.com');
 })();
+
+/* ── DEVELOP: 페이지 로드 즉시 회원전용 강제 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  localStorage.setItem('fh_member_v1',  '1');
+  localStorage.setItem('fh_subscribed', '1');
+  mpIsSubscribed = true;
+  mpSetMemberButton();
+});
 
 // 앱 로드 시 구독 상태 복원 (버전 검증 통과 후 실행)
 (function(){
