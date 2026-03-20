@@ -6603,6 +6603,7 @@ function mpTab(idx, btn) {
   if(idx === 1) mpRefreshHistory();
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
+  if(idx === 1) fhInitHistoryDashboard();
 }
 
 // ── 수료증 등급 계산 ──
@@ -7307,6 +7308,175 @@ function mpDoWithdraw() {
 
 
 
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   히스토리 탭 v5 — 비포&에프터 대시보드
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+const FH_HIST_COLS = ['작년','지난반기','지난분기','지난달','지난주','이번주','오늘'];
+
+const FH_HIST_SAMPLE = [
+  { label:'순자산',       fmt:'money', values:[10000000,50000000,100000000,200000000,300000000,450000000,500000000] },
+  { label:'부자지수',     fmt:'pct',   values:[0,50,100,150,200,280,300] },
+  { label:'부채비율',     fmt:'pct',   values:[50,45,40,30,20,12,10] },
+  { label:'비상예비자금', fmt:'money', values:[0,5000000,10000000,20000000,30000000,45000000,50000000] },
+  { label:'월저축투자액', fmt:'money', values:[0,100000,200000,300000,500000,800000,1000000] },
+  { label:'DESIRE단계',   fmt:'stage', values:[1,2,3,4,5,6,6] },
+];
+const FH_HIST_REAL = FH_HIST_SAMPLE.map(r => ({...r, values:r.values.map(()=>null)}));
+
+const FH_AI_SAMPLE = [
+  { date:'2026.03.20', score:63, tag:'s', msg:'3번째 정기진단 완료! 순자산 <b>5억원</b> 돌파를 축하드려요 🎉 부채비율도 <b>10%</b>까지 낮아졌고, DESIRE 6단계 달성이 눈앞입니다. 월저축투자액 <b>100만원</b> 꾸준히 유지하시면 내년 더 놀라운 결과가 기다리고 있어요!' },
+  { date:'2026.02.15', score:55, tag:'s', msg:'2번째 정기진단입니다. 한 달 만에 순자산이 <b>1.5억</b> 늘었어요! 비상예비자금 <b>4.5개월치</b> 확보도 훌륭합니다. 다음 목표는 부채비율 <b>10% 이하</b>입니다. DESIRE 5단계, 조금만 더 힘내세요 💪' },
+  { date:'2026.01.10', score:42, tag:'s', msg:'첫 초회진단 완료! 현재 순자산 <b>3억원</b>, 부채비율 <b>20%</b>입니다. 비상예비자금을 먼저 채우고 투자를 늘려가는 전략을 추천드려요. 금융집짓기® 4단계 기초공사부터 차근차근 시작해봐요 🏠' },
+];
+const FH_AI_REAL = [
+  { date:'—', score:null, tag:'r', msg:'아직 AI진단 기록이 없습니다. <b>AI진단 탭</b>에서 첫 번째 초회진단을 시작해보세요! 진단이 완료되면 AI머니야가 여기에 맞춤형 재무 코멘트를 자동으로 기록해드립니다 🤖' },
+];
+
+const FH_BAR_COLORS = [
+  ['#818cf8','#4338ca'],['#34d399','#059669'],['#f87171','#dc2626'],
+  ['#60a5fa','#2563eb'],['#fbbf24','#d97706'],['#f472b6','#db2777'],
+];
+
+let fhHistMode = 's', fhHistAiMode = 's', fhHistActiveR = 0;
+function fhHistRows() { return fhHistMode==='s' ? FH_HIST_SAMPLE : FH_HIST_REAL; }
+
+function fhFmtVal(v, fmt) {
+  if (v===null||v===undefined) return '<span style="color:#bbb">—</span>';
+  if (fmt==='money') {
+    if (v===0) return '0원';
+    if (v>=100000000) return (v/100000000).toFixed(1)+'억';
+    if (v>=10000) return Math.round(v/10000).toLocaleString()+'만';
+    return v.toLocaleString()+'원';
+  }
+  if (fmt==='pct')   return v+'%';
+  if (fmt==='stage') return v+'단계';
+  return v;
+}
+
+function fhRenderHistTbl() {
+  var rs = fhHistRows(), ti = FH_HIST_COLS.length-1;
+  var h = '<thead><tr>';
+  h += '<th style="text-align:left;padding:6px 8px 6px 14px;font-size:9px;font-weight:700;color:var(--navy);position:sticky;left:0;background:#fafaf8;z-index:3;min-width:88px;border-bottom:1px solid rgba(201,151,42,.15)">항목</th>';
+  FH_HIST_COLS.forEach(function(c,i) {
+    var isTd = i===ti;
+    h += '<th style="font-size:8.5px;font-weight:700;color:'+(isTd?'var(--gold)':'var(--muted)')+';padding:6px 12px;text-align:center;white-space:nowrap;background:'+(isTd?'rgba(201,151,42,.08)':'#fafaf8')+';border-bottom:1px solid rgba(201,151,42,.15)">'+c+'</th>';
+  });
+  h += '</tr></thead><tbody>';
+  rs.forEach(function(r,ri) {
+    var isA = ri===fhHistActiveR;
+    h += '<tr>';
+    h += '<td onclick="fhHistPick('+ri+')" style="text-align:left;padding:8px 8px 8px 14px;font-size:10px;font-weight:'+(isA?'900':'700')+';color:'+(isA?'var(--gold)':'var(--navy)')+';position:sticky;left:0;background:#fff;z-index:2;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04);white-space:nowrap">'+(isA?'▶ ':'')+r.label+'</td>';
+    r.values.forEach(function(v,ci) {
+      var isTd = ci===ti;
+      h += '<td style="font-size:'+(isTd?'11':'10.5')+'px;font-weight:'+(isTd?'900':'700')+';padding:8px 12px;text-align:center;color:'+(isTd?'var(--navy)':'#333')+';background:'+(isTd?'rgba(201,151,42,.05)':'transparent')+';border-bottom:1px solid rgba(0,0,0,.04);white-space:nowrap">'+fhFmtVal(v,r.fmt)+'</td>';
+    });
+    h += '</tr>';
+  });
+  h += '</tbody>';
+  document.getElementById('fh-hist-tbl').innerHTML = h;
+}
+
+function fhRenderHistBars(ri) {
+  var r    = fhHistRows()[ri];
+  var vals = r.values;
+  var nums = vals.map(function(v){ return v===null?0:Number(v); });
+  var maxN = Math.max.apply(null, nums.concat([1]));
+  var MAX_H = 120;
+  var pal  = FH_BAR_COLORS[ri % FH_BAR_COLORS.length];
+
+  document.getElementById('fh-chart-label').textContent = r.label;
+
+  var area = document.getElementById('fh-bars-area');
+  area.innerHTML = FH_HIST_COLS.map(function(col,i) {
+    var v = vals[i], n = nums[i];
+    var isToday = i===FH_HIST_COLS.length-1;
+    var px = Math.max(4, Math.round((n/maxN)*MAX_H));
+    var delay = i*70;
+    var bg = isToday
+      ? 'linear-gradient(180deg,'+pal[0]+','+pal[1]+')'
+      : 'linear-gradient(180deg,'+pal[0]+'88,'+pal[1]+'55)';
+    var glow = isToday ? 'box-shadow:0 -4px 12px '+pal[1]+'44;' : '';
+    return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:4px">'
+      + '<div style="font-size:7.5px;font-weight:700;white-space:nowrap;color:'+(isToday?pal[0]:'var(--muted)')+'">'+fhFmtVal(v,r.fmt)+'</div>'
+      + '<div data-h="'+px+'" style="width:100%;border-radius:5px 5px 2px 2px;height:0;background:'+bg+';'+glow+'transition:height .6s cubic-bezier(.34,1.3,.64,1) '+delay+'ms"></div>'
+      + '<div style="font-size:7.5px;color:var(--muted);white-space:nowrap">'+col+'</div>'
+      + '</div>';
+  }).join('');
+
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      area.querySelectorAll('[data-h]').forEach(function(el){
+        el.style.height = el.dataset.h + 'px';
+      });
+    });
+  });
+}
+
+function fhHistPick(ri) {
+  fhHistActiveR = ri;
+  fhRenderHistTbl();
+  fhRenderHistBars(ri);
+}
+
+function fhSetMode(m, btn) {
+  fhHistMode = m;
+  document.getElementById('fh-toggle-s').style.background = m==='s'?'#fff':'transparent';
+  document.getElementById('fh-toggle-s').style.color      = m==='s'?'var(--navy)':'var(--muted)';
+  document.getElementById('fh-toggle-r').style.background = m==='r'?'#fff':'transparent';
+  document.getElementById('fh-toggle-r').style.color      = m==='r'?'var(--navy)':'var(--muted)';
+  var notice = document.getElementById('mp-sample-banner');
+  if (notice) {
+    notice.style.display = 'block';
+    notice.textContent = m==='r'
+      ? '📋 실제 데이터 · AI진단 완료 시 자동 업데이트됩니다'
+      : '📊 예시 데이터 · AI진단 완료 시 실제 데이터로 자동 교체됩니다';
+  }
+  fhRenderHistTbl();
+  fhRenderHistBars(fhHistActiveR);
+}
+
+function fhRenderAIMemos(memos) {
+  document.getElementById('fh-ai-wrap').innerHTML = memos.map(function(m) {
+    var scoreHtml = m.score ? '<span style="margin-left:auto;font-size:8px;font-weight:700;padding:2px 7px;border-radius:7px;background:rgba(201,151,42,.1);color:var(--gold);border:1px solid rgba(201,151,42,.2)">재무점수 '+m.score+'점</span>' : '';
+    var tagHtml = m.tag==='s'
+      ? '<span style="display:inline-block;font-size:7.5px;font-weight:700;padding:1px 7px;border-radius:5px;background:rgba(201,151,42,.1);color:var(--gold);border:1px solid rgba(201,151,42,.2);margin-bottom:5px">📊 예시</span>'
+      : '<span style="display:inline-block;font-size:7.5px;font-weight:700;padding:1px 7px;border-radius:5px;background:rgba(22,163,74,.1);color:#16a34a;border:1px solid rgba(22,163,74,.2);margin-bottom:5px">✅ 실제 기록</span>';
+    return '<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05)">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1.5px solid var(--gold)">🤖</div>'
+      + '<div style="flex:1">'
+      + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap">'
+      + '<span style="font-size:9.5px;font-weight:900;color:var(--gold)">AI머니야</span>'
+      + '<span style="font-size:8.5px;color:var(--muted)">'+m.date+'</span>'
+      + scoreHtml
+      + '</div>'
+      + '<div style="font-size:10px;line-height:1.65;color:#333;background:rgba(11,29,58,.03);border-radius:0 10px 10px 10px;padding:10px 12px;border-left:2.5px solid var(--gold)">'
+      + tagHtml + '<br>' + m.msg
+      + '</div></div></div>';
+  }).join('');
+}
+
+function fhSetAiMode(m, btn) {
+  fhHistAiMode = m;
+  document.getElementById('fh-ai-toggle-s').style.background = m==='s'?'#fff':'transparent';
+  document.getElementById('fh-ai-toggle-s').style.color      = m==='s'?'var(--navy)':'var(--muted)';
+  document.getElementById('fh-ai-toggle-r').style.background = m==='r'?'#fff':'transparent';
+  document.getElementById('fh-ai-toggle-r').style.color      = m==='r'?'var(--navy)':'var(--muted)';
+  fhRenderAIMemos(m==='s' ? FH_AI_SAMPLE : FH_AI_REAL);
+}
+
+function fhInitHistoryDashboard() {
+  fhRenderHistTbl();
+  fhRenderHistBars(0);
+  fhRenderAIMemos(FH_AI_SAMPLE);
+  setTimeout(function(){
+    var prog = document.getElementById('fh-cert-prog');
+    if(prog) prog.style.width = '0%'; // 실제 데이터 연동 전까지 0
+  }, 400);
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    히스토리 탭 — 개발자2 납품 통합
    (재무 계산 함수 + 렌더링 함수)
@@ -7555,15 +7725,6 @@ function fhLoadHistory() {
 }
 
 
-
-function mpRefreshHistory() {
-  const history = fhLoadHistory();
-  mpRenderHistoryHeadline(history);
-  mpRenderCertGrade();
-  mpRenderBATable(history);
-  mpRenderAssetChart(history);
-  mpRenderTimeline(history);
-}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    개발자 메뉴 (앱 버전 5회 탭)
@@ -8098,76 +8259,89 @@ function fhDevClose() {
          전주/전월/전분기/전년 비교
     ══════════════════════════════════ -->
     <div class="mp-panel" id="mp-panel-1">
+
+      <!-- 배너 -->
       <div class="mp-history-banner mp-fade-in">
-        <div style="font-size:28px;margin-bottom:7px">📈</div>
-        <div style="font-size:13px;font-weight:900;color:#fff;margin-bottom:3px">나의 재무 성장 기록</div>
-        <div style="font-size:9.5px;color:rgba(255,255,255,.6)">저장할 때마다 자동으로 기록됩니다</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-size:26px">🏆</div>
+          <div>
+            <div style="font-size:13px;font-weight:900;color:#fff">나의 재무 성장 기록</div>
+            <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">AI진단 결과가 자동으로 누적됩니다</div>
+          </div>
+        </div>
         <div class="mp-hb-highlight" id="mp-history-headline">💾 저장하기를 눌러 첫 기록을 남기세요!</div>
       </div>
 
-      <!-- 수료증 등급 (AI머니야 History 컴포넌트) -->
+      <!-- 샘플 배너 -->
+      <div id="mp-sample-banner" style="display:none;margin:0 12px 8px;padding:7px 12px;background:rgba(201,151,42,.08);border:1px solid rgba(201,151,42,.25);border-radius:8px;font-size:9px;font-weight:700;color:var(--gold);text-align:center">
+        📊 예시 데이터 · AI진단 완료 시 실제 데이터로 자동 교체됩니다
+      </div>
+
+      <!-- ① 비포&에프터 대시보드 -->
+      <div class="mpc" style="margin:8px 12px 0">
+        <div class="mpc-hd" style="display:flex;align-items:center">
+          <span class="mpc-icon">📊</span>
+          <span class="mpc-title" style="flex:1">재무 변화 추이</span>
+          <div style="display:flex;background:rgba(11,29,58,.06);border-radius:20px;padding:2px;gap:2px">
+            <button id="fh-toggle-s" onclick="fhSetMode('s',this)" style="font-size:9px;font-weight:700;padding:3px 10px;border-radius:16px;border:none;cursor:pointer;font-family:var(--fn);background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)">샘플</button>
+            <button id="fh-toggle-r" onclick="fhSetMode('r',this)" style="font-size:9px;font-weight:700;padding:3px 10px;border-radius:16px;border:none;cursor:pointer;font-family:var(--fn);background:transparent;color:var(--muted)">실제</button>
+          </div>
+        </div>
+
+        <!-- 테이블 -->
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table id="fh-hist-tbl" style="border-collapse:collapse;width:max-content;min-width:100%"></table>
+        </div>
+        <div style="text-align:center;padding:5px 0 10px;font-size:8px;color:var(--muted)">← 좌우 스크롤 · 항목 클릭 시 추이 그래프 변경 →</div>
+
+        <!-- 추이 막대그래프 -->
+        <div style="padding:12px 14px 16px;border-top:1px solid rgba(201,151,42,.1);background:rgba(11,29,58,.02)">
+          <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span id="fh-chart-label">순자산</span> 추이
+            <span id="fh-chart-chip" style="font-size:8.5px;font-weight:700;color:var(--gold);background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.2);padding:2px 8px;border-radius:8px">클릭으로 항목 변경</span>
+          </div>
+          <div id="fh-bars-area" style="display:flex;align-items:flex-end;gap:8px;height:140px;padding:0 4px"></div>
+        </div>
+      </div>
+
+      <!-- ② 상담 수료증 -->
       <div class="mpc mp-fade-in" style="margin:8px 12px 0">
         <div class="mpc-hd"><span class="mpc-icon">🏆</span><span class="mpc-title">상담 수료증 등급</span></div>
         <div class="mpc-bd">
-          <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-            <span id="mp-cert-icon" style="font-size:32px">⬜</span>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+            <span id="mp-cert-icon" style="font-size:38px">⬜</span>
             <div>
-              <div id="mp-cert-grade" style="font-size:14px;font-weight:900;color:var(--navy)">-</div>
-              <div id="mp-cert-count" style="font-size:9px;color:var(--muted)">총 0회 상담 완료</div>
-              <div id="mp-cert-next" style="font-size:9px;color:var(--gold);margin-top:2px">첫 상담 후 등급 부여</div>
+              <div id="mp-cert-grade" style="font-size:15px;font-weight:900;color:var(--navy)">-</div>
+              <div id="mp-cert-count" style="font-size:9px;color:var(--muted);margin-top:2px">총 0회 상담 완료</div>
+              <div id="mp-cert-next" style="font-size:9.5px;color:var(--gold);margin-top:3px;font-weight:700">첫 상담 후 등급 부여</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 비포&에프터 대시보드 (핵심 기능) -->
-      <div class="mpc" style="margin:8px 12px 0">
-        <div class="mpc-hd">
-          <span class="mpc-icon">📊</span>
-          <span class="mpc-title">비포 & 에프터 대시보드</span>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="mp-ba-table" style="min-width:360px">
-            <thead>
-              <tr>
-                <th>항목</th>
-                <th>전주</th>
-                <th>전월</th>
-                <th>전분기</th>
-                <th>전년</th>
-              </tr>
-            </thead>
-            <tbody id="mp-ba-tbody">
-              <tr>
-                <td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-size:10px">
-                  2회 이상 저장하면 변화량이 표시됩니다
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="mp-mini-chart">
-          <div class="mp-mc-title">순자산 추이</div>
-          <div class="mp-mc-bars" id="mp-asset-bars">
-            <div style="font-size:9px;color:var(--muted);width:100%;text-align:center;padding-top:12px">저장 기록이 없습니다</div>
+          <div style="height:6px;background:rgba(0,0,0,.07);border-radius:3px;overflow:hidden;margin-bottom:7px">
+            <div id="fh-cert-prog" style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--navy2),var(--gold));width:0%;transition:width .8s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <div style="font-size:7.5px;color:var(--muted);text-align:center;line-height:1.6">⬜<br>입문</div>
+            <div style="font-size:7.5px;color:var(--muted);text-align:center;line-height:1.6">🥉<br>브론즈</div>
+            <div style="font-size:7.5px;color:var(--muted);text-align:center;line-height:1.6">🥈<br>실버</div>
+            <div style="font-size:7.5px;color:var(--muted);text-align:center;line-height:1.6">🥇<br>골드</div>
+            <div style="font-size:7.5px;color:var(--muted);text-align:center;line-height:1.6">💎<br>플래티넘</div>
           </div>
         </div>
       </div>
 
-      <!-- 저장 기록 타임라인 -->
+      <!-- ③ AI머니야 메모 -->
       <div class="mpc" style="margin:8px 12px">
-        <div class="mpc-hd">
-          <span class="mpc-icon">🗓</span>
-          <span class="mpc-title">저장 기록 타임라인</span>
-        </div>
-        <div class="mpc-bd">
-          <div id="mp-timeline">
-            <div style="font-size:10px;color:var(--muted);text-align:center;padding:8px 0">
-              아직 저장 기록이 없습니다. 💾 저장하기를 눌러보세요!
-            </div>
+        <div class="mpc-hd" style="display:flex;align-items:center">
+          <span class="mpc-icon">🤖</span>
+          <span class="mpc-title" style="flex:1">AI머니야 메모</span>
+          <div style="display:flex;background:rgba(11,29,58,.06);border-radius:20px;padding:2px;gap:2px">
+            <button id="fh-ai-toggle-s" onclick="fhSetAiMode('s',this)" style="font-size:9px;font-weight:700;padding:3px 10px;border-radius:16px;border:none;cursor:pointer;font-family:var(--fn);background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)">샘플</button>
+            <button id="fh-ai-toggle-r" onclick="fhSetAiMode('r',this)" style="font-size:9px;font-weight:700;padding:3px 10px;border-radius:16px;border:none;cursor:pointer;font-family:var(--fn);background:transparent;color:var(--muted)">실제</button>
           </div>
         </div>
+        <div class="mpc-bd" id="fh-ai-wrap"></div>
       </div>
+
       <div style="height:12px"></div>
     </div>
 
