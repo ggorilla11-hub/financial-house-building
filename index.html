@@ -2033,6 +2033,28 @@ body { color: #1a1a1a; }
 
 
 
+
+<!-- ★ DEVELOP 전용 — main 브랜치에는 절대 머지 금지 ★ -->
+<script>
+(function(){
+  if (!window.location.hostname.includes('-dev.vercel.app')) return;
+  // 방어선 1-A: CSS로 funnel-wrap 즉시 숨김 (JS/DOM 실행 전)
+  var style = document.createElement('style');
+  style.id = 'dev-override';
+  style.textContent =
+    '#funnel-wrap { display: none !important; }' +
+    '#btn-header-main { display: inline-flex !important; }';
+  document.head.appendChild(style);
+  // 방어선 1-B: localStorage 구독 상태 선제 저장
+  try {
+    localStorage.setItem('fh_member_v1',  '1');
+    localStorage.setItem('fh_subscribed', '1');
+    localStorage.setItem('fh_sub_date',   new Date().toISOString());
+    localStorage.setItem('fh_payer_name', '개발테스트');
+    localStorage.setItem('fh_payer_email','dev@test.com');
+  } catch(e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -5912,32 +5934,46 @@ document.addEventListener('DOMContentLoaded', function(){
 let mpIsSubscribed = false;
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DEVELOP 자동 회원전용
+   DEVELOP 자동 회원전용 (방어선 2)
    - financial-house-building-dev.vercel.app 에서만 동작
    - main(고객용)에는 전혀 영향 없음
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 (function() {
   if (!window.location.hostname.includes('-dev.vercel.app')) return;
 
-  // 구독 상태 강제 유지 (다른 코드가 덮어써도 즉시 복원)
+  // 즉시 구독 상태 true (함수 호이스팅으로 mpSetMemberButton 사용 가능)
   mpIsSubscribed = true;
 
-  // DOM 로드 후 버튼 즉시 적용
   document.addEventListener('DOMContentLoaded', function() {
     mpIsSubscribed = true;
 
-    // 버튼이 나타날 때까지 반복 시도 (Firebase 등 비동기 초기화 이후에도 유지)
-    var tries = 0;
-    var devInterval = setInterval(function() {
+    // ① funnel-wrap + 모든 fn-screen 직접 숨김
+    var funnel = document.getElementById('funnel-wrap');
+    if (funnel) {
+      funnel.style.setProperty('display', 'none', 'important');
+      funnel.classList.add('fn-hidden');
+    }
+    // fn-screen도 개별 숨김 (position:fixed 독립 요소 대비)
+    document.querySelectorAll('.fn-screen').forEach(function(el) {
+      el.style.setProperty('display', 'none', 'important');
+    });
+
+    // ② 버튼 즉시 변경 + setInterval로 덮어쓰기 방지
+    function forceDevBtn() {
+      mpIsSubscribed = true;
       var btn = document.getElementById('btn-header-main');
       if (btn) {
-        mpIsSubscribed = true;
         btn.className   = 'hbtn hbtn-member';
         btn.textContent = '👑 회원전용';
         btn.onclick     = mpOpen;
       }
+    }
+    forceDevBtn();
+    var tries = 0;
+    var devInterval = setInterval(function() {
+      forceDevBtn();
       tries++;
-      if (tries >= 20) clearInterval(devInterval); // 10초 후 중단
+      if (tries >= 20) clearInterval(devInterval);
     }, 500);
   });
 })();
@@ -7603,6 +7639,41 @@ function fhDevClose() {
   });
   _fhDevTapCount = 0;
 }
+
+/* ━━ DEVELOP 방어선 3: 모든 코드 실행 완료 후 최종 강제 적용 ━━ */
+(function() {
+  if (!window.location.hostname.includes('-dev.vercel.app')) return;
+  function applyDev() {
+    mpIsSubscribed = true;
+    // funnel 숨김
+    var funnel = document.getElementById('funnel-wrap');
+    if (funnel) funnel.style.setProperty('display','none','important');
+    document.querySelectorAll('.fn-screen').forEach(function(el){
+      el.style.setProperty('display','none','important');
+    });
+    // 버튼 변경
+    var btn = document.getElementById('btn-header-main');
+    if (btn) {
+      btn.className   = 'hbtn hbtn-member';
+      btn.textContent = '👑 회원전용';
+      btn.onclick     = mpOpen;
+    }
+  }
+  // 즉시 1회
+  applyDev();
+  // DOMContentLoaded 후 1회
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyDev);
+  } else {
+    applyDev();
+  }
+  // window.onload 후 1회 (Firebase 포함 모든 리소스 로드 완료)
+  window.addEventListener('load', function() {
+    applyDev();
+    // 추가 2초 후 최종 확인
+    setTimeout(applyDev, 2000);
+  });
+})();
 
 </script>
 
