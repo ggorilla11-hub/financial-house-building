@@ -6314,6 +6314,9 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  // DEVELOP 전용: 시뮬레이터 진입 시 무조건 회원전용 상태
+  mpIsSubscribed = true;
+  mpSetMemberButton();
 }
 
 // ── 큐브 초기화 ──
