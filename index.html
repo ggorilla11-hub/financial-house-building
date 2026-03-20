@@ -5923,7 +5923,6 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
 (function fhVersionGuard() {
   var storedVer = localStorage.getItem(FH_VERSION_KEY);
   if (storedVer !== FH_SCHEMA_VERSION) {
-    // 구독 세션 관련 키만 초기화 (결제 실수 방지, 테스트 잔재 제거)
     var SESSION_KEYS = [
       'fh_subscribed',
       'fh_member_v1',
@@ -5933,10 +5932,18 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
       'fh_payer_email'
     ];
     SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
-    // 새 버전 기록
     localStorage.setItem(FH_VERSION_KEY, FH_SCHEMA_VERSION);
-    console.log('[금융집짓기] 스키마 업데이트 완료:', FH_SCHEMA_VERSION);
   }
+})();
+
+/* ── DEVELOP 브랜치 전용: 항상 구독 완료 상태 ── */
+(function fhDevAutoSubscribe() {
+  localStorage.setItem('fh_schema_ver',  '20260320f');
+  localStorage.setItem('fh_member_v1',   '1');
+  localStorage.setItem('fh_subscribed',  '1');
+  localStorage.setItem('fh_sub_date',    new Date().toISOString());
+  localStorage.setItem('fh_payer_name',  '개발테스트');
+  localStorage.setItem('fh_payer_email', 'dev@test.com');
 })();
 
 // 앱 로드 시 구독 상태 복원 (버전 검증 통과 후 실행)
