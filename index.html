@@ -6882,18 +6882,29 @@ document.addEventListener('DOMContentLoaded', function() {
   var payResult = params.get('pay_result');
   if (payResult === 'success') {
     var oid = params.get('oid') || '';
-    // 구독 상태 저장 (팝업 방식에서 callbackFunction 미실행 시 대비)
+    // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     if (oid) localStorage.setItem('fh_sub_oid', oid);
     mpIsSubscribed = true;
     mpSetMemberButton();
-    showToast('🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑');
-    // URL 파라미터 제거 (주소창 정리)
+    // URL 파라미터 제거
     window.history.replaceState({}, '', window.location.pathname);
-    // 1.5초 후 마이페이지 오픈
-    setTimeout(function() { mpOpen(); }, 1500);
+    // 퍼널 숨기기 (결제 후 S0 랜딩이 덮이는 문제 해결)
+    var funnelWrap = document.getElementById('funnel-wrap');
+    if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+    // 모든 fn-screen 비활성화
+    document.querySelectorAll('.fn-screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    var _payerName = localStorage.getItem('fh_payer_name') || '';
+    var _greeting = _payerName
+      ? ('🎉 ' + _payerName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑')
+      : '🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑';
+    showToast(_greeting);
+    // 바로 마이페이지 오픈
+    setTimeout(function() { mpOpen(); }, 800);
   } else if (payResult === 'fail') {
     var failMsg = params.get('msg') || '결제가 취소되었습니다.';
     showToast('❌ ' + failMsg);
