@@ -5934,10 +5934,7 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
     SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
     localStorage.setItem(FH_VERSION_KEY, FH_SCHEMA_VERSION);
   }
-})();
-
-/* ── DEVELOP 브랜치 전용: 항상 구독 완료 상태 ── */
-(function fhDevAutoSubscribe() {
+  /* ── DEVELOP 전용: 버전가드 이후 무조건 구독 상태 강제 설정 ── */
   localStorage.setItem('fh_schema_ver',  '20260320f');
   localStorage.setItem('fh_member_v1',   '1');
   localStorage.setItem('fh_subscribed',  '1');
