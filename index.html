@@ -5228,7 +5228,7 @@ function confirmPay(plan){
     obj.PCD_PAY_GOODS    = '금융집짓기 실버 ' + planName + ' 구독';
     obj.PCD_PAY_TOTAL    = payAmount;
     obj.PCD_PAY_OID      = order_id;
-    obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
+    obj.PCD_REGULER_FLAG = 'N';  // N: 단건결제 (PAY 방식에서는 항상 N)
     obj.PCD_SIMPLE_FLAG  = 'Y';
     // PCD_RST_URL: 웹훅 서버로 결제 데이터 전송 후 callbackFunction으로 앱에 결과 반환
     obj.PCD_RST_URL      = 'https://ohwant-webhook.vercel.app/api/payple';
