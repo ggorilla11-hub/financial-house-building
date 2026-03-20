@@ -5984,15 +5984,18 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
 (function fhVersionGuard() {
   var storedVer = localStorage.getItem(FH_VERSION_KEY);
   if (storedVer !== FH_SCHEMA_VERSION) {
-    var SESSION_KEYS = [
-      'fh_subscribed',
-      'fh_member_v1',
-      'fh_sub_date',
-      'fh_sub_oid',
-      'fh_payer_name',
-      'fh_payer_email'
-    ];
-    SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+    // develop에서는 구독 세션키 삭제 안 함
+    if (!window.location.hostname.includes('-dev.vercel.app')) {
+      var SESSION_KEYS = [
+        'fh_subscribed',
+        'fh_member_v1',
+        'fh_sub_date',
+        'fh_sub_oid',
+        'fh_payer_name',
+        'fh_payer_email'
+      ];
+      SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+    }
     localStorage.setItem(FH_VERSION_KEY, FH_SCHEMA_VERSION);
   }
 })();
