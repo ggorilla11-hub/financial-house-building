@@ -2185,11 +2185,17 @@ body { color: #1a1a1a; }
         <div style="font-size:11px;font-weight:700;color:#FF6B6B;margin-bottom:10px;">
           🛠️ 개발자 메뉴
         </div>
+        <button onclick="fhDevActivate()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;
+          background:#0B1D3A;color:#C9972A;font-size:13px;font-weight:700;
+          font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+          👑 구독 활성화 (테스트용)
+        </button>
         <button onclick="fhDevReset()"
           style="width:100%;padding:10px;border-radius:8px;border:none;
           background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
           font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
-          🔄 구독 상태 초기화
+          🔄 구독 초기화 (구독하기로)
         </button>
         <button onclick="fhDevClose()"
           style="width:100%;padding:8px;border-radius:8px;
@@ -7515,6 +7521,22 @@ function fhDevTap() {
   }
 }
 
+function fhDevActivate() {
+  // 구독 상태 활성화 (테스트용)
+  var ver = '20260320f';
+  localStorage.setItem('fh_schema_ver',  ver);
+  localStorage.setItem('fh_member_v1',   '1');
+  localStorage.setItem('fh_subscribed',  '1');
+  localStorage.setItem('fh_sub_date',    new Date().toISOString());
+  localStorage.setItem('fh_payer_name',  '테스트');
+  localStorage.setItem('fh_payer_email', 'test@test.com');
+  fhDevClose();
+  mpIsSubscribed = true;
+  mpSetMemberButton();
+  showToast('👑 구독 활성화 완료! 회원전용 탭을 확인하세요.');
+  setTimeout(function() { mpOpen(); }, 800);
+}
+
 function fhDevReset() {
   // 구독 세션 키 초기화
   var SESSION_KEYS = [
@@ -8430,11 +8452,17 @@ function fhDevClose() {
         <div style="font-size:11px;font-weight:700;color:#FF3B30;margin-bottom:10px;">
           🛠️ 개발자 메뉴 (5회 탭으로 열림)
         </div>
+        <button onclick="fhDevActivate()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;
+          background:#0B1D3A;color:#C9972A;font-size:13px;font-weight:700;
+          font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+          👑 구독 활성화 (테스트용)
+        </button>
         <button onclick="fhDevReset()"
           style="width:100%;padding:10px;border-radius:8px;border:none;
           background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
           font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
-          🔄 구독 상태 초기화 (테스트용)
+          🔄 구독 초기화 (구독하기로)
         </button>
         <button onclick="fhDevClose()"
           style="width:100%;padding:8px;border-radius:8px;
