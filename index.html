@@ -2171,6 +2171,34 @@ body { color: #1a1a1a; }
         🏠 금융집짓기 시뮬레이터 시작하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
       </button>
+
+      <!-- 개발자 메뉴 트리거 -->
+      <div id="fh-dev-ver-btn" onclick="fhDevTap()"
+        style="text-align:center;margin-top:10px;padding:6px;
+        font-size:10px;font-weight:700;color:rgba(255,255,255,0.9);
+        letter-spacing:1px;cursor:pointer;user-select:none;">
+        v2.8.1
+      </div>
+      <div id="fh-dev-panel-s0" style="display:none;margin-top:10px;padding:14px;
+        background:rgba(255,59,48,0.12);border:1.5px solid rgba(255,59,48,0.5);
+        border-radius:12px;">
+        <div style="font-size:11px;font-weight:700;color:#FF6B6B;margin-bottom:10px;">
+          🛠️ 개발자 메뉴
+        </div>
+        <button onclick="fhDevReset()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;
+          background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
+          font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+          🔄 구독 상태 초기화
+        </button>
+        <button onclick="fhDevClose()"
+          style="width:100%;padding:8px;border-radius:8px;
+          border:1px solid rgba(255,59,48,0.4);background:transparent;
+          color:#FF6B6B;font-size:12px;font-family:var(--fn);cursor:pointer;">
+          닫기
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -3424,31 +3452,7 @@ body { color: #1a1a1a; }
   </div>
   <div class="footer-copy">Copyright 2013. 오원트금융연구소 · 금융집짓기® 특허·상표권 All rights reserved.</div>
 
-  <!-- 개발자 메뉴 (버전 3번 클릭으로 표시) -->
-  <div id="fh-dev-ver-btn" onclick="fhDevTap()"
-    style="text-align:center;padding:8px;font-size:9px;
-    color:rgba(0,0,0,0.15);cursor:default;user-select:none;">
-    v2.8.1
-  </div>
-  <div id="fh-dev-panel-s0" style="display:none;margin:0 16px 16px;padding:14px;
-    background:rgba(255,59,48,0.08);border:1.5px solid rgba(255,59,48,0.35);
-    border-radius:12px;">
-    <div style="font-size:11px;font-weight:700;color:#FF3B30;margin-bottom:10px;">
-      🛠️ 개발자 메뉴
-    </div>
-    <button onclick="fhDevReset()"
-      style="width:100%;padding:10px;border-radius:8px;border:none;
-      background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
-      font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
-      🔄 구독 상태 초기화
-    </button>
-    <button onclick="fhDevClose()"
-      style="width:100%;padding:8px;border-radius:8px;
-      border:1px solid rgba(255,59,48,0.3);background:transparent;
-      color:#FF3B30;font-size:12px;font-family:var(--fn);cursor:pointer;">
-      닫기
-    </button>
-  </div>
+
 </div>
 
 </div>
