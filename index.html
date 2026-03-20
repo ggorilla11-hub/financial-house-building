@@ -5910,6 +5910,20 @@ document.addEventListener('DOMContentLoaded', function(){
    금융집짓기® 마이페이지 JS
 ════════════════════════════════════════ */
 let mpIsSubscribed = false;
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DEVELOP 자동 회원전용
+   - financial-house-building-dev.vercel.app 에서만 동작
+   - main(고객용)에는 전혀 영향 없음
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function() {
+  if (window.location.hostname.includes('-dev.vercel.app')) {
+    document.addEventListener('DOMContentLoaded', function() {
+      mpIsSubscribed = true;
+      setTimeout(mpSetMemberButton, 300);
+    });
+  }
+})();
 let mpSelectedPlan = 'month';
 const MP_MEMBER_KEY = 'fh_member_v1';
 
@@ -5934,22 +5948,7 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
     SESSION_KEYS.forEach(function(k) { localStorage.removeItem(k); });
     localStorage.setItem(FH_VERSION_KEY, FH_SCHEMA_VERSION);
   }
-  /* ── DEVELOP 전용: 항상 무조건 구독 강제 ── */
-  localStorage.setItem('fh_schema_ver',  '20260320f');
-  localStorage.setItem('fh_member_v1',   '1');
-  localStorage.setItem('fh_subscribed',  '1');
-  localStorage.setItem('fh_sub_date',    new Date().toISOString());
-  localStorage.setItem('fh_payer_name',  '개발테스트');
-  localStorage.setItem('fh_payer_email', 'dev@test.com');
 })();
-
-/* ── DEVELOP: 페이지 로드 즉시 회원전용 강제 ── */
-document.addEventListener('DOMContentLoaded', function() {
-  localStorage.setItem('fh_member_v1',  '1');
-  localStorage.setItem('fh_subscribed', '1');
-  mpIsSubscribed = true;
-  mpSetMemberButton();
-});
 
 // 앱 로드 시 구독 상태 복원 (버전 검증 통과 후 실행)
 (function(){
@@ -6322,9 +6321,6 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  // DEVELOP 전용: 시뮬레이터 진입 시 무조건 회원전용 상태
-  mpIsSubscribed = true;
-  mpSetMemberButton();
 }
 
 // ── 큐브 초기화 ──
