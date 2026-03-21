@@ -8585,7 +8585,7 @@ function diagStartConsult() {
 const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
 let diagWs=null, diagAudioCtx=null, diagMicStream=null;
 let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
-let diagMicOn=true, diagPaused=false;
+/* diagMicOn, diagPaused는 전임자 코드에서 이미 선언됨 (중복 제거) */
 
 const diagFinCtx = {
   name:'고객', age:0, monthlyIncome:0,
