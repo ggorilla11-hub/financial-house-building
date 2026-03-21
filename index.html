@@ -63,6 +63,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+/* ── 모바일 터치 클릭 문제 해결 ── */
+.app {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+body.app-ready .app {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: static !important;
+  width: 100% !important;
+  max-width: 430px !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
 /* ━━━ CSS 변수 ━━━ */
 /* ── DESIGN SYSTEM UPDATE: 확정 C안 색상 팔레트 ── */
 :root{
@@ -6687,7 +6705,7 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  document.body.classList.add('app-active');
+  document.body.classList.add('app-ready');
   // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
   if (window.location.hostname.includes('-dev.vercel.app')) {
     mpIsSubscribed = true;
