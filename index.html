@@ -120,7 +120,9 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 /* ── DESIGN SYSTEM UPDATE: 배경·폰트 통일 ── */
 html,body{width:100%;height:100%;overflow:hidden;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:#1a1a1a;}
-.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;position:relative;z-index:100;}
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
+/* 랜딩 퍼널 활성 시 앱 터치 차단 */
+body:has(#funnel-wrap:not(.fn-hidden)) .app { pointer-events:none; }
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
 
@@ -2443,12 +2445,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <body>
 
 
-<div id="funnel-wrap" style="position:relative;z-index:9999;">
+<div id="funnel-wrap">
 
 <!-- ═══════════════════════════════════════
      S0: 랜딩
 ═══════════════════════════════════════ -->
-<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:9999;">
+<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
 
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
@@ -6730,9 +6732,7 @@ function fnGoTo(id) {
 }
 
 function fnSkipToSim() {
-  var fw = document.getElementById('funnel-wrap');
-  fw.classList.add('fn-hidden');
-  fw.style.zIndex = '0'; /* 시뮬레이터로 넘어가면 funnel을 뒤로 */
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
   // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
   if (window.location.hostname.includes('-dev.vercel.app')) {
     mpIsSubscribed = true;
