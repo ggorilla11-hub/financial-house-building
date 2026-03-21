@@ -6309,6 +6309,9 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
 
 /* ── DEVELOP: 페이지 로드 즉시 회원전용 강제 ── */
 document.addEventListener('DOMContentLoaded', function() {
+  /* funnel 활성 시 .app 터치 차단 — 모바일 클릭 문제 해결 */
+  var appEl = document.querySelector('.app');
+  if(appEl) appEl.style.pointerEvents = 'none';
   localStorage.setItem('fh_member_v1',  '1');
   localStorage.setItem('fh_subscribed', '1');
   mpIsSubscribed = true;
@@ -6686,6 +6689,9 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  /* funnel 종료 → .app 터치 복원 */
+  var appEl = document.querySelector('.app');
+  if(appEl) appEl.style.pointerEvents = 'auto';
   // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
   if (window.location.hostname.includes('-dev.vercel.app')) {
     mpIsSubscribed = true;
