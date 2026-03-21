@@ -97,7 +97,8 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 /* ── DESIGN SYSTEM UPDATE: 배경·폰트 통일 ── */
 html,body{width:100%;height:100%;overflow:hidden;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:#1a1a1a;}
-.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:none;flex-direction:column;background:var(--paper);overflow:hidden;}
+body.app-active .app{display:flex;}
 /* 랜딩 퍼널 활성 시 앱 터치 차단 */
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
@@ -6309,9 +6310,6 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
 
 /* ── DEVELOP: 페이지 로드 즉시 회원전용 강제 ── */
 document.addEventListener('DOMContentLoaded', function() {
-  /* funnel 활성 시 .app 터치 차단 — 모바일 클릭 문제 해결 */
-  var appEl = document.querySelector('.app');
-  if(appEl) appEl.style.pointerEvents = 'none';
   localStorage.setItem('fh_member_v1',  '1');
   localStorage.setItem('fh_subscribed', '1');
   mpIsSubscribed = true;
@@ -6689,9 +6687,7 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  /* funnel 종료 → .app 터치 복원 */
-  var appEl = document.querySelector('.app');
-  if(appEl) appEl.style.pointerEvents = 'auto';
+  document.body.classList.add('app-active');
   // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
   if (window.location.hostname.includes('-dev.vercel.app')) {
     mpIsSubscribed = true;
