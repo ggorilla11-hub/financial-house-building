@@ -2,6 +2,30 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script>
+/* ━━━ 카카오톡 인앱브라우저 → 외부 브라우저 강제 전환 ━━━
+   카카오톡 인앱브라우저는 클릭, 마이크, 카메라 모두 제한됨
+   음성진단을 위해 반드시 외부 브라우저(Safari/Chrome)로 열어야 함 */
+(function() {
+  var ua = navigator.userAgent.toLowerCase();
+  var url = location.href;
+
+  if (ua.indexOf('kakaotalk') > -1) {
+    /* 안드로이드 카카오톡 → Chrome으로 강제 전환 */
+    if (ua.indexOf('android') > -1) {
+      location.href = 'intent://' + url.replace(/https?:\/\//, '') +
+        '#Intent;scheme=https;action=android.intent.action.VIEW;end;';
+      return;
+    }
+    /* iOS 카카오톡 → Safari로 강제 전환 */
+    if (ua.indexOf('iphone') > -1 || ua.indexOf('ipad') > -1) {
+      /* URL 클립보드 복사 후 Safari 유도 */
+      location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+      return;
+    }
+  }
+})();
+</script>
 
 
 <script>
@@ -96,7 +120,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 /* ── DESIGN SYSTEM UPDATE: 배경·폰트 통일 ── */
 html,body{width:100%;height:100%;overflow:hidden;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:#1a1a1a;}
-.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;position:relative;z-index:100;}
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
 
@@ -2419,12 +2443,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <body>
 
 
-<div id="funnel-wrap">
+<div id="funnel-wrap" style="position:relative;z-index:9999;">
 
 <!-- ═══════════════════════════════════════
      S0: 랜딩
 ═══════════════════════════════════════ -->
-<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
+<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:9999;">
 
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
@@ -6706,7 +6730,9 @@ function fnGoTo(id) {
 }
 
 function fnSkipToSim() {
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  var fw = document.getElementById('funnel-wrap');
+  fw.classList.add('fn-hidden');
+  fw.style.zIndex = '0'; /* 시뮬레이터로 넘어가면 funnel을 뒤로 */
   // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
   if (window.location.hostname.includes('-dev.vercel.app')) {
     mpIsSubscribed = true;
