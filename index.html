@@ -9085,155 +9085,144 @@ diagAddSTT = function(role, text, tag) {
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DEV MODE — v3.5 (3번 탭으로 활성화)
-   Claude AI가 고객 역할 자동 답변
+   DEV MODE v3.5
+   클릭 1번 → DEV (준비)
+   클릭 2번 → DEV ON (활성 — 자동답변 시작)
+   클릭 3번 → OFF
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-let devTapCount = 0;
-let devTapTimer = null;
-let devModeActive = false;
+/* 0=OFF, 1=DEV(준비), 2=DEV ON(자동답변) */
+let devModeState = 0;
 
-/* 홍길동 고객 프로필 (신청서 기반) */
+/* 홍길동 고객 프로필 */
 const DEV_CLIENT = {
-  name: '홍길동',
-  age: 37,
-  job: '항공기 승무원',
-  spouse: '정미자(33세, 자영업 필라테스)',
-  children: '홍연아(1세)',
-  familySize: 3,
-  retireAge: 60,
-  worry: '돈의 개념을 모르겠습니다. 저축은 하고 있는데 제대로 하고 있는지 모르겠어요.',
-  dualIncome: true,
-  monthlyIncome: 400,
-  spouseIncome: 900,
-  totalIncome: 1300,
-  fixedExpense: 381,
-  variableExpense: 250,
-  loanRepayment: 14,
-  insurance: 14.4,
-  totalExpense: 659.4,
-  surplus: 640,
-  deposit: 11800,
-  pension: 740,
-  subscription: 680,
-  totalAsset: 13220,
-  bankLoan: 4000,
-  carLoan: 4100,
-  totalDebt: 8100,
-  netAsset: 5120,
+  name:'홍길동', age:37, job:'항공기 승무원',
+  spouse:'정미자(33세, 필라테스 원장)',
+  children:'홍연아(1세)', familySize:3,
+  retireAge:60, worry:'돈의 개념을 모르겠어요. 저축은 하는데 제대로 하고 있는지 모르겠어요.',
+  dualIncome:true,
+  monthlyIncome:400, spouseIncome:900, totalIncome:1300,
+  fixedExpense:381, variableExpense:250, loanRepayment:14, insurance:14.4,
+  totalExpense:659, surplus:641,
+  deposit:11800, pension:740, subscription:680, totalAsset:13220,
+  bankLoan:4000, carLoan:4100, totalDebt:8100, netAsset:5120,
 };
 
-/* 머니야 질문에 대한 자동 답변 매핑 */
-function devGetAnswer(question) {
-  const q = question;
-  /* 이름 */
-  if(q.includes('성함') || q.includes('이름')) return DEV_CLIENT.name;
-  /* 나이 */
-  if(q.includes('나이') || q.includes('연세')) return DEV_CLIENT.age + '세입니다';
-  /* 결혼 */
-  if(q.includes('결혼') || q.includes('기혼') || q.includes('미혼')) return '네, 기혼입니다';
-  /* 자녀 */
-  if(q.includes('자녀') || q.includes('아이') || q.includes('자식')) return '1명 있습니다. 1살짜리 딸입니다';
-  /* 가족수 */
-  if(q.includes('가족') || q.includes('식구')) return '저랑 아내랑 딸 해서 3명입니다';
-  /* 직업 */
-  if(q.includes('직업') || q.includes('직장') || q.includes('일')) return DEV_CLIENT.job + '입니다';
-  /* 맞벌이 */
-  if(q.includes('맞벌이') || q.includes('배우자') && q.includes('소득')) return '네, 맞벌이입니다. 아내가 필라테스 스튜디오를 운영하고 있어요';
-  /* 고민 */
-  if(q.includes('고민') || q.includes('관심') || q.includes('걱정')) return DEV_CLIENT.worry;
-  /* 월 소득 */
-  if(q.includes('소득') || q.includes('수입') || q.includes('월급')) return '저는 세후 400만원이고 아내는 900만원 정도 됩니다. 합치면 1300만원이요';
-  /* 대출 원리금 */
-  if(q.includes('대출') && (q.includes('원리금') || q.includes('상환') || q.includes('얼마'))) return '차량 할부가 14만원 정도 나갑니다';
-  /* 보험료 */
-  if(q.includes('보험료') || q.includes('보험')) return '14만원 정도 나가는 것 같아요. 실비랑 아기 보험이요';
-  /* 연금 */
-  if(q.includes('연금') || q.includes('퇴직')) return '연금은 740만원 적립되어 있어요';
-  /* 저축 */
-  if(q.includes('저축') || q.includes('투자') || q.includes('적금')) return '따로 정해놓고 저축하는 건 없어요. 예금에 1억 1800만원 정도 쌓여있고요';
-  /* 생활비 */
-  if(q.includes('생활비')) return '고정지출이 381만원이고 용돈이나 외식 포함하면 250만원 더 쓰는 것 같아요';
-  /* 자산 */
-  if(q.includes('자산') || q.includes('재산') || q.includes('모아')) return '예적금 1억 1800만원, 청약 680만원, 연금 740만원 해서 총 1억 3200만원 정도요';
-  /* 부채 */
-  if(q.includes('부채') || q.includes('빚') || q.includes('대출 있')) return '차량 할부 4100만원, 은행 대출 4000만원 있어요';
-  /* 부동산 */
-  if(q.includes('부동산') || q.includes('집') || q.includes('주택')) return '지금은 전세 살고 있어요. 집은 없어요';
-  /* 은퇴 */
-  if(q.includes('은퇴') || q.includes('퇴직')) return '60대 초반쯤 은퇴하고 싶어요';
-  /* 수명 */
-  if(q.includes('수명') || q.includes('몇살') && q.includes('살')) return '90세까지는 살지 않을까요';
-  /* 노후생활비 */
-  if(q.includes('노후') && q.includes('생활비')) return '한 달에 300만원 정도면 될 것 같아요';
-  /* YES 계열 */
-  if(q.includes('괜찮') || q.includes('준비') || q.includes('시작')) return '네, 좋습니다';
-  /* 확인 계열 */
-  if(q.includes('맞습니까') || q.includes('맞나요') || q.includes('확인')) return '네, 맞습니다';
-  /* 기본 */
+/* 머니야 질문 → 자동 답변 */
+function devGetAnswer(q) {
+  if(q.includes('성함')||q.includes('이름')) return '홍길동입니다';
+  if(q.includes('나이')||q.includes('연세')) return '37세입니다';
+  if(q.includes('결혼')) return '네, 결혼했습니다';
+  if(q.includes('자녀')||q.includes('아이')||q.includes('자식')) return '딸 하나 있습니다. 1살이에요';
+  if(q.includes('가족')||q.includes('식구')) return '저랑 아내, 딸 해서 3명이요';
+  if(q.includes('직업')||q.includes('일')) return '항공기 승무원입니다';
+  if(q.includes('맞벌이')||(q.includes('배우자')&&q.includes('일'))) return '네 맞벌이입니다. 아내가 필라테스 스튜디오를 운영해요';
+  if(q.includes('고민')||q.includes('관심')||q.includes('걱정')) return DEV_CLIENT.worry;
+  if(q.includes('소득')||q.includes('수입')||q.includes('월급')) return '저는 세후 400만원이고 아내는 900만원이에요. 합치면 1300만원이요';
+  if(q.includes('대출')&&(q.includes('원리금')||q.includes('상환'))) return '차량 할부 14만원 정도요';
+  if(q.includes('보험료')||q.includes('보험')) return '14만원 정도요. 실비랑 아기보험이에요';
+  if(q.includes('연금')) return '연금은 740만원 적립되어 있어요';
+  if(q.includes('저축')||q.includes('투자')) return '따로 저축 상품은 없어요. 예금에 1억 1800만원 있어요';
+  if(q.includes('생활비')) return '고정으로 381만원이고 변동 250만원 정도요';
+  if(q.includes('자산')||q.includes('재산')) return '예적금 1억1800만원, 청약 680만원, 연금 740만원 해서 총 1억3200만원이요';
+  if(q.includes('부채')||q.includes('빚')) return '차량 할부 4100만원, 은행 대출 4000만원 있어요';
+  if(q.includes('부동산')||q.includes('집')||q.includes('주택')) return '전세 살고 있어요. 집은 없어요';
+  if(q.includes('은퇴')||q.includes('퇴직')) return '60대 초반에 은퇴하고 싶어요';
+  if(q.includes('수명')||q.includes('몇 살까지')) return '90세 정도 생각해요';
+  if(q.includes('노후')&&q.includes('생활비')) return '한 달 300만원 정도면 될 것 같아요';
+  if(q.includes('괜찮')||q.includes('준비')||q.includes('시작')||q.includes('소요')) return '네, 좋습니다';
+  if(q.includes('맞습니까')||q.includes('맞나요')||q.includes('확인')) return '네, 맞습니다';
   return '네';
 }
 
-/* v3.5 탭 카운터 */
+/* v3.5 버튼 클릭 */
 function diagDevModeTap() {
-  devTapCount++;
-  clearTimeout(devTapTimer);
-  devTapTimer = setTimeout(() => { devTapCount = 0; }, 1500);
-  if(devTapCount >= 3) {
-    devTapCount = 0;
-    devModeActive = !devModeActive;
-    const btn = document.getElementById('devModeBtn');
-    if(devModeActive) {
-      /* 신청서 데이터를 diagFinCtx에 주입 */
-      Object.assign(diagFinCtx, {
-        name: DEV_CLIENT.name,
-        age: DEV_CLIENT.age,
-        monthlyIncome: DEV_CLIENT.totalIncome,
-        totalAssets: DEV_CLIENT.totalAsset,
-        totalDebt: DEV_CLIENT.totalDebt,
-        mainWorry: DEV_CLIENT.worry,
-      });
-      if(btn) {
-        btn.textContent = '🤖 DEV MODE ON';
-        btn.style.cssText = 'text-align:center;font-size:8px;font-weight:700;color:#C9972A;'+
-          'margin-top:8px;cursor:pointer;user-select:none;padding:4px 8px;'+
-          'background:rgba(201,151,42,.1);border-radius:6px;border:1px solid rgba(201,151,42,.3);';
+  devModeState = (devModeState + 1) % 3;
+  const btn = document.getElementById('devModeBtn');
+
+  if(devModeState === 0) {
+    /* OFF */
+    if(btn) { btn.textContent='v3.5'; btn.style.color='rgba(11,29,58,.35)'; btn.style.background=''; btn.style.border=''; }
+    showToast('Dev Mode OFF');
+  } else if(devModeState === 1) {
+    /* DEV 준비 */
+    if(btn) { btn.textContent='DEV'; btn.style.color='rgba(11,29,58,.6)'; btn.style.background='rgba(11,29,58,.06)'; btn.style.border='1px solid rgba(11,29,58,.15)'; }
+    /* 고객 데이터 주입 */
+    Object.assign(diagFinCtx, {
+      name:DEV_CLIENT.name, age:DEV_CLIENT.age,
+      monthlyIncome:DEV_CLIENT.totalIncome,
+      totalAssets:DEV_CLIENT.totalAsset,
+      totalDebt:DEV_CLIENT.totalDebt,
+      mainWorry:DEV_CLIENT.worry,
+      sessionNo:1,
+    });
+    showToast('DEV 준비 — 한 번 더 클릭하면 자동답변 시작');
+  } else if(devModeState === 2) {
+    /* DEV ON — 자동답변 활성 */
+    if(btn) { btn.textContent='DEV ON 🤖'; btn.style.color='#C9972A'; btn.style.background='rgba(201,151,42,.1)'; btn.style.border='1px solid rgba(201,151,42,.35)'; }
+    showToast('🤖 DEV ON — 홍길동님으로 자동 답변합니다');
+  }
+}
+
+/* 상담 중 DEV 토글 (상단바 배지 클릭) */
+function diagDevModeToggle() {
+  if(devModeState === 2) {
+    devModeState = 0;
+    const badge = document.getElementById('devStatusBadge');
+    if(badge) badge.style.display='none';
+    showToast('Dev Mode OFF');
+  }
+}
+
+/* 상담 시작 시 DEV 배지 표시 */
+const _origDiagStartConsult = diagStartConsult;
+diagStartConsult = function() {
+  _origDiagStartConsult();
+  if(devModeState >= 1) {
+    const badge = document.getElementById('devStatusBadge');
+    if(badge) {
+      badge.style.display='block';
+      if(devModeState === 2) {
+        badge.textContent='🤖 DEV ON';
+        badge.style.background='rgba(201,151,42,.25)';
+        badge.style.color='#E8B84B';
+      } else {
+        badge.textContent='DEV';
+        badge.style.background='rgba(255,255,255,.1)';
+        badge.style.color='rgba(255,255,255,.6)';
       }
-      showToast('🤖 DEV MODE 활성화 — '+DEV_CLIENT.name+'님 프로필 로드됨');
-    } else {
-      if(btn) {
-        btn.textContent = 'v3.5';
-        btn.style.cssText = 'text-align:center;font-size:7px;color:rgba(11,29,58,.15);margin-top:8px;cursor:pointer;user-select:none;';
-      }
-      showToast('DEV MODE 종료');
     }
   }
-}
+};
 
-/* DEV MODE 자동 답변 — 머니야 발화 감지 시 */
+/* 자동 답변 실행 */
+let devAnswerTimer = null;
 function devAutoAnswer(aiText) {
-  if(!devModeActive) return;
+  if(devModeState !== 2) return;
   if(!diagWs || diagWs.readyState !== 1) return;
-
-  const answer = devGetAnswer(aiText);
-  /* 1.5초 후 자동 전송 (자연스러운 딜레이) */
-  setTimeout(() => {
-    if(!devModeActive) return;
-    diagAddSTT('user', '[DEV] ' + answer, null);
-    diagAutoFillNote(answer);
-    diagWs.send(JSON.stringify({ type: 'text_input', text: answer }));
-  }, 1500);
+  clearTimeout(devAnswerTimer);
+  devAnswerTimer = setTimeout(() => {
+    if(devModeState !== 2) return;
+    const answer = devGetAnswer(aiText);
+    /* STT 자막에 표시 */
+    diagAddSTT('user', '🤖 '+answer, null);
+    /* 노트 자동 채우기 */
+    setTimeout(() => diagAutoFillNote(answer), 200);
+    /* 머니야에게 전송 */
+    diagWs.send(JSON.stringify({type:'text_input', text:answer}));
+  }, 1800);
 }
 
-/* DEV MODE — transcript 감지 (response_done 이후) */
-const _origDiagHandleMsg = diagHandleMsg;
+/* transcript에서 머니야 발화 감지 → 자동 답변 */
+const _devOrigHandleMsg = diagHandleMsg;
 diagHandleMsg = function(msg) {
-  _origDiagHandleMsg(msg);
-  if(devModeActive && msg.type === 'response_done') {
-    /* 마지막 AI 발화로 자동 답변 */
-    if(diagLastQuestion) devAutoAnswer(diagLastQuestion);
+  _devOrigHandleMsg(msg);
+  /* 머니야 발화 완료 시 자동 답변 */
+  if(devModeState === 2 && msg.type === 'transcript' && msg.role === 'assistant' && msg.text) {
+    devAutoAnswer(msg.text);
   }
 };
+
 </script>
 
 
@@ -9894,7 +9883,7 @@ diagHandleMsg = function(msg) {
           <div id="diagStartNote" style="text-align:center;font-size:8.5px;color:#6b7280;margin-top:5px">상담신청서 없이도 시작 가능 · 상담 중 데이터 입력 병행</div>
           <!-- Dev Mode 진입점 -->
           <div id="devModeBtn" onclick="diagDevModeTap()"
-               style="text-align:center;font-size:8px;color:rgba(11,29,58,.3);margin-top:8px;cursor:pointer;user-select:none;letter-spacing:1px;">
+               style="text-align:center;font-size:11px;font-weight:700;color:rgba(11,29,58,.35);margin-top:10px;cursor:pointer;user-select:none;letter-spacing:2px;padding:6px;border-radius:8px;transition:all .2s;">
             v3.5
           </div>
         </div>
@@ -9914,6 +9903,8 @@ diagHandleMsg = function(msg) {
             <div id="diagSessionInfo" style="font-size:8px;color:rgba(255,255,255,.35);margin-top:1px;"></div>
           </div>
           <div id="diagTimer" style="font-size:14px;font-weight:900;color:#E8B84B;font-variant-numeric:tabular-nums;">00:00</div>
+          <!-- DEV MODE 상태 표시 -->
+          <div id="devStatusBadge" style="display:none;font-size:8px;font-weight:900;padding:3px 8px;border-radius:6px;background:rgba(201,151,42,.25);color:#E8B84B;border:1px solid rgba(201,151,42,.5);cursor:pointer;" onclick="diagDevModeToggle()">🤖 DEV ON</div>
           <div style="display:flex;gap:5px;">
             <button id="diagRecBtn" onclick="diagToggleRec()" style="padding:4px 9px;border-radius:7px;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⏺ 녹화</button>
             <button id="diagPauseBtn" onclick="diagTogglePause()" style="padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.75);border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⏸ 일시정지</button>
