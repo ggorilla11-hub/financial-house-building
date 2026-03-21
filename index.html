@@ -8567,6 +8567,9 @@ function diagStartConsult() {
   diagBuildNotes();
 
   diagSec=0;
+  let diagLastActivity=Date.now(); // 마지막 활동 시간
+  // 고객 활동 감지
+  window.diagResetActivity=function(){ diagLastActivity=Date.now(); };
   diagInt=setInterval(function(){
     if(diagPaused) return;
     diagSec++;
@@ -8576,6 +8579,11 @@ function diagStartConsult() {
     if(el) el.textContent=m+':'+s;
     if(diagSec===45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
     if(diagSec===60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
+    /* 5초 침묵 리마인더 */
+    const silent = (Date.now()-diagLastActivity)/1000;
+    if(Math.floor(silent)===5 && diagWs && diagWs.readyState===1) {
+      diagWs.send(JSON.stringify({type:'text_input', text:'[시스템] 고객이 5초간 응답하지 않습니다. "고객님, 답변을 기다리고 있습니다. 편하게 말씀해 주세요."라고 말해주세요.'}));
+    }
   },1000);
 
   // 실제 음성 연결 시작
@@ -8632,7 +8640,10 @@ function diagHandleMsg(msg) {
     diagPlayQueue=[];diagIsPlaying=false;
     try{diagAudioCtx&&diagAudioCtx.suspend().then(()=>diagAudioCtx.resume());}catch(e){}
   } else if(msg.type==='transcript') {
-    if(msg.text&&msg.text.trim()) diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
+    if(msg.text&&msg.text.trim()) {
+      diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
+      if(window.diagResetActivity) diagResetActivity(); /* 활동 시간 갱신 */
+    }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
   } else if(msg.type==='error') {
@@ -8732,7 +8743,7 @@ function diagBuildNotes() {
   DIAG_PARTS.forEach(function(p,i){
     const slide=document.createElement('div');
     slide.id='dslide'+i;
-    slide.style.cssText='position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:#fef9ec;padding:12px 12px 20px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;display:'+(i===0?'block':'none');
+    slide.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;background:#fef9ec;padding:12px 12px 20px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;display:'+(i===0?'block':'none');
     
     if(p.id===11) {
       // 리포트 노트 (세로 스크롤 허용)
@@ -8899,6 +8910,17 @@ function diagTogglePause() {
     w.querySelectorAll('div').forEach(function(d){
       d.style.animation=diagPaused?'none':'';
     });
+  }
+  /* WS 일시정지/재개 전송 */
+  if(diagWs && diagWs.readyState===1) {
+    if(diagPaused) {
+      diagPlayQueue=[];
+      diagWs.send(JSON.stringify({type:'pause'}));
+      showToast('⏸ 일시정지');
+    } else {
+      diagWs.send(JSON.stringify({type:'resume'}));
+      showToast('▶ 재개');
+    }
   }
 }
 function diagShowEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex'; }
@@ -9653,7 +9675,7 @@ function diagSendText() {
         </div>
 
         <!-- ④ 상담노트 (핵심 — 단계별 1장, 자동 채워짐) -->
-        <div style="flex:1;overflow:hidden;position:relative;background:#fef9ec;" id="diagNoteContainer">
+        <div style="flex:1;overflow:hidden;position:relative;background:#fef9ec;min-height:0;" id="diagNoteContainer">
           <!-- JS로 12장 노트 생성 — diagBuildNotes() -->
         </div>
 
