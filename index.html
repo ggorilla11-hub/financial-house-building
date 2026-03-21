@@ -8535,13 +8535,49 @@ function diagDoUpload(method) {
 }
 function diagHandleFile(input) {
   if(!input.files[0]) return;
-  const fname=input.files[0].name;
+  const file = input.files[0];
+  const fname = file.name;
+
   if(diagUpKey==='application') {
     const s=document.getElementById('diagAppStat'); if(s) s.textContent='✅';
     const b=document.getElementById('diagAppBadge'); if(b){b.textContent='완료';b.style.background='rgba(22,163,74,.1)';b.style.color='#16a34a';b.style.borderColor='rgba(22,163,74,.25)';}
     const db=document.getElementById('diagDocBadge'); if(db){db.textContent='필수 완료';db.style.background='rgba(22,163,74,.1)';db.style.color='#16a34a';db.style.borderColor='rgba(22,163,74,.25)';}
-    const n=document.getElementById('diagStartNote'); if(n){n.textContent='✅ 상담신청서 완료 · AI 사전 분석 중...';n.style.color='#16a34a';}
-    showToast('📋 상담신청서 업로드 완료! AI 사전 분석을 시작합니다 🤖');
+    const n=document.getElementById('diagStartNote'); if(n){n.textContent='✅ 상담신청서 분석 중...';n.style.color='#16a34a';}
+    showToast('📋 신청서 업로드 완료! 분석 중...');
+
+    /* 실제 파싱 — 서버로 전송하여 분석 */
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('https://moneya-server.onrender.com/api/parse-application', {
+      method: 'POST',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success && data.clientData) {
+        /* diagFinCtx에 고객 데이터 주입 */
+        Object.assign(diagFinCtx, data.clientData);
+        window.diagApplicationData = data.clientData;
+        const n=document.getElementById('diagStartNote');
+        if(n){
+          n.textContent='✅ 분석 완료 · '+
+            (data.clientData.name||'고객')+'님 ('+
+            (data.clientData.age||'')+'세) · '+
+            '소득 '+(data.clientData.monthlyIncome||'')+'만원';
+          n.style.color='#16a34a';
+        }
+        /* DIAG_PARTS 0번 노트 자동 채우기 */
+        if(DIAG_PARTS[0] && DIAG_PARTS[0].fields) {
+          DIAG_PARTS[0].fields[3][1] = '신청서 완료 ✅';
+        }
+        showToast('🎉 신청서 분석 완료! '+
+          (data.clientData.name||'고객')+'님 정보가 준비됐습니다.');
+      }
+    })
+    .catch(() => {
+      /* 서버 실패 시 → 파일 직접 읽기 (텍스트 파일인 경우) */
+      showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
+    });
   } else {
     const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
     const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
@@ -9001,20 +9037,41 @@ function diagDetectStep(text) {
 /* 고객 답변에서 인적사항 자동 채우기 */
 let diagLastQuestion = ''; // 머니야 마지막 질문 추적
 
+/* 마지막으로 채워진 필드 추적 */
+let diagLastFilledPartIdx = -1;
+let diagLastFilledFieldKey = '';
+
 function diagAutoFillNote(userText) {
   const t = userText.trim();
   if(!t || t.length < 1) return;
   const part = DIAG_PARTS[diagCurPart];
   if(!part || !part.fields) return;
 
-  /* 현재 단계의 빈 필드 중 첫 번째에 채우기 */
+  /* 정정 키워드 감지 — 이전 필드 덮어쓰기 */
+  const correctionKeys = ['아니', '아닌', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
+  const isCorrection = correctionKeys.some(k => t.includes(k));
+
+  if(isCorrection && diagLastFilledPartIdx >= 0 && diagLastFilledFieldKey) {
+    /* 이전에 채운 필드를 '수정 중...'으로 표시 */
+    const prevEl = document.getElementById('dfv'+diagLastFilledPartIdx+'_'+diagLastFilledFieldKey);
+    if(prevEl) {
+      prevEl.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;'+
+        'background:rgba(220,38,38,.08);border-left:2.5px solid #dc2626;line-height:1.4;color:#dc2626;font-style:normal;';
+      prevEl.textContent = '⚠ 수정 중...';
+    }
+    return; /* 머니야가 정정 확인 후 새 값으로 채울 것 */
+  }
+
+  /* 일반 채우기 — 현재 단계의 가장 최근에 질문된 빈 필드에 */
   for(const [label] of part.fields) {
     const fid = 'dfv'+diagCurPart+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
     const el = document.getElementById(fid);
-    if(el && el.textContent.includes('입력 대기')) {
+    if(el && (el.textContent.includes('입력 대기') || el.textContent.includes('수정 중'))) {
       el.textContent = t;
       el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;'+
         'background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+      diagLastFilledPartIdx = diagCurPart;
+      diagLastFilledFieldKey = fid.replace('dfv'+diagCurPart+'_','');
       break;
     }
   }
@@ -9025,6 +9082,157 @@ const _origDiagAddSTT = diagAddSTT;
 diagAddSTT = function(role, text, tag) {
   _origDiagAddSTT(role, text, tag);
   if(role === 'ai') diagLastQuestion = text;
+};
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DEV MODE — v3.5 (3번 탭으로 활성화)
+   Claude AI가 고객 역할 자동 답변
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+let devTapCount = 0;
+let devTapTimer = null;
+let devModeActive = false;
+
+/* 홍길동 고객 프로필 (신청서 기반) */
+const DEV_CLIENT = {
+  name: '홍길동',
+  age: 37,
+  job: '항공기 승무원',
+  spouse: '정미자(33세, 자영업 필라테스)',
+  children: '홍연아(1세)',
+  familySize: 3,
+  retireAge: 60,
+  worry: '돈의 개념을 모르겠습니다. 저축은 하고 있는데 제대로 하고 있는지 모르겠어요.',
+  dualIncome: true,
+  monthlyIncome: 400,
+  spouseIncome: 900,
+  totalIncome: 1300,
+  fixedExpense: 381,
+  variableExpense: 250,
+  loanRepayment: 14,
+  insurance: 14.4,
+  totalExpense: 659.4,
+  surplus: 640,
+  deposit: 11800,
+  pension: 740,
+  subscription: 680,
+  totalAsset: 13220,
+  bankLoan: 4000,
+  carLoan: 4100,
+  totalDebt: 8100,
+  netAsset: 5120,
+};
+
+/* 머니야 질문에 대한 자동 답변 매핑 */
+function devGetAnswer(question) {
+  const q = question;
+  /* 이름 */
+  if(q.includes('성함') || q.includes('이름')) return DEV_CLIENT.name;
+  /* 나이 */
+  if(q.includes('나이') || q.includes('연세')) return DEV_CLIENT.age + '세입니다';
+  /* 결혼 */
+  if(q.includes('결혼') || q.includes('기혼') || q.includes('미혼')) return '네, 기혼입니다';
+  /* 자녀 */
+  if(q.includes('자녀') || q.includes('아이') || q.includes('자식')) return '1명 있습니다. 1살짜리 딸입니다';
+  /* 가족수 */
+  if(q.includes('가족') || q.includes('식구')) return '저랑 아내랑 딸 해서 3명입니다';
+  /* 직업 */
+  if(q.includes('직업') || q.includes('직장') || q.includes('일')) return DEV_CLIENT.job + '입니다';
+  /* 맞벌이 */
+  if(q.includes('맞벌이') || q.includes('배우자') && q.includes('소득')) return '네, 맞벌이입니다. 아내가 필라테스 스튜디오를 운영하고 있어요';
+  /* 고민 */
+  if(q.includes('고민') || q.includes('관심') || q.includes('걱정')) return DEV_CLIENT.worry;
+  /* 월 소득 */
+  if(q.includes('소득') || q.includes('수입') || q.includes('월급')) return '저는 세후 400만원이고 아내는 900만원 정도 됩니다. 합치면 1300만원이요';
+  /* 대출 원리금 */
+  if(q.includes('대출') && (q.includes('원리금') || q.includes('상환') || q.includes('얼마'))) return '차량 할부가 14만원 정도 나갑니다';
+  /* 보험료 */
+  if(q.includes('보험료') || q.includes('보험')) return '14만원 정도 나가는 것 같아요. 실비랑 아기 보험이요';
+  /* 연금 */
+  if(q.includes('연금') || q.includes('퇴직')) return '연금은 740만원 적립되어 있어요';
+  /* 저축 */
+  if(q.includes('저축') || q.includes('투자') || q.includes('적금')) return '따로 정해놓고 저축하는 건 없어요. 예금에 1억 1800만원 정도 쌓여있고요';
+  /* 생활비 */
+  if(q.includes('생활비')) return '고정지출이 381만원이고 용돈이나 외식 포함하면 250만원 더 쓰는 것 같아요';
+  /* 자산 */
+  if(q.includes('자산') || q.includes('재산') || q.includes('모아')) return '예적금 1억 1800만원, 청약 680만원, 연금 740만원 해서 총 1억 3200만원 정도요';
+  /* 부채 */
+  if(q.includes('부채') || q.includes('빚') || q.includes('대출 있')) return '차량 할부 4100만원, 은행 대출 4000만원 있어요';
+  /* 부동산 */
+  if(q.includes('부동산') || q.includes('집') || q.includes('주택')) return '지금은 전세 살고 있어요. 집은 없어요';
+  /* 은퇴 */
+  if(q.includes('은퇴') || q.includes('퇴직')) return '60대 초반쯤 은퇴하고 싶어요';
+  /* 수명 */
+  if(q.includes('수명') || q.includes('몇살') && q.includes('살')) return '90세까지는 살지 않을까요';
+  /* 노후생활비 */
+  if(q.includes('노후') && q.includes('생활비')) return '한 달에 300만원 정도면 될 것 같아요';
+  /* YES 계열 */
+  if(q.includes('괜찮') || q.includes('준비') || q.includes('시작')) return '네, 좋습니다';
+  /* 확인 계열 */
+  if(q.includes('맞습니까') || q.includes('맞나요') || q.includes('확인')) return '네, 맞습니다';
+  /* 기본 */
+  return '네';
+}
+
+/* v3.5 탭 카운터 */
+function diagDevModeTap() {
+  devTapCount++;
+  clearTimeout(devTapTimer);
+  devTapTimer = setTimeout(() => { devTapCount = 0; }, 1500);
+  if(devTapCount >= 3) {
+    devTapCount = 0;
+    devModeActive = !devModeActive;
+    const btn = document.getElementById('devModeBtn');
+    if(devModeActive) {
+      /* 신청서 데이터를 diagFinCtx에 주입 */
+      Object.assign(diagFinCtx, {
+        name: DEV_CLIENT.name,
+        age: DEV_CLIENT.age,
+        monthlyIncome: DEV_CLIENT.totalIncome,
+        totalAssets: DEV_CLIENT.totalAsset,
+        totalDebt: DEV_CLIENT.totalDebt,
+        mainWorry: DEV_CLIENT.worry,
+      });
+      if(btn) {
+        btn.textContent = '🤖 DEV MODE ON';
+        btn.style.cssText = 'text-align:center;font-size:8px;font-weight:700;color:#C9972A;'+
+          'margin-top:8px;cursor:pointer;user-select:none;padding:4px 8px;'+
+          'background:rgba(201,151,42,.1);border-radius:6px;border:1px solid rgba(201,151,42,.3);';
+      }
+      showToast('🤖 DEV MODE 활성화 — '+DEV_CLIENT.name+'님 프로필 로드됨');
+    } else {
+      if(btn) {
+        btn.textContent = 'v3.5';
+        btn.style.cssText = 'text-align:center;font-size:7px;color:rgba(11,29,58,.15);margin-top:8px;cursor:pointer;user-select:none;';
+      }
+      showToast('DEV MODE 종료');
+    }
+  }
+}
+
+/* DEV MODE 자동 답변 — 머니야 발화 감지 시 */
+function devAutoAnswer(aiText) {
+  if(!devModeActive) return;
+  if(!diagWs || diagWs.readyState !== 1) return;
+
+  const answer = devGetAnswer(aiText);
+  /* 1.5초 후 자동 전송 (자연스러운 딜레이) */
+  setTimeout(() => {
+    if(!devModeActive) return;
+    diagAddSTT('user', '[DEV] ' + answer, null);
+    diagAutoFillNote(answer);
+    diagWs.send(JSON.stringify({ type: 'text_input', text: answer }));
+  }, 1500);
+}
+
+/* DEV MODE — transcript 감지 (response_done 이후) */
+const _origDiagHandleMsg = diagHandleMsg;
+diagHandleMsg = function(msg) {
+  _origDiagHandleMsg(msg);
+  if(devModeActive && msg.type === 'response_done') {
+    /* 마지막 AI 발화로 자동 답변 */
+    if(diagLastQuestion) devAutoAnswer(diagLastQuestion);
+  }
 };
 </script>
 
@@ -9684,6 +9892,11 @@ diagAddSTT = function(role, text, tag) {
           </div>
           <button id="diagStartBtn" onclick="diagStartConsult()" style="width:100%;padding:15px;border-radius:13px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:14px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 6px 18px rgba(11,29,58,.3)">📹 AI 화상진단 시작하기</button>
           <div id="diagStartNote" style="text-align:center;font-size:8.5px;color:#6b7280;margin-top:5px">상담신청서 없이도 시작 가능 · 상담 중 데이터 입력 병행</div>
+          <!-- Dev Mode 진입점 -->
+          <div id="devModeBtn" onclick="diagDevModeTap()"
+               style="text-align:center;font-size:7px;color:rgba(11,29,58,.15);margin-top:8px;cursor:pointer;user-select:none;">
+            v3.5
+          </div>
         </div>
         <div style="height:12px;flex-shrink:0"></div>
       </div><!-- diagScreenA end -->
