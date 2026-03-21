@@ -8642,7 +8642,8 @@ function diagHandleMsg(msg) {
   } else if(msg.type==='transcript') {
     if(msg.text&&msg.text.trim()) {
       diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
-
+      if(msg.role==='user') { setTimeout(function(){ diagAutoFillNote(msg.text); }, 300); }
+      if(msg.role==='assistant') { setTimeout(function(){ diagDetectStep(msg.text); }, 300); }
     }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
@@ -8685,11 +8686,15 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  const { noteType, title, content } = msg;
+  const { noteType, title, content, step } = msg;
 
-  /* 금융집짓기 SVG */
+  /* ① 단계 이동 — step 신호 수신 시 */
+  if(step !== null && step !== undefined && step !== diagCurPart) {
+    diagActivatePart(step);
+  }
+
+  /* ② 금융집짓기 SVG */
   if(noteType==='house_svg' && content && content.html) {
-    /* 5단계 노트에 SVG 삽입 */
     const slide5=document.getElementById('dslide5');
     if(slide5){
       const houseDiv=document.createElement('div');
@@ -8697,33 +8702,39 @@ function diagHandleNote(msg) {
       houseDiv.innerHTML=content.html;
       slide5.appendChild(houseDiv);
     }
-    diagActivatePart(5);
+    if(step===undefined) diagActivatePart(5);
     showToast('🏠 금융집짓기 설계도면 업데이트');
     return;
   }
 
-  /* 일반 필드 업데이트 */
+  /* ③ 필드 채우기 — field+value 형식 */
   if(content && content.field && content.value) {
-    /* 현재 활성 파트에서 해당 필드 찾아서 채우기 */
-    const partIdx = diagCurPart;
-    const fieldKey = content.field.replace(/[\s\(\)\+\·]/g,'_');
+    const partIdx = (step !== undefined ? step : diagCurPart);
+    const fieldKey = content.field.replace(/[\s\(\)\+\·\(\)]/g,'_');
     const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
     if(el) {
       el.textContent = content.value;
-      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;animation:diagFill .4s ease;';
+      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
     }
     return;
   }
 
-  /* 단계 전환 */
-  if(content && content.step !== undefined) {
-    diagActivatePart(content.step);
-    return;
-  }
-
-  /* 텍스트 메모 */
-  if(title && content && content.text) {
-    showToast('📝 ' + title);
+  /* ④ 텍스트 메모 — text 형식으로 현재 파트의 빈 필드에 채우기 */
+  if(content && content.text && title) {
+    const partIdx = (step !== undefined ? step : diagCurPart);
+    /* 현재 파트의 빈 필드 중 첫 번째에 채우기 */
+    const part = DIAG_PARTS[partIdx];
+    if(part && part.fields) {
+      for(const [l] of part.fields) {
+        const fid = 'dfv'+partIdx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
+        const el = document.getElementById(fid);
+        if(el && el.textContent.includes('입력 대기')) {
+          el.textContent = content.text;
+          el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -8960,6 +8971,61 @@ function diagSendText() {
     diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
+
+/* ━━━ STT 기반 상담노트 자동 채우기 ━━━ */
+
+/* 머니야 발화에서 단계 감지 → 노트 자동 이동 */
+function diagDetectStep(text) {
+  const t = text;
+  const stepKeywords = [
+    { step:1, keys:['성함', '이름', '나이', '결혼', '직업', '인적사항'] },
+    { step:2, keys:['고민', '관심', '걱정', '경제적'] },
+    { step:3, keys:['월 소득', '수입', '대출 원리금', '보험료', '저축', '생활비', '수입지출'] },
+    { step:4, keys:['자산', '부채', '예금', '부동산', '대출 잔액'] },
+    { step:5, keys:['금융집', 'DESIRE', '설계도'] },
+    { step:6, keys:['저축 포트', '투자 포트', '여유자금'] },
+    { step:7, keys:['자산배분', '골든밸런스', '안전자산'] },
+    { step:8, keys:['은퇴설계', '부채설계', '보험설계', '세금설계', '8대영역', '종합재무'] },
+    { step:9, keys:['강점', '개선점', '재무점수', '최종의견'] },
+    { step:10, keys:['다음 약속', '만족', '클로징'] },
+    { step:11, keys:['리포트', '발급'] },
+  ];
+  for(const {step, keys} of stepKeywords) {
+    if(keys.some(k => t.includes(k)) && step > diagCurPart) {
+      diagActivatePart(step);
+      break;
+    }
+  }
+}
+
+/* 고객 답변에서 인적사항 자동 채우기 */
+let diagLastQuestion = ''; // 머니야 마지막 질문 추적
+
+function diagAutoFillNote(userText) {
+  const t = userText.trim();
+  if(!t || t.length < 1) return;
+  const part = DIAG_PARTS[diagCurPart];
+  if(!part || !part.fields) return;
+
+  /* 현재 단계의 빈 필드 중 첫 번째에 채우기 */
+  for(const [label] of part.fields) {
+    const fid = 'dfv'+diagCurPart+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
+    const el = document.getElementById(fid);
+    if(el && el.textContent.includes('입력 대기')) {
+      el.textContent = t;
+      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;'+
+        'background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+      break;
+    }
+  }
+}
+
+/* 머니야 발화 추적 (마지막 질문 저장) */
+const _origDiagAddSTT = diagAddSTT;
+diagAddSTT = function(role, text, tag) {
+  _origDiagAddSTT(role, text, tag);
+  if(role === 'ai') diagLastQuestion = text;
+};
 </script>
 
 
