@@ -8573,9 +8573,7 @@ function diagStartConsult() {
   diagBuildNotes();
 
   diagSec=0;
-  let diagLastActivity=Date.now();
-  let diagReminderSent=false; // 리마인더 발송 플래그
-  window.diagResetActivity=function(){ diagLastActivity=Date.now(); diagReminderSent=false; };
+
   diagInt=setInterval(function(){
     if(diagPaused) return;
     diagSec++;
@@ -8585,12 +8583,7 @@ function diagStartConsult() {
     if(el) el.textContent=m+':'+s;
     if(diagSec===45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
     if(diagSec===60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
-    /* 5초 침묵 리마인더 — 1회만 */
-    const silent = (Date.now()-diagLastActivity)/1000;
-    if(silent >= 8 && !diagReminderSent && diagWs && diagWs.readyState===1) {
-      diagReminderSent = true;
-      diagWs.send(JSON.stringify({type:'text_input', text:'고객님이 잠시 침묵 중입니다. "고객님, 편하게 말씀해 주세요." 라고 자연스럽게 한 번만 말해주세요.'}));
-    }
+
   },1000);
 
   // 실제 음성 연결 시작
@@ -8649,7 +8642,7 @@ function diagHandleMsg(msg) {
   } else if(msg.type==='transcript') {
     if(msg.text&&msg.text.trim()) {
       diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
-      if(window.diagResetActivity) diagResetActivity(); /* 활동 시간 갱신 */
+
     }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
