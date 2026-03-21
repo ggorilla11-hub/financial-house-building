@@ -380,10 +380,10 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
       <div class="mpc-bd" style="font-size:10px;color:var(--muted);text-align:center;padding:14px">AI진단 완료 후 데이터가 쌓입니다</div>
     </div>
 
-    <!-- 재무설계 리포트 리스트 -->
+    <!-- 재무진단 리포트 리스트 -->
     <div style="margin:10px 12px 0">
       <div style="font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-        📄 재무설계 리포트 <span style="font-weight:400;color:#bbb">(상담마다 자동 생성)</span>
+        📄 재무진단 리포트 <span style="font-weight:400;color:#bbb">(상담마다 자동 생성)</span>
       </div>
       <div id="reportHistList">
         <div class="rhc">
@@ -392,7 +392,7 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
           <div class="rhc-score">53</div>
           <button class="rhc-dl" onclick="showToast('📄 PDF 다운로드 중...')">PDF</button>
         </div>
-        <div style="text-align:center;padding:10px;font-size:9px;color:#bbb">상담 완료 시 리포트가 자동 추가됩니다</div>
+        <div style="text-align:center;padding:10px;font-size:9px;color:#bbb">진단 완료 시 리포트가 자동 추가됩니다</div>
       </div>
     </div>
 
@@ -448,11 +448,11 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
         </div>
         <div class="accordion-body" id="acc-info">
           <div class="mpc-bd">
-            <div class="info-row"><span class="info-ic">⏱</span><div><div class="info-lbl">상담 시간</div><div class="info-val">월 45분 (첫 달 60분 특별 제공)</div></div></div>
+            <div class="info-row"><span class="info-ic">⏱</span><div><div class="info-lbl">진단 시간</div><div class="info-val">월 45분 (첫 달 60분 특별 제공)</div></div></div>
             <div class="info-row"><span class="info-ic">📹</span><div><div class="info-lbl">방식</div><div class="info-val">AI 화상진단 (WebRTC) · 음성+텍스트</div></div></div>
             <div class="info-row"><span class="info-ic">📋</span><div><div class="info-lbl">내용</div><div class="info-val">수입지출·보험·저축·투자·은퇴 종합</div></div></div>
             <div class="info-row"><span class="info-ic">🤖</span><div><div class="info-lbl">AI 지원</div><div class="info-val">RAG 5,706개 지식베이스 · Function Calling</div></div></div>
-            <div class="info-row"><span class="info-ic">📄</span><div><div class="info-lbl">결과물</div><div class="info-val">종합재무설계 PDF 리포트 즉시 발급</div></div></div>
+            <div class="info-row"><span class="info-ic">📄</span><div><div class="info-lbl">결과물</div><div class="info-val">종합 재무진단 PDF 리포트 즉시 발급</div></div></div>
           </div>
         </div>
       </div>
@@ -558,6 +558,16 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
       <!-- 5. 개인정보동의 + AI진단 시작 버튼 -->
       <div class="start-area">
         <!-- 개인정보 동의 -->
+        <!-- 면책사항 -->
+        <div style="background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.18);border-radius:12px;padding:12px 14px;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:900;color:var(--red);margin-bottom:7px;display:flex;align-items:center;gap:5px">⚠️ 면책 및 서비스 안내</div>
+          <div style="font-size:8.5px;color:#555;line-height:1.7">
+            본 서비스는 AI 기반 재무 <b>정보 제공</b>이며, 금융상품 판매·투자 권유·재무설계 계약이 아닙니다.<br>
+            진단 결과는 <b>참고용</b>이며 최종 판단은 본인 책임입니다.<br>
+            오원트금융연구소는 AI 진단 결과로 인한 손실에 대해 법적 책임을 지지 않습니다.
+          </div>
+        </div>
+
         <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.05)">
           <div style="font-size:10px;font-weight:900;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px">🔒 개인정보 수집·제공 동의</div>
           <div style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;margin-bottom:7px" onclick="togglePrivacy('prv1')">
@@ -566,7 +576,7 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
             </div>
             <div style="flex:1">
               <div style="font-size:10px;font-weight:700;color:var(--navy)">[필수] 개인정보 제3자 제공 동의</div>
-              <div style="font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.5">수집항목: 재무정보(수입·지출·자산·부채·보험 등)<br>제공목적: AI 재무상담 서비스 제공<br>보유기간: 회원 탈퇴 시까지</div>
+              <div style="font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.5">수집항목: 재무정보(수입·지출·자산·부채·보험 등)<br>제공목적: AI 재무진단 서비스 제공<br>보유기간: 회원 탈퇴 시까지</div>
             </div>
           </div>
           <div style="display:flex;align-items:flex-start;gap:9px;cursor:pointer" onclick="togglePrivacy('prv2')">
@@ -593,7 +603,7 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
         <!-- 상담 상단바 -->
         <div class="c-topbar">
           <div style="display:flex;flex-direction:column;gap:1px">
-            <div class="c-live"><div class="c-live-dot"></div><span class="c-live-txt">LIVE 상담 중</span></div>
+            <div class="c-live"><div class="c-live-dot"></div><span class="c-live-txt">LIVE 진단 중</span></div>
             <div style="font-size:8px;color:rgba(255,255,255,.35)" id="cSessionInfo"></div>
           </div>
           <div class="c-timer" id="cTimer">00:00</div>
@@ -634,7 +644,7 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
 
         <!-- 노트 탭바 -->
         <div class="c-note-tabs">
-          <div class="c-ntab on" onclick="switchNoteTab('note',this)">📝 상담노트</div>
+          <div class="c-ntab on" onclick="switchNoteTab('note',this)">📝 진단노트</div>
           <div class="c-ntab" onclick="switchNoteTab('house',this)">🏠 금융집</div>
           <div class="c-ntab" onclick="switchNoteTab('portfolio',this)">📊 포트폴리오</div>
           <div class="c-ntab" onclick="switchNoteTab('analysis',this)">🔍 분석</div>
@@ -652,10 +662,10 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
             <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:13px;margin-top:2px">
               <div style="font-size:11px;font-weight:900;color:var(--navy);text-align:center;margin-bottom:9px">🏠 금융집짓기® 설계도면</div>
               <div style="display:flex;flex-direction:column;gap:4px">
-                <div class="house-layer" style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2)"><span>🏛️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--green)">지붕 — 투자·세금설계</div><div style="font-size:8px;color:var(--muted)">금융자산 10억 목표</div></div><span style="font-size:8px;color:var(--muted)">⚠️ 미설계</span></div>
-                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🛏️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">안방 — 은퇴설계</div><div style="font-size:8px;color:var(--muted)">국민+개인+퇴직연금</div></div><span style="font-size:8px;color:var(--red)">🔴 부족</span></div>
-                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🛋️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">건넌방 — 저축설계</div><div style="font-size:8px;color:var(--muted)">저축률 목표 30%</div></div><span style="font-size:8px;color:var(--red)">🔴 부족</span></div>
-                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🪑</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">거실 — 부채설계</div><div style="font-size:8px;color:var(--muted)">DSR 28% 양호</div></div><span style="font-size:8px;color:var(--green)">✅ 양호</span></div>
+                <div class="house-layer" style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2)"><span>🏛️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--green)">지붕 — 투자·세금</div><div style="font-size:8px;color:var(--muted)">금융자산 10억 목표</div></div><span style="font-size:8px;color:var(--muted)">⚠️ 미설계</span></div>
+                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🛏️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">안방 — 은퇴</div><div style="font-size:8px;color:var(--muted)">국민+개인+퇴직연금</div></div><span style="font-size:8px;color:var(--red)">🔴 부족</span></div>
+                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🛋️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">건넌방 — 저축</div><div style="font-size:8px;color:var(--muted)">저축률 목표 30%</div></div><span style="font-size:8px;color:var(--red)">🔴 부족</span></div>
+                <div class="house-layer" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2)"><span>🪑</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--blue)">거실 — 부채</div><div style="font-size:8px;color:var(--muted)">DSR 28% 양호</div></div><span style="font-size:8px;color:var(--green)">✅ 양호</span></div>
                 <div class="house-layer" style="background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.35)"><span>🏗️</span><div style="flex:1"><div style="font-size:9.5px;font-weight:700;color:var(--gold)">지하 — 보험+비상예비자금</div><div style="font-size:8px;color:var(--muted)">사망1억 부족·비상금 3개월</div></div><span style="font-size:8px;color:var(--gold)">⚠️ 보완</span></div>
               </div>
             </div>
@@ -693,8 +703,8 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
           <div class="c-note-page" id="ctab-report">
             <div id="reportNotReady" style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:18px;text-align:center;margin-top:2px">
               <div style="font-size:26px;margin-bottom:7px">📄</div>
-              <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">종합재무설계 리포트</div>
-              <div style="font-size:9px;color:var(--muted);margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
+              <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">종합 재무진단 리포트</div>
+              <div style="font-size:9px;color:var(--muted);margin-bottom:12px">진단 완료 후 즉시 PDF 자동 발급</div>
               <div style="font-size:9.5px;color:var(--navy);line-height:1.8;text-align:left;background:var(--gold3);border-radius:9px;padding:10px">
                 <span style="color:var(--gold)">✦</span> 금융집짓기® 설계도면<br>
                 <span style="color:var(--gold)">✦</span> 3버킷 포트폴리오 분석<br>
@@ -706,7 +716,7 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
               <div class="report-ready">
                 <div style="display:flex;align-items:center;gap:11px;margin-bottom:13px">
                   <div style="font-size:30px">🏆</div>
-                  <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div><div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="reportDate">생성 중...</div></div>
+                  <div><div style="font-size:12px;font-weight:900;color:#fff">종합 재무진단 리포트</div><div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="reportDate">생성 중...</div></div>
                   <div style="margin-left:auto;text-align:center"><div style="font-size:30px;font-weight:900;color:var(--gold2)">53</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
                 </div>
                 <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
@@ -744,17 +754,17 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
         <!-- PAUSE 오버레이 -->
         <div class="pause-ov" id="pauseOv">
           <div style="font-size:44px">⏸</div>
-          <div style="font-size:17px;font-weight:900;color:#fff">상담 일시정지</div>
+          <div style="font-size:17px;font-weight:900;color:#fff">진단 일시정지</div>
           <div style="font-size:10px;color:rgba(255,255,255,.45)">잠시 쉬어가는 중...</div>
-          <button class="resume-btn" onclick="togglePause()">▶ 상담 재개</button>
+          <button class="resume-btn" onclick="togglePause()">▶ 진단 재개</button>
         </div>
 
         <!-- 종료 모달 -->
         <div class="end-modal" id="endModal">
           <div class="end-box">
             <div class="end-box-icon">🏠</div>
-            <div class="end-box-title">상담을 종료하시겠어요?</div>
-            <div class="end-box-desc">상담 내용이 자동 저장되고<br>종합재무설계 PDF 리포트가 즉시 발급됩니다.</div>
+            <div class="end-box-title">진단을 종료하시겠어요?</div>
+            <div class="end-box-desc">진단 내용이 자동 저장되고<br>종합 재무진단 PDF 리포트가 즉시 발급됩니다.</div>
             <div class="end-btns">
               <button class="end-btn end-cancel" onclick="hideEndModal()">계속하기</button>
               <button class="end-btn end-confirm" onclick="endConsult()">종료 및 리포트</button>
@@ -822,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
       chipEl.textContent = '🌟 초회상담 (1회차)';
       chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;';
     } else {
-      chipEl.textContent = '📋 ' + SESSION_NUM + '회차 정기상담';
+      chipEl.textContent = '📋 ' + SESSION_NUM + '회차 정기진단';
       chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:rgba(11,29,58,.08);border:1px solid rgba(11,29,58,.15);color:#0B1D3A;';
     }
   }
@@ -831,8 +841,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const subEl = document.getElementById('sessionSubTxt');
   if (subEl) {
     subEl.textContent = IS_FIRST
-      ? '첫 번째 상담 · 전체 금융집짓기® 진단'
-      : '매월 정기상담 · 전월 이후 변화 점검';
+      ? '첫 번째 진단 · 전체 금융집짓기® 분석'
+      : '매월 정기진단 · 전월 이후 변화 점검';
   }
 });
 
@@ -873,7 +883,7 @@ function updateStartBtn() {
     btn.style.cursor = 'pointer';
     btn.style.pointerEvents = 'auto';
     btn.style.boxShadow = '0 6px 18px rgba(11,29,58,.35)';
-    if (note) { note.textContent = '상담신청서 없이도 시작 가능 · 상담 중 데이터 입력 병행'; note.style.color = ''; }
+    if (note) { note.textContent = '상담신청서 없이도 시작 가능 · 진단 중 데이터 입력 병행'; note.style.color = ''; }
   } else {
     btn.style.background = 'linear-gradient(135deg,#0B1D3A,#1a3260)';
     btn.style.color = '#fff';
@@ -934,7 +944,7 @@ function handleFile(input) {
 /* ─── 상담 데이터 ─── */
 const PARTS = [
   { t:'0파트 · 오프닝', s:'오프닝',
-    f:[['상담 목적','금융집짓기® 8단계 종합 재무상담'],['상담 날짜', TODAY_STR],['회차', SESSION_NUM + '회차 ' + (IS_FIRST?'(초회진단)':'(정기상담)')],['자료 준비','상담신청서 확인 완료']] },
+    f:[['상담 목적','금융집짓기® 8단계 종합 재무진단'],['상담 날짜', TODAY_STR],['회차', SESSION_NUM + '회차 ' + (IS_FIRST?'(초회진단)':'(정기진단)')],['자료 준비','상담신청서 확인 완료']] },
   { t:'1파트 · 인적사항', s:'인적사항',
     f:[['성함','오상열'],['나이','45세'],['직업','직장인 (제조업 부장)'],['가족','기혼 · 자녀 2명 (13세, 10세)']] },
   { t:'2파트 · 경제적 고민', s:'경제적고민',
@@ -949,8 +959,8 @@ const PARTS = [
     f:[['여유자금','87만원/월'],['안전자산 55%','48만원 → 예금·CMA'],['성장자산 35%','30만원 → ETF'],['꿈 자산 10%','9만원 → IRP']] },
   { t:'7파트 · 자산배분 포트폴리오', s:'자산배분',
     f:[['골든밸런스','안전 7 : 성장 3'],['목표 금융자산','10억 (15년 달성 가능)']] },
-  { t:'8파트 · 재무설계 7대영역', s:'재무설계',
-    f:[['은퇴설계','목표 월 250만 · 부족 월 95만'],['부채설계','DSR 28% · 60세 완납'],['저축설계','12% → 30% 목표'],['투자설계','IRP + ETF'],['세금설계','연금저축+IRP 연 900만'],['부동산설계','현 거주 외 추가 불필요'],['보험설계','사망 3억 증액 · 실손 갱신']] },
+  { t:'8파트 · 재무분석 7대영역', s:'재무설계',
+    f:[['은퇴분석','목표 월 250만 · 부족 월 95만'],['부채분석','DSR 28% · 60세 완납'],['저축분석','12% → 30% 목표'],['투자설계','IRP + ETF'],['세금설계','연금저축+IRP 연 900만'],['부동산설계','현 거주 외 추가 불필요'],['보험설계','사망 3억 증액 · 실손 갱신']] },
   { t:'9파트 · 최종의견', s:'최종의견',
     f:[['강점 1','부채 관리 우수 (DSR 28%)'],['강점 2','꾸준한 저축 습관'],['개선 1','지출 블랙홀 87만원 관리'],['개선 2','은퇴자금 월 87만원 추가'],['개선 3','보험 보장 재구조화'],['재무점수','53점 → 목표 75점 (2년)']] },
   { t:'10파트 · 클로징', s:'클로징',
@@ -959,11 +969,11 @@ const PARTS = [
 
 /* 회차별 초기 자막 (초회 vs 정기) */
 const INIT_STT = IS_FIRST ? [
-  { r:'ai',   t:'안녕하세요! AI 재무설계사 머니야입니다. 오상열 CFP 20년 노하우로 금융집짓기® ' + TODAY_STR + ' 초회 종합 재무상담을 시작하겠습니다.', tag:'🌟 초회상담 시작' },
+  { r:'ai',   t:'안녕하세요! AI 재무진단 에이전트 머니야입니다. 오상열 CFP 20년 노하우로 금융집짓기® ' + TODAY_STR + ' 초회 종합 재무진단을 시작하겠습니다.', tag:'🌟 초회상담 시작' },
   { r:'ai',   t:'오늘은 처음 만나는 자리인 만큼 수입지출부터 보험, 저축, 투자, 은퇴까지 전체를 꼼꼼히 살펴드릴게요. 60~90분 예정입니다.' },
   { r:'user', t:'네, 잘 부탁드립니다!' },
 ] : [
-  { r:'ai',   t:'안녕하세요 오상열님! ' + SESSION_NUM + '회차 정기상담 ' + TODAY_STR + ' 시작합니다. 지난 달 이후 재무 변화사항이 있으셨나요?', tag:'📋 ' + SESSION_NUM + '회차 정기상담' },
+  { r:'ai',   t:'안녕하세요 오상열님! ' + SESSION_NUM + '회차 정기진단 ' + TODAY_STR + ' 시작합니다. 지난 달 이후 재무 변화사항이 있으셨나요?', tag:'📋 ' + SESSION_NUM + '회차 정기진단' },
   { r:'user', t:'네, 지난달에 비상예비자금을 50만원 더 모았어요.' },
   { r:'ai',   t:'훌륭합니다! 꾸준히 실천하고 계시는군요. 오늘은 지난 상담 이후 변화 내용을 확인하고 다음 단계를 함께 점검해 드리겠습니다.' },
 ];
@@ -992,16 +1002,22 @@ const DEMO = IS_FIRST ? [
 let cSec=0, cInt=null, cPaused=false, cRec=false, cMic=true, cCam=false, cPart=0;
 
 function startConsult() {
+   끝:        } (해당 함수의 닫는 중괄호)
+══════════════════════════════════════════════════════ */
+
+function startConsult() {
+  /* ─ 화면 전환 ─ */
   document.getElementById('screenA').style.display = 'none';
   const sb = document.getElementById('screenB');
   sb.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
 
   const si = document.getElementById('cSessionInfo');
-  if (si) si.textContent = TODAY_STR + ' · ' + SESSION_NUM + '회차 ' + (IS_FIRST ? '초회진단' : '정기상담');
+  if (si) si.textContent = TODAY_STR + ' · ' + SESSION_NUM + '회차 ' + (IS_FIRST ? '초회진단' : '정기진단');
 
   buildProc();
   buildNotes();
 
+  /* ─ 타이머 시작 ─ */
   cSec = 0;
   cInt = setInterval(() => {
     if (cPaused) return;
@@ -1009,13 +1025,15 @@ function startConsult() {
     const m = String(Math.floor(cSec/60)).padStart(2,'0');
     const s = String(cSec%60).padStart(2,'0');
     document.getElementById('cTimer').textContent = m+':'+s;
+    /* 45분 알림 */
     if (cSec === 45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
+    /* 60분 자동 알림 */
     if (cSec === 60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
   }, 1000);
 
+  /* ─ 실제 WebSocket + 음성 연결 시작 ─ */
   connectRealtimeVoice();
 }
-
 
 function buildProc() {
   document.getElementById('cProcGrid').innerHTML = PARTS.map((p,i) =>
@@ -1112,11 +1130,16 @@ function toggleCamera() {
   }
 }
 function toggleRec() {
+  /* 녹음 동의 여부 확인 */
+  if (!cRec && !window.prv2Agreed) {
+    showToast('⚠️ 진단 시작 전 녹음 동의가 필요합니다');
+    return;
+  }
   cRec = !cRec;
   const btn = document.getElementById('recBtn');
   btn.textContent = cRec ? '⏹ 녹화중' : '⏺ 녹화';
   btn.classList.toggle('on', cRec);
-  showToast(cRec ? '⏺ 녹화 시작 · ' + TODAY_STR + ' 자동 저장됩니다' : '⏹ 녹화가 저장됩니다');
+  showToast(cRec ? '⏺ 녹화 시작 · ' + TODAY_STR + ' 자동 저장됩니다' : '⏹ 녹화 중단');
 }
 function togglePause() {
   cPaused = !cPaused;
@@ -1137,15 +1160,15 @@ function endConsult() {
   document.getElementById('reportReady').style.display = 'block';
   const mins = Math.floor(cSec/60) + 1;
   document.getElementById('reportDate').textContent =
-    TODAY_STR + ' · ' + SESSION_NUM + '회차 · ' + mins + '분 상담';
+    TODAY_STR + ' · ' + SESSION_NUM + '회차 · ' + mins + '분 진단';
   switchNoteTab('report', null);
   addReportToHistory(mins);
-  showToast('🎉 ' + SESSION_NUM + '회차 상담 완료! PDF 리포트가 생성되었습니다 📄');
+  showToast('🎉 ' + SESSION_NUM + '회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
 }
 
 function addReportToHistory(mins) {
   const list = document.getElementById('reportHistList');
-  const sessionLabel = IS_FIRST ? '초회진단' : SESSION_NUM + '회차 정기상담';
+  const sessionLabel = IS_FIRST ? '초회진단' : SESSION_NUM + '회차 정기진단';
   const div = document.createElement('div');
   div.className = 'rhc';
   div.innerHTML = `
@@ -1469,6 +1492,40 @@ function togglePause() {
     }
   }
 }
+
+/* ──────────────────────────────────────
+   CFP 연결 알림 — 민감질문 시 호출
+────────────────────────────────────── */
+function notifyCFP(content) {
+  if (!window.prv3Agreed && !prv3) {
+    showToast('⚠️ CFP 연결 동의가 필요합니다 (시작 전 선택 동의)');
+    return;
+  }
+  /* 실제 구현: 서버로 CFP 알림 전송 */
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'cfp_notify', content }));
+  }
+  showToast('📨 오상열 CFP 대표님께 전달되었습니다');
+}
+
+/* CFP 확인 모달 (머니야가 제안할 때 표시) */
+function showCFPModal(content) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:500;';
+  modal.innerHTML = \`
+    <div style="background:#fff;border-radius:18px;padding:22px 20px;width:280px;text-align:center;border:1px solid var(--border)">
+      <div style="font-size:28px;margin-bottom:8px">👨‍💼</div>
+      <div style="font-size:13px;font-weight:900;color:var(--navy);margin-bottom:6px">오상열 CFP 연결</div>
+      <div style="font-size:9.5px;color:var(--muted);margin-bottom:16px;line-height:1.6">이 내용을 오상열 CFP 대표님께<br>전달해 드릴까요?</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="this.closest('div[style*=inset]').remove()" style="flex:1;padding:11px;border-radius:10px;background:rgba(11,29,58,.07);border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn)">아니요</button>
+        <button onclick="notifyCFP('${content}');this.closest('div[style*=inset]').remove()" style="flex:1;padding:11px;border-radius:10px;background:var(--navy);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn)">네, 전달해 주세요</button>
+      </div>
+    </div>
+  \`;
+  document.getElementById('app').appendChild(modal);
+}
+window.showCFPModal = showCFPModal;
 
 /* ──────────────────────────────────────
    8. 종료 (기존 endConsult Override)
