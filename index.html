@@ -8679,17 +8679,7 @@ function diagHandleNote(msg) {
   }
 }
 
-/* ── diagSendText 오버라이드 (WS 전송 추가) ── */
-const _diagSendTextOrig = typeof diagSendText==='function' ? diagSendText : null;
-function diagSendText(){
-  const inp=document.getElementById('diagTextInp');
-  if(!inp||!inp.value.trim())return;
-  const txt=inp.value.trim();
-  diagAddSTT('user',txt,null);
-  inp.value='';
-  if(diagWs&&diagWs.readyState===1)
-    diagWs.send(JSON.stringify({type:'text_input',text:txt}));
-}
+/* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
 
 /* ── Heartbeat ── */
 setInterval(function(){
@@ -8884,8 +8874,11 @@ function diagEndConsult() {
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
-  diagAddSTT('user',inp.value.trim(),null);
+  const txt=inp.value.trim();
+  diagAddSTT('user',txt,null);
   inp.value='';
+  if(diagWs&&diagWs.readyState===1)
+    diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
 </script>
