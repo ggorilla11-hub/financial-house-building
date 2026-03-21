@@ -6714,10 +6714,15 @@ function fnGoTo(id) {
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
   document.body.classList.add('app-ready');
-  // DEVELOP 전용: 시뮬레이터 진입 시 회원전용 전환
-  if (window.location.hostname.includes('-dev.vercel.app')) {
-    mpIsSubscribed = true;
-    mpSetMemberButton();
+  // 항상 회원전용으로 진입
+  localStorage.setItem('fh_member_v1',  '1');
+  localStorage.setItem('fh_subscribed', '1');
+  mpIsSubscribed = true;
+  const btn = document.getElementById('btn-header-main');
+  if(btn) {
+    btn.className   = 'hbtn hbtn-member';
+    btn.textContent = '👑 회원전용';
+    btn.onclick     = mpOpen;
   }
 }
 
