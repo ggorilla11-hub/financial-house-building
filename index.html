@@ -2367,7 +2367,8 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
 .toast{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,151,42,.3);color:#fff;font-size:10.5px;font-weight:700;padding:9px 16px;border-radius:20px;white-space:nowrap;opacity:0;transition:opacity .3s;z-index:400;pointer-events:none;}
 .toast.show{opacity:1;}
 
-</style>
+
+@keyframes diagFill{from{opacity:0;transform:translateX(-4px);}to{opacity:1;transform:none;}}</style>
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -8673,9 +8674,45 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  if(msg.noteType==='house_svg'&&msg.content&&msg.content.html) {
-    const ht=document.getElementById('diagHouseTab')||document.getElementById('ctab-house');
-    if(ht){ht.innerHTML=msg.content.html;showToast('🏠 금융집짓기 설계도면 업데이트');}
+  const { noteType, title, content } = msg;
+
+  /* 금융집짓기 SVG */
+  if(noteType==='house_svg' && content && content.html) {
+    /* 5단계 노트에 SVG 삽입 */
+    const slide5=document.getElementById('dslide5');
+    if(slide5){
+      const houseDiv=document.createElement('div');
+      houseDiv.style.cssText='margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid #e5dcc0;';
+      houseDiv.innerHTML=content.html;
+      slide5.appendChild(houseDiv);
+    }
+    diagActivatePart(5);
+    showToast('🏠 금융집짓기 설계도면 업데이트');
+    return;
+  }
+
+  /* 일반 필드 업데이트 */
+  if(content && content.field && content.value) {
+    /* 현재 활성 파트에서 해당 필드 찾아서 채우기 */
+    const partIdx = diagCurPart;
+    const fieldKey = content.field.replace(/[\s\(\)\+\·]/g,'_');
+    const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
+    if(el) {
+      el.textContent = content.value;
+      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;animation:diagFill .4s ease;';
+    }
+    return;
+  }
+
+  /* 단계 전환 */
+  if(content && content.step !== undefined) {
+    diagActivatePart(content.step);
+    return;
+  }
+
+  /* 텍스트 메모 */
+  if(title && content && content.text) {
+    showToast('📝 ' + title);
   }
 }
 
@@ -8747,6 +8784,14 @@ function diagBuildNotes() {
   // 0번 노트 활성화
   const pn=document.getElementById('dpnum0'); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
   const pb=document.getElementById('dpbadge0'); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
+
+  // 프로세스 바 빌드
+  const grid=document.getElementById('diagProcGrid');
+  if(grid){
+    grid.innerHTML=DIAG_PARTS.map(function(p,i){
+      return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
+    }).join('');
+  }
 }
 
 /* ── 파트 활성화 ── */
@@ -8764,8 +8809,20 @@ function diagActivatePart(idx) {
   if(slide) slide.style.display='block';
   const pn=document.getElementById('dpnum'+idx); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
   const pb=document.getElementById('dpbadge'+idx); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
-  const ps=document.getElementById('dps'+idx); if(ps){ps.classList.add('active');ps.classList.remove('done');ps.scrollIntoView({behavior:'smooth',inline:'center'});}
+  const ps=document.getElementById('dps'+idx);
+  if(ps){
+    document.querySelectorAll('[id^="dps"]').forEach(function(el){
+      el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
+    });
+    ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
+    ps.scrollIntoView({behavior:'smooth',inline:'center'});
+  }
+  // 서버에 단계 전달
+  if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
+  // 서버에서 노트 업데이트 요청
+  if(diagFinCtx) diagFinCtx.currentStep=idx;
   const pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx].short;
+  const sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+DIAG_PARTS[idx].short;
 }
 
 function diagJumpPart(i) { diagActivatePart(i); }
@@ -9544,121 +9601,108 @@ function diagSendText() {
       </div><!-- diagScreenA end -->
 
       <!-- ★ 화면B: 상담 화면 ★ -->
-      <div id="diagScreenB" style="display:none;flex-direction:column;flex:1;height:100%;overflow:hidden;">
+      <div id="diagScreenB" style="display:none;flex-direction:column;flex:1;height:100%;overflow:hidden;background:#0B1D3A;">
 
-        <!-- 상담 상단바 -->
-        <div style="flex-shrink:0;background:rgba(8,18,40,.98);padding:7px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07)">
+        <!-- ① 상단바: LIVE · 타이머 · 버튼 -->
+        <div style="flex-shrink:0;background:rgba(8,18,40,.98);padding:7px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);">
           <div>
-            <div style="display:flex;align-items:center;gap:5px">
-              <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:mpBlink 1.5s ease infinite"></div>
-              <span style="font-size:10.5px;font-weight:700;color:#fff">LIVE 상담 중</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:mpBlink 1.5s ease infinite;"></div>
+              <span style="font-size:10.5px;font-weight:700;color:#fff;">LIVE 진단 중</span>
             </div>
-            <div id="diagSessionInfo" style="font-size:8px;color:rgba(255,255,255,.35);margin-top:1px"></div>
+            <div id="diagSessionInfo" style="font-size:8px;color:rgba(255,255,255,.35);margin-top:1px;"></div>
           </div>
-          <div id="diagTimer" style="font-size:14px;font-weight:900;color:#E8B84B;font-variant-numeric:tabular-nums">00:00</div>
-          <div style="display:flex;gap:5px">
-            <button id="diagRecBtn" onclick="diagToggleRec()" style="padding:4px 9px;border-radius:7px;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer">⏺ 녹화</button>
-            <button id="diagPauseBtn" onclick="diagTogglePause()" style="padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.75);border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer">⏸ 일시정지</button>
-            <button onclick="diagShowEndModal()" style="padding:4px 9px;border-radius:7px;background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.3);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer">⏹ 종료</button>
+          <div id="diagTimer" style="font-size:14px;font-weight:900;color:#E8B84B;font-variant-numeric:tabular-nums;">00:00</div>
+          <div style="display:flex;gap:5px;">
+            <button id="diagRecBtn" onclick="diagToggleRec()" style="padding:4px 9px;border-radius:7px;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⏺ 녹화</button>
+            <button id="diagPauseBtn" onclick="diagTogglePause()" style="padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.75);border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⏸ 일시정지</button>
+            <button onclick="diagShowEndModal()" style="padding:4px 9px;border-radius:7px;background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.3);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⏹ 종료</button>
           </div>
         </div>
 
-        <!-- AI + 고객 화상 미니바 -->
-        <div style="flex-shrink:0;background:linear-gradient(135deg,#060d1f,#0b1730);padding:7px 11px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.05)">
-          <div style="display:flex;align-items:center;gap:7px;flex:1">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-              <img id="diagAiImg" src="" onerror="this.style.display='none';this.parentElement.innerHTML='🤖'" style="width:100%;height:100%;object-fit:cover">
-            </div>
-            <div>
-              <div style="font-size:9.5px;font-weight:700;color:#fff">AI 머니야</div>
-              <div id="diagWave" style="display:flex;align-items:center;gap:2px;height:10px;margin-top:2px">
-                <div style="width:2px;border-radius:2px;background:#E8B84B;animation:fhWave .9s ease-in-out infinite"></div>
-                <div style="width:2px;border-radius:2px;background:#E8B84B;animation:fhWave .9s ease-in-out .1s infinite"></div>
-                <div style="width:2px;border-radius:2px;background:#E8B84B;animation:fhWave .9s ease-in-out .2s infinite"></div>
-                <div style="width:2px;border-radius:2px;background:#E8B84B;animation:fhWave .9s ease-in-out .1s infinite"></div>
-                <div style="width:2px;border-radius:2px;background:#E8B84B;animation:fhWave .9s ease-in-out infinite"></div>
-              </div>
+        <!-- ② 머니야 아바타 + 음성웨이브 -->
+        <div style="flex-shrink:0;background:linear-gradient(135deg,#060d1f,#0b1730);padding:7px 11px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 0 8px rgba(201,151,42,.3);">
+            <img id="diagAiImg" src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%ED%99%95%EC%A0%95%EC%9D%B4%EB%AF%B8%EC%A7%80%EC%95%88.png?alt=media&token=c250863d-7cda-424a-800d-884b20e30b1a" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🤖'">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;color:#fff;">AI 머니야</div>
+            <div id="diagWave" style="display:flex;align-items:center;gap:2px;height:10px;margin-top:2px;">
+              <div style="width:2px;border-radius:2px;background:#E8B84B;animation:cwave .9s ease-in-out infinite;animation-delay:0s;"></div>
+              <div style="width:2px;border-radius:2px;background:#E8B84B;animation:cwave .9s ease-in-out infinite;animation-delay:.1s;"></div>
+              <div style="width:2px;border-radius:2px;background:#E8B84B;animation:cwave .9s ease-in-out infinite;animation-delay:.2s;"></div>
+              <div style="width:2px;border-radius:2px;background:#E8B84B;animation:cwave .9s ease-in-out infinite;animation-delay:.1s;"></div>
+              <div style="width:2px;border-radius:2px;background:#E8B84B;animation:cwave .9s ease-in-out infinite;animation-delay:0s;"></div>
             </div>
           </div>
-          <div style="flex:1;text-align:center">
-            <div style="font-size:7.5px;color:rgba(255,255,255,.35)">진행 단계</div>
-            <div id="diagPartName" style="font-size:9px;font-weight:700;color:#E8B84B">0. 오프닝</div>
+          <div style="text-align:center;">
+            <div style="font-size:7.5px;color:rgba(255,255,255,.35);">진행 단계</div>
+            <div id="diagCurStepName" style="font-size:9px;font-weight:700;color:#E8B84B;">0단계 · 오프닝</div>
           </div>
-          <div id="diagPip" onclick="diagToggleCamera()" style="width:44px;height:57px;border-radius:8px;background:linear-gradient(145deg,#151525,#0a0a18);border:1.5px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;overflow:hidden;position:relative;flex-shrink:0">
-            <div id="diagPipPh" style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:16px">👤</span><span style="font-size:7px;color:rgba(255,255,255,.3)">카메라</span></div>
+          <!-- 카메라 PIP -->
+          <div onclick="diagToggleCamera()" style="width:44px;height:57px;border-radius:8px;background:linear-gradient(145deg,#151525,#0a0a18);border:1.5px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;">
+            <div id="diagPipPh" style="display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:16px;">👤</div><div style="font-size:7px;color:rgba(255,255,255,.3);">카메라</div></div>
             <video id="diagPipVideo" style="display:none;width:100%;height:100%;object-fit:cover;" autoplay muted playsinline></video>
-            <div id="diagCamDot" style="position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+            <div id="diagCamDot" style="position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);"></div>
           </div>
         </div>
 
-        <!-- 프로세스바 (12단계) -->
-        <div style="flex-shrink:0;background:rgba(11,29,58,.92);padding:5px 10px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;border-bottom:1px solid rgba(255,255,255,.04)">
-          <style>.diag-ps{display:inline-block;padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);margin-right:4px;cursor:pointer;white-space:nowrap;transition:all .2s}.diag-ps.done{color:#86efac;background:rgba(34,197,94,.09);border-color:rgba(34,197,94,.22)}.diag-ps.active{color:#E8B84B;background:rgba(201,151,42,.18);border-color:rgba(201,151,42,.4)}</style>
-          <span class="diag-ps active" id="dps0" onclick="diagJumpPart(0)">오프닝</span>
-          <span class="diag-ps" id="dps1" onclick="diagJumpPart(1)">인적사항</span>
-          <span class="diag-ps" id="dps2" onclick="diagJumpPart(2)">경제적고민</span>
-          <span class="diag-ps" id="dps3" onclick="diagJumpPart(3)">수입지출</span>
-          <span class="diag-ps" id="dps4" onclick="diagJumpPart(4)">자산부채</span>
-          <span class="diag-ps" id="dps5" onclick="diagJumpPart(5)">금융집설계</span>
-          <span class="diag-ps" id="dps6" onclick="diagJumpPart(6)">저축포트</span>
-          <span class="diag-ps" id="dps7" onclick="diagJumpPart(7)">자산배분</span>
-          <span class="diag-ps" id="dps8" onclick="diagJumpPart(8)">재무설계7대</span>
-          <span class="diag-ps" id="dps9" onclick="diagJumpPart(9)">최종의견</span>
-          <span class="diag-ps" id="dps10" onclick="diagJumpPart(10)">클로징</span>
-          <span class="diag-ps" id="dps11" onclick="diagJumpPart(11)">리포트</span>
+        <!-- ③ 단계 프로세스 바 -->
+        <div style="flex-shrink:0;background:rgba(11,29,58,.92);padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04);">
+          <div id="diagProcGrid" style="display:flex;flex-wrap:wrap;gap:3px;"></div>
         </div>
 
-        <!-- 상담 노트 영역 (핵심: 각 파트 = 한 화면 고정) -->
+        <!-- ④ 상담노트 (핵심 — 단계별 1장, 자동 채워짐) -->
         <div style="flex:1;overflow:hidden;position:relative;background:#fef9ec;" id="diagNoteContainer">
-          <!-- JS로 12장 노트 생성 -->
+          <!-- JS로 12장 노트 생성 — diagBuildNotes() -->
         </div>
 
-        <!-- STT 자막 -->
-        <div id="diagStt" style="flex-shrink:0;background:rgba(6,14,30,.97);border-top:1px solid rgba(255,255,255,.06);height:100px;overflow-y:auto;padding:6px 11px;scrollbar-width:none;"></div>
+        <!-- ⑤ STT 자막 -->
+        <div id="diagStt" style="flex-shrink:0;background:rgba(6,14,30,.97);border-top:1px solid rgba(255,255,255,.06);height:100px;overflow-y:auto;padding:7px 11px;scrollbar-width:none;"></div>
 
-        <!-- 하단 컨트롤 -->
-        <div style="flex-shrink:0;background:rgba(6,12,24,.99);border-top:1px solid rgba(255,255,255,.05);padding:6px 10px 10px">
-          <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">
-            <div id="diagMicBtn" onclick="diagToggleMic()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px" id="diagMicIco">🎤</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700">마이크</div>
+        <!-- ⑥ 하단 컨트롤 -->
+        <div style="flex-shrink:0;background:rgba(6,12,24,.99);border-top:1px solid rgba(255,255,255,.05);padding:6px 10px 10px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px;">
+            <div id="diagMicBtn" onclick="diagToggleMic()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;">🎤</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">마이크</div>
             </div>
-            <div id="diagCamBtn" onclick="diagToggleCamera()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.38);display:flex;align-items:center;justify-content:center;font-size:14px">📹</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700">카메라</div>
+            <div id="diagCamBtn" onclick="diagToggleCamera()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.38);display:flex;align-items:center;justify-content:center;font-size:14px;">📹</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">카메라</div>
             </div>
-            <div onclick="diagTogglePause()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px" id="diagPauseIco">⏸</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700" id="diagPauseLbl">일시정지</div>
+            <div onclick="diagTogglePause()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;" id="diagPauseIco">⏸</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;" id="diagPauseLbl">일시정지</div>
             </div>
-            <div onclick="diagShowEndModal()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(220,38,38,.18);border:1px solid rgba(220,38,38,.38);display:flex;align-items:center;justify-content:center;font-size:14px">📞</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700">종료</div>
+            <div onclick="diagShowEndModal()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(220,38,38,.18);border:1px solid rgba(220,38,38,.35);display:flex;align-items:center;justify-content:center;font-size:14px;">📞</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">종료</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:7px">
-            <input id="diagTextInp" placeholder="텍스트로 입력하거나 수정하세요..." style="flex:1;padding:8px 11px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.11);color:#fff;font-size:10px;font-family:var(--fn);outline:none" onkeydown="if(event.key==='Enter')diagSendText()">
-            <div onclick="diagSendText()" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0">➤</div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <input id="diagTextInp" placeholder="텍스트로 입력하거나 수정하세요..." onkeydown="if(event.key==='Enter')diagSendText()" style="flex:1;padding:8px 11px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.11);color:#fff;font-size:10px;font-family:var(--fn);outline:none;">
+            <div onclick="diagSendText()" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0;">➤</div>
           </div>
         </div>
 
         <!-- PAUSE 오버레이 -->
-        <div id="diagPauseOv" style="position:absolute;inset:0;background:rgba(8,20,40,.88);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:200">
-          <div style="font-size:44px">⏸</div>
-          <div style="font-size:17px;font-weight:900;color:#fff">상담 일시정지</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.45)">잠시 쉬어가는 중...</div>
-          <button onclick="diagTogglePause()" style="margin-top:6px;padding:10px 26px;border-radius:20px;background:linear-gradient(135deg,#C9972A,#E8B84B);font-size:12px;font-weight:700;color:#0B1D3A;cursor:pointer;border:none;font-family:var(--fn)">▶ 상담 재개</button>
+        <div id="diagPauseOv" style="position:absolute;inset:0;background:rgba(8,20,40,.88);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:200;">
+          <div style="font-size:44px;">⏸</div>
+          <div style="font-size:17px;font-weight:900;color:#fff;">진단 일시정지</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.45);">잠시 쉬어가는 중...</div>
+          <button onclick="diagTogglePause()" style="margin-top:6px;padding:10px 26px;border-radius:20px;background:linear-gradient(135deg,#C9972A,#E8B84B);font-size:12px;font-weight:700;color:#0B1D3A;cursor:pointer;border:none;font-family:var(--fn);">▶ 진단 재개</button>
         </div>
 
         <!-- 종료 모달 -->
-        <div id="diagEndModal" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:300">
-          <div style="background:#fff;border-radius:18px;padding:24px 20px;width:280px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;border:1px solid #e5dcc0">
-            <div style="font-size:32px;margin-bottom:8px">🏠</div>
-            <div style="font-size:15px;font-weight:900;color:#0B1D3A;margin-bottom:5px">상담을 종료하시겠어요?</div>
-            <div style="font-size:10px;color:#6b7280;margin-bottom:18px;line-height:1.6">상담 내용이 자동 저장되고<br>종합재무설계 PDF 리포트가 즉시 발급됩니다.</div>
-            <div style="display:flex;gap:8px">
-              <button onclick="diagHideEndModal()" style="flex:1;padding:11px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:var(--fn);background:rgba(11,29,58,.07);color:#0B1D3A">계속하기</button>
-              <button onclick="diagEndConsult()" style="flex:1;padding:11px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:var(--fn);background:#dc2626;color:#fff">종료 및 리포트</button>
+        <div id="diagEndModal" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:300;">
+          <div style="background:#fff;border-radius:18px;padding:24px 20px;width:280px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;border:1px solid #e5dcc0;">
+            <div style="font-size:32px;margin-bottom:8px;">🏠</div>
+            <div style="font-size:15px;font-weight:900;color:#0B1D3A;margin-bottom:5px;">진단을 종료하시겠어요?</div>
+            <div style="font-size:10px;color:#6b7280;margin-bottom:18px;line-height:1.6;">진단 내용이 자동 저장되고<br>종합 재무진단 PDF 리포트가 즉시 발급됩니다.</div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="diagHideEndModal()" style="flex:1;padding:11px;border-radius:10px;background:rgba(11,29,58,.07);border:none;color:#0B1D3A;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn);">계속하기</button>
+              <button onclick="diagEndConsult()" style="flex:1;padding:11px;border-radius:10px;background:#dc2626;border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn);">종료 및 리포트</button>
             </div>
           </div>
         </div>
