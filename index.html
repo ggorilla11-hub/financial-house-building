@@ -8649,7 +8649,7 @@ async function diagSetupAudio() {
   const src=diagAudioCtx.createMediaStreamSource(diagMicStream);
   diagWorkletNode=new AudioWorkletNode(diagAudioCtx,'p16');
   diagWorkletNode.port.onmessage=function(e){
-    if(diagWs&&diagWs.readyState===1&&diagMicOn&&!diagPaused)
+    if(diagWs&&diagWs.readyState===1&&diagMic&&!diagPaused)
       diagWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(e.data)))}));
   };
   src.connect(diagWorkletNode);
