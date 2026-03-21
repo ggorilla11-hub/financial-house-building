@@ -38,7 +38,7 @@
 </script>
 
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2041,6 +2041,8 @@ body { color: #1a1a1a; }
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overflow:hidden;}
+*{touch-action:manipulation;} /* 카카오톡 인앱브라우저 300ms 터치 딜레이 제거 */
+a,button,div[onclick],span[onclick]{-webkit-tap-highlight-color:rgba(0,0,0,0);cursor:pointer;}
 
 /* ━━━ 앱 프레임 ━━━ */
 .app{
@@ -2391,6 +2393,27 @@ html,body{width:100%;height:100%;background:#e8e4da;font-family:var(--fn);overfl
   localStorage.setItem('fh_sub_date',   new Date().toISOString());
   localStorage.setItem('fh_schema_ver', '20260320f');
 })();
+</script>
+<!-- 카카오톡 인앱브라우저 호환성 -->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no">
+<script>
+/* 카카오톡 인앱브라우저 터치 딜레이 제거 */
+document.addEventListener('DOMContentLoaded', function() {
+  function addTouchSupport() {
+    var els = document.querySelectorAll(
+      'button,[onclick],.mp-tab-btn,.mp-qm,.sel-btn,.mpc-hd,.learn-card,.rhc'
+    );
+    els.forEach(function(el) {
+      if(!el._ts) {
+        el._ts = true;
+        el.addEventListener('touchstart', function(){}, {passive:true});
+      }
+    });
+  }
+  addTouchSupport();
+  setInterval(addTouchSupport, 2000);
+});
 </script>
 </head>
 <body>
@@ -6410,6 +6433,9 @@ function mpClose() {
 
 /* ── 탭 전환 ── */
 function mpTab(idx, btn) {
+  /* 카카오톡 인앱브라우저 더블 실행 방지 */
+  if(mpTab._lastCall && Date.now()-mpTab._lastCall < 300) return;
+  mpTab._lastCall = Date.now();
   document.querySelectorAll('.mp-tab-btn').forEach(t => t.classList.remove('mp-active'));
   document.querySelectorAll('.mp-panel').forEach(p => p.classList.remove('mp-active'));
   btn.classList.add('mp-active');
