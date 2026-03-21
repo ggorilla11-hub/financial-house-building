@@ -1294,8 +1294,9 @@ body { color: #1a1a1a; }
   transition: opacity .45s ease, transform .45s cubic-bezier(.32,.72,0,1);
   transform: translateX(40px);
 }
-.fn-screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
-.fn-screen.exit   { opacity: 0; transform: translateX(-40px); pointer-events: none; }
+.fn-screen          { visibility: hidden; pointer-events: none !important; }
+.fn-screen.active   { visibility: visible; opacity: 1; pointer-events: all !important; transform: translateX(0); }
+.fn-screen.exit     { visibility: hidden; opacity: 0; transform: translateX(-40px); pointer-events: none !important; }
 
 /* ── 공통 프로그레스 바 ── */
 .prog-bar {
