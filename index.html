@@ -8571,10 +8571,18 @@ setInterval(function(){
 },30000);
 
 /* ── 12장 노트 빌드 ── */
+/* 구버전: NOTEBOOK(상담노트 19페이지)이 이미 통합되어 있으므로
+   diagNoteContainer.innerHTML 초기화 금지 */
 function diagBuildNotes() {
   const container=document.getElementById('diagNoteContainer');
   if(!container) return;
-  container.innerHTML='';
+  /* NOTEBOOK이 로드된 경우 초기화 위임 */
+  if(window.NOTEBOOK && window.NOTEBOOK.init) {
+    /* 이미 init됨 — 재초기화 불필요 */
+    return;
+  }
+  /* NOTEBOOK 없는 경우에만 구버전 빌드 */
+  container.innerHTML=''; /* fallback */
   DIAG_PARTS.forEach(function(p,i){
     const slide=document.createElement('div');
     slide.id='dslide'+i;
@@ -8651,8 +8659,13 @@ function diagActivatePart(idx) {
     const ps=document.getElementById('dps'+diagCurPart); if(ps){ps.classList.remove('active');ps.classList.add('done');}
   }
   diagCurPart=idx;
+  /* 구버전 dslide (없어도 오류 없음) */
   const slide=document.getElementById('dslide'+idx);
   if(slide) slide.style.display='block';
+  /* 새버전 NOTEBOOK 페이지 이동 */
+  if(window.NOTEBOOK && window.NOTEBOOK.activateStep) {
+    window.NOTEBOOK.activateStep(idx);
+  }
   const pn=document.getElementById('dpnum'+idx); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
   const pb=document.getElementById('dpbadge'+idx); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
   const ps=document.getElementById('dps'+idx);
@@ -8763,27 +8776,111 @@ function diagHideEndModal() { const m=document.getElementById('diagEndModal'); i
 function diagEndConsult() {
   diagHideEndModal();
   clearInterval(diagInt);
-  DIAG_PARTS.forEach(function(_,i){ diagFillPart(i); });
-  // 리포트 활성화
-  const nr=document.getElementById('diagReportReady');
-  if(nr) nr.style.display='block';
-  const rd=document.getElementById('diagReportDate');
-  if(rd) rd.textContent=DIAG_TODAY_STR+' · '+DIAG_SESSION_NUM+'회차 · '+Math.floor(diagSec/60)+1+'분 상담';
+
+  const NB = window.NOTEBOOK;
+  const mins = Math.floor(diagSec / 60) + 1;
+  const sessionLabel = DIAG_IS_FIRST ? '초회진단' : DIAG_SESSION_NUM + '회차 정기상담';
+  const today = DIAG_TODAY_STR || new Date().toLocaleDateString('ko-KR');
+
+  /* ① 리포트 페이지(page11)로 이동 */
   diagActivatePart(11);
-  // 히스토리에 리포트 추가
-  const list=document.getElementById('reportHistList');
+  if(NB) NB.activateNotePage('page11');
+
+  /* ② 리포트 날짜·버튼 활성화 */
+  const rdEl = document.getElementById('f11_date');
+  if(rdEl) rdEl.textContent = today + ' · ' + sessionLabel + ' · ' + mins + '분';
+  const dlBtn = document.getElementById('f11_dl_btn');
+  if(dlBtn) {
+    dlBtn.disabled = false;
+    dlBtn.style.opacity = '1';
+    dlBtn.textContent = '📄 종합재무설계 리포트 다운로드 (PDF)';
+    dlBtn.onclick = diagDownloadReport;
+  }
+
+  /* ③ 상담 데이터 localStorage 저장 (히스토리용) */
+  const reportData = {
+    date:    today,
+    session: DIAG_SESSION_NUM,
+    label:   sessionLabel,
+    mins:    mins,
+    score:   diagCalcScore(),
+    fields:  diagCollectAllFields(),
+  };
+  const histKey = 'fh_report_' + Date.now();
+  try { localStorage.setItem(histKey, JSON.stringify(reportData)); } catch(e) {}
+  /* 회차 카운터 업데이트 */
+  localStorage.setItem('fh_session_count', String(DIAG_SESSION_NUM + 1));
+
+  /* ④ 히스토리 탭에 리포트 카드 추가 */
+  const list = document.getElementById('reportHistList');
   if(list) {
-    const mins=Math.floor(diagSec/60)+1;
-    const label=DIAG_IS_FIRST?'초회진단':DIAG_SESSION_NUM+'회차 정기상담';
-    const div=document.createElement('div');
-    div.className='rhc';
-    div.innerHTML=`<div class="rhc-icon">📄</div>
-      <div class="rhc-info"><div class="rhc-title">${DIAG_TODAY_STR} ${label} 리포트</div><div class="rhc-sub">${mins}분 · 금융집짓기® 8단계</div></div>
-      <div class="rhc-score">53</div>
-      <button class="rhc-dl" onclick="showToast('📄 PDF 다운로드 중...')">PDF</button>`;
+    const score = reportData.score;
+    const div = document.createElement('div');
+    div.className = 'rhc';
+    div.innerHTML = '<div class="rhc-icon">📄</div>' +
+      '<div class="rhc-info">' +
+        '<div class="rhc-title">' + today + ' ' + sessionLabel + ' 리포트</div>' +
+        '<div class="rhc-sub">' + mins + '분 · 금융집짓기® 8단계</div>' +
+      '</div>' +
+      '<div class="rhc-score">' + score + '</div>' +
+      '<button class="rhc-dl" onclick="diagDownloadReport()">PDF</button>';
     list.insertBefore(div, list.firstChild);
   }
-  showToast('🎉 '+DIAG_SESSION_NUM+'회차 상담 완료! PDF 리포트가 생성되었습니다 📄');
+
+  /* ⑤ WebSocket 종료 */
+  if(diagWs && diagWs.readyState === 1) diagWs.close();
+
+  showToast('🎉 ' + sessionLabel + ' 완료! PDF 리포트가 생성되었습니다 📄');
+}
+
+/* 전체 필드 데이터 수집 */
+function diagCollectAllFields() {
+  const data = {};
+  const fieldIds = [
+    'f0_date','f0_session',
+    'f1_name','f1_age','f1_marry','f1_child','f1_family','f1_job','f1_dual',
+    'f2_w1','f2_w2','f2_goal',
+    'f3_income','f3_surplus',
+    'f4_total_asset','f4_total_debt','f4_net','f4_wi_val',
+    'f9_score','f9_grade','f9_a1','f9_a2','f9_a3',
+    'f10_closing'
+  ];
+  fieldIds.forEach(function(id) {
+    const el = document.getElementById(id);
+    if(el && el.textContent && !el.textContent.includes('입력 대기') && !el.textContent.includes('자동 발급')) {
+      data[id] = el.textContent.trim();
+    }
+  });
+  return data;
+}
+
+/* 재무점수 계산 (채워진 필드 비율 기반) */
+function diagCalcScore() {
+  const keyFields = ['f1_name','f1_age','f3_income','f4_total_asset','f9_a1'];
+  const filled = keyFields.filter(function(id) {
+    const el = document.getElementById(id);
+    return el && el.textContent && !el.textContent.includes('입력 대기') && !el.textContent.includes('대기 중');
+  }).length;
+  return Math.round(40 + (filled / keyFields.length) * 55);
+}
+
+/* PDF 다운로드 (현재는 화면 캡처 방식) */
+function diagDownloadReport() {
+  showToast('📄 PDF 생성 중... 잠시만 기다려주세요');
+  const container = document.getElementById('diagNoteContainer');
+  if(!container) return;
+  /* page11 내용을 새 창에서 인쇄 */
+  const page11 = document.getElementById('page11');
+  if(!page11) return;
+  const printWin = window.open('', '_blank');
+  printWin.document.write('<html><head><title>금융집짓기® 종합재무설계 리포트</title>');
+  printWin.document.write('<meta charset="UTF-8">');
+  printWin.document.write('<style>body{font-family:"Noto Sans KR",sans-serif;padding:20px;max-width:600px;margin:0 auto;}</style>');
+  printWin.document.write('</head><body>');
+  printWin.document.write(page11.innerHTML);
+  printWin.document.write('</body></html>');
+  printWin.document.close();
+  setTimeout(function() { printWin.print(); }, 500);
 }
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
@@ -9664,7 +9761,7 @@ diagAddSTT = function(role, text, tag) {
         <div class="c-note-body">
           <!-- 노트 슬라이드 컨테이너 -->
           <div style="flex:1;position:relative;overflow:hidden;">
-            <div id="diagNoteContainer" style="position:absolute;inset:0;overflow:hidden;"><style>
+            <div id="diagNoteContainer" style="position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;"><style>
 /* ━━━ 상담노트 격리 CSS — diagNoteContainer 스코프 ━━━ */
 
 /* ━━━ 디자인 시스템 ━━━ */
@@ -9674,7 +9771,7 @@ diagAddSTT = function(role, text, tag) {
 /* ━━━ 노트북 뷰어 ━━━ */
 #diagNoteContainer .notebook-viewer {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
