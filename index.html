@@ -2199,8 +2199,8 @@ body { color: #1a1a1a; }
 .c-ntab{flex-shrink:0;padding:6px 10px;font-size:9.5px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
 .c-ntab.on{color:var(--gold);border-bottom-color:var(--gold);}
 
-/* 노트 본문 — flex:1 세로 확보 */
-.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
+/* 노트 본문 — 높이 제한으로 STT 자막 영역 확보 */
+.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;max-height:calc(100% - 311px);display:flex;flex-direction:column;}
 .c-note-body::-webkit-scrollbar{display:none;}
 
 /* ── AI진단탭 전용: 높이 체인 확보 ── */
@@ -8810,7 +8810,7 @@ function diagBuildNotes() {
 #dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
 #dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
 #dnTabs::-webkit-scrollbar{display:none;}
-.dnt{flex-shrink:0;padding:7px 11px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;cursor:pointer;
+.dnt{flex-shrink:0;padding:6px 10px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;cursor:pointer;
   color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
 .dnt.active{background:#F4F6FA;color:#0B1D3A;}
 .dnt.done{color:#E8B84B;}
@@ -8825,8 +8825,8 @@ function diagBuildNotes() {
 .dncbody{padding:11px 13px;}
 .dnfield{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid #D8E0EC;}
 .dnfield:last-child{border-bottom:none;}
-.dnfl{color:#8896B0;font-size:11px;font-weight:500;width:88px;flex-shrink:0;padding-top:1px;}
-.dnfv{font-size:13.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.6;}
+.dnfl{color:#8896B0;font-size:10.5px;font-weight:500;width:82px;flex-shrink:0;padding-top:1px;}
+.dnfv{font-size:12.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.5;}
 .dnfv.empty{color:#D8E0EC;font-weight:400;font-style:italic;}
 .dnfv.hi{color:#1a3260;}
 .dnfv.warn{color:#C62828;}
@@ -9400,40 +9400,16 @@ function diagBuildNotes() {
       '<tr><td>월 수입</td><td>'+d(now,m1,'income')+'</td><td>'+d(now,m3,'income')+'</td><td>'+d(now,m12,'income')+'</td></tr>';
   };
   dnLoadBA();
-
-  // ── 프로세스 바 빌드 (기존 호환)
-  var grid = document.getElementById('diagProcGrid');
-  if(grid){
-    grid.innerHTML = DIAG_PARTS.map(function(p,i){
-      return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
-    }).join('');
-  }
+  // 프로세스 바 제거됨 — 노트 내부 탭으로 통합
 }
 
 /* ── 파트 활성화 ── */
 function diagActivatePart(idx) {
   diagCurPart = idx;
-
-  // 새 탭형 노트 전환
-  var tabIdx = idx <= 4 ? idx :
-               idx === 5 ? 5 :
-               idx === 6 ? 6 :
-               idx === 7 ? 6 :
-               idx === 8 ? 7 :
-               idx === 9 ? 8 :
-               idx === 10 ? 9 :
-               idx === 11 ? 10 : idx;
+  // 노트 탭 전환
+  var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
+  var tabIdx = tabMap[idx] !== undefined ? tabMap[idx] : 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
-
-  // 프로세스 바 업데이트
-  var ps = document.getElementById('dps'+idx);
-  if(ps){
-    document.querySelectorAll('[id^="dps"]').forEach(function(el){
-      el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
-    });
-    ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
-    ps.scrollIntoView({behavior:'smooth',inline:'center'});
-  }
   // 서버에 단계 전달
   if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
   if(diagFinCtx) diagFinCtx.currentStep=idx;
@@ -10405,10 +10381,7 @@ diagAddSTT = function(role, text, tag) {
           </div>
         </div>
 
-        <!-- 프로세스 바 -->
-        <div class="c-proc-wrap">
-          <div class="c-proc-grid" id="diagProcGrid"></div>
-        </div>
+        <!-- 프로세스 바 제거됨 — 노트 내부 탭으로 통합 -->
 
         <!-- 노트 본문 — 탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
         <div class="c-note-body">
