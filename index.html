@@ -8393,107 +8393,126 @@ function diagPlayNext() {
 function diagHandleNote(msg) {
   const { noteType, title, content, step, notePage, fields } = msg;
 
-  /* ① 단계 이동 — step 신호 수신 시 */
+  /* ① 단계 이동 */
   if(step !== null && step !== undefined && step !== diagCurPart) {
     diagActivatePart(step);
   }
 
-  /* ② 금융집짓기 SVG */
-  if(noteType==='house_svg' && content && content.html) {
-    const slide5=document.getElementById('dslide5');
-    if(slide5){
-      const houseDiv=document.createElement('div');
-      houseDiv.style.cssText='margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid #e5dcc0;';
-      houseDiv.innerHTML=content.html;
-      slide5.appendChild(houseDiv);
-    }
+  /* ② 금융집짓기 SVG 업데이트 */
+  if(noteType==='house_svg' && content && content.payload) {
+    if(typeof updateFHHouseInNote === 'function') updateFHHouseInNote(content.payload);
     if(step===undefined) diagActivatePart(5);
     showToast('🏠 금융집짓기 설계도면 업데이트');
     return;
   }
 
-  /* ③ server.js fields 형식 — {필드명:값} 객체로 여러 필드 한번에 처리 */
+  /* ③ fields 객체 — 새 노트 필드 ID 직접 매핑 */
   if(fields && typeof fields === 'object' && Object.keys(fields).length > 0) {
-    const partIdx = (notePage !== undefined && notePage !== null) ? notePage
-                  : (step    !== undefined && step    !== null) ? step
-                  : diagCurPart;
-    const FILLED_STYLE = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
-    const pageMap = DIAG_FIELD_MAP[partIdx] || {};
+    const pg = (notePage !== undefined && notePage !== null) ? notePage
+             : (step    !== undefined && step    !== null) ? step
+             : diagCurPart;
 
-    Object.entries(fields).forEach(function([fKey, fVal]) {
-      if(!fVal && fVal !== 0) return;
-      const valStr = String(fVal);
-
-      /* 방법1: DIAG_FIELD_MAP으로 정확한 라벨 찾기 */
-      const label = pageMap[fKey];
-      if(label) {
-        const fid = 'dfv' + partIdx + '_' + label.replace(/[\s\(\)\+\·—\/]/g,'_');
-        const el = document.getElementById(fid);
-        if(el) { el.textContent = valStr; el.style.cssText = FILLED_STYLE; return; }
-      }
-
-      /* 방법2: DIAG_PARTS 라벨과 fKey 키워드 포함 매칭 */
-      const part = DIAG_PARTS[partIdx];
-      if(part && part.fields) {
-        const fkLower = fKey.toLowerCase().replace(/[_\s]/g,'');
-        for(const [lbl] of part.fields) {
-          const lblLower = lbl.toLowerCase().replace(/[\s\(\)\·—\/]/g,'');
-          if(lblLower.includes(fkLower) || fkLower.includes(lblLower.slice(0,4))) {
-            const fid = 'dfv' + partIdx + '_' + lbl.replace(/[\s\(\)\+\·—\/]/g,'_');
-            const el = document.getElementById(fid);
-            if(el) { el.textContent = valStr; el.style.cssText = FILLED_STYLE; return; }
-          }
-        }
-      }
-
-      /* 방법3: 빈 필드에 순서대로 채우기 (폴백) */
-      if(part && part.fields) {
-        for(const [lbl] of part.fields) {
-          const fid = 'dfv' + partIdx + '_' + lbl.replace(/[\s\(\)\+\·—\/]/g,'_');
-          const el = document.getElementById(fid);
-          if(el && el.textContent.includes('입력 대기')) {
-            el.textContent = valStr;
-            el.style.cssText = FILLED_STYLE;
-            break;
-          }
-        }
+    // 새 탭 노트 필드 직접 채우기
+    Object.entries(fields).forEach(function([k, v]) {
+      if(v === null || v === undefined || v === '') return;
+      const vs = String(v);
+      // 직접 ID 매핑 시도 (f0_date, f1_name 등)
+      const prefix = 'f' + pg + '_';
+      var el = document.getElementById(prefix + k);
+      if(el) { el.textContent = vs; el.className = el.className.replace('empty',''); return; }
+      // sub_page 대응 (f81_, f82_ 등)
+      if(msg.sub_page !== undefined) {
+        var el2 = document.getElementById('f8'+msg.sub_page+'_'+k);
+        if(el2) { el2.textContent = vs; el2.className = el2.className.replace('empty',''); return; }
       }
     });
 
-    /* 노트 페이지 전환 + 토스트 */
-    if(partIdx !== diagCurPart) diagActivatePart(partIdx);
-    const partName = DIAG_PARTS[partIdx] ? DIAG_PARTS[partIdx].short : '';
+    // SVG 집 데이터 업데이트
+    if(pg===4 || pg===5 || pg===8) {
+      var wi = parseFloat(fields.wealth_index||fields.wi||0);
+      if(wi>0) {
+        var bar=document.getElementById('f4_wi_bar'); if(bar) bar.style.width=Math.min(wi/2*100,100)+'%';
+        var wv=document.getElementById('f4_wi_val'); if(wv) wv.textContent=wi.toFixed(1);
+        var wd=document.getElementById('f4_wi_diag'); if(wd) wd.textContent=wi>=2?'우량 ✅':wi>=1?'평균 이상 ✅':'평균 미달 ⚠️';
+      }
+      var ageNow=document.getElementById('age_now'), ageRet=document.getElementById('age_retire'), ageLife=document.getElementById('age_life');
+      if(fields.current_age && ageNow) ageNow.textContent=fields.current_age+'세';
+      if(fields.retire_age && ageRet) ageRet.textContent=fields.retire_age+'세';
+      if(fields.life_age && ageLife) ageLife.textContent=fields.life_age+'세';
+    }
+
+    // 예산표 자동 계산 (수입지출 pg===3)
+    if(pg===3 && fields.income) {
+      dnCalcBudget(fields);
+    }
+
+    // 재무점수 업데이트
+    if(fields.score) {
+      var sc=document.getElementById('f9_score'); if(sc) sc.innerHTML=fields.score+'<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+      var sg=document.getElementById('f9_grade'); if(sg) sg.textContent=fields.grade||'계산중';
+      var rsc=document.getElementById('diagReportScore'); if(rsc) rsc.textContent=fields.score;
+    }
+
+    // 노트 전환 토스트
+    if(pg !== diagCurPart) diagActivatePart(pg);
+    const partName = DIAG_PARTS[pg] ? DIAG_PARTS[pg].short : '';
     if(partName) showToast('📝 ' + partName + ' 노트 업데이트');
     return;
   }
 
-  /* ④ 구형 호환 — field+value 형식 (1개씩) */
+  /* ④ 구형 호환 */
   if(content && content.field && content.value) {
-    const partIdx = (step !== undefined ? step : diagCurPart);
-    const fieldKey = content.field.replace(/[\s\(\)\+\·]/g,'_');
-    const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
-    if(el) {
-      el.textContent = content.value;
-      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
-    }
+    const pg2 = (step !== undefined ? step : diagCurPart);
+    var el3 = document.getElementById('f'+pg2+'_'+content.field.replace(/[\s\(\)\+\·]/g,'_'));
+    if(el3) el3.textContent = content.value;
     return;
   }
+}
 
-  /* ⑤ 구형 호환 — text 형식으로 현재 파트의 빈 필드에 채우기 */
-  if(content && content.text && title) {
-    const partIdx = (step !== undefined ? step : diagCurPart);
-    const part = DIAG_PARTS[partIdx];
-    if(part && part.fields) {
-      for(const [l] of part.fields) {
-        const fid = 'dfv'+partIdx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
-        const el = document.getElementById(fid);
-        if(el && el.textContent.includes('입력 대기')) {
-          el.textContent = content.text;
-          el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
-          break;
-        }
-      }
-    }
+/* ── 예산표 자동 계산 함수 */
+function dnCalcBudget(f) {
+  const inc = parseFloat(f.income)||0;
+  if(!inc) return;
+  // 가족수로 비율 결정
+  const fam = parseInt(f.family||document.getElementById('f1_family')?.textContent)||2;
+  const pcts = {1:{l:20,s:50},2:{l:30,s:40},3:{l:40,s:30},4:{l:50,s:20},5:{l:60,s:10}};
+  const p = pcts[Math.min(fam,5)] || pcts[2];
+  const fmt2 = function(n){ return Math.round(n)+'만'; };
+
+  // 예산 계산
+  const bLiv = inc*p.l/100, bSave = inc*p.s/100, bPen = inc*0.1, bIns = inc*0.1, bLoan = inc*0.1;
+
+  // 현재값
+  const cLiv = parseFloat(f.living_cur)||0;
+  const cSave = parseFloat(f.save_cur)||0;
+  const cPen = parseFloat(f.pension_cur)||0;
+  const cIns = parseFloat(f.ins_cur)||0;
+  const cLoan = parseFloat(f.loan_cur)||0;
+  const surplus = parseFloat(f.surplus)||0;
+
+  function diagStr(cur, bud) {
+    if(!cur) return '—';
+    if(cur > bud*1.1) return '<span class="ng">▲ 초과</span>';
+    if(cur < bud*0.9) return '<span class="ng">▼ 부족</span>';
+    return '<span class="ok">✓ 적정</span>';
+  }
+
+  // 테이블 채우기
+  var set = function(id, v){ var e=document.getElementById(id); if(e) e.innerHTML=v; };
+  set('f3_income', '<strong>'+fmt2(inc)+'원</strong>');
+  set('f3_living_cur', fmt2(cLiv)+'원'); set('f3_living_pct', p.l+'%'); set('f3_living_exp', fmt2(bLiv)+'원'); set('f3_living_diag', diagStr(cLiv,bLiv));
+  set('f3_save_cur', fmt2(cSave)+'원'); set('f3_save_pct', p.s+'%'); set('f3_save_exp', fmt2(bSave)+'원'); set('f3_save_diag', diagStr(cSave,bSave));
+  set('f3_pension_cur', fmt2(cPen)+'원'); set('f3_pension_exp', fmt2(bPen)+'원'); set('f3_pension_diag', diagStr(cPen,bPen));
+  set('f3_ins_cur', fmt2(cIns)+'원'); set('f3_ins_exp', fmt2(bIns)+'원'); set('f3_ins_diag', diagStr(cIns,bIns));
+  set('f3_loan_cur', fmt2(cLoan)+'원'); set('f3_loan_exp', fmt2(bLoan)+'원'); set('f3_loan_diag', diagStr(cLoan,bLoan));
+  set('f3_surplus', fmt2(surplus)+'원');
+  set('f3_total', fmt2(inc)+'원');
+  var hint=document.getElementById('f3_family_hint'); if(hint) hint.textContent=fam+'인 가족 기준 예산 적용';
+  // 진단 코멘트
+  var com = document.getElementById('f3_diag_comment');
+  if(com && cLiv>0 && bLiv>0) {
+    var ratio = (cLiv/bLiv).toFixed(1);
+    com.innerHTML = '💡 생활비가 기준 대비 '+ratio+'배입니다. '+(cSave<bSave?'저축투자 예산을 늘리세요.':'저축투자가 양호합니다.');
   }
 }
 
@@ -8522,69 +8541,612 @@ function diagSwitchTab(idx, el) {
 
 /* ── 12장 노트 빌드 ── */
 function diagBuildNotes() {
-  const container=document.getElementById('diagNoteContainer');
+  const container = document.getElementById('diagNoteContainer');
   if(!container) return;
-  container.innerHTML='';
-  DIAG_PARTS.forEach(function(p,i){
-    const slide=document.createElement('div');
-    slide.id='dslide'+i;
-    slide.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;background:#fef9ec;padding:12px 12px 20px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;display:'+(i===0?'block':'none');
-    
-    if(p.id===11) {
-      // 리포트 노트 (세로 스크롤 허용)
-      slide.innerHTML=`
-        <div style="font-size:12px;font-weight:900;color:#0B1D3A;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9972A">📄 ${p.title}</div>
-        <div id="diagReportContent">
-          <div style="background:#fff;border-radius:12px;border:1px solid #e5dcc0;padding:16px;text-align:center;margin-bottom:10px">
-            <div style="font-size:26px;margin-bottom:7px">📄</div>
-            <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">종합재무설계 리포트</div>
-            <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
-            <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
-              <span style="color:#C9972A">✦</span> 금융집짓기® 설계도면<br>
-              <span style="color:#C9972A">✦</span> 3버킷 포트폴리오 분석<br>
-              <span style="color:#C9972A">✦</span> 7대영역 실행 계획<br>
-              <span style="color:#C9972A">✦</span> 재무점수 및 등급 · 월별 액션플랜
-            </div>
-          </div>
-          <div id="diagReportReady" style="display:none">
-            <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3)">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-                <div style="font-size:28px">🏆</div>
-                <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div>
-                <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
-                <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">53</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
-              </div>
-              <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
-            </div>
-          </div>
-        </div>`;
-    } else {
-      // 일반 노트 (0~10파트)
-      const fieldsHtml = p.fields.map(function([l,v]){
-        const fid='dfv'+i+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
-        return `<div style="margin-bottom:8px">
-          <div style="font-size:8px;font-weight:700;color:#6b7280;margin-bottom:2px">${l}</div>
-          <div id="${fid}" style="font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid rgba(201,151,42,.3);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#bbb;font-style:italic">— 입력 대기 중</div>
-        </div>`;
-      }).join('');
-      slide.innerHTML=`
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9972A;flex-shrink:0">
-          <div style="width:22px;height:22px;border-radius:50%;background:#0B1D3A;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0" id="dpnum${i}">${i}</div>
-          <div style="font-size:11px;font-weight:900;color:#0B1D3A;flex:1">${p.title}</div>
-          <div style="font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.05);color:#bbb" id="dpbadge${i}">${i===0?'진행중':'대기'}</div>
-        </div>
-        ${fieldsHtml}`;
-    }
-    container.appendChild(slide);
-  });
-  // 0번 노트 활성화
-  const pn=document.getElementById('dpnum0'); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
-  const pb=document.getElementById('dpbadge0'); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
 
-  // 프로세스 바 빌드
-  const grid=document.getElementById('diagProcGrid');
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // v2 상담노트 — 탭형 완성 버전
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  container.innerHTML = `
+<style>
+#dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
+#dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
+#dnTabs::-webkit-scrollbar{display:none;}
+.dnt{flex-shrink:0;padding:5px 9px;border-radius:6px 6px 0 0;font-size:9px;font-weight:700;cursor:pointer;
+  color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
+.dnt.active{background:#F4F6FA;color:#0B1D3A;}
+.dnt.done{color:#E8B84B;}
+#dnPanels{flex:1;overflow-y:auto;padding:10px 10px 30px;scrollbar-width:thin;}
+.dnp{display:none;}
+.dnp.active{display:block;}
+.dncard{background:#fff;border-radius:11px;box-shadow:0 1px 8px rgba(11,29,58,.06);margin-bottom:9px;overflow:hidden;border:1px solid #D8E0EC;}
+.dnchd{background:linear-gradient(135deg,#0B1D3A,#1a3260);padding:9px 13px;display:flex;align-items:center;gap:8px;}
+.dncicon{font-size:15px;}
+.dnctitle{color:#fff;font-size:12px;font-weight:900;}
+.dncsub{color:rgba(255,255,255,.5);font-size:9.5px;margin-top:1px;}
+.dncbody{padding:11px 13px;}
+.dnfield{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid #D8E0EC;}
+.dnfield:last-child{border-bottom:none;}
+.dnfl{color:#8896B0;font-size:9.5px;font-weight:500;width:80px;flex-shrink:0;padding-top:1px;}
+.dnfv{font-size:11.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.5;}
+.dnfv.empty{color:#D8E0EC;font-weight:400;font-style:italic;}
+.dnfv.hi{color:#1a3260;}
+.dnfv.warn{color:#C62828;}
+.dnfv.good{color:#2E7D32;}
+.dnfv.gold{color:#C9972A;}
+.dndiv{display:flex;align-items:center;gap:6px;padding:4px 0 7px;color:#8896B0;font-size:9.5px;font-weight:700;}
+.dndiv::before,.dndiv::after{content:'';flex:1;height:1px;background:#D8E0EC;}
+/* 예산표 */
+.dntable{width:100%;border-collapse:collapse;font-size:10px;}
+.dntable th{background:#0B1D3A;color:#fff;padding:5px 6px;text-align:center;font-weight:700;font-size:9.5px;}
+.dntable td{padding:5px 6px;border-bottom:1px solid #D8E0EC;text-align:right;}
+.dntable td:first-child{text-align:left;font-weight:600;color:#8896B0;}
+.dntable tr.tot td{font-weight:900;color:#0B1D3A;background:#f0f4ff;}
+.ok{color:#2E7D32;font-weight:900;font-size:9px;}
+.ng{color:#C62828;font-weight:900;font-size:9px;}
+.st{color:#C9972A;font-weight:900;font-size:9px;}
+/* 자산박스 */
+.dnag{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.dnab{background:#f8faff;border-radius:8px;padding:8px 10px;border:1px solid #D8E0EC;}
+.dnab-l{font-size:9px;color:#8896B0;margin-bottom:2px;}
+.dnab-v{font-size:13px;font-weight:900;color:#0B1D3A;}
+.dnab-u{font-size:8.5px;color:#8896B0;}
+.dnab.red .dnab-v{color:#C62828;}
+.dnab.gold .dnab-v{color:#C9972A;}
+.dnab.green .dnab-v{color:#2E7D32;}
+/* 부자지수 */
+.wi-bg{background:#D8E0EC;border-radius:99px;height:8px;overflow:hidden;margin:4px 0;}
+.wi-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#C9972A,#E8B84B);}
+/* SVG 집 */
+.dn-house{background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border-radius:10px;padding:10px;margin-bottom:9px;}
+.dn-house-title{font-size:11px;font-weight:900;color:#0B1D3A;margin-bottom:4px;text-align:center;}
+.dn-fhsvg{width:100%;height:auto;display:block;}
+/* DESIRE */
+.desire-list{display:flex;flex-direction:column;gap:4px;}
+.dstep{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid #D8E0EC;background:#f8faff;}
+.dstep.cur{background:linear-gradient(135deg,#fff8e1,#fff3cd);border-color:#C9972A;}
+.dstep.done{background:#f0f9f0;border-color:#2E7D32;opacity:.75;}
+.dbadge{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:900;background:#D8E0EC;color:#8896B0;}
+.dstep.cur .dbadge{background:#C9972A;color:#fff;}
+.dstep.done .dbadge{background:#2E7D32;color:#fff;}
+.dtitle{font-size:11px;font-weight:700;color:#1a2340;}
+.ddesc{font-size:9px;color:#8896B0;margin-top:1px;}
+.dstep.cur .dtitle{color:#C9972A;}
+/* 점수 */
+.dn-score{background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:16px;text-align:center;margin-bottom:9px;}
+.dn-score-num{font-size:46px;font-weight:900;color:#E8B84B;line-height:1;}
+.dn-score-lbl{color:rgba(255,255,255,.4);font-size:10px;margin-top:2px;}
+.dn-score-grade{display:inline-block;margin-top:6px;background:#C9972A;color:#0B1D3A;font-size:10.5px;font-weight:900;padding:3px 12px;border-radius:20px;}
+/* 액션 */
+.dn-actions{display:flex;flex-direction:column;gap:6px;}
+.dn-action{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f8faff;border-radius:8px;border-left:3px solid #C9972A;}
+.dn-action.green{border-left-color:#2E7D32;}
+.dn-action.red{border-left-color:#C62828;}
+.dn-anum{width:19px;height:19px;border-radius:50%;flex-shrink:0;background:#0B1D3A;color:#E8B84B;font-size:9.5px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.dn-anum.green{background:#2E7D32;}
+.dn-anum.red{background:#C62828;}
+.dn-atext{font-size:11px;font-weight:500;line-height:1.5;}
+/* 히스토리 BA */
+.ba-tbl{width:100%;border-collapse:collapse;font-size:9.5px;}
+.ba-tbl th{background:#0B1D3A;color:#fff;padding:5px 4px;text-align:center;font-size:9px;font-weight:700;}
+.ba-tbl th:first-child{text-align:left;padding-left:8px;}
+.ba-tbl td{padding:5px 4px;text-align:center;border-bottom:1px solid #D8E0EC;}
+.ba-tbl td:first-child{text-align:left;font-weight:700;padding-left:8px;color:#0B1D3A;}
+.v-up{color:#2E7D32;font-weight:900;}
+.v-dn{color:#C62828;font-weight:900;}
+/* 대화록 */
+.dn-chat{display:flex;flex-direction:column;gap:6px;}
+.dn-bubble{max-width:87%;padding:8px 11px;border-radius:12px;font-size:11px;line-height:1.6;}
+.dn-bubble.m{background:#0B1D3A;color:#fff;align-self:flex-start;border-bottom-left-radius:3px;}
+.dn-bubble.c{background:#e8f0fe;color:#0B1D3A;align-self:flex-end;border-bottom-right-radius:3px;}
+.dn-who{font-size:8.5px;color:#8896B0;margin-bottom:2px;}
+.dn-who.m{color:#C9972A;}
+.dn-sync{align-self:center;background:#f0f9f0;border:1px solid #2E7D32;color:#2E7D32;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;}
+/* 정보박스 */
+.dn-info{padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.6;margin-top:7px;}
+.dn-info.gold{background:#fff8e6;color:#7a5c00;}
+.dn-info.green{background:#f0f9f0;color:#1a5c24;}
+.dn-info.red{background:#fff5f5;color:#8b0000;}
+/* 계산표 */
+.dn-calc{background:#f8faff;border-radius:8px;padding:10px;}
+.dn-calc-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #D8E0EC;font-size:11px;}
+.dn-calc-row:last-child{border-bottom:none;font-weight:900;}
+.dn-calc-lbl{color:#8896B0;}
+.dn-calc-val{font-weight:700;}
+/* 보험 그리드 */
+.ins-g{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.ins-c{background:#f8faff;border-radius:6px;padding:6px 2px;text-align:center;border:1px solid #D8E0EC;}
+.ins-c.ok{background:#f0f9f0;border-color:#2E7D32;}
+.ins-c.ng{background:#fff5f5;border-color:#C62828;}
+.ins-n{font-size:8px;color:#8896B0;}
+.ins-s{font-size:9px;font-weight:900;margin-top:2px;}
+.ins-c.ok .ins-s{color:#2E7D32;}
+.ins-c.ng .ins-s{color:#C62828;}
+</style>
+
+<div id="dnWrap">
+  <!-- 탭 헤더 -->
+  <div id="dnTabs">
+    <button class="dnt done" onclick="dnGo(0)">📋 표지</button>
+    <button class="dnt done" onclick="dnGo(1)">👤 인적</button>
+    <button class="dnt done" onclick="dnGo(2)">💭 고민</button>
+    <button class="dnt done" onclick="dnGo(3)">💰 수지</button>
+    <button class="dnt done" onclick="dnGo(4)">🏦 자산</button>
+    <button class="dnt done" onclick="dnGo(5)">🏠 집짓기</button>
+    <button class="dnt done" onclick="dnGo(6)">📈 포트폴리오</button>
+    <button class="dnt done" onclick="dnGo(7)">🎯 종합설계</button>
+    <button class="dnt active" onclick="dnGo(8)">⭐ 최종의견</button>
+    <button class="dnt" onclick="dnGo(9)">💬 대화록</button>
+    <button class="dnt" onclick="dnGo(10)">📄 리포트</button>
+  </div>
+  <div id="dnPanels">
+
+  <!-- 패널0: 표지 -->
+  <div class="dnp" id="dnp0">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📋</div><div><div class="dnctitle">오프닝 / 표지</div><div class="dncsub">진단 기본 정보</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">진단 날짜</span><span class="dnfv hi" id="f0_date">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv hi" id="f0_session">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
+        <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널1: 인적사항 -->
+  <div class="dnp" id="dnp1">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">👤</div><div><div class="dnctitle">인적사항</div><div class="dncsub">기본 정보</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">성함</span><span class="dnfv hi" id="f1_name">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">나이</span><span class="dnfv" id="f1_age">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">결혼여부</span><span class="dnfv" id="f1_marry">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">자녀</span><span class="dnfv" id="f1_child">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">가족수</span><span class="dnfv" id="f1_family">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">직업</span><span class="dnfv" id="f1_job">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">맞벌이</span><span class="dnfv" id="f1_dual">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">은퇴예정</span><span class="dnfv" id="f1_retire">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f1_life">— 입력 대기</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널2: 경제적 고민 -->
+  <div class="dnp" id="dnp2">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💭</div><div><div class="dnctitle">경제적 고민</div><div class="dncsub">오늘 진단의 대의명분</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">고민 1</span><span class="dnfv warn" id="f2_w1">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">고민 2</span><span class="dnfv warn" id="f2_w2">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">고민 3</span><span class="dnfv" id="f2_w3">—</span></div>
+        <div class="dnfield"><span class="dnfl">목표</span><span class="dnfv hi" id="f2_goal">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">머니야 공감</span><span class="dnfv" id="f2_ans" style="font-size:10.5px;color:#555">— 입력 대기</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널3: 수입지출 -->
+  <div class="dnp" id="dnp3">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💰</div><div><div class="dnctitle">수입지출 분석표</div><div class="dncsub" id="f3_family_hint">가족수 확인 후 기준 적용</div></div></div>
+      <div class="dncbody">
+        <table class="dntable">
+          <thead><tr><th>항목</th><th>현재</th><th>기준%</th><th>예산</th><th>진단</th></tr></thead>
+          <tbody>
+            <tr><td>수입</td><td><strong id="f3_income">—</strong></td><td>—</td><td>—</td><td>—</td></tr>
+            <tr><td>생활비</td><td id="f3_living_cur">—</td><td id="f3_living_pct">—</td><td id="f3_living_exp">—</td><td id="f3_living_diag">—</td></tr>
+            <tr><td>저축투자</td><td id="f3_save_cur">—</td><td id="f3_save_pct">—</td><td id="f3_save_exp">—</td><td id="f3_save_diag">—</td></tr>
+            <tr><td>노후연금</td><td id="f3_pension_cur">—</td><td>10%</td><td id="f3_pension_exp">—</td><td id="f3_pension_diag">—</td></tr>
+            <tr><td>보장성보험</td><td id="f3_ins_cur">—</td><td>10%</td><td id="f3_ins_exp">—</td><td id="f3_ins_diag">—</td></tr>
+            <tr><td>대출원리금</td><td id="f3_loan_cur">—</td><td>10%</td><td id="f3_loan_exp">—</td><td id="f3_loan_diag">—</td></tr>
+            <tr><td>잉여자금</td><td id="f3_surplus">—</td><td>—</td><td>—</td><td>—</td></tr>
+            <tr class="tot"><td>합계</td><td id="f3_total">—</td><td>100%</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <div class="dn-info gold" id="f3_diag_comment">수입지출 정보 수집 후 진단이 표시됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널4: 자산부채 -->
+  <div class="dnp" id="dnp4">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">자산부채 분석표</div><div class="dncsub">부자지수 · 부채비율 · 비상예비자금</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">자산</div>
+        <div class="dnag">
+          <div class="dnab"><div class="dnab-l">예적금</div><div class="dnab-v" id="f4_deposit">—<span class="dnab-u"></span></div></div>
+          <div class="dnab"><div class="dnab-l">펀드·ETF</div><div class="dnab-v" id="f4_invest">—</div></div>
+          <div class="dnab"><div class="dnab-l">연금적립</div><div class="dnab-v" id="f4_pension">—</div></div>
+          <div class="dnab"><div class="dnab-l">부동산</div><div class="dnab-v" id="f4_realty">—</div></div>
+        </div>
+        <div class="dnag" style="margin-top:5px">
+          <div class="dnab gold"><div class="dnab-l">총자산</div><div class="dnab-v" id="f4_total_asset">—</div></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">부채</div>
+        <div class="dnag">
+          <div class="dnab red"><div class="dnab-l">신용대출</div><div class="dnab-v" id="f4_credit">—</div></div>
+          <div class="dnab"><div class="dnab-l">담보대출</div><div class="dnab-v" id="f4_mortgage">—</div></div>
+        </div>
+        <div class="dnag" style="margin-top:5px">
+          <div class="dnab red"><div class="dnab-l">총부채</div><div class="dnab-v" id="f4_total_debt">—</div></div>
+          <div class="dnab green"><div class="dnab-l">순자산</div><div class="dnab-v" id="f4_net">—</div></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">진단 지표</div>
+        <div style="font-size:9px;color:#8896B0;display:flex;justify-content:space-between;margin-bottom:2px"><span>0</span><span>평균(1.0)</span><span>우량(2.0)</span></div>
+        <div class="wi-bg"><div class="wi-fill" id="f4_wi_bar" style="width:0%"></div></div>
+        <div style="text-align:center;font-size:19px;font-weight:900;color:#C9972A;margin-top:4px" id="f4_wi_val">—</div>
+        <div style="text-align:center;font-size:9.5px;color:#8896B0" id="f4_wi_diag">부자지수 계산 대기</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px">
+          <div style="background:#f0f9f0;border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:#8896B0">부채비율</div>
+            <div style="font-size:16px;font-weight:900;color:#2E7D32" id="f4_dr_val">—</div>
+            <div style="font-size:9px;color:#2E7D32" id="f4_dr_diag">—</div>
+          </div>
+          <div style="background:#fff8e6;border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:#8896B0">비상예비자금</div>
+            <div style="font-size:12px;font-weight:900;color:#C9972A" id="f4_emerg_need">—</div>
+            <div style="font-size:9px;color:#C9972A" id="f4_emerg_diag">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널5: 금융집짓기 SVG -->
+  <div class="dnp" id="dnp5">
+    <div class="dn-house">
+      <div class="dn-house-title">금융집짓기® 재무설계도</div>
+      <div style="font-size:9.5px;color:#8896B0;text-align:center;margin-bottom:7px" id="fh_subtitle">진단 진행 중...</div>
+      <svg class="dn-fhsvg" viewBox="0 0 440 300" xmlns="http://www.w3.org/2000/svg">
+        <line x1="14" y1="192" x2="426" y2="192" stroke="#6d4c41" stroke-width="3" stroke-linecap="round"/>
+        <text x="220" y="205" text-anchor="middle" font-size="8" fill="#8d6e63" font-family="'Noto Sans KR',sans-serif">인생이라는 평평한 땅</text>
+        <rect x="44" y="192" width="352" height="86" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5" rx="2"/>
+        <text x="220" y="208" text-anchor="middle" font-size="9" fill="#F57F17" font-weight="700" font-family="'Noto Sans KR',sans-serif">7. 기초 (보험)</text>
+        <line x1="88"  y1="212" x2="88"  y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="132" y1="212" x2="132" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="176" y1="212" x2="176" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="220" y1="212" x2="220" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="264" y1="212" x2="264" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="308" y1="212" x2="308" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="352" y1="212" x2="352" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="44"  y1="226" x2="396" y2="226" stroke="#F9A825" stroke-width=".8"/>
+        <text x="66"  y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">사망</text>
+        <text x="110" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">장해</text>
+        <text x="154" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">암</text>
+        <text x="198" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">뇌</text>
+        <text x="242" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">심장</text>
+        <text x="286" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">실비</text>
+        <text x="330" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">입원</text>
+        <text x="374" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">치매</text>
+        <text id="ins_death"  x="66"  y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_injury" x="110" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_cancer" x="154" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_brain"  x="198" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_heart"  x="242" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_actual" x="286" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_hosp"   x="330" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_dem"    x="374" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <rect x="44" y="112" width="352" height="80" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.5" rx="2"/>
+        <line x1="300" y1="112" x2="300" y2="192" stroke="#1565C0" stroke-width=".8"/>
+        <text x="78" y="126" text-anchor="middle" font-size="8" fill="#C62828" font-weight="700" font-family="'Noto Sans KR',sans-serif">2.거실</text>
+        <text x="78" y="137" text-anchor="middle" font-size="8" fill="#C62828" font-family="'Noto Sans KR',sans-serif">부채설계</text>
+        <line x1="78" y1="143" x2="78" y2="182" stroke="#C62828" stroke-width="1.5" marker-end="url(#aRed2)"/>
+        <text id="debt_val" x="96" y="172" text-anchor="middle" font-size="7" fill="#C62828" font-family="'Noto Sans KR',sans-serif">—</text>
+        <text x="175" y="148" text-anchor="middle" font-size="8" fill="#1B5E20" font-weight="700" font-family="'Noto Sans KR',sans-serif">3.건넌방</text>
+        <text x="175" y="159" text-anchor="middle" font-size="8" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">저축설계</text>
+        <line x1="175" y1="185" x2="175" y2="164" stroke="#388E3C" stroke-width="1.5" marker-end="url(#aGreen2)"/>
+        <text id="savings_val" x="175" y="180" text-anchor="middle" font-size="7" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">—</text>
+        <text x="358" y="130" text-anchor="middle" font-size="8" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">1.안방</text>
+        <text x="358" y="141" text-anchor="middle" font-size="8" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">은퇴설계</text>
+        <text id="retire_rate" x="358" y="165" text-anchor="middle" font-size="13" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">—%</text>
+        <text x="358" y="178" text-anchor="middle" font-size="7" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">준비율</text>
+        <rect x="20" y="76" width="400" height="36" fill="#B0BEC5" stroke="#546E7A" stroke-width="1.2" rx="2"/>
+        <line x1="153" y1="76" x2="153" y2="112" stroke="#546E7A" stroke-width=".8"/>
+        <line x1="287" y1="76" x2="287" y2="112" stroke="#546E7A" stroke-width=".8"/>
+        <text x="38"  y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">현재</text>
+        <text id="age_now" x="38" y="108" text-anchor="middle" font-size="10" fill="#1565C0" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <text x="208" y="89" text-anchor="end" font-size="7" fill="#B71C1C" font-family="'Noto Sans KR',sans-serif">은퇴</text>
+        <text id="age_retire" x="226" y="108" text-anchor="start" font-size="10" fill="#E53935" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <circle cx="220" cy="92" r="2" fill="#E53935" opacity=".6"/>
+        <text x="402" y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">사망예정</text>
+        <text id="age_life" x="402" y="108" text-anchor="middle" font-size="10" fill="#555" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <polygon points="220,18 20,76 420,76" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+        <text x="135" y="48" text-anchor="middle" font-size="9" fill="#0D47A1" font-weight="700" font-family="'Noto Sans KR',sans-serif">4.투자설계</text>
+        <text x="135" y="60" text-anchor="middle" font-size="7" fill="#0D47A1" font-family="'Noto Sans KR',sans-serif">안전70%·위험30%</text>
+        <text x="300" y="48" text-anchor="middle" font-size="9" fill="#4A148C" font-weight="700" font-family="'Noto Sans KR',sans-serif">5.세금설계</text>
+        <text x="300" y="60" text-anchor="middle" font-size="7" fill="#4A148C" font-family="'Noto Sans KR',sans-serif">ISA·IRP·연금</text>
+        <line x1="220" y1="18" x2="220" y2="278" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,3"/>
+        <line x1="44" y1="190" x2="220" y2="114" stroke="#43A047" stroke-width="1.3" stroke-dasharray="4,3"/>
+        <text x="122" y="163" text-anchor="middle" font-size="7" fill="#2E7D32" transform="rotate(-28,122,163)" font-family="'Noto Sans KR',sans-serif">내진설계</text>
+        <rect x="308" y="8" width="30" height="30" fill="#CFD8DC" stroke="#546E7A" stroke-width="1" rx="2"/>
+        <text x="323" y="20" text-anchor="middle" font-size="7.5" fill="#37474F" font-weight="700" font-family="'Noto Sans KR',sans-serif">6.굴뚝</text>
+        <text x="323" y="33" text-anchor="middle" font-size="7.5" fill="#37474F" font-family="'Noto Sans KR',sans-serif">부동산</text>
+        <rect id="desire-hl" x="0" y="0" width="0" height="0" fill="none" stroke="#E53935" stroke-width="2.5" stroke-dasharray="6,3" rx="3"/>
+        <defs>
+          <marker id="aRed2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10z" fill="#C62828"/>
+          </marker>
+          <marker id="aGreen2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10z" fill="#388E3C"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📐</div><div><div class="dnctitle">설계도 요약</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">현재 단계</span><span class="dnfv gold" id="f5_desire">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">다음 단계</span><span class="dnfv" id="f5_next">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">실행 전략</span><span class="dnfv" id="f5_strategy">— 입력 대기</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널6: 포트폴리오 -->
+  <div class="dnp" id="dnp6">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📈</div><div><div class="dnctitle">저축투자 포트폴리오</div><div class="dncsub">100-나이 법칙</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">투자재원 계산</div>
+        <div class="dn-calc">
+          <div class="dn-calc-row"><span class="dn-calc-lbl">저축투자 예산</span><span class="dn-calc-val" id="f6_budget">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">현재 저축투자</span><span class="dn-calc-val" id="f6_cur_save">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">투자재원</span><span class="dn-calc-val" id="f6_source">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 노후연금 부족</span><span class="dn-calc-val" id="f6_pen_gap" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 보험 부족 ×½</span><span class="dn-calc-val" id="f6_ins_gap" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl" style="font-weight:900">순투자재원</span><span class="dn-calc-val" id="f6_net" style="color:#2E7D32;font-size:13px">—</span></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">배분</div>
+        <div class="dnag">
+          <div class="dnab"><div class="dnab-l" id="f6_save_label">저축 (%)</div><div class="dnab-v" id="f6_save_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">적금·CMA·청약</div></div>
+          <div class="dnab gold"><div class="dnab-l" id="f6_inv_label">투자 (%)</div><div class="dnab-v" id="f6_inv_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">ISA·IRP·연금저축</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🎯</div><div><div class="dnctitle">자산배분 포트폴리오</div><div class="dncsub">오상열 CFP 기준 · 참고용</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">부동산 비중</span><span class="dnfv" id="f7_res">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">금융 비중</span><span class="dnfv" id="f7_inv">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">금융자산 합계</span><span class="dnfv hi" id="f7_fin_total">— 입력 대기</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널7: 종합설계 7대영역 -->
+  <div class="dnp" id="dnp7">
+    <!-- 8-1 은퇴 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏖️</div><div><div class="dnctitle">8-1 은퇴설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">은퇴나이</span><span class="dnfv" id="f81_age">—</span></div>
+        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f81_life">—</span></div>
+        <div class="dndiv">계산</div>
+        <div class="dn-calc">
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 필요자금</span><span class="dn-calc-val" id="f81_need">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 준비자금</span><span class="dn-calc-val" id="f81_ready">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 부족자금</span><span class="dn-calc-val" id="f81_short" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">순은퇴일시금</span><span class="dn-calc-val" id="f81_net" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 추가저축</span><span class="dn-calc-val" id="f81_monthly" style="color:#C62828">—</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f0f4ff;border-radius:7px">
+          <span style="font-size:10px;color:#8896B0">은퇴준비율</span>
+          <span style="font-size:16px;font-weight:900;color:#1a3260" id="f81_rate">—</span>
+        </div>
+      </div>
+    </div>
+    <!-- 8-2 부채 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💳</div><div><div class="dnctitle">8-2 부채설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">주요 부채</span><span class="dnfv" id="f82_priority">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">담보대출</span><span class="dnfv" id="f82_mortgage">—</span></div>
+        <div class="dnfield"><span class="dnfl">상환 전략</span><span class="dnfv">신용: 즉시상환(소→대) · 담보: 은퇴전 완납</span></div>
+      </div>
+    </div>
+    <!-- 8-3 저축 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">8-3 저축설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">월 가능액</span><span class="dnfv hi" id="f83_possible">—</span></div>
+        <div class="dnfield"><span class="dnfl">현재 저축</span><span class="dnfv" id="f83_current">—</span></div>
+        <div class="dnfield"><span class="dnfl">추가 필요</span><span class="dnfv warn" id="f83_gap">—</span></div>
+      </div>
+    </div>
+    <!-- 8-4 투자 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">8-4 투자설계</div><div class="dncsub">가중평균수익률</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">현재 부자지수</span><span class="dnfv hi" id="f84_wi">—</span></div>
+        <div class="dnfield"><span class="dnfl">금융자산 목표</span><span class="dnfv">10억원</span></div>
+        <div class="dnfield"><span class="dnfl">현재 금융자산</span><span class="dnfv" id="f84_current">—</span></div>
+        <div class="dnfield"><span class="dnfl">달성 필요액</span><span class="dnfv warn" id="f84_gap">—</span></div>
+        <div class="dnfield"><span class="dnfl">리밸런싱</span><span class="dnfv" id="f84_rebal">—</span></div>
+      </div>
+    </div>
+    <!-- 8-5 세금 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🧾</div><div><div class="dnctitle">8-5 세금설계</div><div class="dncsub">결정세액 0원 전략</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">연금저축펀드</span><span class="dnfv" id="f85_pension">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">IRP</span><span class="dnfv" id="f85_irp">—</span></div>
+        <div class="dnfield"><span class="dnfl">합산한도</span><span class="dnfv">연 900만원</span></div>
+        <div class="dnfield"><span class="dnfl">현재 환급 예상</span><span class="dnfv warn" id="f85_tax">—</span></div>
+        <div class="dnfield"><span class="dnfl">최대 환급 가능</span><span class="dnfv good" id="f85_refund">—</span></div>
+      </div>
+    </div>
+    <!-- 8-6 부동산 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">8-6 부동산설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">현재 형태</span><span class="dnfv" id="f86_type">—</span></div>
+        <div class="dnfield"><span class="dnfl">주택 가격</span><span class="dnfv" id="f86_price">—</span></div>
+        <div class="dnfield"><span class="dnfl">향후 전략</span><span class="dnfv" id="f86_strategy">—</span></div>
+      </div>
+    </div>
+    <!-- 8-7 보험 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🛡️</div><div><div class="dnctitle">8-7 보험설계</div><div class="dncsub">8대 위험 기둥</div></div></div>
+      <div class="dncbody">
+        <div class="ins-g">
+          <div class="ins-c ng" id="ins_col_death"><div class="ins-n">사망</div><div class="ins-s" id="ins_death_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_inj"><div class="ins-n">장해</div><div class="ins-s" id="ins_inj_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_cancer"><div class="ins-n">암진단</div><div class="ins-s" id="ins_cancer_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_brain"><div class="ins-n">뇌혈관</div><div class="ins-s" id="ins_brain_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_heart"><div class="ins-n">심혈관</div><div class="ins-s" id="ins_heart_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_actual"><div class="ins-n">실비</div><div class="ins-s" id="ins_actual_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_hosp"><div class="ins-n">입원수술</div><div class="ins-s" id="ins_hosp_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_dem"><div class="ins-n">치매간병</div><div class="ins-s" id="ins_dem_st">!</div></div>
+        </div>
+        <div class="dnfield" style="margin-top:8px"><span class="dnfl">현재 보험료</span><span class="dnfv" id="f87_premium">—</span></div>
+        <div class="dn-info red" style="margin-top:7px">⚠️ 보험증권 업로드 후 정확한 분석 가능합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널8: 최종의견 -->
+  <div class="dnp active" id="dnp8">
+    <!-- 점수 -->
+    <div class="dn-score">
+      <div class="dn-score-num" id="f9_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
+      <div class="dn-score-lbl">종합 재무점수 (100점 만점)</div>
+      <div class="dn-score-grade" id="f9_grade">—</div>
+    </div>
+    <!-- DESIRE 로드맵 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🗺️</div><div><div class="dnctitle">DESIRE 로드맵</div><div class="dncsub" id="desire_cur_step">현재 단계 계산 중</div></div></div>
+      <div class="dncbody">
+        <div class="desire-list" id="desire_list">
+          <div class="dstep" id="ds_D"><div class="dbadge">D</div><div><div class="dtitle">DEBT FREE — 신용대출 상환</div><div class="ddesc" id="ds_D_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_E"><div class="dbadge">E</div><div><div class="dtitle">EMERGENCY FUND — 비상예비자금</div><div class="ddesc" id="ds_E_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_S"><div class="dbadge">S</div><div><div class="dtitle">SAVINGS — 적립식 저축투자</div><div class="ddesc" id="ds_S_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_I"><div class="dbadge">I</div><div><div class="dtitle">INVESTMENT — 금융자산 10억</div><div class="ddesc" id="ds_I_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_R"><div class="dbadge">R</div><div><div class="dtitle">REPAY MORTGAGE — 담보대출 상환</div><div class="ddesc" id="ds_R_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_E2"><div class="dbadge">E</div><div><div class="dtitle">EARLY RETIREMENT — 조기은퇴</div><div class="ddesc">상속증여 플랜 완성 후 졸업</div></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 히스토리 BA -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">비포 & 에프터</div><div class="dncsub">히스토리 데이터</div></div></div>
+      <div class="dncbody">
+        <div style="overflow-x:auto">
+          <table class="ba-tbl">
+            <thead><tr><th>항목</th><th>전월</th><th>전분기</th><th>전년</th></tr></thead>
+            <tbody id="dn_ba_tbody">
+              <tr><td colspan="4" style="text-align:center;padding:12px;color:#8896B0;font-size:9.5px">2회 이상 상담 후 비교 데이터가 표시됩니다</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- 강점/개선/액션 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">⭐</div><div><div class="dnctitle">강점 · 개선점 · 액션</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">강점</div>
+        <div class="dn-actions" style="margin-bottom:9px">
+          <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1">— 입력 대기</div></div>
+          <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2">— 입력 대기</div></div>
+          <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3">— 입력 대기</div></div>
+        </div>
+        <div class="dndiv">개선점</div>
+        <div class="dn-actions" style="margin-bottom:9px">
+          <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1">— 입력 대기</div></div>
+          <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2">— 입력 대기</div></div>
+          <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3">— 입력 대기</div></div>
+        </div>
+        <div class="dndiv">이번 달 실행 액션</div>
+        <div class="dn-actions">
+          <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1">— 입력 대기</div></div>
+          <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2">— 입력 대기</div></div>
+          <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3">— 입력 대기</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널9: 대화록 -->
+  <div class="dnp" id="dnp9">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 노트 싱크</div></div></div>
+      <div class="dncbody">
+        <div class="dn-chat" id="dn_chat_log">
+          <div style="text-align:center;font-size:10px;color:#8896B0;padding:10px">상담 시작 후 대화가 여기에 기록됩니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널10: 리포트 -->
+  <div class="dnp" id="dnp10">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">종합재무설계 리포트</div><div class="dncsub">상담 완료 후 자동 발급</div></div></div>
+      <div class="dncbody" id="diagReportContent">
+        <div style="text-align:center;padding:16px">
+          <div style="font-size:26px;margin-bottom:7px">📄</div>
+          <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">종합재무설계 리포트</div>
+          <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
+          <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
+            <span style="color:#C9972A">✦</span> 금융집짓기® 설계도면<br>
+            <span style="color:#C9972A">✦</span> 7대영역 실행 계획<br>
+            <span style="color:#C9972A">✦</span> DESIRE 로드맵<br>
+            <span style="color:#C9972A">✦</span> 재무점수 및 등급 · 월별 액션플랜
+          </div>
+        </div>
+        <div id="diagReportReady" style="display:none">
+          <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div style="font-size:28px">🏆</div>
+              <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div>
+              <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
+              <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">—</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
+            </div>
+            <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /dnPanels -->
+</div><!-- /dnWrap -->
+`;
+
+  // ── 탭 전환 함수
+  window.dnGo = function(i) {
+    document.querySelectorAll('.dnp').forEach(function(p,j){ p.classList.toggle('active', j===i); });
+    document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+    document.getElementById('dnPanels').scrollTop = 0;
+    if(i===8) dnLoadBA();
+  };
+
+  // ── 히스토리 BA 연동
+  window.dnLoadBA = function() {
+    var tbody = document.getElementById('dn_ba_tbody');
+    if(!tbody) return;
+    var snaps = [];
+    try { snaps = JSON.parse(localStorage.getItem('fh_snap_list')||'[]'); } catch(e){}
+    if(snaps.length < 2) return;
+    var now = snaps[0].summary;
+    function d(a,b,k,unit){ if(!a||!b) return '—'; var v=(a[k]||0)-(b[k]||0); if(!v) return '±0'; return '<span class="'+(v>0?'v-up':'v-dn')+'">'+(v>0?'+':'')+v+(unit||'만')+'</span>'; }
+    var m1=snaps[1]?.summary, m3=snaps[Math.min(3,snaps.length-1)]?.summary, m12=snaps[snaps.length-1]?.summary;
+    tbody.innerHTML='<tr><td>순자산</td><td>'+d(now,m1,'totalAsset')+'</td><td>'+d(now,m3,'totalAsset')+'</td><td>'+d(now,m12,'totalAsset')+'</td></tr>'+
+      '<tr><td>재무점수</td><td>'+d(now,m1,'score','점')+'</td><td>'+d(now,m3,'score','점')+'</td><td>'+d(now,m12,'score','점')+'</td></tr>'+
+      '<tr><td>월 수입</td><td>'+d(now,m1,'income')+'</td><td>'+d(now,m3,'income')+'</td><td>'+d(now,m12,'income')+'</td></tr>';
+  };
+  dnLoadBA();
+
+  // ── 프로세스 바 빌드 (기존 호환)
+  var grid = document.getElementById('diagProcGrid');
   if(grid){
-    grid.innerHTML=DIAG_PARTS.map(function(p,i){
+    grid.innerHTML = DIAG_PARTS.map(function(p,i){
       return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
     }).join('');
   }
@@ -8592,20 +9154,21 @@ function diagBuildNotes() {
 
 /* ── 파트 활성화 ── */
 function diagActivatePart(idx) {
-  if(diagCurPart>=0 && diagCurPart!==idx) {
-    diagFillPart(diagCurPart);
-    const prevSlide=document.getElementById('dslide'+diagCurPart);
-    if(prevSlide) prevSlide.style.display='none';
-    const pn=document.getElementById('dpnum'+diagCurPart); if(pn) pn.style.background='#16a34a';
-    const pb=document.getElementById('dpbadge'+diagCurPart); if(pb){pb.textContent='완료';pb.style.background='rgba(22,163,74,.1)';pb.style.color='#16a34a';pb.style.border='1px solid rgba(22,163,74,.25)';}
-    const ps=document.getElementById('dps'+diagCurPart); if(ps){ps.classList.remove('active');ps.classList.add('done');}
-  }
-  diagCurPart=idx;
-  const slide=document.getElementById('dslide'+idx);
-  if(slide) slide.style.display='block';
-  const pn=document.getElementById('dpnum'+idx); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
-  const pb=document.getElementById('dpbadge'+idx); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
-  const ps=document.getElementById('dps'+idx);
+  diagCurPart = idx;
+
+  // 새 탭형 노트 전환
+  var tabIdx = idx <= 4 ? idx :
+               idx === 5 ? 5 :
+               idx === 6 ? 6 :
+               idx === 7 ? 6 :
+               idx === 8 ? 7 :
+               idx === 9 ? 8 :
+               idx === 10 ? 9 :
+               idx === 11 ? 10 : idx;
+  if(typeof dnGo === 'function') dnGo(tabIdx);
+
+  // 프로세스 바 업데이트
+  var ps = document.getElementById('dps'+idx);
   if(ps){
     document.querySelectorAll('[id^="dps"]').forEach(function(el){
       el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
@@ -8615,10 +9178,9 @@ function diagActivatePart(idx) {
   }
   // 서버에 단계 전달
   if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
-  // 서버에서 노트 업데이트 요청
   if(diagFinCtx) diagFinCtx.currentStep=idx;
-  const pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx].short;
-  const sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+DIAG_PARTS[idx].short;
+  var pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx]?.short||'';
+  var sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+(DIAG_PARTS[idx]?.short||'');
 }
 
 function diagJumpPart(i) { diagActivatePart(i); }
