@@ -8308,11 +8308,17 @@ async function diagConnectVoice() {
   diagWs.onmessage = function(e) {
     try { diagHandleMsg(JSON.parse(e.data)); } catch(err){}
   };
-  diagWs.onerror = function() { showToast('⚠️ 서버 연결 오류 · 잠시 후 재시도합니다'); };
+  diagWs.onerror = function() { showToast('⚠️ 서버 연결 오류'); };
   diagWs.onclose = function(e) {
-    if(e.code!==1000 && !diagPaused) {
+    /* 정상 종료(1000) 또는 일시정지 상태에서는 재연결 안 함 */
+    if(e.code === 1000 || diagPaused) return;
+    /* 비정상 종료 시 1회만 재연결 시도 */
+    if(!diagWs._reconnected) {
+      diagWs._reconnected = true;
       showToast('🔄 연결이 끊어졌습니다 · 재연결 중...');
-      setTimeout(diagConnectVoice,3000);
+      setTimeout(diagConnectVoice, 3000);
+    } else {
+      showToast('⚠️ 연결이 불안정합니다. 페이지를 새로고침 해주세요.');
     }
   };
 }
@@ -8330,13 +8336,18 @@ function diagHandleMsg(msg) {
     try{diagAudioCtx&&diagAudioCtx.suspend().then(()=>diagAudioCtx.resume());}catch(e){}
   } else if(msg.type==='transcript') {
     if(msg.text&&msg.text.trim()) {
-      diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
+      /* (잠시) 같은 지시어 텍스트 필터링 후 표시 */
+      var displayText = msg.text
+        .replace(/\(잠시\)/g,'').replace(/\(pause\)/g,'').replace(/\(쉬고\)/g,'')
+        .replace(/\(침묵\)/g,'').replace(/\s+/g,' ').trim();
+      if(!displayText) return;
+      diagAddSTT(msg.role==='user'?'user':'ai', displayText, null);
       if(msg.role==='user') {
         setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
       }
       if(msg.role==='assistant') {
-        setTimeout(function(){ diagParseAiSpeech(msg.text); }, 500);
-        diagLastQ = msg.text;
+        setTimeout(function(){ diagParseAiSpeech(displayText); }, 500);
+        diagLastQ = displayText;
       }
     }
   } else if(msg.type==='smart_note_update') {
