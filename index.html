@@ -8667,36 +8667,57 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  console.log('[노트수신]', JSON.stringify(msg).slice(0,300));
-  var pg = parseInt(msg.notePage ?? msg.note_page ?? msg.step ?? diagCurPart) || 0;
-  var subPage = msg.subPage ?? msg.sub_page ?? null;
+  console.log('[노트수신RAW]', JSON.stringify(msg));
+  var pg = parseInt(msg.notePage !== undefined ? msg.notePage : 
+                    msg.note_page !== undefined ? msg.note_page :
+                    msg.step !== undefined ? msg.step : diagCurPart) || 0;
+  var subPage = msg.subPage !== undefined ? msg.subPage : 
+                msg.sub_page !== undefined ? msg.sub_page : null;
   var fields = msg.fields || {};
+  var fieldCount = Object.keys(fields).length;
 
-  /* ① 탭 자동 전환 — 항상 실행 */
+  console.log('[노트처리] pg='+pg+', fields='+JSON.stringify(fields));
+
+  /* ① 탭 자동 전환 */
   var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
   var tabIdx = tabMap[pg] !== undefined ? tabMap[pg] : 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
   diagCurPart = pg;
 
-  /* ② fields 기입 */
-  Object.entries(fields).forEach(function([k, v]) {
-    if(v === null || v === undefined || v === '') return;
-    var vs = String(v);
-    // 방법1: f{pg}_{k} 직접
-    var el = document.getElementById('f' + pg + '_' + k);
-    if(el) { dnFill(el, vs); return; }
-    // 방법2: sub_page (f81_dream 등)
-    if(subPage !== null) {
-      var el2 = document.getElementById('f8' + subPage + '_' + k);
-      if(el2) { dnFill(el2, vs); return; }
-    }
-    // 방법3: 부분 키워드 매칭
-    var cands = document.querySelectorAll('[id^="f' + pg + '_"]');
-    for(var i=0;i<cands.length;i++){
-      var ck=cands[i].id.replace('f'+pg+'_','');
-      if(ck.includes(k)||k.includes(ck)){ dnFill(cands[i],vs); return; }
-    }
-  });
+  /* ② fields 기입 — 3단계 매핑 */
+  var filled = 0;
+  if(fieldCount > 0) {
+    Object.keys(fields).forEach(function(k) {
+      var v = fields[k];
+      if(v === null || v === undefined || v === '') return;
+      var vs = String(v);
+
+      // 방법1: f{pg}_{k} 직접
+      var id1 = 'f' + pg + '_' + k;
+      var el = document.getElementById(id1);
+      if(el) { dnFill(el, vs); filled++; console.log('[노트기입✅]', id1, '=', vs); return; }
+
+      // 방법2: sub_page (f81_, f82_ 등)
+      if(subPage !== null) {
+        var id2 = 'f8' + subPage + '_' + k;
+        var el2 = document.getElementById(id2);
+        if(el2) { dnFill(el2, vs); filled++; console.log('[노트기입sub✅]', id2, '=', vs); return; }
+      }
+
+      // 방법3: 부분 키워드 매칭
+      var cands = document.querySelectorAll('[id^="f' + pg + '_"]');
+      var found = false;
+      for(var i=0;i<cands.length;i++){
+        var ck = cands[i].id.replace('f'+pg+'_','');
+        if(ck.includes(k) || k.includes(ck)) {
+          dnFill(cands[i], vs); filled++;
+          console.log('[노트기입유사✅]', cands[i].id, '=', vs);
+          found = true; break;
+        }
+      }
+      if(!found) console.warn('[노트기입❌] f'+pg+'_'+k+' 요소 없음. 존재 ID:', Array.from(cands).map(function(c){return c.id;}));
+    });
+  }
 
   /* ③ SVG 집 */
   if(pg>=4&&pg<=8){
@@ -8716,8 +8737,15 @@ function diagHandleNote(msg) {
     var sg=document.getElementById('f9_grade');if(sg)sg.textContent=fields.grade||'계산중';
     var rs=document.getElementById('diagReportScore');if(rs)rs.textContent=fields.score;
   }
-  var pn=DIAG_PARTS[pg]?DIAG_PARTS[pg].short:'노트';
-  showToast('📝 '+pn+' 기입됨');
+
+  /* ④ 토스트 — 실제 채워진 값 표시 */
+  var pn = DIAG_PARTS[pg]?DIAG_PARTS[pg].short:'노트'+pg;
+  var firstVal = fieldCount > 0 ? String(Object.values(fields)[0]).slice(0,10) : '';
+  if(filled > 0) {
+    showToast('📝 '+pn+' — '+firstVal+(fieldCount>1?' 외 '+(fieldCount-1)+'개':''));
+  } else if(fieldCount > 0) {
+    showToast('⚠️ '+pn+' 수신됐지만 ID 매핑 실패 (콘솔 확인)');
+  }
 }
 
 function dnFill(el,text){
@@ -9602,23 +9630,26 @@ let diagLastFilledLabel = '';
 function diagParseAiSpeech(aiText) {
   var t = aiText;
 
-  /* ── v6.2 실제 발화 기반 단계 전환 감지 ── */
+  /* ── v6.3 단계 전환 감지 — 점프 방지 포함 ── */
   var stepMap = [
-    { step:1, keys:['성함이 어떻게 되시나요', '고객님에 대해 간단히'] },
-    { step:2, keys:['경제적으로 가장 걱정', '고민되시거나 관심 있으신'] },
-    { step:3, keys:['수입과 지출을 함께 정리', '실수령액이 어떻게 되세요', '수입지출을 정리'] },
-    { step:4, keys:['자산과 부채를 정리', '예적금', '자산을 정리'] },
-    { step:5, keys:['금융집짓기', '집을 그릴 때 어디서'] },
-    { step:6, keys:['저축투자 포트폴리오', '투자재원'] },
-    { step:7, keys:['자산배분', '부동산70'] },
-    { step:8, keys:['종합재무설계', '은퇴설계', '7대영역'] },
-    { step:9, keys:['최종의견', 'DESIRE', '강점부터'] },
-    { step:10, keys:['어떻게 도움이 되셨나요', '다음 달에도', '머니야였습니다'] },
+    { step:1, keys:['성함이 어떻게 되시나요','고객님에 대해 간단히','먼저 고객님에 대해'] },
+    { step:2, keys:['경제적으로 가장 걱정','고민되시거나 관심 있으신','가장 걱정되시거나'] },
+    { step:3, keys:['수입과 지출을 함께 정리','지금까지 고민을 들었고','실수령액이 어떻게 되세요'] },
+    { step:4, keys:['수입지출을 봤고, 이제 자산','자산과 부채를 정리해','예적금, 청약통장은'] },
+    { step:5, keys:['집을 그릴 때 어디서','금융도 마찬가지입니다','금융집짓기 설계도'] },
+    { step:6, keys:['저축투자 포트폴리오','투자재원을 계산'] },
+    { step:7, keys:['자산배분 포트폴리오','부동산70'] },
+    { step:8, keys:['꿈꾸는 노후','은퇴설계를 시작','7대영역'] },
+    { step:9, keys:['최종의견','DESIRE 단계','강점부터'] },
+    { step:10, keys:['어떻게 도움이 되셨나요','다음 달에도','머니야였습니다'] },
   ];
   for(var i=0; i<stepMap.length; i++) {
     var sm = stepMap[i];
-    if(sm.keys.some(function(k){ return t.includes(k); }) && sm.step > diagCurPart) {
-      (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
+    if(sm.keys.some(function(k){ return t.includes(k); })) {
+      // 반드시 현재 단계보다 높아야 하고, 최대 2칸까지만 점프 허용
+      if(sm.step > diagCurPart && sm.step <= diagCurPart + 2) {
+        (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
+      }
       break;
     }
   }
