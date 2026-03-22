@@ -6871,6 +6871,7 @@ function mpTab(idx, btn) {
   // 탭별 초기화
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
+  if(idx === 2) diagInitScreenA();
 }
 
 // ── 수료증 등급 계산 ──
@@ -8054,6 +8055,63 @@ function diagToggle(id, hdEl) {
 
 /* ── 개인정보 동의 ── */
 let diagPrv1=false, diagPrv2=false;
+
+/* ━━━ diagInitScreenA: AI진단탭 초기화 (탭2 클릭 시 자동 실행) ━━━ */
+function diagInitScreenA() {
+  var today = new Date();
+  var ts = today.getFullYear() + '.' +
+    String(today.getMonth()+1).padStart(2,'0') + '.' +
+    String(today.getDate()).padStart(2,'0');
+
+  var dateEl = document.getElementById('diagTodayDate');
+  if(dateEl) dateEl.textContent = '📅 ' + ts;
+
+  var sessionNo = parseInt(localStorage.getItem('fh_session_count') || '1');
+  var isFirst = sessionNo === 1;
+
+  // 회차 칩
+  var chip = document.getElementById('diagSessionChip');
+  if(chip) {
+    if(isFirst) {
+      chip.textContent = '🌟 초회상담 (1회차)';
+      chip.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;';
+    } else {
+      chip.textContent = '📋 ' + sessionNo + '회차 정기상담';
+      chip.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:rgba(11,29,58,.08);border:1px solid rgba(11,29,58,.15);color:#0B1D3A;';
+    }
+  }
+
+  // 서브타이틀
+  var sub = document.getElementById('diagSessionSub');
+  if(sub) sub.textContent = isFirst ? '첫 번째 상담 · 전체 금융집짓기® 진단' : '매월 정기상담 · 전월 이후 변화 점검';
+
+  // 이용권 분기: 초회 60분 / 정기 30분
+  var totalMin = isFirst ? 60 : 30;
+  var monthKey = today.getFullYear() + '_' + today.getMonth();
+  var usedMin = parseInt(localStorage.getItem('fh_used_min_' + monthKey) || '0');
+  var remainMin = Math.max(0, totalMin - usedMin);
+
+  var cv = document.getElementById('diagCreditVal');
+  if(cv) cv.textContent = remainMin + '분';
+  var cm = document.getElementById('diagCreditMin');
+  if(cm) cm.textContent = remainMin;
+  var cb = document.getElementById('diagCreditBar');
+  if(cb) cb.style.width = (remainMin / totalMin * 100) + '%';
+  var cn = document.getElementById('diagCreditNote');
+  if(cn) cn.textContent = isFirst
+    ? '🌟 초회상담 60분 · 금융집짓기® 8단계 전체 진단'
+    : '📋 매월 정기상담 30분 · 전월 변화 점검 + Before&After';
+  var it = document.getElementById('diagInfoTime');
+  if(it) it.textContent = isFirst ? '초회상담 60분' : '정기상담 30분 (매월 1회)';
+
+  // AI 이미지
+  var diagImg = typeof DIAG_IMG !== 'undefined' ? DIAG_IMG : '';
+  ['diagBannerImg', 'diagAiImg'].forEach(function(id) {
+    var img = document.getElementById(id);
+    if(img && diagImg) img.src = diagImg;
+  });
+}
+
 function diagTogglePrivacy(id) {
   if (id==='prv1') diagPrv1=!diagPrv1;
   if (id==='prv2') diagPrv2=!diagPrv2;
@@ -9207,123 +9265,153 @@ diagAddSTT = function(role, text, tag) {
     <div class="mp-panel" id="mp-panel-2">
 
       <!-- ━━━ 화면A: 준비 화면 ━━━ -->
-      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f2eb;">
+      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:block;background:#f5f2eb;">
 
         <!-- 배너 -->
-        <div class="diag-banner">
+        <div class="diag-banner" style="margin:10px 12px 0;">
           <div class="diag-banner-inner">
             <div class="diag-banner-av">
-              <img id="diagBannerImg" src="" alt="AI머니야" onerror="this.parentElement.textContent='🤖'">
+              <img id="diagBannerImg" src="" alt="AI머니야" onerror="this.parentElement.innerHTML='🤖'">
             </div>
             <div class="diag-banner-txt">
-              <div class="diag-banner-title">AI 머니야 재무진단</div>
-              <div class="diag-banner-sub">오상열 CFP · 금융집짓기® 공식 AI 수제자</div>
+              <div class="diag-banner-title">AI 머니야 화상진단</div>
+              <div class="diag-banner-sub">오상열 CFP · 금융집짓기® 전문</div>
             </div>
           </div>
         </div>
 
-        <!-- 세션 정보 -->
-        <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;">
+        <!-- 날짜 + 회차 칩 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;">
           <div id="diagTodayDate" style="font-size:9.5px;color:var(--muted);font-weight:500;"></div>
-          <div id="diagSessionChip" style="padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;"></div>
+          <div id="diagSessionChip"></div>
         </div>
-        <div id="diagSessionSub" style="padding:3px 12px 8px;font-size:9px;color:var(--muted);"></div>
+        <div id="diagSessionSub" style="padding:2px 12px 6px;font-size:9px;color:var(--muted);"></div>
 
-        <!-- 서류 업로드 -->
-        <div class="mpc" style="margin:0 12px 0;">
-          <div class="mpc-hd" onclick="diagToggle('diagDocBody','diagDocChev')">
+        <!-- ── 아코디언 1: 진단 안내 ── -->
+        <div class="mpc" style="margin:4px 12px 0;">
+          <div class="mpc-hd" onclick="diagToggle('diagInfoBody','diagInfoChev')" style="cursor:pointer;">
+            <span class="mpc-icon">ℹ️</span>
+            <span class="mpc-title" style="flex:1;">진단 안내</span>
+            <span id="diagInfoChev" style="color:rgba(255,255,255,.5);font-size:12px;transition:transform .3s;">▾</span>
+          </div>
+          <div id="diagInfoBody" style="display:none;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);">
+            <div style="display:flex;flex-direction:column;gap:0;">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <span style="font-size:18px;width:26px;text-align:center;">⏱</span>
+                <div><div style="font-size:9px;color:var(--muted);">상담 시간</div><div id="diagInfoTime" style="font-size:11px;font-weight:700;color:var(--navy);">월 30분 (첫 달 60분)</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <span style="font-size:18px;width:26px;text-align:center;">📹</span>
+                <div><div style="font-size:9px;color:var(--muted);">방식</div><div style="font-size:11px;font-weight:700;color:var(--navy);">AI 화상진단 (WebRTC)</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <span style="font-size:18px;width:26px;text-align:center;">📋</span>
+                <div><div style="font-size:9px;color:var(--muted);">내용</div><div style="font-size:11px;font-weight:700;color:var(--navy);">수입지출·보험·저축·투자·은퇴</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+                <span style="font-size:18px;width:26px;text-align:center;">🤖</span>
+                <div><div style="font-size:9px;color:var(--muted);">AI 지원</div><div style="font-size:11px;font-weight:700;color:var(--navy);">RAG 5,706개 지식베이스 활용</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 아코디언 2: 이용권 현황 ── -->
+        <div class="mpc" style="margin:4px 12px 0;">
+          <div class="mpc-hd" onclick="diagToggle('diagCreditBody','diagCreditChev')" style="cursor:pointer;">
+            <span class="mpc-icon">🎟</span>
+            <span class="mpc-title" style="flex:1;">이용권 현황</span>
+            <span id="diagCreditVal" style="font-size:14px;font-weight:900;color:var(--gold2);margin-right:8px;">45분</span>
+            <span id="diagCreditChev" style="color:rgba(255,255,255,.5);font-size:12px;transition:transform .3s;">▾</span>
+          </div>
+          <div id="diagCreditBody" style="display:none;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
+              <span style="font-size:11px;color:var(--muted);">이번달 남은 시간</span>
+              <span><span id="diagCreditMin" style="font-size:22px;font-weight:900;color:var(--gold);">45</span><span style="font-size:11px;color:var(--muted);margin-left:2px;">분</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.07);border-radius:5px;height:7px;overflow:hidden;margin-bottom:5px;">
+              <div id="diagCreditBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:5px;width:75%;transition:width .5s;"></div>
+            </div>
+            <div style="font-size:8.5px;color:var(--muted);margin-bottom:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
+            <div id="diagCreditNote" style="padding:7px 10px;background:rgba(201,151,42,.06);border:1px solid rgba(201,151,42,.2);border-radius:8px;font-size:8.5px;color:var(--muted);line-height:1.6;">🌟 초회상담 60분 · 금융집짓기® 8단계 전체 진단</div>
+          </div>
+        </div>
+
+        <!-- ── 아코디언 3: 사전 서류 제출 ── -->
+        <div class="mpc" style="margin:4px 12px 0;">
+          <div class="mpc-hd" onclick="diagToggle('diagDocBody','diagDocChev')" style="cursor:pointer;">
             <span class="mpc-icon">📎</span>
-            <span class="mpc-title">사전 서류 제출</span>
-            <span class="mpc-badge mb-gold" id="diagDocBadge">필수 미완료</span>
-            <span class="mpc-chevron" id="diagDocChev">▾</span>
+            <span class="mpc-title" style="flex:1;">사전 서류 제출</span>
+            <span class="mpc-badge mb-red" id="diagDocBadge" style="margin-right:6px;">필수 미완료</span>
+            <span id="diagDocChev" style="color:rgba(255,255,255,.5);font-size:12px;transition:transform .3s;">▾</span>
           </div>
-          <div class="accordion-body open" id="diagDocBody">
-            <div style="padding:10px 14px;">
-              <!-- 상담신청서 (필수) -->
-              <div class="doc-req-wrap">
-                <div class="doc-req-header">
-                  <div class="doc-req-title">📋 상담신청서 <span style="color:var(--red);font-size:8.5px;">필수</span></div>
-                  <span class="doc-status-badge" id="diagAppBadge" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);">미제출</span>
-                </div>
-                <div class="doc-req-card">
-                  <div class="doc-req-row">
-                    <div class="doc-icon">📋</div>
-                    <div style="flex:1;">
-                      <div class="doc-name">금융집짓기® 상담신청서</div>
-                      <div class="doc-desc">고객정보·수입지출·자산부채 포함</div>
-                    </div>
-                    <div class="doc-stat" id="diagAppStat">⬜</div>
-                  </div>
-                  <div class="doc-btn-row">
-                    <button class="btn-dl" onclick="fhDocDownload('application')">⬇️ 양식 다운</button>
-                    <button class="btn-up" onclick="diagOpenUpload('application')">📎 업로드</button>
-                  </div>
-                  <div id="diagStartNote" style="margin-top:7px;font-size:9px;color:var(--muted);line-height:1.5;">업로드 후 AI가 자동으로 고객 정보를 분석합니다</div>
+          <div id="diagDocBody" style="display:none;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);">
+            <!-- 상담신청서 필수 -->
+            <div style="background:rgba(201,151,42,.05);border:1.5px solid rgba(201,151,42,.25);border-radius:11px;padding:10px 12px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+                <span id="diagAppStat" style="font-size:20px;">⬜</span>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:700;color:var(--navy);">📋 상담신청서 <span style="color:var(--red);font-size:8.5px;">필수</span></div>
+                  <div style="font-size:8.5px;color:var(--muted);margin-top:1px;">고객정보·수입지출·자산부채 포함</div>
                 </div>
               </div>
-              <!-- 선택 서류 -->
-              <div class="doc-opt-wrap">
-                <div class="doc-opt-title">📂 선택 서류 <span style="font-weight:400;color:var(--muted);">(있으면 더 정확한 진단)</span></div>
-                <div class="doc-opt-row">
-                  <div style="flex:1;"><div class="doc-opt-name">🏦 보험증권</div><div class="doc-opt-sub">보장 분석용</div></div>
-                  <div id="diagStatIns" style="font-size:12px;">⬜</div>
-                  <button class="doc-opt-btn" onclick="diagOpenUpload('ins')">업로드</button>
-                </div>
-                <div class="doc-opt-row">
-                  <div style="flex:1;"><div class="doc-opt-name">💰 급여명세서</div><div class="doc-opt-sub">수입 분석용</div></div>
-                  <div id="diagStatSal" style="font-size:12px;">⬜</div>
-                  <button class="doc-opt-btn" onclick="diagOpenUpload('sal')">업로드</button>
-                </div>
-                <div class="doc-opt-row">
-                  <div style="flex:1;"><div class="doc-opt-name">🏦 연금명세서</div><div class="doc-opt-sub">은퇴 분석용</div></div>
-                  <div id="diagStatPen" style="font-size:12px;">⬜</div>
-                  <button class="doc-opt-btn" onclick="diagOpenUpload('pen')">업로드</button>
-                </div>
-                <div class="doc-opt-row">
-                  <div style="flex:1;"><div class="doc-opt-name">📊 세금신고서</div><div class="doc-opt-sub">절세 분석용</div></div>
-                  <div id="diagStatTax" style="font-size:12px;">⬜</div>
-                  <button class="doc-opt-btn" onclick="diagOpenUpload('tax')">업로드</button>
-                </div>
-                <div class="doc-opt-row" style="border-bottom:none;">
-                  <div style="flex:1;"><div class="doc-opt-name">📁 기타</div><div class="doc-opt-sub">기타 자료</div></div>
-                  <div id="diagStatEtc" style="font-size:12px;">⬜</div>
-                  <button class="doc-opt-btn" onclick="diagOpenUpload('etc')">업로드</button>
-                </div>
+              <div style="display:flex;gap:5px;">
+                <button class="btn-dl" onclick="fhDocDownload('application')" style="flex:1;padding:7px 6px;border-radius:8px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.12);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">⬇️ 양식 다운</button>
+                <button class="btn-up" onclick="diagOpenUpload('application')" style="flex:1;padding:7px 6px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:var(--navy);font-size:9px;font-weight:900;font-family:var(--fn);cursor:pointer;">📎 업로드</button>
               </div>
-              <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
+              <div id="diagStartNote" style="margin-top:7px;font-size:8.5px;color:var(--muted);line-height:1.5;">업로드 후 AI가 자동으로 고객 정보를 분석합니다</div>
             </div>
+            <!-- 선택 서류 -->
+            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:7px;">📂 선택 서류 <span style="font-weight:400;">(있으면 더 정확한 진단)</span></div>
+            <div style="display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <div style="flex:1;"><div style="font-size:10.5px;font-weight:700;color:var(--navy);">🏦 보험증권</div><div style="font-size:8.5px;color:var(--muted);">보장 분석용</div></div>
+                <div id="diagStatIns" style="font-size:14px;">⬜</div>
+                <button onclick="diagOpenUpload('ins')" style="padding:4px 10px;border-radius:7px;border:1px solid rgba(11,29,58,.15);background:rgba(11,29,58,.04);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">업로드</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <div style="flex:1;"><div style="font-size:10.5px;font-weight:700;color:var(--navy);">💰 급여명세서</div><div style="font-size:8.5px;color:var(--muted);">수입 분석용</div></div>
+                <div id="diagStatSal" style="font-size:14px;">⬜</div>
+                <button onclick="diagOpenUpload('sal')" style="padding:4px 10px;border-radius:7px;border:1px solid rgba(11,29,58,.15);background:rgba(11,29,58,.04);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">업로드</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+                <div style="flex:1;"><div style="font-size:10.5px;font-weight:700;color:var(--navy);">🏦 연금명세서</div><div style="font-size:8.5px;color:var(--muted);">은퇴 분석용 · 국민연금+퇴직연금</div></div>
+                <div id="diagStatPen" style="font-size:14px;">⬜</div>
+                <button onclick="diagOpenUpload('pen')" style="padding:4px 10px;border-radius:7px;border:1px solid rgba(11,29,58,.15);background:rgba(11,29,58,.04);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">업로드</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:7px 0;">
+                <div style="flex:1;"><div style="font-size:10.5px;font-weight:700;color:var(--navy);">📊 세금신고서</div><div style="font-size:8.5px;color:var(--muted);">절세 분석용 · 선택</div></div>
+                <div id="diagStatTax" style="font-size:14px;">⬜</div>
+                <button onclick="diagOpenUpload('tax')" style="padding:4px 10px;border-radius:7px;border:1px solid rgba(11,29,58,.15);background:rgba(11,29,58,.04);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;">업로드</button>
+              </div>
+            </div>
+            <div style="margin-top:8px;padding:7px 10px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.12);border-radius:8px;font-size:8.5px;color:var(--blue);line-height:1.6;">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
           </div>
         </div>
 
-        <!-- 시작 버튼 -->
-        <div class="start-area" style="padding:12px;">
-          <button class="start-btn" onclick="diagStartConsult()">
-            🎤 AI 머니야 재무진단 시작하기
+        <!-- ── 개인정보 동의 ── -->
+        <div style="margin:6px 12px 0;padding:12px 14px;background:#fff;border-radius:12px;border:1.5px solid var(--border2);">
+          <div style="font-size:10px;font-weight:900;color:var(--navy);margin-bottom:10px;">🔒 개인정보 수집·제공 동의</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer;" onclick="diagTogglePrivacy('prv1')">
+            <div id="prv1-box" style="width:20px;height:20px;border-radius:4px;border:1.5px solid rgba(11,29,58,.25);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;">
+              <span id="prv1-chk" style="display:none;color:#fff;font-size:12px;font-weight:900;">✓</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--navy);">[필수] 개인정보 제3자 제공 동의</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer;" onclick="diagTogglePrivacy('prv2')">
+            <div id="prv2-box" style="width:20px;height:20px;border-radius:4px;border:1.5px solid rgba(11,29,58,.25);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;">
+              <span id="prv2-chk" style="display:none;color:#fff;font-size:12px;font-weight:900;">✓</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--navy);">[선택] 상담 내용 녹화·저장 동의</div>
+          </div>
+        </div>
+
+        <!-- ── 시작 버튼 ── -->
+        <div class="start-area" style="padding:10px 12px 4px;">
+          <button class="start-btn" id="diagStartBtn" onclick="diagStartConsult()">
+            🎤 AI 화상진단 시작하기
           </button>
-          <div class="start-note">마이크·카메라 권한이 필요합니다</div>
-        </div>
-
-        <!-- AI 학습 안내 -->
-        <div class="mpc" style="margin:0 12px 8px;">
-          <div class="mpc-hd"><span class="mpc-icon">🧠</span><span class="mpc-title">AI 머니야 학습 내역</span></div>
-          <div class="mpc-bd">
-            <div class="learn-card" onclick="showToast('금융집짓기® RAG 지식베이스 5,706개 청크')">
-              <div class="learn-icon" style="background:linear-gradient(135deg,#C9972A,#E8B84B);">📚</div>
-              <div class="learn-info">
-                <div class="learn-title">금융집짓기® 전문 지식베이스</div>
-                <div class="learn-sub">5,706개 청크 · RAG 검색 기반 · 실시간 업데이트</div>
-              </div>
-              <div class="learn-arr">›</div>
-            </div>
-            <div class="learn-card" onclick="showToast('오상열 CFP 20년 상담 데이터 학습 완료')">
-              <div class="learn-icon" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);">👨‍💼</div>
-              <div class="learn-info">
-                <div class="learn-title">오상열 CFP 상담 패턴 학습</div>
-                <div class="learn-sub">2,000건+ 상담 · 500회+ 강의 데이터</div>
-              </div>
-              <div class="learn-arr">›</div>
-            </div>
-          </div>
+          <div class="start-note">상담신청서 없이도 시작 가능 · 상담 중 데이터 입력 병행</div>
         </div>
 
         <!-- 숨겨진 파일 input들 -->
@@ -9331,7 +9419,9 @@ diagAddSTT = function(role, text, tag) {
         <input type="file" id="diagFileImage" accept="image/*" style="display:none" onchange="diagHandleFile(this)">
         <input type="file" id="diagFileDoc" accept=".pdf,.xls,.xlsx,.doc,.docx,image/*" style="display:none" onchange="diagHandleFile(this)">
 
+        <div style="height:16px;"></div>
       </div><!-- /diagScreenA -->
+
 
 
       <!-- ━━━ 화면B: 상담 화면 ━━━ -->
