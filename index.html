@@ -7770,7 +7770,7 @@ function fhBuildNoteParts() {
       + p.fields.map(function(f) {
           return '<div style="margin-bottom:8px">'
             + '<div style="font-size:8.5px;font-weight:700;color:var(--muted);margin-bottom:3px">'+f.l+'</div>'
-            + '<div id="fh-fval-'+i+'-'+f.l.replace(/\s/g,'_')+'" style="font-size:10.5px;font-weight:600;color:#bbb;padding:6px 9px;background:var(--gold3);border-radius:7px;border-left:2.5px solid rgba(201,151,42,.3);font-style:italic">— 입력 대기 중</div>'
+            + '<div id="fh-fval-'+i+'-'+f.l.replace(/\s/g,'_')+'" style="font-size:10.5px;font-weight:600;color:#bbb;padding:6px 9px;background:var(--gold3);border-radius:7px;border-left:2.5px solid rgba(201,151,42,.3);font-style:italic"> 중</div>'
             + '</div>';
         }).join('')
       + '</div></div>';
@@ -8336,19 +8336,36 @@ function diagHandleMsg(msg) {
     try{diagAudioCtx&&diagAudioCtx.suspend().then(()=>diagAudioCtx.resume());}catch(e){}
   } else if(msg.type==='transcript') {
     if(msg.text&&msg.text.trim()) {
-      /* (잠시) 같은 지시어 텍스트 필터링 후 표시 */
       var displayText = msg.text
         .replace(/\(잠시\)/g,'').replace(/\(pause\)/g,'').replace(/\(쉬고\)/g,'')
         .replace(/\(침묵\)/g,'').replace(/\s+/g,' ').trim();
       if(!displayText) return;
-      diagAddSTT(msg.role==='user'?'user':'ai', displayText, null);
-      if(msg.role==='user') {
-        setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
+      var role = msg.role==='user'?'user':'ai';
+      diagAddSTT(role, displayText, null);
+
+      /* ── 대화록 탭(dnp9)에도 실시간 기록 */
+      var chatLog = document.getElementById('dn_chat_log');
+      if(chatLog) {
+        var isUser = (role==='user');
+        var bubble = document.createElement('div');
+        bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+        bubble.innerHTML =
+          '<div style="font-size:9px;color:'+(isUser?'#8896B0':'#C9972A')+';margin-bottom:2px;'+(isUser?'text-align:right;':'')+'">'+
+            (isUser?'👤 고객':'🤖 머니야')+
+          '</div>'+
+          '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:'+(isUser?'flex-end':'flex-start')+';'+
+            (isUser?'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;':'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;')+'">'+
+            displayText.replace(/</g,'&lt;')+
+          '</div>';
+        chatLog.appendChild(bubble);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        // 첫 메시지면 안내 문구 제거
+        var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
+        if(placeholder) placeholder.remove();
       }
-      if(msg.role==='assistant') {
-        setTimeout(function(){ diagParseAiSpeech(displayText); }, 500);
-        diagLastQ = displayText;
-      }
+
+      if(role==='user') setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
+      if(role==='ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ=displayText; }
     }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
@@ -8391,82 +8408,65 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  const { noteType, title, content, step, notePage, fields } = msg;
+  console.log('[노트수신]', JSON.stringify(msg).slice(0,300));
+  var pg = parseInt(msg.notePage ?? msg.note_page ?? msg.step ?? diagCurPart) || 0;
+  var subPage = msg.subPage ?? msg.sub_page ?? null;
+  var fields = msg.fields || {};
 
-  /* ① 단계 이동 */
-  if(step !== null && step !== undefined && step !== diagCurPart) {
-    diagActivatePart(step);
-  }
+  /* ① 탭 자동 전환 — 항상 실행 */
+  var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
+  var tabIdx = tabMap[pg] !== undefined ? tabMap[pg] : 0;
+  if(typeof dnGo === 'function') dnGo(tabIdx);
+  diagCurPart = pg;
 
-  /* ② 금융집짓기 SVG 업데이트 */
-  if(noteType==='house_svg' && content && content.payload) {
-    if(typeof updateFHHouseInNote === 'function') updateFHHouseInNote(content.payload);
-    if(step===undefined) diagActivatePart(5);
-    showToast('🏠 금융집짓기 설계도면 업데이트');
-    return;
-  }
-
-  /* ③ fields 객체 — 새 노트 필드 ID 직접 매핑 */
-  if(fields && typeof fields === 'object' && Object.keys(fields).length > 0) {
-    const pg = (notePage !== undefined && notePage !== null) ? notePage
-             : (step    !== undefined && step    !== null) ? step
-             : diagCurPart;
-
-    // 새 탭 노트 필드 직접 채우기
-    Object.entries(fields).forEach(function([k, v]) {
-      if(v === null || v === undefined || v === '') return;
-      const vs = String(v);
-      // 직접 ID 매핑 시도 (f0_date, f1_name 등)
-      const prefix = 'f' + pg + '_';
-      var el = document.getElementById(prefix + k);
-      if(el) { el.textContent = vs; el.className = el.className.replace('empty',''); return; }
-      // sub_page 대응 (f81_, f82_ 등)
-      if(msg.sub_page !== undefined) {
-        var el2 = document.getElementById('f8'+msg.sub_page+'_'+k);
-        if(el2) { el2.textContent = vs; el2.className = el2.className.replace('empty',''); return; }
-      }
-    });
-
-    // SVG 집 데이터 업데이트
-    if(pg===4 || pg===5 || pg===8) {
-      var wi = parseFloat(fields.wealth_index||fields.wi||0);
-      if(wi>0) {
-        var bar=document.getElementById('f4_wi_bar'); if(bar) bar.style.width=Math.min(wi/2*100,100)+'%';
-        var wv=document.getElementById('f4_wi_val'); if(wv) wv.textContent=wi.toFixed(1);
-        var wd=document.getElementById('f4_wi_diag'); if(wd) wd.textContent=wi>=2?'우량 ✅':wi>=1?'평균 이상 ✅':'평균 미달 ⚠️';
-      }
-      var ageNow=document.getElementById('age_now'), ageRet=document.getElementById('age_retire'), ageLife=document.getElementById('age_life');
-      if(fields.current_age && ageNow) ageNow.textContent=fields.current_age+'세';
-      if(fields.retire_age && ageRet) ageRet.textContent=fields.retire_age+'세';
-      if(fields.life_age && ageLife) ageLife.textContent=fields.life_age+'세';
+  /* ② fields 기입 */
+  Object.entries(fields).forEach(function([k, v]) {
+    if(v === null || v === undefined || v === '') return;
+    var vs = String(v);
+    // 방법1: f{pg}_{k} 직접
+    var el = document.getElementById('f' + pg + '_' + k);
+    if(el) { dnFill(el, vs); return; }
+    // 방법2: sub_page (f81_dream 등)
+    if(subPage !== null) {
+      var el2 = document.getElementById('f8' + subPage + '_' + k);
+      if(el2) { dnFill(el2, vs); return; }
     }
-
-    // 예산표 자동 계산 (수입지출 pg===3)
-    if(pg===3 && fields.income) {
-      dnCalcBudget(fields);
+    // 방법3: 부분 키워드 매칭
+    var cands = document.querySelectorAll('[id^="f' + pg + '_"]');
+    for(var i=0;i<cands.length;i++){
+      var ck=cands[i].id.replace('f'+pg+'_','');
+      if(ck.includes(k)||k.includes(ck)){ dnFill(cands[i],vs); return; }
     }
+  });
 
-    // 재무점수 업데이트
-    if(fields.score) {
-      var sc=document.getElementById('f9_score'); if(sc) sc.innerHTML=fields.score+'<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
-      var sg=document.getElementById('f9_grade'); if(sg) sg.textContent=fields.grade||'계산중';
-      var rsc=document.getElementById('diagReportScore'); if(rsc) rsc.textContent=fields.score;
+  /* ③ SVG 집 */
+  if(pg>=4&&pg<=8){
+    var wi=parseFloat(fields.wealth_index||fields.wi||0);
+    if(wi>0){
+      var bar=document.getElementById('f4_wi_bar');if(bar)bar.style.width=Math.min(wi/2*100,100)+'%';
+      var wv=document.getElementById('f4_wi_val');if(wv)wv.textContent=wi.toFixed(1);
+      var wd=document.getElementById('f4_wi_diag');if(wd)wd.textContent=wi>=2?'우량 ✅':wi>=1?'평균 이상 ✅':'평균 미달 ⚠️';
     }
-
-    // 노트 전환 토스트
-    if(pg !== diagCurPart) diagActivatePart(pg);
-    const partName = DIAG_PARTS[pg] ? DIAG_PARTS[pg].short : '';
-    if(partName) showToast('📝 ' + partName + ' 노트 업데이트');
-    return;
+    if(fields.current_age){var an=document.getElementById('age_now');if(an)an.textContent=fields.current_age+'세';}
+    if(fields.retire_age){var ar=document.getElementById('age_retire');if(ar)ar.textContent=fields.retire_age+'세';}
+    if(fields.life_age){var al=document.getElementById('age_life');if(al)al.textContent=fields.life_age+'세';}
   }
-
-  /* ④ 구형 호환 */
-  if(content && content.field && content.value) {
-    const pg2 = (step !== undefined ? step : diagCurPart);
-    var el3 = document.getElementById('f'+pg2+'_'+content.field.replace(/[\s\(\)\+\·]/g,'_'));
-    if(el3) el3.textContent = content.value;
-    return;
+  if(pg===3&&fields.income) dnCalcBudget(fields);
+  if(fields.score){
+    var sc=document.getElementById('f9_score');if(sc)sc.innerHTML=fields.score+'<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+    var sg=document.getElementById('f9_grade');if(sg)sg.textContent=fields.grade||'계산중';
+    var rs=document.getElementById('diagReportScore');if(rs)rs.textContent=fields.score;
   }
+  var pn=DIAG_PARTS[pg]?DIAG_PARTS[pg].short:'노트';
+  showToast('📝 '+pn+' 기입됨');
+}
+
+function dnFill(el,text){
+  if(!el)return;
+  el.textContent=text;
+  el.className=(el.className||'').replace(/\bempty\b/g,'').trim();
+  el.style.fontStyle='normal';
+  el.style.color='';
 }
 
 /* ── 예산표 자동 계산 함수 */
@@ -8686,10 +8686,10 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">📋</div><div><div class="dnctitle">오프닝 / 표지</div><div class="dncsub">진단 기본 정보</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">진단 날짜</span><span class="dnfv hi" id="f0_date">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv hi" id="f0_session">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">진단 날짜</span><span class="dnfv hi" id="f0_date"></span></div>
+        <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv hi" id="f0_session"></span></div>
         <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
-        <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app"></span></div>
         <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
       </div>
     </div>
@@ -8700,15 +8700,15 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">👤</div><div><div class="dnctitle">인적사항</div><div class="dncsub">기본 정보</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">성함</span><span class="dnfv hi" id="f1_name">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">나이</span><span class="dnfv" id="f1_age">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">결혼여부</span><span class="dnfv" id="f1_marry">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">자녀</span><span class="dnfv" id="f1_child">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">가족수</span><span class="dnfv" id="f1_family">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">직업</span><span class="dnfv" id="f1_job">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">맞벌이</span><span class="dnfv" id="f1_dual">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">은퇴예정</span><span class="dnfv" id="f1_retire">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f1_life">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">성함</span><span class="dnfv hi" id="f1_name"></span></div>
+        <div class="dnfield"><span class="dnfl">나이</span><span class="dnfv" id="f1_age"></span></div>
+        <div class="dnfield"><span class="dnfl">결혼여부</span><span class="dnfv" id="f1_marry"></span></div>
+        <div class="dnfield"><span class="dnfl">자녀</span><span class="dnfv" id="f1_child"></span></div>
+        <div class="dnfield"><span class="dnfl">가족수</span><span class="dnfv" id="f1_family"></span></div>
+        <div class="dnfield"><span class="dnfl">직업</span><span class="dnfv" id="f1_job"></span></div>
+        <div class="dnfield"><span class="dnfl">맞벌이</span><span class="dnfv" id="f1_dual"></span></div>
+        <div class="dnfield"><span class="dnfl">은퇴예정</span><span class="dnfv" id="f1_retire"></span></div>
+        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f1_life"></span></div>
       </div>
     </div>
   </div>
@@ -8718,11 +8718,11 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">💭</div><div><div class="dnctitle">경제적 고민</div><div class="dncsub">오늘 진단의 대의명분</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">고민 1</span><span class="dnfv warn" id="f2_w1">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">고민 2</span><span class="dnfv warn" id="f2_w2">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">고민 1</span><span class="dnfv warn" id="f2_w1"></span></div>
+        <div class="dnfield"><span class="dnfl">고민 2</span><span class="dnfv warn" id="f2_w2"></span></div>
         <div class="dnfield"><span class="dnfl">고민 3</span><span class="dnfv" id="f2_w3">—</span></div>
-        <div class="dnfield"><span class="dnfl">목표</span><span class="dnfv hi" id="f2_goal">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">머니야 공감</span><span class="dnfv" id="f2_ans" style="font-size:10.5px;color:#555">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">목표</span><span class="dnfv hi" id="f2_goal"></span></div>
+        <div class="dnfield"><span class="dnfl">머니야 공감</span><span class="dnfv" id="f2_ans" style="font-size:10.5px;color:#555"></span></div>
       </div>
     </div>
   </div>
@@ -8878,9 +8878,9 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">📐</div><div><div class="dnctitle">설계도 요약</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">현재 단계</span><span class="dnfv gold" id="f5_desire">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">다음 단계</span><span class="dnfv" id="f5_next">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">실행 전략</span><span class="dnfv" id="f5_strategy">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">현재 단계</span><span class="dnfv gold" id="f5_desire"></span></div>
+        <div class="dnfield"><span class="dnfl">다음 단계</span><span class="dnfv" id="f5_next"></span></div>
+        <div class="dnfield"><span class="dnfl">실행 전략</span><span class="dnfv" id="f5_strategy"></span></div>
       </div>
     </div>
   </div>
@@ -8909,9 +8909,9 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">🎯</div><div><div class="dnctitle">자산배분 포트폴리오</div><div class="dncsub">오상열 CFP 기준 · 참고용</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">부동산 비중</span><span class="dnfv" id="f7_res">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">금융 비중</span><span class="dnfv" id="f7_inv">— 입력 대기</span></div>
-        <div class="dnfield"><span class="dnfl">금융자산 합계</span><span class="dnfv hi" id="f7_fin_total">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">부동산 비중</span><span class="dnfv" id="f7_res"></span></div>
+        <div class="dnfield"><span class="dnfl">금융 비중</span><span class="dnfv" id="f7_inv"></span></div>
+        <div class="dnfield"><span class="dnfl">금융자산 합계</span><span class="dnfv hi" id="f7_fin_total"></span></div>
       </div>
     </div>
   </div>
@@ -8922,7 +8922,7 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">🏖️</div><div><div class="dnctitle">8-1 은퇴설계</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream"></span></div>
         <div class="dnfield"><span class="dnfl">은퇴나이</span><span class="dnfv" id="f81_age">—</span></div>
         <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f81_life">—</span></div>
         <div class="dndiv">계산</div>
@@ -8943,7 +8943,7 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">💳</div><div><div class="dnctitle">8-2 부채설계</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">주요 부채</span><span class="dnfv" id="f82_priority">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">주요 부채</span><span class="dnfv" id="f82_priority"></span></div>
         <div class="dnfield"><span class="dnfl">담보대출</span><span class="dnfv" id="f82_mortgage">—</span></div>
         <div class="dnfield"><span class="dnfl">상환 전략</span><span class="dnfv">신용: 즉시상환(소→대) · 담보: 은퇴전 완납</span></div>
       </div>
@@ -8952,7 +8952,7 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">8-3 저축설계</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal"></span></div>
         <div class="dnfield"><span class="dnfl">월 가능액</span><span class="dnfv hi" id="f83_possible">—</span></div>
         <div class="dnfield"><span class="dnfl">현재 저축</span><span class="dnfv" id="f83_current">—</span></div>
         <div class="dnfield"><span class="dnfl">추가 필요</span><span class="dnfv warn" id="f83_gap">—</span></div>
@@ -8973,7 +8973,7 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">🧾</div><div><div class="dnctitle">8-5 세금설계</div><div class="dncsub">결정세액 0원 전략</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">연금저축펀드</span><span class="dnfv" id="f85_pension">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">연금저축펀드</span><span class="dnfv" id="f85_pension"></span></div>
         <div class="dnfield"><span class="dnfl">IRP</span><span class="dnfv" id="f85_irp">—</span></div>
         <div class="dnfield"><span class="dnfl">합산한도</span><span class="dnfv">연 900만원</span></div>
         <div class="dnfield"><span class="dnfl">현재 환급 예상</span><span class="dnfv warn" id="f85_tax">—</span></div>
@@ -8984,7 +8984,7 @@ function diagBuildNotes() {
     <div class="dncard">
       <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">8-6 부동산설계</div></div></div>
       <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own">— 입력 대기</span></div>
+        <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own"></span></div>
         <div class="dnfield"><span class="dnfl">현재 형태</span><span class="dnfv" id="f86_type">—</span></div>
         <div class="dnfield"><span class="dnfl">주택 가격</span><span class="dnfv" id="f86_price">—</span></div>
         <div class="dnfield"><span class="dnfl">향후 전략</span><span class="dnfv" id="f86_strategy">—</span></div>
@@ -9052,21 +9052,21 @@ function diagBuildNotes() {
       <div class="dncbody">
         <div class="dndiv">강점</div>
         <div class="dn-actions" style="margin-bottom:9px">
-          <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1">— 입력 대기</div></div>
-          <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2">— 입력 대기</div></div>
-          <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3">— 입력 대기</div></div>
+          <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1"></div></div>
+          <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2"></div></div>
+          <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3"></div></div>
         </div>
         <div class="dndiv">개선점</div>
         <div class="dn-actions" style="margin-bottom:9px">
-          <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1">— 입력 대기</div></div>
-          <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2">— 입력 대기</div></div>
-          <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3">— 입력 대기</div></div>
+          <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1"></div></div>
+          <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2"></div></div>
+          <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3"></div></div>
         </div>
         <div class="dndiv">이번 달 실행 액션</div>
         <div class="dn-actions">
-          <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1">— 입력 대기</div></div>
-          <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2">— 입력 대기</div></div>
-          <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3">— 입력 대기</div></div>
+          <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1"></div></div>
+          <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2"></div></div>
+          <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3"></div></div>
         </div>
       </div>
     </div>
