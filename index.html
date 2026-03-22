@@ -7964,6 +7964,95 @@ function fhRunDemo() {
 
 const DIAG_IMG = 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%ED%99%95%EC%A0%95%EC%9D%B4%EB%AF%B8%EC%A7%80%EC%95%88.png?alt=media&token=c250863d-7cda-424a-800d-884b20e30b1a';
 
+/*
+ * ━━━ server.js fields 키 → DIAG_PARTS 필드 라벨 매핑 테이블 ━━━
+ * server.js의 update_smart_note가 보내는 fields 키(영문)를
+ * DIAG_PARTS 배열의 한글 라벨에 연결한다.
+ * 형식: { note_page번호: { 'server_key': 'DIAG_PARTS 라벨' } }
+ */
+const DIAG_FIELD_MAP = {
+  0: { // 오프닝
+    date:        '상담 날짜',
+    session:     '회차',
+    disclaimer:  '자료 준비',
+    purpose:     '상담 목적',
+    time_confirmed: '자료 준비',
+  },
+  1: { // 인적사항
+    name:   '성함',
+    age:    '나이',
+    marry:  '결혼 여부',
+    child:  '자녀 수',
+    family: '가족 수',
+    job:    '직업',
+    dual:   '맞벌이 여부',
+  },
+  2: { // 경제적 고민
+    worry1: '주요 걱정',
+    worry2: '재무 목표',
+    worry3: '관심 분야',
+    goal:   '현재 불만',
+  },
+  3: { // 수입지출
+    income:      '월 총수입(세후)',
+    living_cur:  '생활비',
+    ins_cur:     '보험료',
+    loan_cur:    '대출상환',
+    save_cur:    '저축·투자',
+    pension_cur: '연금',
+    surplus:     '미파악 지출',
+  },
+  4: { // 자산부채
+    realty:       '부동산 자산',
+    invest:       '금융 자산',
+    deposit:      '기타 자산',
+    pension_asset:'총 자산',
+    mortgage:     '담보대출',
+    credit:       '신용대출',
+    total_debt:   '총 부채',
+    net:          '순 자산',
+    wealth_index: '부자지수',
+    total_asset:  '총 자산',
+  },
+  5: { // 금융집짓기 설계도
+    current_age: '지하 — 보험 보장',
+    retire_age:  '지하 — 비상예비자금',
+    life_age:    '거실 — 부채설계',
+    desire:      '안방 — 은퇴설계',
+    strategy:    '지붕 — 투자설계',
+  },
+  6: { // 저축투자 포트폴리오
+    invest_source: '월 여유자금',
+    pen_gap:       '안전자산 (50~60%)',
+    ins_gap:       '성장자산 (30~40%)',
+  },
+  7: { // 자산배분
+    res: '골든밸런스',
+    inv: '성장자산 비중',
+  },
+  8: { // 8대영역 (sub_page 1~8 공통 — 빈 필드 순서 채우기)
+    dream: '(1) 은퇴진단',
+    need:  '(2) 부채진단',
+    rate:  '(3) 저축진단',
+    short: '(4) 투자진단',
+    total: '(5) 세금진단',
+    priority: '(6) 부동산진단',
+    death_cur: '(7) 보험진단',
+    premium:   '(7) 보험진단',
+  },
+  9: { // 최종의견
+    suggest1: '강점 1',
+    suggest2: '강점 2',
+    action1:  '개선 1',
+    action2:  '개선 2',
+    score:    '재무점수',
+  },
+  10: { // 클로징
+    summary:  '다음 약속 (정기상담)',
+  },
+};
+
+
 /* 12장 노트 데이터 */
 const DIAG_PARTS = [
   { id:0,  short:'오프닝',    title:'0. 오프닝',
@@ -8291,7 +8380,7 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  const { noteType, title, content, step } = msg;
+  const { noteType, title, content, step, notePage, fields } = msg;
 
   /* ① 단계 이동 — step 신호 수신 시 */
   if(step !== null && step !== undefined && step !== diagCurPart) {
@@ -8312,10 +8401,65 @@ function diagHandleNote(msg) {
     return;
   }
 
-  /* ③ 필드 채우기 — field+value 형식 */
+  /* ③ server.js fields 형식 — {필드명:값} 객체로 여러 필드 한번에 처리 */
+  if(fields && typeof fields === 'object' && Object.keys(fields).length > 0) {
+    const partIdx = (notePage !== undefined && notePage !== null) ? notePage
+                  : (step    !== undefined && step    !== null) ? step
+                  : diagCurPart;
+    const FILLED_STYLE = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+    const pageMap = DIAG_FIELD_MAP[partIdx] || {};
+
+    Object.entries(fields).forEach(function([fKey, fVal]) {
+      if(!fVal && fVal !== 0) return;
+      const valStr = String(fVal);
+
+      /* 방법1: DIAG_FIELD_MAP으로 정확한 라벨 찾기 */
+      const label = pageMap[fKey];
+      if(label) {
+        const fid = 'dfv' + partIdx + '_' + label.replace(/[\s\(\)\+\·—\/]/g,'_');
+        const el = document.getElementById(fid);
+        if(el) { el.textContent = valStr; el.style.cssText = FILLED_STYLE; return; }
+      }
+
+      /* 방법2: DIAG_PARTS 라벨과 fKey 키워드 포함 매칭 */
+      const part = DIAG_PARTS[partIdx];
+      if(part && part.fields) {
+        const fkLower = fKey.toLowerCase().replace(/[_\s]/g,'');
+        for(const [lbl] of part.fields) {
+          const lblLower = lbl.toLowerCase().replace(/[\s\(\)\·—\/]/g,'');
+          if(lblLower.includes(fkLower) || fkLower.includes(lblLower.slice(0,4))) {
+            const fid = 'dfv' + partIdx + '_' + lbl.replace(/[\s\(\)\+\·—\/]/g,'_');
+            const el = document.getElementById(fid);
+            if(el) { el.textContent = valStr; el.style.cssText = FILLED_STYLE; return; }
+          }
+        }
+      }
+
+      /* 방법3: 빈 필드에 순서대로 채우기 (폴백) */
+      if(part && part.fields) {
+        for(const [lbl] of part.fields) {
+          const fid = 'dfv' + partIdx + '_' + lbl.replace(/[\s\(\)\+\·—\/]/g,'_');
+          const el = document.getElementById(fid);
+          if(el && el.textContent.includes('입력 대기')) {
+            el.textContent = valStr;
+            el.style.cssText = FILLED_STYLE;
+            break;
+          }
+        }
+      }
+    });
+
+    /* 노트 페이지 전환 + 토스트 */
+    if(partIdx !== diagCurPart) diagActivatePart(partIdx);
+    const partName = DIAG_PARTS[partIdx] ? DIAG_PARTS[partIdx].short : '';
+    if(partName) showToast('📝 ' + partName + ' 노트 업데이트');
+    return;
+  }
+
+  /* ④ 구형 호환 — field+value 형식 (1개씩) */
   if(content && content.field && content.value) {
     const partIdx = (step !== undefined ? step : diagCurPart);
-    const fieldKey = content.field.replace(/[\s\(\)\+\·\(\)]/g,'_');
+    const fieldKey = content.field.replace(/[\s\(\)\+\·]/g,'_');
     const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
     if(el) {
       el.textContent = content.value;
@@ -8324,10 +8468,9 @@ function diagHandleNote(msg) {
     return;
   }
 
-  /* ④ 텍스트 메모 — text 형식으로 현재 파트의 빈 필드에 채우기 */
+  /* ⑤ 구형 호환 — text 형식으로 현재 파트의 빈 필드에 채우기 */
   if(content && content.text && title) {
     const partIdx = (step !== undefined ? step : diagCurPart);
-    /* 현재 파트의 빈 필드 중 첫 번째에 채우기 */
     const part = DIAG_PARTS[partIdx];
     if(part && part.fields) {
       for(const [l] of part.fields) {
