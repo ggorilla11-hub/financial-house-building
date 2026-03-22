@@ -8365,7 +8365,12 @@ function diagHandleMsg(msg) {
       }
 
       if(role==='user') setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
-      if(role==='ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ=displayText; }
+      if(role==='ai') {
+        /* 머니야 발화 키워드로 즉시 탭 전환 */
+        diagAutoTabFromSpeech(displayText);
+        setTimeout(function(){ diagParseAiSpeech(displayText); }, 500);
+        diagLastQ=displayText;
+      }
     }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
@@ -8517,6 +8522,61 @@ function dnCalcBudget(f) {
 }
 
 /* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   dnGo — 전역 선언 (diagBuildNotes 밖)
+   어디서 호출해도 항상 작동
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+window.dnGo = function(i) {
+  var panels = document.querySelectorAll('.dnp');
+  var tabs   = document.querySelectorAll('.dnt');
+  if(!panels.length) return; // 아직 빌드 안 됨
+  panels.forEach(function(p,j){ p.classList.toggle('active', j===i); });
+  tabs.forEach(function(t,j){ t.classList.toggle('active', j===i); });
+  var panelsEl = document.getElementById('dnPanels');
+  if(panelsEl) panelsEl.scrollTop = 0;
+  if(i===8 && typeof dnLoadBA==='function') dnLoadBA();
+};
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   머니야 발화 키워드 → 노트 탭 자동 전환
+   update_smart_note 와 무관하게 즉시 작동
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function diagAutoTabFromSpeech(text) {
+  if(!text) return;
+  var t = text;
+  // 순서 중요: 더 구체적인 키워드 먼저
+  if(/성함이 어떻게|이름이 어떻게|먼저 고객님에 대해|성함을 여쭤/.test(t)) {
+    dnGo(1); diagCurPart=1; return;
+  }
+  if(/경제적으로 가장 걱정|고민되시거나|관심 있으신/.test(t)) {
+    dnGo(2); diagCurPart=2; return;
+  }
+  if(/세후 한 달 실수령|월 실수령액|수입과 지출/.test(t)) {
+    dnGo(3); diagCurPart=3; return;
+  }
+  if(/예적금.*얼마|자산을 함께 정리|자산과 부채/.test(t)) {
+    dnGo(4); diagCurPart=4; return;
+  }
+  if(/집을 그릴 때|금융집짓기|기초공사/.test(t)) {
+    dnGo(5); diagCurPart=5; return;
+  }
+  if(/투자재원|저축투자 포트폴리오|100.나이/.test(t)) {
+    dnGo(6); diagCurPart=6; return;
+  }
+  if(/자산배분|부동산.*금융.*3|7:3/.test(t)) {
+    dnGo(6); diagCurPart=7; return;
+  }
+  if(/은퇴설계|꿈꾸는 노후|어떤 노후/.test(t)) {
+    dnGo(7); diagCurPart=8; return;
+  }
+  if(/최종의견|DESIRE|처음에.*걱정이셨/.test(t)) {
+    dnGo(8); diagCurPart=9; return;
+  }
+  if(/도움이 되셨나요|다음 달에.*뵙|머니야였습니다/.test(t)) {
+    dnGo(9); diagCurPart=10; return;
+  }
+}
 
 /* ── Heartbeat ── */
 setInterval(function(){
@@ -9119,14 +9179,6 @@ function diagBuildNotes() {
 </div><!-- /dnWrap -->
 `;
 
-  // ── 탭 전환 함수
-  window.dnGo = function(i) {
-    document.querySelectorAll('.dnp').forEach(function(p,j){ p.classList.toggle('active', j===i); });
-    document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
-    document.getElementById('dnPanels').scrollTop = 0;
-    if(i===8) dnLoadBA();
-  };
-
   // ── 히스토리 BA 연동
   window.dnLoadBA = function() {
     var tbody = document.getElementById('dn_ba_tbody');
@@ -9337,94 +9389,104 @@ let diagLastFilledLabel = '';
 
 /* 머니야 발화 → 복명복창 파싱 → 노트 자동 기입 */
 function diagParseAiSpeech(aiText) {
-  const t = aiText;
+  var t = aiText;
 
-  /* ── 단계 전환 감지 ── */
-  const stepMap = [
-    { step:1, keys:['인적사항', '성함부터', '이름부터'] },
-    { step:2, keys:['경제적으로 가장 고민', '고민되시거나 관심'] },
-    { step:3, keys:['수입과 지출을 살펴', '월 소득이 세후로'] },
-    { step:4, keys:['자산과 부채', '자산부채'] },
-    { step:5, keys:['금융집을 함께 그려', '금융집짓기 설계'] },
-    { step:9, keys:['최종 의견', '강점부터'] },
-    { step:10, keys:['클로징', '다음 약속'] },
-    { step:11, keys:['리포트를 만들어'] },
+  /* ── 머니야 발화 키워드 → 노트 탭 자동 전환 ── */
+  var stepTriggers = [
+    { tab:0, pg:0,  keys:['안녕하세요', '머니야입니다', '시간 괜찮으십니까'] },
+    { tab:1, pg:1,  keys:['성함이 어떻게', '먼저 성함', '이름이 어떻게', '고객님에 대해'] },
+    { tab:2, pg:2,  keys:['경제적으로 가장', '고민되시거나', '관심 있으신'] },
+    { tab:3, pg:3,  keys:['수입과 지출', '세후 한 달', '실수령액', '대출 원리금', '보험료는', '저축이나 투자'] },
+    { tab:4, pg:4,  keys:['자산과 부채', '예적금', '금융자산', '담보대출은', '부자지수'] },
+    { tab:5, pg:5,  keys:['금융집을 함께', '집을 그릴 때', '금융집짓기', '기초공사'] },
+    { tab:6, pg:6,  keys:['투자재원', '저축투자 포트', '순투자재원', '100-나이'] },
+    { tab:6, pg:7,  keys:['자산배분', '부동산 70%', '안전자산 70'] },
+    { tab:7, pg:8,  keys:['은퇴설계', '노후를 꿈꾸', '부채설계', '저축설계', '투자설계', '세금설계', '보험설계', '부동산설계'] },
+    { tab:8, pg:9,  keys:['최종의견', 'DESIRE', '강점', '재무점수'] },
+    { tab:9, pg:10, keys:['클로징', '다음 달에', '어떻게 도움'] },
+    { tab:10,pg:11, keys:['리포트', 'PDF'] },
   ];
-  for(const {step, keys} of stepMap) {
-    if(keys.some(k => t.includes(k)) && step > diagCurPart) {
-      setTimeout(() => diagActivatePart(step), 500);
-      break;
+
+  for(var i=0; i<stepTriggers.length; i++) {
+    var tr = stepTriggers[i];
+    if(tr.keys.some(function(k){ return t.includes(k); })) {
+      if(tr.pg >= diagCurPart) {
+        (function(tab, pg){
+          setTimeout(function(){
+            if(typeof dnGo === 'function') dnGo(tab);
+            diagCurPart = pg;
+            // 프로세스 바 업데이트
+            var pname = document.getElementById('diagPartName');
+            if(pname && DIAG_PARTS[pg]) pname.textContent = DIAG_PARTS[pg].short;
+          }, 300);
+        })(tr.tab, tr.pg);
+        break;
+      }
     }
   }
 
-  /* ── 복명복창 파싱 → 노트 기입 ── */
-  /* 패턴: "아, [값]이시군요" / "[값]이군요" / "[값]이라고 하셨죠" */
-  const patterns = [
-    /* 이름 */
-    { part:1, label:'성함', regex:/([가-힣]{2,4})님이시군요/ },
-    { part:1, label:'성함', regex:/([가-힣]{2,4})님이라고/ },
-    /* 나이 */
-    { part:1, label:'나이', regex:/(\d+)세이시군요/ },
-    { part:1, label:'나이', regex:/(\d+)세이군요/ },
-    /* 결혼여부 */
-    { part:1, label:'결혼_여부', regex:/(기혼|미혼|결혼하셨군요|결혼 안 하셨군요)/ },
-    /* 자녀수 */
-    { part:1, label:'자녀_수', regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
-    { part:1, label:'자녀_수', regex:/([가-힣\d]+)[살세]\s*짜리\s*(딸|아들|자녀)/ },
-    /* 가족수 */
-    { part:1, label:'가족_수', regex:/(\d+)명.*가족/ },
-    { part:1, label:'가족_수', regex:/가족.*(\d+)명/ },
-    /* 직업 */
-    { part:1, label:'직업', regex:/([가-힣\s]{2,15})(이시군요|이군요|이라고)\s*하셨/ },
-    /* 맞벌이 */
-    { part:1, label:'맞벌이_여부', regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
-    /* 월소득 */
-    { part:3, label:'월_총수입_세후', regex:/(\d+)만원.*소득/ },
-    { part:3, label:'월_총수입_세후', regex:/소득.*(\d+)만원/ },
-    /* 대출 */
-    { part:3, label:'대출상환', regex:/대출.*(\d+)만원/ },
-    { part:3, label:'보험료', regex:/보험료.*(\d+)만원/ },
-    { part:3, label:'보험료', regex:/(\d+)만원.*보험/ },
-    /* 저축 */
-    { part:3, label:'저축·투자', regex:/저축.*(\d+)만원/ },
-    /* 자산 */
-    { part:4, label:'금융_자산', regex:/금융.*(\d+)만원/ },
-    { part:4, label:'총_자산', regex:/총.{0,3}자산.*(\d+)만원/ },
-    { part:4, label:'총_부채', regex:/총.{0,3}부채.*(\d+)만원/ },
+  /* ── 복명복창 파싱 → 새 노트 필드 직접 입력 ── */
+  var fillRules = [
+    // 인적사항 (pg=1)
+    { pg:1, key:'name',   regex:/([가-힣]{2,5})님이시군요/ },
+    { pg:1, key:'name',   regex:/([가-힣]{2,5})님$/ },
+    { pg:1, key:'age',    regex:/아,?\s*(\d+)세이시군요/ },
+    { pg:1, key:'age',    regex:/(\d+)세이군요/ },
+    { pg:1, key:'marry',  regex:/(기혼|미혼)(이시군요|이군요)/ },
+    { pg:1, key:'child',  regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
+    { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
+    { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
+    { pg:1, key:'job',    regex:/(직장인|공무원|자영업자?|프리랜서|사업가?)(이시군요|이군요)/ },
+    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
+    // 수입지출 (pg=3)
+    { pg:3, key:'income', regex:/(\d+)만원.*수입/ },
+    { pg:3, key:'income', regex:/수입.*(\d+)만원/ },
+    { pg:3, key:'loan_cur', regex:/대출.*(\d+)만원/ },
+    { pg:3, key:'ins_cur',  regex:/보험료.*(\d+)만원/ },
+    { pg:3, key:'ins_cur',  regex:/(\d+)만원.*보험/ },
+    { pg:3, key:'save_cur', regex:/저축.*(\d+)만원/ },
+    { pg:3, key:'pension_cur', regex:/연금.*(\d+)만원/ },
+    // 자산부채 (pg=4)
+    { pg:4, key:'deposit',    regex:/예적금.*(\d+)만원/ },
+    { pg:4, key:'invest',     regex:/투자.*(\d+)만원/ },
+    { pg:4, key:'realty',     regex:/부동산.*(\d+)만원/ },
+    { pg:4, key:'total_asset',regex:/총자산.*(\d+)만원/ },
+    { pg:4, key:'credit',     regex:/신용대출.*(\d+)만원/ },
+    { pg:4, key:'mortgage',   regex:/담보대출.*(\d+)만원/ },
+    { pg:4, key:'net',        regex:/순자산.*(\d+)만원/ },
+    { pg:4, key:'wealth_index', regex:/부자지수[가이]?\s*([\d.]+)/ },
   ];
 
-  for(const {part, label, regex} of patterns) {
-    const m = t.match(regex);
+  fillRules.forEach(function(rule){
+    var m = t.match(rule.regex);
     if(m) {
-      const value = m[1] || m[0];
-      diagFillField(part, label, value);
+      var val = String(m[1] || m[0]).trim();
+      var el = document.getElementById('f' + rule.pg + '_' + rule.key);
+      if(el) {
+        el.textContent = val;
+        el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
+        el.style.fontStyle = 'normal';
+        el.style.color = '';
+        console.log('[STT파싱] f'+rule.pg+'_'+rule.key+' = '+val);
+      }
     }
-  }
+  });
 }
 
-/* 특정 파트·필드에 값 채우기 */
-function diagFillField(partIdx, labelKey, value) {
-  if(!value || !DIAG_PARTS[partIdx]) return;
-  const part = DIAG_PARTS[partIdx];
-
-  /* 라벨 키와 일치하는 필드 찾기 (부분 매칭) */
-  for(const [label] of part.fields) {
-    const normalize = s => s.replace(/[\s\(\)\+\·\-]/g,'').toLowerCase();
-    if(normalize(label).includes(normalize(labelKey)) ||
-       normalize(labelKey).includes(normalize(label))) {
-      const fid = 'dfv'+partIdx+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
-      const el = document.getElementById(fid);
-      if(el) {
-        el.textContent = value;
-        el.style.cssText = 'font-size:10px;font-weight:700;padding:6px 9px;border-radius:6px;'+
-          'background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06));'+
-          'border-left:3px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;'+
-          'animation:diagFillAnim .5s ease;';
-        diagLastFilledPartIdx = partIdx;
-        diagLastFilledLabel = label;
-        console.log('[노트]', label, '→', value);
-      }
-      break;
+/* 특정 파트·필드에 값 채우기 — 새 노트 ID 방식 */
+function diagFillField(partIdx, key, value) {
+  if(!value) return;
+  var el = document.getElementById('f' + partIdx + '_' + key);
+  if(el) {
+    el.textContent = String(value);
+    el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
+    el.style.fontStyle = 'normal';
+    el.style.color = '';
+    console.log('[필드기입] f'+partIdx+'_'+key+' = '+value);
+    // 탭도 자동 전환
+    var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9};
+    if(typeof dnGo === 'function' && tabMap[partIdx] !== undefined) {
+      dnGo(tabMap[partIdx]);
     }
   }
 }
@@ -10099,7 +10161,20 @@ diagAddSTT = function(role, text, tag) {
         <div class="c-topbar">
           <div class="c-live">
             <div class="c-live-dot"></div>
-            <span class="c-live-txt">LIVE 진단 중</span>
+            <div>
+              <div class="c-ai-av" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--gold);overflow:hidden;vertical-align:middle;margin-right:5px;">
+                <img id="diagAiImg" src="" alt="AI" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <span style="font-size:14px;display:none" id="diagAiEmoji">🤖</span>
+              </div>
+              <span class="c-live-txt">AI 머니야</span>
+              <div class="c-wave" id="diagWave" style="display:inline-flex;gap:2px;margin-left:5px;vertical-align:middle;">
+                <div class="c-wb" style="height:2px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:9px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:2px;"></div>
+              </div>
+            </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center">
             <div class="c-timer" id="diagTimer">00:00</div>
@@ -10111,53 +10186,20 @@ diagAddSTT = function(role, text, tag) {
           </div>
         </div>
 
-        <!-- AI 아바타 + PIP -->
-        <div class="c-video-bar">
-          <div class="c-ai-area">
-            <div class="c-ai-av">
-              <img id="diagAiImg" src="" alt="AI" onerror="this.parentElement.textContent='🤖'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-            </div>
-            <div>
-              <div class="c-ai-name">AI 머니야</div>
-              <div class="c-wave" id="diagWave">
-                <div class="c-wb" style="height:2px;"></div>
-                <div class="c-wb" style="height:5px;"></div>
-                <div class="c-wb" style="height:9px;"></div>
-                <div class="c-wb" style="height:5px;"></div>
-                <div class="c-wb" style="height:2px;"></div>
-              </div>
-            </div>
-          </div>
-          <div class="c-part-center">
-            <div class="c-part-lbl">현재 단계</div>
-            <div class="c-part-name" id="diagPartName">오프닝</div>
-            <div style="font-size:8px;color:rgba(255,255,255,.3);" id="diagCurStepName"></div>
-          </div>
-          <div class="c-pip" onclick="diagToggleCamera()">
-            <div class="c-pip-ph" id="diagPipPh">
-              <span class="c-pip-icon">📷</span>
-              <span class="c-pip-txt">카메라</span>
-            </div>
-            <video id="diagPipVideo" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px;" autoplay muted playsinline></video>
-            <div class="c-cam-dot" id="diagCamDot"></div>
-          </div>
-        </div>
-
         <!-- 프로세스 바 -->
         <div class="c-proc-wrap">
           <div class="c-proc-grid" id="diagProcGrid"></div>
         </div>
 
-        <!-- 노트 본문 — 탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
-        <div class="c-note-body">
-          <!-- 노트 슬라이드 컨테이너 -->
-          <div style="flex:1;position:relative;overflow:hidden;height:100%;">
+        <!-- 노트 본문 —  탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
+        <div class="c-note-body" style="flex:1;min-height:0;">
+          <div style="position:relative;overflow:hidden;height:100%;">
             <div id="diagNoteContainer" style="position:absolute;inset:0;"></div>
           </div>
         </div>
 
-        <!-- STT 자막 -->
-        <div class="c-stt" id="diagStt"></div>
+        <!-- STT 자막 — 대화록은 노트 내부 dnp9 탭으로 통합 -->
+        <div class="c-stt" id="diagStt" style="display:none;height:0;overflow:hidden;"></div>
 
         <!-- 하단 컨트롤 -->
         <div class="c-bottom">
