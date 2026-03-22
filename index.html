@@ -8211,9 +8211,9 @@ function diagStartConsult() {
         window.NOTEBOOK.init();
         console.log('[diagStartConsult] 상담노트 초기화 완료');
         /* page0 강제 표시 확인 */
-        var p0 = document.getElementById('page0');
+        var p0 = document.getElementById('mnPage0');
         if(p0) {
-          p0.classList.add('show');
+          p0.classList.add('mn-show');
           console.log('[diagStartConsult] page0 show 강제 적용');
         }
       }
@@ -8229,8 +8229,6 @@ function diagStartConsult() {
 
   const si=document.getElementById('diagSessionInfo');
   if(si) si.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST?'초회진단':'정기상담');
-
-  diagBuildNotes();
 
   diagSec=0;
 
