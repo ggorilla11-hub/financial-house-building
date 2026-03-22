@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" style="visibility:hidden;">
 <head>
 <meta charset="UTF-8">
 
@@ -59,8 +59,9 @@
 <meta name="twitter:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta name="twitter:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet"></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <style>
 /* ━━━ CSS 변수 ━━━ */
 /* ── DESIGN SYSTEM UPDATE: 확정 C안 색상 팔레트 ── */
@@ -2334,14 +2335,17 @@ body { color: #1a1a1a; }
 .toast.show{opacity:1;}
 
 
-@keyframes diagFill{from{opacity:0;transform:translateX(-4px);}to{opacity:1;transform:none;}}</style>
+@keyframes diagFill{from{opacity:0;transform:translateX(-4px);}to{opacity:1;transform:none;}}
+
+/* CSS 파싱 완료 후 즉시 표시 — 깜빡임 방지 */
+html{visibility:visible !important;}</style>
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" defer></script>
   
-  <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
+  <script src="https://cpay.payple.kr/js/v1/payment.js" defer></script>
 
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
