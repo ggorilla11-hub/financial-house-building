@@ -8203,6 +8203,14 @@ function diagStartConsult() {
     sb.style.display = 'flex';
     sb.style.flexDirection = 'column';
     sb.style.height = '100%';
+
+  /* ━━━ 상담노트 초기화 ━━━ */
+  setTimeout(function() {
+    if(window.NOTEBOOK && window.NOTEBOOK.init) {
+      window.NOTEBOOK.init();
+      console.log('[diagStartConsult] 상담노트 초기화 완료');
+    }
+  }, 300);
     sb.style.overflow = 'hidden';
 /* mp-panel 높이: CSS로 처리 */
   }
@@ -8335,56 +8343,223 @@ function diagPlayNext() {
 }
 
 function diagHandleNote(msg) {
-  const { noteType, title, content, step } = msg;
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     서버에서 수신: { type:'smart_note_update',
+       notePage: 0~10,   // 노트 번호
+       subPage:  1~8,    // 8대영역 세부 (선택)
+       title:    string,
+       fields:   {id: value, ...}  // 채울 필드들
+       highlightFloor: string
+     }
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-  /* ① 단계 이동 — step 신호 수신 시 */
-  if(step !== null && step !== undefined && step !== diagCurPart) {
-    diagActivatePart(step);
-  }
+  const notePage = msg.notePage ?? msg.step ?? 0;
+  const subPage  = msg.subPage  ?? null;
+  const fields   = msg.fields   || {};
+  const title    = msg.title    || '';
 
-  /* ② 금융집짓기 SVG */
-  if(noteType==='house_svg' && content && content.html) {
-    const slide5=document.getElementById('dslide5');
-    if(slide5){
-      const houseDiv=document.createElement('div');
-      houseDiv.style.cssText='margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid #e5dcc0;';
-      houseDiv.innerHTML=content.html;
-      slide5.appendChild(houseDiv);
-    }
-    if(step===undefined) diagActivatePart(5);
-    showToast('🏠 금융집짓기 설계도면 업데이트');
+  /* ① 상담노트 NOTEBOOK 인터페이스 확인 */
+  const NB = window.NOTEBOOK;
+  if(!NB) {
+    console.warn('[diagHandleNote] NOTEBOOK 미초기화');
     return;
   }
 
-  /* ③ 필드 채우기 — field+value 형식 */
-  if(content && content.field && content.value) {
-    const partIdx = (step !== undefined ? step : diagCurPart);
-    const fieldKey = content.field.replace(/[\s\(\)\+\·\(\)]/g,'_');
-    const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
-    if(el) {
-      el.textContent = content.value;
-      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
-    }
+  /* ② 페이지 이동 — notePage + subPage 기준 */
+  const pageId = subPage ? 'page' + notePage + '_' + subPage : 'page' + notePage;
+  NB.activateNotePage(pageId);
+
+  /* ③ 12단계 프로세스 바 업데이트 */
+  diagActivatePart(notePage);
+
+  /* ④ fields 객체를 fillField로 하나씩 채우기
+     서버가 보내는 형식: {name:"홍길동", age:35, ...}
+     상담노트 ID 형식:   f1_name, f1_age, ...
+     → NOTE_FIELD_MAP으로 변환 후 fillField 호출
+  */
+  const NOTE_FIELD_MAP = {
+    /* ─── 노트0: 표지 ─── */
+    date:       'f0_date',
+    session:    'f0_session',
+    app:        'f0_app',
+    ins:        'f0_ins',
+    sal:        'f0_sal',
+    pen:        'f0_pen',
+    note:       'f0_note',
+
+    /* ─── 노트1: 인적사항 ─── */
+    name:       'f1_name',
+    age:        'f1_age',
+    marry:      'f1_marry',
+    child:      'f1_child',
+    family:     'f1_family',
+    job:        'f1_job',
+    dual:       'f1_dual',
+    mgr:        'f1_mgr',
+    retire:     'f1_retire',
+    life:       'f1_life',
+
+    /* ─── 노트2: 고민 ─── */
+    worry1:     'f2_w1',
+    worry2:     'f2_w2',
+    worry3:     'f2_w3',
+    goal:       'f2_goal',
+    ans:        'f2_ans',
+
+    /* ─── 노트3: 수지분석 ─── */
+    income:         'f3_income',
+    living_cur:     'f3_living_cur',
+    living_diag:    'f3_living_diag',
+    living_act:     'f3_living_act',
+    save_cur:       'f3_save_cur',
+    save_diag:      'f3_save_diag',
+    save_act:       'f3_save_act',
+    pension_cur:    'f3_pension_cur',
+    pension_diag:   'f3_pension_diag',
+    ins_cur:        'f3_ins_cur',
+    ins_diag:       'f3_ins_diag',
+    loan_cur:       'f3_loan_cur',
+    loan_diag:      'f3_loan_diag',
+    surplus:        'f3_surplus',
+
+    /* ─── 노트4: 자산부채 ─── */
+    deposit:        'f4_deposit',
+    invest:         'f4_invest',
+    pension_asset:  'f4_pension',
+    realty:         'f4_realty',
+    total_asset:    'f4_total_asset',
+    mortgage:       'f4_mortgage',
+    credit:         'f4_credit',
+    total_debt:     'f4_total_debt',
+    net:            'f4_net',
+    wealth_index:   'f4_wi_val',
+    wi_diag:        'f4_wi_diag',
+
+    /* ─── 노트5: 설계도 ─── */
+    desire:         'f5_desire',
+    next:           'f5_next',
+    strategy:       'f5_strategy',
+
+    /* ─── 노트6: 저축투자 ─── */
+    invest_source:  'f6_source',
+    pen_gap:        'f6_pen_gap',
+    ins_gap:        'f6_ins_gap',
+    net6:           'f6_net',
+
+    /* ─── 노트7: 자산배분 ─── */
+    res:            'f7_res',
+    inv:            'f7_inv',
+    fin_total:      'f7_fin_total',
+
+    /* ─── 노트8-1: 은퇴 ─── */
+    dream:          'f81_dream',
+    retire_need:    'f81_need',
+    retire_pub:     'f81_pub',
+    retire_priv:    'f81_priv',
+    retire_rate:    'f81_rate',
+    retire_short:   'f81_short',
+    retire_monthly: 'f81_monthly',
+
+    /* ─── 노트8-2: 부채 ─── */
+    debt_total:     'f82_total',
+    debt_priority:  'f82_priority',
+
+    /* ─── 노트8-5: 세금 ─── */
+    tax_pension:    'f85_pension',
+    tax_irp:        'f85_irp',
+    tax_total:      'f85_total',
+    tax_refund:     'f85_refund',
+
+    /* ─── 노트8-6: 부동산 ─── */
+    house_own:      'f86_own',
+    house_price:    'f86_price',
+    house_loan:     'f86_loan',
+    house_strategy: 'f86_strategy',
+
+    /* ─── 노트8-7: 보험 ─── */
+    ins_death_std:  'f87_death_std',
+    ins_death_cur:  'f87_death_cur',
+    ins_death_gap:  'f87_death_gap',
+    ins_cancer_std: 'f87_cancer_std',
+    ins_cancer_cur: 'f87_cancer_cur',
+    ins_cancer_gap: 'f87_cancer_gap',
+    ins_premium:    'f87_premium',
+
+    /* ─── 노트8-8: 디자이어 ─── */
+    desire88:       'f88_credit',
+    desire_action:  'f88_action',
+
+    /* ─── 노트9: 최종의견 ─── */
+    suggest1:       'f9_s1',
+    suggest2:       'f9_s2',
+    suggest3:       'f9_s3',
+    score:          'f9_score',
+    grade:          'f9_grade',
+    action1:        'f9_a1',
+    action2:        'f9_a2',
+    action3:        'f9_a3',
+
+    /* ─── 노트10: 클로징 ─── */
+    closing:        'f10_closing',
+    next_date:      'f10_next',
+    satisfaction:   'f10_sat',
+
+    /* ─── 노트11: 리포트 ─── */
+    report_date:    'f11_date',
+  };
+
+  /* ⑤ 수지분석 자동계산 (노트3, income+family 모두 있을 때) */
+  if(notePage === 3 && fields.income && fields.family) {
+    NB.calcCashFlow(
+      Number(fields.income),
+      Number(fields.family) || 4,
+      Number(fields.living_cur) || 0,
+      Number(fields.save_cur) || 0,
+      Number(fields.pension_cur) || 0,
+      Number(fields.ins_cur) || 0,
+      Number(fields.loan_cur) || 0
+    );
     return;
   }
 
-  /* ④ 텍스트 메모 — text 형식으로 현재 파트의 빈 필드에 채우기 */
-  if(content && content.text && title) {
-    const partIdx = (step !== undefined ? step : diagCurPart);
-    /* 현재 파트의 빈 필드 중 첫 번째에 채우기 */
-    const part = DIAG_PARTS[partIdx];
-    if(part && part.fields) {
-      for(const [l] of part.fields) {
-        const fid = 'dfv'+partIdx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
-        const el = document.getElementById(fid);
-        if(el && el.textContent.includes('입력 대기')) {
-          el.textContent = content.text;
-          el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
-          break;
-        }
+  /* ⑥ 자산부채 자동계산 (노트4) */
+  if(notePage === 4 && fields.total_asset !== undefined) {
+    NB.calcAssetDebt(
+      Number(fields.total_asset) || 0,
+      Number(fields.total_debt)  || 0,
+      Number(fields.age_ref)     || 40,
+      Number(fields.income_ref)  || 300,
+      Boolean(fields.dual_ref),
+      Number(fields.deposit)     || 0
+    );
+    return;
+  }
+
+  /* ⑦ 개별 필드 채우기 */
+  Object.entries(fields).forEach(([key, value]) => {
+    if(value === null || value === undefined || value === '') return;
+    /* 직접 HTML ID로 보낸 경우 (f1_name 형식) */
+    const directId = /^f\d+_/.test(key) ? key : NOTE_FIELD_MAP[key];
+    if(directId) {
+      /* chip 스타일 자동 판별 */
+      const chipMap = {
+        '양호':'ok','부족':'bad','초과':'bad','과다':'warn',
+        '건전':'ok','위험':'warn','매우위험':'bad',
+        '우수':'ok','훌륭':'ok','주의':'warn',
+        '완료':'ok','미완료':'bad',
+      };
+      const chip = chipMap[String(value)];
+      NB.fillField(directId, String(value), chip ? {chip} : {});
+
+      /* 골드 하이라이트 애니메이션 */
+      const el = document.getElementById(directId);
+      if(el) {
+        el.style.transition = 'background .4s';
+        el.style.background = 'rgba(201,151,42,.18)';
+        setTimeout(() => { el.style.background = ''; }, 1200);
       }
     }
-  }
+  });
 }
 
 /* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
@@ -9489,7 +9664,1417 @@ diagAddSTT = function(role, text, tag) {
         <div class="c-note-body">
           <!-- 노트 슬라이드 컨테이너 -->
           <div style="flex:1;position:relative;overflow:hidden;">
-            <div id="diagNoteContainer" style="position:absolute;inset:0;"></div>
+            <div id="diagNoteContainer" style="position:absolute;inset:0;overflow:hidden;"><style>
+/* ━━━ 상담노트 격리 CSS — diagNoteContainer 스코프 ━━━ */
+
+/* ━━━ 디자인 시스템 ━━━ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ━━━ 노트북 뷰어 ━━━ */
+#diagNoteContainer .notebook-viewer {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ━━━ 상단 컨트롤바 ━━━ */
+#diagNoteContainer .nb-ctrl {
+  flex-shrink: 0;
+  background: var(--navy);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#diagNoteContainer .nb-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold2);
+  white-space: nowrap;
+}
+#diagNoteContainer .nb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#diagNoteContainer .nb-btn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.75);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--fn);
+  cursor: pointer;
+  transition: all .2s;
+}
+#diagNoteContainer .nb-btn:hover { background: rgba(255,255,255,.15); color: #fff; }
+#diagNoteContainer .nb-btn:disabled { opacity: .3; cursor: not-allowed; }
+#diagNoteContainer .nb-page-info {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.6);
+  min-width: 80px;
+  text-align: center;
+}
+#diagNoteContainer .nb-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+}
+#diagNoteContainer .nb-tabs::-webkit-scrollbar { display: none; }
+#diagNoteContainer .nb-tab {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+#diagNoteContainer .nb-tab.active { color: var(--gold2); background: rgba(201,151,42,.18); border-color: rgba(201,151,42,.4); }
+#diagNoteContainer .nb-tab.done { color: #86efac; background: rgba(34,197,94,.09); border-color: rgba(34,197,94,.22); }
+
+/* ━━━ 페이지 뷰 ━━━ */
+#diagNoteContainer .nb-stage {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+}
+
+/* ━━━ A4 가로 노트 ━━━ */
+#diagNoteContainer .note-page {
+  display: none;
+  width: 100%;
+  max-width: 920px;
+  height: 100%;
+  max-height: 580px;
+  background: var(--paper);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15);
+  overflow: hidden;
+  flex-direction: column;
+  position: relative;
+  animation: pageIn .35s ease;
+}
+#diagNoteContainer .note-page.show { display: flex; }
+@keyframes pageIn {
+#diagNoteContainer from { opacity: 0; transform: translateY(6px) scale(.99); }
+#diagNoteContainer to { opacity: 1; transform: none; }
+}
+
+/* 노트 헤더 */
+#diagNoteContainer .np-hdr {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--navy), var(--navy2));
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#diagNoteContainer .np-hdr-left { display: flex; align-items: center; gap: 10px; }
+#diagNoteContainer .np-page-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--navy);
+  font-size: 11px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+#diagNoteContainer .np-page-title { font-size: 13px; font-weight: 900; color: #fff; }
+#diagNoteContainer .np-page-sub { font-size: 9px; color: rgba(255,255,255,.5); margin-top: 1px; }
+#diagNoteContainer .np-hdr-right { text-align: right; }
+#diagNoteContainer .np-date { font-size: 8.5px; color: rgba(255,255,255,.4); }
+#diagNoteContainer .np-badge { font-size: 8px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+            background: rgba(201,151,42,.2); color: var(--gold2); border: 1px solid rgba(201,151,42,.3); margin-top: 3px; display: inline-block; }
+
+/* 노트 본문 */
+#diagNoteContainer .np-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: grid;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,.1) transparent;
+}
+#diagNoteContainer .np-body::-webkit-scrollbar { width: 3px; }
+#diagNoteContainer .np-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,.1); border-radius: 3px; }
+
+/* 2컬럼 레이아웃 */
+#diagNoteContainer .np-body.col2 { grid-template-columns: 1fr 1fr; }
+#diagNoteContainer .np-body.col3 { grid-template-columns: 1fr 1fr 1fr; }
+#diagNoteContainer .np-body.col1 { grid-template-columns: 1fr; }
+
+/* 필드 그룹 */
+#diagNoteContainer .np-group {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+#diagNoteContainer .np-group.span2 { grid-column: span 2; }
+#diagNoteContainer .np-group.span3 { grid-column: span 3; }
+#diagNoteContainer .np-group-title {
+  padding: 7px 12px;
+  background: rgba(11,29,58,.03);
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  font-size: 9px; font-weight: 900; color: var(--navy);
+  display: flex; align-items: center; gap: 5px;
+}
+#diagNoteContainer .np-group-title .ico { font-size: 12px; }
+
+/* 필드 행 */
+#diagNoteContainer .np-field {
+  display: flex;
+  align-items: baseline;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(0,0,0,.04);
+  gap: 8px;
+  transition: background .3s;
+}
+#diagNoteContainer .np-field:last-child { border-bottom: none; }
+#diagNoteContainer .np-field.filling { background: rgba(201,151,42,.06); }
+#diagNoteContainer .np-label {
+  font-size: 8px; font-weight: 700; color: var(--muted);
+  min-width: 80px; flex-shrink: 0;
+}
+#diagNoteContainer .np-value {
+  font-size: 10px; font-weight: 500; color: var(--navy);
+  flex: 1; line-height: 1.5;
+  min-height: 16px;
+  position: relative;
+}
+#diagNoteContainer .np-value.empty {
+  color: #c9c3b5;
+  font-style: italic;
+  font-size: 9px;
+  font-weight: 400;
+}
+#diagNoteContainer .np-value.empty::before { content: '— 입력 대기 중'; }
+#diagNoteContainer .np-value.filled { color: var(--navy); }
+
+/* 채워지는 커서 효과 */
+@keyframes typing {
+#diagNoteContainer from { opacity: 0; }
+#diagNoteContainer to { opacity: 1; }
+}
+#diagNoteContainer .np-value.typing { animation: typing .3s ease; }
+
+/* 진단 칩 */
+#diagNoteContainer .chip {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 8.5px; font-weight: 700;
+}
+#diagNoteContainer .chip-ok { background: rgba(22,163,74,.1);  color: var(--green); border: 1px solid rgba(22,163,74,.25); }
+#diagNoteContainer .chip-bad { background: rgba(220,38,38,.1);  color: var(--red);   border: 1px solid rgba(220,38,38,.25); }
+#diagNoteContainer .chip-warn { background: rgba(201,151,42,.12); color: var(--gold);  border: 1px solid rgba(201,151,42,.3); }
+#diagNoteContainer .chip-blue { background: rgba(37,99,235,.1);  color: var(--blue);  border: 1px solid rgba(37,99,235,.25); }
+
+/* 표 스타일 */
+#diagNoteContainer .np-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+#diagNoteContainer .np-table th {
+  background: var(--navy);
+  color: #fff;
+  padding: 5px 8px;
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 700;
+}
+#diagNoteContainer .np-table td {
+  padding: 5px 8px;
+  border: 1px solid #e8e0d0;
+  text-align: center;
+  color: var(--navy);
+  font-weight: 500;
+}
+#diagNoteContainer .np-table td.label { text-align: left; font-weight: 700; background: rgba(11,29,58,.02); }
+#diagNoteContainer .np-table td.ok { color: var(--green); font-weight: 700; }
+#diagNoteContainer .np-table td.bad { color: var(--red);   font-weight: 700; }
+#diagNoteContainer .np-table td.warn { color: var(--gold);  font-weight: 700; }
+#diagNoteContainer .np-table td.empty-cell { color: #c9c3b5; font-style: italic; font-size: 8px; }
+
+/* 수지분석 표 전용 */
+#diagNoteContainer .income-cell { background: rgba(37,99,235,.05); font-weight: 900 !important; color: var(--blue) !important; }
+
+/* 큰 숫자 표시 */
+#diagNoteContainer .big-num {
+  font-size: 22px; font-weight: 900; color: var(--navy);
+  font-family: var(--fs);
+}
+#diagNoteContainer .big-unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
+
+/* 진행 표시 바 */
+#diagNoteContainer .np-footer {
+  flex-shrink: 0;
+  background: rgba(11,29,58,.03);
+  border-top: 1px solid var(--border);
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#diagNoteContainer .np-progress-track {
+  flex: 1; height: 4px;
+  background: rgba(0,0,0,.06);
+  border-radius: 3px; overflow: hidden;
+}
+#diagNoteContainer .np-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+#diagNoteContainer .np-footer-txt { font-size: 8px; color: var(--muted); white-space: nowrap; }
+
+/* ━━━ 금융집짓기 SVG 영역 ━━━ */
+#diagNoteContainer .house-embed {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: #fff;
+}
+#diagNoteContainer .house-embed iframe {
+  width: 100%;
+  height: 340px;
+  border: none;
+  display: block;
+}
+
+/* ━━━ 포트폴리오 바 ━━━ */
+#diagNoteContainer .pf-bar-wrap { padding: 4px 0; }
+#diagNoteContainer .pf-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#diagNoteContainer .pf-bar-lbl { font-size: 8.5px; font-weight: 700; color: var(--muted); min-width: 70px; }
+#diagNoteContainer .pf-bar-track { flex: 1; height: 18px; background: rgba(0,0,0,.05); border-radius: 5px; overflow: hidden; }
+#diagNoteContainer .pf-bar-fill { height: 100%; border-radius: 5px; display: flex; align-items: center; padding-left: 8px;
+                font-size: 8.5px; font-weight: 700; color: #fff; transition: width .8s ease; }
+#diagNoteContainer .pf-bar-val { font-size: 9px; font-weight: 700; color: var(--navy); min-width: 36px; text-align: right; }
+
+</style>
+<div id="diagNoteInner" style="position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+<div class="notebook-viewer">
+
+  <!-- 상단 컨트롤 -->
+  <div class="nb-ctrl">
+    <div class="nb-title">📋 AI머니야 재무진단 상담노트</div>
+    <div class="nb-tabs" id="nbTabs"></div>
+    <div class="nb-nav">
+      <button class="nb-btn" id="btnPrev" onclick="goPage(-1)">◀ 이전</button>
+      <div class="nb-page-info" id="pageInfo">0 / 0</div>
+      <button class="nb-btn" id="btnNext" onclick="goPage(1)">다음 ▶</button>
+    </div>
+  </div>
+
+  <!-- 페이지 스테이지 -->
+  <div class="nb-stage" id="nbStage">
+
+    <!-- ══════════ PAGE 0: 오프닝 ══════════ -->
+    <div class="note-page show" id="page0">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">0</div>
+          <div>
+            <div class="np-page-title">오프닝</div>
+            <div class="np-page-sub">AI 재무진단 시작</div>
+          </div>
+        </div>
+        <div class="np-hdr-right">
+          <div class="np-date" id="p0date">2026.03.21</div>
+          <div class="np-badge" id="p0session">초회진단 1회차</div>
+        </div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📋</span>진단 기본정보</div>
+          <div class="np-field"><span class="np-label">진단 목적</span><span class="np-value filled">금융집짓기® 종합 재무진단</span></div>
+          <div class="np-field"><span class="np-label">진단 날짜</span><span class="np-value filled" id="f0_date">—</span></div>
+          <div class="np-field"><span class="np-label">회차</span><span class="np-value filled" id="f0_session">—</span></div>
+          <div class="np-field"><span class="np-label">예상 소요시간</span><span class="np-value filled">60분 (초회)</span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📎</span>사전 서류</div>
+          <div class="np-field"><span class="np-label">재무진단 신청서</span><span class="np-value empty" id="f0_app"></span></div>
+          <div class="np-field"><span class="np-label">보험증권</span><span class="np-value empty" id="f0_ins"></span></div>
+          <div class="np-field"><span class="np-label">급여명세서</span><span class="np-value empty" id="f0_sal"></span></div>
+          <div class="np-field"><span class="np-label">연금명세서</span><span class="np-value empty" id="f0_pen"></span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">🤖</span>AI 머니야 소개</div>
+          <div class="np-field"><span class="np-label">진단 에이전트</span><span class="np-value filled">AI 머니야 — 오상열 CFP 20년 경력 금융집짓기® 방법론</span></div>
+          <div class="np-field"><span class="np-label">진단 구조</span><span class="np-value filled">11단계 종합진단 → 재무설계 8대영역 → 종합 리포트 자동 발급</span></div>
+          <div class="np-field"><span class="np-label">특이사항</span><span class="np-value empty" id="f0_note"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:5%"></div></div>
+        <div class="np-footer-txt">0/11단계 · 진단 시작</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 1: 인적사항 ══════════ -->
+    <div class="note-page" id="page1">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">1</div>
+          <div><div class="np-page-title">인적사항</div><div class="np-page-sub">기본 정보 확인</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p1date">—</div><div class="np-badge">1단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">👤</span>기본 인적사항</div>
+          <div class="np-field"><span class="np-label">성함</span><span class="np-value empty" id="f1_name"></span></div>
+          <div class="np-field"><span class="np-label">나이</span><span class="np-value empty" id="f1_age"></span></div>
+          <div class="np-field"><span class="np-label">결혼여부</span><span class="np-value empty" id="f1_marry"></span></div>
+          <div class="np-field"><span class="np-label">자녀</span><span class="np-value empty" id="f1_child"></span></div>
+          <div class="np-field"><span class="np-label">가족수</span><span class="np-value empty" id="f1_family"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💼</span>직업 및 수입구조</div>
+          <div class="np-field"><span class="np-label">직업</span><span class="np-value empty" id="f1_job"></span></div>
+          <div class="np-field"><span class="np-label">맞벌이여부</span><span class="np-value empty" id="f1_dual"></span></div>
+          <div class="np-field"><span class="np-label">돈관리</span><span class="np-value empty" id="f1_mgr"></span></div>
+          <div class="np-field"><span class="np-label">은퇴예정나이</span><span class="np-value empty" id="f1_retire"></span></div>
+          <div class="np-field"><span class="np-label">예상수명</span><span class="np-value empty" id="f1_life"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:10%"></div></div>
+        <div class="np-footer-txt">1/11단계 · 인적사항</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 2: 경제적 고민 ══════════ -->
+    <div class="note-page" id="page2">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">2</div>
+          <div><div class="np-page-title">경제적 고민</div><div class="np-page-sub">핵심 니즈 파악</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p2date">—</div><div class="np-badge">2단계</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💬</span>주요 경제적 고민 / 관심</div>
+          <div class="np-field" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span class="np-label">고민 1</span><span class="np-value empty" id="f2_w1" style="min-height:28px;width:100%"></span>
+          </div>
+          <div class="np-field" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span class="np-label">고민 2</span><span class="np-value empty" id="f2_w2" style="min-height:28px;width:100%"></span>
+          </div>
+          <div class="np-field" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span class="np-label">고민 3</span><span class="np-value empty" id="f2_w3" style="min-height:28px;width:100%"></span>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🎯</span>재무적 꿈 / 목표</div>
+          <div class="np-field" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span class="np-label">목표</span><span class="np-value empty" id="f2_goal" style="min-height:36px;width:100%"></span>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📌</span>머니야 요약 답변</div>
+          <div class="np-field" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span class="np-value empty" id="f2_ans" style="min-height:36px;width:100%;font-size:10px"></span>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:18%"></div></div>
+        <div class="np-footer-txt">2/11단계 · 경제적 고민</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 3: 수입지출 분석 ══════════ -->
+    <div class="note-page" id="page3">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">3</div>
+          <div><div class="np-page-title">수입지출 분석</div><div class="np-page-sub">한국FPSB 기준 예산표</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p3date">—</div><div class="np-badge">3단계</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📊</span>수입지출 분석표 <span style="font-size:7.5px;color:var(--muted);font-weight:400;margin-left:4px">출처: 한국FPSB</span></div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <thead>
+                <tr>
+                  <th style="width:16px">수입</th>
+                  <th>지출</th>
+                  <th>현재(만원)</th>
+                  <th>기준%</th>
+                  <th>예상(만원)</th>
+                  <th>진단</th>
+                  <th>실행(변경후)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="income-cell" rowspan="7" id="f3_income" style="writing-mode:vertical-rl;font-size:9px;font-weight:900">0만원</td>
+                  <td class="label">생활비</td>
+                  <td id="f3_living_cur" class="empty-cell">—</td>
+                  <td id="f3_living_pct">—</td>
+                  <td id="f3_living_exp">—</td>
+                  <td id="f3_living_diag">—</td>
+                  <td id="f3_living_act">—</td>
+                </tr>
+                <tr>
+                  <td class="label">저축투자</td>
+                  <td id="f3_save_cur" class="empty-cell">—</td>
+                  <td id="f3_save_pct">—</td>
+                  <td id="f3_save_exp">—</td>
+                  <td id="f3_save_diag">—</td>
+                  <td id="f3_save_act">—</td>
+                </tr>
+                <tr>
+                  <td class="label">노후연금</td>
+                  <td id="f3_pension_cur" class="empty-cell">—</td>
+                  <td>10%</td>
+                  <td id="f3_pension_exp">—</td>
+                  <td id="f3_pension_diag">—</td>
+                  <td id="f3_pension_act">—</td>
+                </tr>
+                <tr>
+                  <td class="label">보장성보험</td>
+                  <td id="f3_ins_cur" class="empty-cell">—</td>
+                  <td>10%</td>
+                  <td id="f3_ins_exp">—</td>
+                  <td id="f3_ins_diag">—</td>
+                  <td id="f3_ins_act">—</td>
+                </tr>
+                <tr>
+                  <td class="label">대출원리금</td>
+                  <td id="f3_loan_cur" class="empty-cell">—</td>
+                  <td>10%</td>
+                  <td id="f3_loan_exp">—</td>
+                  <td id="f3_loan_diag">—</td>
+                  <td id="f3_loan_act">—</td>
+                </tr>
+                <tr>
+                  <td class="label">잉여자금</td>
+                  <td id="f3_surplus" class="empty-cell">—</td>
+                  <td>—</td><td>—</td><td>—</td><td>—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-weight:900">합 계</td>
+                  <td id="f3_total" class="empty-cell">—</td>
+                  <td>—</td><td>—</td><td>—</td><td>—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📌</span>기준비율표 (가족수별)</div>
+          <div style="padding:6px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>가족수</th><th>1인</th><th>2인</th><th>3인</th><th>4인</th><th>5인↑</th></tr>
+              <tr><td class="label">생활비</td><td>20%</td><td>30%</td><td>40%</td><td>50%</td><td>60%</td></tr>
+              <tr><td class="label">저축투자</td><td>50%</td><td>40%</td><td>30%</td><td>20%</td><td>10%</td></tr>
+              <tr><td class="label">노후·보험·대출</td><td colspan="5" style="text-align:center">각 10% (가족수 무관)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:27%"></div></div>
+        <div class="np-footer-txt">3/11단계 · 수입지출분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 4: 자산부채 분석 ══════════ -->
+    <div class="note-page" id="page4">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">4</div>
+          <div><div class="np-page-title">자산부채 분석</div><div class="np-page-sub">3대 재무지표</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p4date">—</div><div class="np-badge">4단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🏦</span>자산 현황</div>
+          <div class="np-field"><span class="np-label">예적금</span><span class="np-value empty" id="f4_deposit"></span></div>
+          <div class="np-field"><span class="np-label">펀드·주식·ETF</span><span class="np-value empty" id="f4_invest"></span></div>
+          <div class="np-field"><span class="np-label">연금</span><span class="np-value empty" id="f4_pension"></span></div>
+          <div class="np-field"><span class="np-label">부동산</span><span class="np-value empty" id="f4_realty"></span></div>
+          <div class="np-field" style="border-top:1.5px solid var(--border)"><span class="np-label" style="color:var(--navy);font-weight:900">총자산</span><span class="np-value empty" id="f4_total_asset" style="font-weight:900"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💳</span>부채 현황</div>
+          <div class="np-field"><span class="np-label">담보대출</span><span class="np-value empty" id="f4_mortgage"></span></div>
+          <div class="np-field"><span class="np-label">신용대출</span><span class="np-value empty" id="f4_credit"></span></div>
+          <div class="np-field"><span class="np-label">기타부채</span><span class="np-value empty" id="f4_etc_debt"></span></div>
+          <div class="np-field" style="border-top:1.5px solid var(--border)"><span class="np-label" style="color:var(--red);font-weight:900">총부채</span><span class="np-value empty" id="f4_total_debt" style="font-weight:900;color:var(--red)"></span></div>
+          <div class="np-field"><span class="np-label" style="color:var(--navy);font-weight:900">순자산</span><span class="np-value empty" id="f4_net" style="font-weight:900;color:var(--navy)"></span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📈</span>3대 재무지표</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>지표</th><th>재무분석 현황</th><th>권장기준</th><th>진단</th></tr>
+              <tr>
+                <td class="label">부자지수</td>
+                <td id="f4_wi_val" class="empty-cell">—</td>
+                <td>100% ~ 200%</td>
+                <td id="f4_wi_diag">—</td>
+              </tr>
+              <tr>
+                <td class="label">부채비율</td>
+                <td id="f4_dr_val" class="empty-cell">—</td>
+                <td>0% ~ 20%</td>
+                <td id="f4_dr_diag">—</td>
+              </tr>
+              <tr>
+                <td class="label">비상예비자금</td>
+                <td id="f4_ef_val" class="empty-cell">—</td>
+                <td id="f4_ef_std">월소득 3~6개월</td>
+                <td id="f4_ef_diag">—</td>
+              </tr>
+              <tr>
+                <td class="label">금융자산비중</td>
+                <td id="f4_fa_val" class="empty-cell">—</td>
+                <td>30% ~ 40%</td>
+                <td id="f4_fa_diag">—</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:36%"></div></div>
+        <div class="np-footer-txt">4/11단계 · 자산부채분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 5: 금융집짓기 설계도면 ══════════ -->
+    <div class="note-page" id="page5">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">5</div>
+          <div><div class="np-page-title">금융집짓기 설계도면</div><div class="np-page-sub">DESIRE 단계 포함</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p5date">—</div><div class="np-badge">5단계</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group" style="padding:8px">
+          <!-- 금융집짓기 SVG 애니메이션 삽입 영역 -->
+          <div id="houseContainer" style="width:100%;min-height:340px;display:flex;align-items:center;justify-content:center;background:var(--gold3);border-radius:8px;border:1px dashed rgba(201,151,42,.4)">
+            <div style="text-align:center;color:var(--gold);font-size:11px;font-weight:700">
+              <div style="font-size:28px;margin-bottom:6px">🏠</div>
+              금융집짓기® 설계도면<br>
+              <span style="font-size:9px;font-weight:400;color:var(--muted)">5단계 진입 시 자동 표시됩니다</span>
+            </div>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📍</span>DESIRE 단계</div>
+          <div class="np-field"><span class="np-label">현재 단계</span><span class="np-value empty" id="f5_desire"></span></div>
+          <div class="np-field"><span class="np-label">다음 단계</span><span class="np-value empty" id="f5_next"></span></div>
+          <div class="np-field"><span class="np-label">실행 전략</span><span class="np-value empty" id="f5_strategy"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:45%"></div></div>
+        <div class="np-footer-txt">5/11단계 · 금융집짓기 설계도면</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 6: 저축투자 포트폴리오 ══════════ -->
+    <div class="note-page" id="page6">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">6</div>
+          <div><div class="np-page-title">저축투자 포트폴리오</div><div class="np-page-sub">적립식 설계</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p6date">—</div><div class="np-badge">6단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💰</span>투자재원 산출</div>
+          <div class="np-field"><span class="np-label">투자재원</span><span class="np-value empty" id="f6_source"></span></div>
+          <div class="np-field"><span class="np-label">(-) 노후연금부족</span><span class="np-value empty" id="f6_pen_gap"></span></div>
+          <div class="np-field"><span class="np-label">(-) 보험부족</span><span class="np-value empty" id="f6_ins_gap"></span></div>
+          <div class="np-field" style="border-top:1.5px solid var(--border)"><span class="np-label" style="font-weight:900;color:var(--navy)">(=) 순투자재원</span><span class="np-value empty" id="f6_net" style="font-weight:900"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📊</span>배분 비율</div>
+          <div style="padding:10px 12px">
+            <div class="pf-bar-wrap">
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">초단기(수시)</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb6_1" style="width:0%;background:linear-gradient(90deg,#64748b,#94a3b8)">0만</div></div>
+                <span class="pf-bar-val" id="pv6_1">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">단기(1년)</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb6_2" style="width:0%;background:linear-gradient(90deg,#2563eb,#60a5fa)">0만</div></div>
+                <span class="pf-bar-val" id="pv6_2">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">중기(3~5년)</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb6_3" style="width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy)">0만</div></div>
+                <span class="pf-bar-val" id="pv6_3">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">장기(10~15년)</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb6_4" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa)">0만</div></div>
+                <span class="pf-bar-val" id="pv6_4">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📋</span>상세 포트폴리오</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>구분</th><th>기간</th><th>목적</th><th>현재(만원)</th><th>최종(만원)</th><th>추천상품</th></tr>
+              <tr><td class="label">초단기</td><td>수시</td><td>비상예비금</td><td id="f6t_1c" class="empty-cell">—</td><td id="f6t_1f" class="empty-cell">—</td><td>CMA·파킹</td></tr>
+              <tr><td class="label">단기</td><td>1년</td><td>유동성자금</td><td id="f6t_2c" class="empty-cell">—</td><td id="f6t_2f" class="empty-cell">—</td><td>적금·청약</td></tr>
+              <tr><td class="label">중기</td><td>3~5년</td><td>목적자금</td><td id="f6t_3c" class="empty-cell">—</td><td id="f6t_3f" class="empty-cell">—</td><td>ISA·ETF</td></tr>
+              <tr><td class="label">장기</td><td>10~15년</td><td>노후·목돈</td><td id="f6t_4c" class="empty-cell">—</td><td id="f6t_4f" class="empty-cell">—</td><td>IRP·연금</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:54%"></div></div>
+        <div class="np-footer-txt">6/11단계 · 저축투자포트폴리오</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 7: 자산배분 포트폴리오 ══════════ -->
+    <div class="note-page" id="page7">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">7</div>
+          <div><div class="np-page-title">자산배분 포트폴리오</div><div class="np-page-sub">거치식 70:30 기준</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p7date">—</div><div class="np-badge">7단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">⚖️</span>안전/위험 배분 (70:30)</div>
+          <div style="padding:10px 12px">
+            <div class="pf-bar-wrap">
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">안전-유동성</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb7_1" style="width:21%;background:linear-gradient(90deg,#64748b,#94a3b8)">21%</div></div>
+                <span class="pf-bar-val" id="pv7_1">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">안전-안전성</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb7_2" style="width:49%;background:linear-gradient(90deg,#2563eb,#60a5fa)">49%</div></div>
+                <span class="pf-bar-val" id="pv7_2">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">위험-수익성</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb7_3" style="width:21%;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy)">21%</div></div>
+                <span class="pf-bar-val" id="pv7_3">—</span>
+              </div>
+              <div class="pf-bar-row">
+                <span class="pf-bar-lbl">위험-고수익</span>
+                <div class="pf-bar-track"><div class="pf-bar-fill" id="pb7_4" style="width:9%;background:linear-gradient(90deg,#7c3aed,#a78bfa)">9%</div></div>
+                <span class="pf-bar-val" id="pv7_4">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🏠</span>부동산 배분 (70:30)</div>
+          <div class="np-field"><span class="np-label">주거용 (70%)</span><span class="np-value empty" id="f7_res"></span></div>
+          <div class="np-field"><span class="np-label">투자용 (30%)</span><span class="np-value empty" id="f7_inv"></span></div>
+          <div class="np-field"><span class="np-label">금융자산 합계</span><span class="np-value empty" id="f7_fin_total"></span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📋</span>자산배분 상세</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>구분</th><th>분류</th><th>비중</th><th>현재(만원)</th><th>최종(만원)</th><th>추천상품</th></tr>
+              <tr><td class="label" rowspan="2">안전</td><td>유동성</td><td>21%</td><td id="f7t_1c" class="empty-cell">—</td><td id="f7t_1f" class="empty-cell">—</td><td>금·CMA·파킹</td></tr>
+              <tr><td>안전성</td><td>49%</td><td id="f7t_2c" class="empty-cell">—</td><td id="f7t_2f" class="empty-cell">—</td><td>예금·국채·연금</td></tr>
+              <tr><td class="label" rowspan="2">위험</td><td>수익성</td><td>21%</td><td id="f7t_3c" class="empty-cell">—</td><td id="f7t_3f" class="empty-cell">—</td><td>펀드·ETF</td></tr>
+              <tr><td>고수익</td><td>9%</td><td id="f7t_4c" class="empty-cell">—</td><td id="f7t_4f" class="empty-cell">—</td><td>주식·코인</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:63%"></div></div>
+        <div class="np-footer-txt">7/11단계 · 자산배분포트폴리오</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-1: 은퇴설계 ══════════ -->
+    <div class="note-page" id="page8_1">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ① 은퇴분석</div><div class="np-page-sub">1.안방</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p81date">—</div><div class="np-badge">8단계 1/8</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🎯</span>노후 목표</div>
+          <div class="np-field"><span class="np-label">꿈꾸는 노후</span><span class="np-value empty" id="f81_dream"></span></div>
+          <div class="np-field"><span class="np-label">은퇴나이</span><span class="np-value empty" id="f81_age"></span></div>
+          <div class="np-field"><span class="np-label">예상수명</span><span class="np-value empty" id="f81_life"></span></div>
+          <div class="np-field"><span class="np-label">은퇴기간</span><span class="np-value empty" id="f81_period"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💴</span>필요 vs 준비</div>
+          <div class="np-field"><span class="np-label">노후 필요자금</span><span class="np-value empty" id="f81_need"></span></div>
+          <div class="np-field"><span class="np-label">공적연금(국민연금)</span><span class="np-value empty" id="f81_pub"></span></div>
+          <div class="np-field"><span class="np-label">개인연금 적립</span><span class="np-value empty" id="f81_priv"></span></div>
+          <div class="np-field"><span class="np-label">퇴직연금 적립</span><span class="np-value empty" id="f81_retire_fund"></span></div>
+          <div class="np-field"><span class="np-label">준비자금 합계</span><span class="np-value empty" id="f81_ready"></span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📐</span>은퇴 계산</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>항목</th><th>계산식</th><th>금액</th><th>진단</th></tr>
+              <tr><td class="label">은퇴준비율</td><td>준비자금 ÷ 필요자금 × 100</td><td id="f81_rate" class="empty-cell">—</td><td id="f81_rate_d">—</td></tr>
+              <tr><td class="label">부족자금(월)</td><td>필요 - 준비</td><td id="f81_short" class="empty-cell">—</td><td>—</td></tr>
+              <tr><td class="label">은퇴일시금</td><td>부족 × 12 × 은퇴기간</td><td id="f81_lump" class="empty-cell">—</td><td>—</td></tr>
+              <tr><td class="label">순은퇴일시금</td><td>은퇴일시금 - 퇴직연금</td><td id="f81_net" class="empty-cell">—</td><td>—</td></tr>
+              <tr><td class="label" style="color:var(--red);font-weight:900">월 추가저축 필요</td><td>순은퇴일시금 ÷ 경제활동기간 ÷ 12</td><td id="f81_monthly" class="empty-cell">—</td><td id="f81_monthly_d">—</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:65%"></div></div>
+        <div class="np-footer-txt">8단계 1/8 · 은퇴분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-2: 부채설계 ══════════ -->
+    <div class="note-page" id="page8_2">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ② 부채분석</div><div class="np-page-sub">2.거실 — 스노우볼 전략</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p82date">—</div><div class="np-badge">8단계 2/8</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💳</span>신용대출 목록 (금액 작은 순 — 스노우볼 전략)</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>순서</th><th>종류</th><th>금액(만원)</th><th>이율(%)</th><th>상환예정</th><th>비고</th></tr>
+              <tr><td>1</td><td id="f82_1n" class="empty-cell">—</td><td id="f82_1a" class="empty-cell">—</td><td id="f82_1r" class="empty-cell">—</td><td id="f82_1p" class="empty-cell">—</td><td id="f82_1m" class="empty-cell">—</td></tr>
+              <tr><td>2</td><td id="f82_2n" class="empty-cell">—</td><td id="f82_2a" class="empty-cell">—</td><td id="f82_2r" class="empty-cell">—</td><td id="f82_2p" class="empty-cell">—</td><td id="f82_2m" class="empty-cell">—</td></tr>
+              <tr><td>3</td><td id="f82_3n" class="empty-cell">—</td><td id="f82_3a" class="empty-cell">—</td><td id="f82_3r" class="empty-cell">—</td><td id="f82_3p" class="empty-cell">—</td><td id="f82_3m" class="empty-cell">—</td></tr>
+              <tr><td style="font-weight:900">합계</td><td>—</td><td id="f82_total" class="empty-cell">—</td><td>—</td><td>—</td><td>—</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🏠</span>담보대출</div>
+          <div class="np-field"><span class="np-label">주택담보대출</span><span class="np-value empty" id="f82_mortgage"></span></div>
+          <div class="np-field"><span class="np-label">이율</span><span class="np-value empty" id="f82_mort_rate"></span></div>
+          <div class="np-field"><span class="np-label">은퇴 전 완납 목표</span><span class="np-value empty" id="f82_mort_plan"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📌</span>상환 전략</div>
+          <div class="np-field"><span class="np-label">전략</span><span class="np-value filled">스노우볼 전략 — 금액 작은 것부터 순서대로 상환</span></div>
+          <div class="np-field"><span class="np-label">우선순위</span><span class="np-value empty" id="f82_priority"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:67%"></div></div>
+        <div class="np-footer-txt">8단계 2/8 · 부채분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-3: 저축설계 ══════════ -->
+    <div class="note-page" id="page8_3">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ③ 저축분석</div><div class="np-page-sub">3.건넌방</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p83date">—</div><div class="np-badge">8단계 3/8</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🎯</span>목적자금 설계</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>목적</th><th>목표금액(만)</th><th>기간(년)</th><th>현재준비(만)</th><th>순목표(만)</th><th>월저축액(만)</th></tr>
+              <tr><td id="f83_1p" class="empty-cell">—</td><td id="f83_1g" class="empty-cell">—</td><td id="f83_1t" class="empty-cell">—</td><td id="f83_1c" class="empty-cell">—</td><td id="f83_1n" class="empty-cell">—</td><td id="f83_1m" class="empty-cell">—</td></tr>
+              <tr><td id="f83_2p" class="empty-cell">—</td><td id="f83_2g" class="empty-cell">—</td><td id="f83_2t" class="empty-cell">—</td><td id="f83_2c" class="empty-cell">—</td><td id="f83_2n" class="empty-cell">—</td><td id="f83_2m" class="empty-cell">—</td></tr>
+              <tr><td id="f83_3p" class="empty-cell">—</td><td id="f83_3g" class="empty-cell">—</td><td id="f83_3t" class="empty-cell">—</td><td id="f83_3c" class="empty-cell">—</td><td id="f83_3n" class="empty-cell">—</td><td id="f83_3m" class="empty-cell">—</td></tr>
+              <tr><td style="font-weight:900">합계</td><td id="f83_tg" class="empty-cell">—</td><td>—</td><td id="f83_tc" class="empty-cell">—</td><td id="f83_tn" class="empty-cell">—</td><td id="f83_tm" class="empty-cell">—</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📌</span>4대 저축 원칙</div>
+          <div class="np-field"><span class="np-label">조기저축</span><span class="np-value filled">지금 당장 시작 — 1년이라도 일찍</span></div>
+          <div class="np-field"><span class="np-label">장기저축</span><span class="np-value filled">10년 이상 유지 — 복리의 힘</span></div>
+          <div class="np-field"><span class="np-label">강제저축</span><span class="np-value filled">자동이체 선저축 — 남은 돈으로 생활</span></div>
+          <div class="np-field"><span class="np-label">가로저축</span><span class="np-value filled">수입 증가 시 저축도 함께 증가</span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💬</span>실행 가능 여부</div>
+          <div class="np-field"><span class="np-label">월 저축 가능액</span><span class="np-value empty" id="f83_possible"></span></div>
+          <div class="np-field"><span class="np-label">현재 저축투자</span><span class="np-value empty" id="f83_current"></span></div>
+          <div class="np-field"><span class="np-label">추가 필요액</span><span class="np-value empty" id="f83_gap"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:70%"></div></div>
+        <div class="np-footer-txt">8단계 3/8 · 저축분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-4: 투자설계 ══════════ -->
+    <div class="note-page" id="page8_4">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ④ 투자분석</div><div class="np-page-sub">4.다락방 — 10억 목표</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p84date">—</div><div class="np-badge">8단계 4/8</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📈</span>부자지수 분석</div>
+          <div class="np-field"><span class="np-label">현재 부자지수</span><span class="np-value empty" id="f84_wi"></span></div>
+          <div class="np-field"><span class="np-label">목표 부자지수</span><span class="np-value filled">100% 이상</span></div>
+          <div class="np-field"><span class="np-label">금융자산 목표</span><span class="np-value filled">10억원</span></div>
+          <div class="np-field"><span class="np-label">현재 금융자산</span><span class="np-value empty" id="f84_current"></span></div>
+          <div class="np-field"><span class="np-label">달성 필요액</span><span class="np-value empty" id="f84_gap"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">⚖️</span>투자 원칙</div>
+          <div class="np-field"><span class="np-label">배분 기준</span><span class="np-value filled">안전 70% : 위험 30%</span></div>
+          <div class="np-field"><span class="np-label">리밸런싱</span><span class="np-value empty" id="f84_rebal"></span></div>
+          <div class="np-field"><span class="np-label">절세 3총사</span><span class="np-value filled">ISA · IRP · 연금저축펀드</span></div>
+          <div class="np-field"><span class="np-label">ETF 3총사</span><span class="np-value filled">S&P500 · 나스닥100 · 미국배당다우존스</span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📌</span>투자 실행 계획</div>
+          <div class="np-field"><span class="np-label">단기 투자</span><span class="np-value empty" id="f84_short"></span></div>
+          <div class="np-field"><span class="np-label">중기 투자</span><span class="np-value empty" id="f84_mid"></span></div>
+          <div class="np-field"><span class="np-label">장기 투자</span><span class="np-value empty" id="f84_long"></span></div>
+          <div class="np-field"><span class="np-label">예상 달성기간</span><span class="np-value empty" id="f84_period"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:73%"></div></div>
+        <div class="np-footer-txt">8단계 4/8 · 투자분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-5: 세금설계 ══════════ -->
+    <div class="note-page" id="page8_5">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ⑤ 세금분석</div><div class="np-page-sub">5.지붕마감재 — 결정세액 0원 전략</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p85date">—</div><div class="np-badge">8단계 5/8</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📉</span>소득공제 현황</div>
+          <div class="np-field"><span class="np-label">청약통장</span><span class="np-value empty" id="f85_sub"></span></div>
+          <div class="np-field"><span class="np-label">주택담보대출 이자</span><span class="np-value empty" id="f85_mort"></span></div>
+          <div class="np-field"><span class="np-label">전세대출 원리금</span><span class="np-value empty" id="f85_lease"></span></div>
+          <div class="np-field"><span class="np-label">신용카드 (연봉25%)</span><span class="np-value empty" id="f85_card"></span></div>
+          <div class="np-field"><span class="np-label">노란우산공제</span><span class="np-value empty" id="f85_yellow"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💸</span>세액공제 현황</div>
+          <div class="np-field"><span class="np-label">연금저축펀드</span><span class="np-value empty" id="f85_pension"></span></div>
+          <div class="np-field"><span class="np-label">IRP</span><span class="np-value empty" id="f85_irp"></span></div>
+          <div class="np-field"><span class="np-label">합산한도 (연900만)</span><span class="np-value empty" id="f85_total"></span></div>
+          <div class="np-field"><span class="np-label">현재 결정세액</span><span class="np-value empty" id="f85_tax"></span></div>
+          <div class="np-field"><span class="np-label">절세 후 예상 환급</span><span class="np-value empty" id="f85_refund"></span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">⚠️</span>면책사항</div>
+          <div class="np-field"><span class="np-value filled" style="font-size:9px;color:var(--muted)">세금설계는 상식적인 수준의 안내이며, 정확한 세무 처리는 세무 전문가와 상담하시기 바랍니다.</span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:76%"></div></div>
+        <div class="np-footer-txt">8단계 5/8 · 세금분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-6: 부동산설계 ══════════ -->
+    <div class="note-page" id="page8_6">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ⑥ 부동산분석</div><div class="np-page-sub">6.굴뚝 — 주거용70% 투자용30%</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p86date">—</div><div class="np-badge">8단계 6/8</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🏠</span>현황</div>
+          <div class="np-field"><span class="np-label">주택 보유</span><span class="np-value empty" id="f86_own"></span></div>
+          <div class="np-field"><span class="np-label">현재 형태</span><span class="np-value empty" id="f86_type"></span></div>
+          <div class="np-field"><span class="np-label">주택 가격</span><span class="np-value empty" id="f86_price"></span></div>
+          <div class="np-field"><span class="np-label">담보대출</span><span class="np-value empty" id="f86_loan"></span></div>
+          <div class="np-field"><span class="np-label">LTV 비율</span><span class="np-value empty" id="f86_ltv"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📋</span>전략</div>
+          <div class="np-field"><span class="np-label">기준</span><span class="np-value filled">주거용 70% · 투자용 30%</span></div>
+          <div class="np-field"><span class="np-label">핵심 원칙</span><span class="np-value filled">LTV 40% 이하 유지 · 은퇴 전 담보대출 완납</span></div>
+          <div class="np-field"><span class="np-label">청약통장</span><span class="np-value empty" id="f86_sub"></span></div>
+          <div class="np-field"><span class="np-label">향후 전략</span><span class="np-value empty" id="f86_strategy"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:80%"></div></div>
+        <div class="np-footer-txt">8단계 6/8 · 부동산분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-7: 보험설계 ══════════ -->
+    <div class="note-page" id="page8_7">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ⑦ 보험분석</div><div class="np-page-sub">7.기초 — 수입보호 설계</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p87date">—</div><div class="np-badge">8단계 7/8</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🛡️</span>보험 담보별 진단</div>
+          <div style="padding:8px 12px;overflow-x:auto">
+            <table class="np-table">
+              <tr><th>담보</th><th>기준금액</th><th>현재금액(만원)</th><th>진단</th><th>부족액(만원)</th></tr>
+              <tr><td class="label">사망</td><td id="f87_death_std">연봉×3+부채</td><td id="f87_death_cur" class="empty-cell">—</td><td id="f87_death_d">—</td><td id="f87_death_gap" class="empty-cell">—</td></tr>
+              <tr><td class="label">장해</td><td id="f87_inj_std">연봉×3+부채</td><td id="f87_inj_cur" class="empty-cell">—</td><td id="f87_inj_d">—</td><td id="f87_inj_gap" class="empty-cell">—</td></tr>
+              <tr><td class="label">암진단</td><td id="f87_cancer_std">연봉×2</td><td id="f87_cancer_cur" class="empty-cell">—</td><td id="f87_cancer_d">—</td><td id="f87_cancer_gap" class="empty-cell">—</td></tr>
+              <tr><td class="label">뇌혈관</td><td id="f87_brain_std">연봉×1</td><td id="f87_brain_cur" class="empty-cell">—</td><td id="f87_brain_d">—</td><td id="f87_brain_gap" class="empty-cell">—</td></tr>
+              <tr><td class="label">심혈관</td><td id="f87_heart_std">연봉×1</td><td id="f87_heart_cur" class="empty-cell">—</td><td id="f87_heart_d">—</td><td id="f87_heart_gap" class="empty-cell">—</td></tr>
+              <tr><td class="label">실비</td><td>5천만원</td><td id="f87_actual_cur" class="empty-cell">—</td><td id="f87_actual_d">—</td><td>—</td></tr>
+              <tr><td class="label">입원수술</td><td>특약 유무</td><td id="f87_hosp_cur" class="empty-cell">—</td><td id="f87_hosp_d">—</td><td>—</td></tr>
+              <tr><td class="label">치매간병</td><td>특약 유무</td><td id="f87_dem_cur" class="empty-cell">—</td><td id="f87_dem_d">—</td><td>—</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📋</span>보험료 현황 및 추천</div>
+          <div class="np-field"><span class="np-label">현재 보험료</span><span class="np-value empty" id="f87_premium"></span></div>
+          <div class="np-field"><span class="np-label">추가 필요 보장</span><span class="np-value empty" id="f87_need"></span></div>
+          <div class="np-field"><span class="np-label">안내사항</span><span class="np-value filled" style="font-size:9px">보험 상담이 필요하시면 별도로 신청해 주시기 바랍니다. (회원 무료)</span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:85%"></div></div>
+        <div class="np-footer-txt">8단계 7/8 · 보험분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 8-8: DESIRE 설계 ══════════ -->
+    <div class="note-page" id="page8_8">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">8</div>
+          <div><div class="np-page-title">종합재무분석 ⑧ DESIRE 분석</div><div class="np-page-sub">재무 위치 진단</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p88date">—</div><div class="np-badge">8단계 8/8</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📍</span>DESIRE 단계 판정</div>
+          <div class="np-field"><span class="np-label">신용대출</span><span class="np-value empty" id="f88_credit"></span></div>
+          <div class="np-field"><span class="np-label">비상예비자금</span><span class="np-value empty" id="f88_emergency"></span></div>
+          <div class="np-field"><span class="np-label">저축투자 기준달성</span><span class="np-value empty" id="f88_save"></span></div>
+          <div class="np-field"><span class="np-label">금융자산 10억</span><span class="np-value empty" id="f88_billion"></span></div>
+          <div class="np-field"><span class="np-label">담보대출</span><span class="np-value empty" id="f88_mortgage"></span></div>
+          <div class="np-field" style="border-top:2px solid var(--gold);margin-top:4px"><span class="np-label" style="color:var(--gold);font-weight:900">현재 단계</span><span class="np-value empty" id="f88_stage" style="font-size:13px;font-weight:900;color:var(--navy)"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🚀</span>단계별 실행 전략</div>
+          <div class="np-field"><span class="np-label">1단계 전략</span><span class="np-value filled" style="font-size:9px">스노우볼 — 작은 신용대출부터 상환</span></div>
+          <div class="np-field"><span class="np-label">2단계 전략</span><span class="np-value filled" style="font-size:9px">비정기수입(보너스)으로 비상금 먼저</span></div>
+          <div class="np-field"><span class="np-label">3단계 전략</span><span class="np-value filled" style="font-size:9px">수입지출표대로 저축·연금 기준 이상 유지</span></div>
+          <div class="np-field"><span class="np-label">4단계 전략</span><span class="np-value filled" style="font-size:9px">ETF3총사+절세3총사로 장기 적립</span></div>
+          <div class="np-field"><span class="np-label">5단계 전략</span><span class="np-value filled" style="font-size:9px">모든 저축 방식으로 담보대출 마무리</span></div>
+          <div class="np-field"><span class="np-label">6단계</span><span class="np-value filled" style="font-size:9px">🎉 경제적 자유 — 지식을 나눔으로</span></div>
+        </div>
+        <div class="np-group span2">
+          <div class="np-group-title"><span class="ico">📌</span>다음 단계 실행 계획</div>
+          <div class="np-field"><span class="np-label">다음 단계</span><span class="np-value empty" id="f88_next"></span></div>
+          <div class="np-field"><span class="np-label">구체적 실행</span><span class="np-value empty" id="f88_action"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:88%"></div></div>
+        <div class="np-footer-txt">8단계 8/8 · DESIRE 분석</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 9: 최종의견 ══════════ -->
+    <div class="note-page" id="page9">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">9</div>
+          <div><div class="np-page-title">최종의견</div><div class="np-page-sub">종합 평가 및 액션플랜</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p9date">—</div><div class="np-badge">9단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">💪</span>강점</div>
+          <div class="np-field"><span class="np-label">강점 1</span><span class="np-value empty" id="f9_s1"></span></div>
+          <div class="np-field"><span class="np-label">강점 2</span><span class="np-value empty" id="f9_s2"></span></div>
+          <div class="np-field"><span class="np-label">강점 3</span><span class="np-value empty" id="f9_s3"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🎯</span>개선점</div>
+          <div class="np-field"><span class="np-label">개선 1</span><span class="np-value empty" id="f9_i1"></span></div>
+          <div class="np-field"><span class="np-label">개선 2</span><span class="np-value empty" id="f9_i2"></span></div>
+          <div class="np-field"><span class="np-label">개선 3</span><span class="np-value empty" id="f9_i3"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">🏆</span>종합 등급</div>
+          <div style="padding:12px;text-align:center">
+            <div class="big-num" id="f9_score">—</div><span class="big-unit">점</span>
+            <div style="margin-top:6px"><span class="chip chip-warn" id="f9_grade" style="font-size:11px">—</span></div>
+            <div style="font-size:8.5px;color:var(--muted);margin-top:5px">부자지수 기준 / 목표 등급: A</div>
+          </div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">⚡</span>이번 달 액션플랜</div>
+          <div class="np-field"><span class="np-label">액션 1</span><span class="np-value empty" id="f9_a1"></span></div>
+          <div class="np-field"><span class="np-label">액션 2</span><span class="np-value empty" id="f9_a2"></span></div>
+          <div class="np-field"><span class="np-label">액션 3</span><span class="np-value empty" id="f9_a3"></span></div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:93%"></div></div>
+        <div class="np-footer-txt">9/11단계 · 최종의견</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 10: 클로징 ══════════ -->
+    <div class="note-page" id="page10">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">10</div>
+          <div><div class="np-page-title">클로징</div><div class="np-page-sub">다음 약속 및 마무리</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p10date">—</div><div class="np-badge">10단계</div></div>
+      </div>
+      <div class="np-body col2">
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📅</span>다음 약속</div>
+          <div class="np-field"><span class="np-label">다음 정기진단</span><span class="np-value empty" id="f10_next"></span></div>
+          <div class="np-field"><span class="np-label">만족도</span><span class="np-value empty" id="f10_sat"></span></div>
+          <div class="np-field"><span class="np-label">소개 요청</span><span class="np-value empty" id="f10_ref"></span></div>
+        </div>
+        <div class="np-group">
+          <div class="np-group-title"><span class="ico">📌</span>당부사항</div>
+          <div class="np-field"><span class="np-label">매일 실천</span><span class="np-value filled">지출 기록 — AI머니야 앱 활용</span></div>
+          <div class="np-field"><span class="np-label">코칭 메모</span><span class="np-value filled">오늘 진단 내용 PDF 참고</span></div>
+          <div class="np-field"><span class="np-label">기타</span><span class="np-value empty" id="f10_note"></span></div>
+        </div>
+        <div class="np-group span2" style="background:linear-gradient(135deg,var(--navy),var(--navy2));border-color:var(--navy)">
+          <div style="padding:16px;text-align:center">
+            <div style="font-size:13px;font-weight:900;color:var(--gold2);margin-bottom:6px">🙏 감사합니다</div>
+            <div class="np-value filled" id="f10_closing" style="color:rgba(255,255,255,.8);font-size:11px;text-align:center;font-style:italic">
+              고객님의 가정경제가 튼튼하고 안정되시기를 진심으로 응원합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:97%"></div></div>
+        <div class="np-footer-txt">10/11단계 · 클로징</div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGE 11: 재무진단 리포트 ══════════ -->
+    <div class="note-page" id="page11">
+      <div class="np-hdr">
+        <div class="np-hdr-left">
+          <div class="np-page-num">11</div>
+          <div><div class="np-page-title">재무진단 리포트</div><div class="np-page-sub">PDF 자동 발급</div></div>
+        </div>
+        <div class="np-hdr-right"><div class="np-date" id="p11date">—</div><div class="np-badge">완료</div></div>
+      </div>
+      <div class="np-body col1">
+        <div class="np-group">
+          <div style="padding:20px;text-align:center">
+            <div style="font-size:36px;margin-bottom:10px">📄</div>
+            <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:4px">종합재무진단 리포트</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:16px" id="f11_date">진단 완료 후 자동 발급됩니다</div>
+            <div style="background:var(--gold3);border-radius:10px;padding:12px;text-align:left;border:1px solid rgba(201,151,42,.2);margin-bottom:14px">
+              <div style="font-size:9.5px;color:var(--navy);line-height:2">
+                <span style="color:var(--gold)">✦</span> 금융집짓기® 재무설계도<br>
+                <span style="color:var(--gold)">✦</span> 수입지출 분석표 (FPSB 기준)<br>
+                <span style="color:var(--gold)">✦</span> 자산부채 3대 지표<br>
+                <span style="color:var(--gold)">✦</span> 저축투자 + 자산배분 포트폴리오<br>
+                <span style="color:var(--gold)">✦</span> 재무설계 8대영역 분석<br>
+                <span style="color:var(--gold)">✦</span> 재무등급 + 이번 달 액션플랜
+              </div>
+            </div>
+            <button id="f11_dl_btn" style="width:100%;max-width:300px;padding:13px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;font-size:13px;font-weight:900;font-family:var(--fn);cursor:pointer;opacity:.45" disabled>
+              ⬇️ PDF 리포트 다운로드
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="np-footer">
+        <div class="np-progress-track"><div class="np-progress-fill" style="width:100%"></div></div>
+        <div class="np-footer-txt">11/11단계 · 진단 완료</div>
+      </div>
+    </div>
+
+  </div><!-- nb-stage -->
+</div><!-- notebook-viewer -->
+
+<script>
+/* ━━━ 페이지 정의 ━━━ */
+const TODAY_STR = (() => {
+  const d = new Date();
+  return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+})();
+const SESSION_NUM = parseInt(localStorage.getItem('fh_session_count') || '1');
+const IS_FIRST = SESSION_NUM === 1;
+
+const PAGES = [
+  { id:'page0',   tab:'오프닝',    step:0  },
+  { id:'page1',   tab:'인적사항',  step:1  },
+  { id:'page2',   tab:'경제고민',  step:2  },
+  { id:'page3',   tab:'수입지출',  step:3  },
+  { id:'page4',   tab:'자산부채',  step:4  },
+  { id:'page5',   tab:'설계도면',  step:5  },
+  { id:'page6',   tab:'저축포트',  step:6  },
+  { id:'page7',   tab:'자산배분',  step:7  },
+  { id:'page8_1', tab:'은퇴설계',  step:8  },
+  { id:'page8_2', tab:'부채설계',  step:8  },
+  { id:'page8_3', tab:'저축설계',  step:8  },
+  { id:'page8_4', tab:'투자설계',  step:8  },
+  { id:'page8_5', tab:'세금설계',  step:8  },
+  { id:'page8_6', tab:'부동산',    step:8  },
+  { id:'page8_7', tab:'보험설계',  step:8  },
+  { id:'page8_8', tab:'DESIRE',    step:8  },
+  { id:'page9',   tab:'최종의견',  step:9  },
+  { id:'page10',  tab:'클로징',    step:10 },
+  { id:'page11',  tab:'리포트',    step:11 },
+];
+
+let curPage = 0;
+const donePages = new Set([0]); // 완료된 페이지
+
+/* ━━━ 초기화 ━━━ */
+function init() {
+  /* 날짜·회차 */
+  document.querySelectorAll('[id^="p"][id$="date"]').forEach(el => el.textContent = TODAY_STR);
+  const f0d = document.getElementById('f0_date'); if(f0d) f0d.textContent = TODAY_STR;
+  const f0s = document.getElementById('f0_session'); if(f0s) f0s.textContent = SESSION_NUM + '회차 ' + (IS_FIRST?'초회진단':'정기진단');
+  const p0b = document.getElementById('p0session'); if(p0b) p0b.textContent = IS_FIRST ? '🌟 초회진단 1회차' : `📋 ${SESSION_NUM}회차 정기진단`;
+  /* 탭 생성 */
+  buildTabs();
+  showPage(0);
+}
+
+function buildTabs() {
+  const wrap = document.getElementById('nbTabs');
+  wrap.innerHTML = PAGES.map((p,i) =>
+    `<div class="nb-tab${i===0?' active':''}" id="tab${i}" onclick="goToPage(${i})">${p.tab}</div>`
+  ).join('');
+}
+
+/* ━━━ 페이지 이동 ━━━ */
+function showPage(idx) {
+  PAGES.forEach((p,i) => {
+    const el = document.getElementById(p.id);
+    const tab = document.getElementById('tab'+i);
+    if(el) el.classList.toggle('show', i===idx);
+    if(tab) { tab.classList.toggle('active', i===idx); }
+  });
+  curPage = idx;
+  document.getElementById('pageInfo').textContent = (idx+1) + ' / ' + PAGES.length;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx === PAGES.length-1;
+}
+
+function goPage(dir) { goToPage(curPage + dir); }
+function goToPage(idx) {
+  if(idx < 0 || idx >= PAGES.length) return;
+  showPage(idx);
+}
+
+/* ━━━ 필드 채우기 함수 (외부에서 호출) ━━━ */
+/**
+ * fillField(id, value, options)
+ * id:    HTML element id
+ * value: 채울 내용
+ * opts:  { chip: 'ok'|'bad'|'warn'|'blue', autoPage: true }
+ */
+function fillField(id, value, opts={}) {
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  /* 하이라이트 효과 */
+  el.classList.add('filling');
+  setTimeout(() => el.classList.remove('filling'), 800);
+
+  /* 값 채우기 */
+  if(opts.chip) {
+    el.innerHTML = `<span class="chip chip-${opts.chip}">${value}</span>`;
+  } else {
+    el.textContent = value;
+  }
+  el.classList.remove('empty');
+  el.classList.add('filled', 'typing');
+  setTimeout(() => el.classList.remove('typing'), 400);
+
+  /* empty::before 제거 */
+  el.style.fontStyle = 'normal';
+  el.style.fontSize  = '';
+
+  /* 부모 tr td empty-cell 제거 */
+  el.classList.remove('empty-cell');
+}
+
+/**
+ * activateNotePage(stepOrPageId)
+ * 머니야가 특정 단계 진입 시 해당 노트 페이지로 자동 이동
+ */
+function activateNotePage(pageId) {
+  const idx = PAGES.findIndex(p => p.id === pageId);
+  if(idx === -1) return;
+  donePages.add(curPage); // 현재 페이지 완료 표시
+  /* 탭 done 처리 */
+  const prevTab = document.getElementById('tab'+curPage);
+  if(prevTab && curPage !== idx) prevTab.classList.add('done');
+  showPage(idx);
+}
+
+/* 단계번호로 이동 (step 0~11) */
+function activateStep(step) {
+  const idx = PAGES.findIndex(p => p.step === step);
+  if(idx !== -1) activateNotePage(PAGES[idx].id);
+}
+
+/* ━━━ 수지분석 자동 계산 ━━━ */
+function calcCashFlow(income, familySize, living, savings, pension, insurance, loan) {
+  const pct = { living:[20,30,40,50,60], savings:[50,40,30,20,10] };
+  const fi = Math.min(familySize,5)-1;
+  const livPct = pct.living[fi], savPct = pct.savings[fi];
+  const surplus = income - living - savings - pension - insurance - loan;
+  const total   = living + savings + pension + insurance + loan;
+
+  fillField('f3_income', income+'만원');
+  fillField('f3_living_cur', living);
+  fillField('f3_living_pct', livPct+'%');
+  fillField('f3_living_exp', Math.round(income*livPct/100));
+  const livOk = living <= income*livPct/100;
+  fillField('f3_living_diag', livOk?'양호':'초과', {chip: livOk?'ok':'bad'});
+  fillField('f3_living_act', livOk?'유지':'-'+Math.round(living-income*livPct/100));
+
+  fillField('f3_save_cur', savings);
+  fillField('f3_save_pct', savPct+'%');
+  fillField('f3_save_exp', Math.round(income*savPct/100));
+  const savOk = savings >= income*savPct/100;
+  fillField('f3_save_diag', savOk?'양호':'부족', {chip: savOk?'ok':'bad'});
+  fillField('f3_save_act', savOk?'유지':'+'+Math.round(income*savPct/100-savings));
+
+  const penExp = Math.round(income*0.1);
+  fillField('f3_pension_cur', pension);
+  fillField('f3_pension_exp', penExp);
+  fillField('f3_pension_diag', pension>=penExp?'양호':'부족', {chip:pension>=penExp?'ok':'bad'});
+  fillField('f3_pension_act', pension>=penExp?'유지':'+'+( penExp-pension));
+
+  const insExp = Math.round(income*0.1);
+  fillField('f3_ins_cur', insurance);
+  fillField('f3_ins_exp', insExp);
+  fillField('f3_ins_diag', insurance>=insExp&&insurance<=insExp*1.5?'양호':(insurance<insExp?'부족':'과다'), {chip:insurance>=insExp&&insurance<=insExp*1.5?'ok':(insurance<insExp?'bad':'warn')});
+  fillField('f3_ins_act', insurance<insExp?'+'+( insExp-insurance):'유지');
+
+  const loanExp = Math.round(income*0.1);
+  fillField('f3_loan_cur', loan);
+  fillField('f3_loan_exp', loanExp);
+  fillField('f3_loan_diag', loan<=loanExp?'양호':'과다', {chip:loan<=loanExp?'ok':'bad'});
+  fillField('f3_loan_act', loan>loanExp?'-'+(loan-loanExp):'유지');
+
+  fillField('f3_surplus', Math.round(surplus));
+  fillField('f3_total',   Math.round(total));
+}
+
+/* ━━━ 자산부채 자동 계산 ━━━ */
+function calcAssetDebt(totalAsset, totalDebt, age, income, dualIncome, emergencyFund) {
+  const net = totalAsset - totalDebt;
+  const wi  = totalAsset>0 ? Math.floor((net*10)/(age*income*12)*100) : 0;
+  const dr  = totalAsset>0 ? Math.floor(totalDebt/totalAsset*100) : 0;
+  const efNeed = dualIncome ? income*3 : income*6;
+  const efOk   = emergencyFund >= efNeed;
+  const faRatio = totalAsset>0 ? Math.floor((totalAsset-totalDebt)/totalAsset*100) : 0;
+
+  fillField('f4_wi_val',  wi+'%');
+  fillField('f4_wi_diag', wi>=100&&wi<=200?'우수':(wi<100?'주의':'훌륭'), {chip:wi>=100?'ok':'warn'});
+  fillField('f4_dr_val',  dr+'%');
+  fillField('f4_dr_diag', dr<=20?'건전':(dr<=40?'위험':'매우위험'), {chip:dr<=20?'ok':(dr<=40?'warn':'bad')});
+  fillField('f4_ef_std',  (dualIncome?'맞벌이 3개월':'외벌이 6개월') + ' = '+efNeed+'만원');
+  fillField('f4_ef_val',  emergencyFund+'만원');
+  fillField('f4_ef_diag', efOk?'준비됨':'미준비', {chip:efOk?'ok':'bad'});
+  fillField('f4_fa_val',  faRatio+'%');
+  fillField('f4_fa_diag', faRatio>=30?'양호':'부족', {chip:faRatio>=30?'ok':'warn'});
+}
+
+/* ━━━ 외부 연동 API (머니야 → 노트 동기화) ━━━ */
+window.NOTEBOOK = {
+  fillField,
+  activateNotePage,
+  activateStep,
+  calcCashFlow,
+  calcAssetDebt,
+  /* 개별 필드 일괄 채우기 */
+  fill: (map) => Object.entries(map).forEach(([id,val]) => {
+    if(typeof val === 'object' && val.v !== undefined) {
+      fillField(id, val.v, val);
+    } else {
+      fillField(id, val);
+    }
+  }),
+};
+
+/* ━━━ 외부 초기화 인터페이스 ━━━ */
+// diagNoteInit()으로 외부에서 호출
+window.NOTEBOOK.init = init;
+</script>
+</div></div>
           </div>
         </div>
 
