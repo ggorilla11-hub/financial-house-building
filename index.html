@@ -7625,6 +7625,1077 @@ function fhDevClose() {
   _fhDevTapCount = 0;
 }
 
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3~6단계: AI진단탭 V4 JS 이식
+   fhInitHistoryDashboard + fhDocUpload +
+   DIAG_PARTS + diagStartConsult + diagHandleMsg
+   diagParseAiSpeech + diagFillField 포함
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function fhInitHistoryDashboard() {
+  if (!document.getElementById('fh-hist-tbl')) return;
+  fhRenderHistTbl();
+  fhRenderHistBars(0);
+  fhRenderAIMemos(FH_AI_SAMPLE);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AI진단탭 — 서류 업로드 + 화상상담
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// 파일 input 클릭 라우팅
+var fhCurrentDocKey = '';
+function fhDocUpload(key) {
+  fhCurrentDocKey = key;
+  var inp = document.getElementById('fh-doc-file');
+  if (inp) inp.click();
+}
+function fhDocDownload(key) {
+  showToast('📥 상담신청서 양식 다운로드 준비 중입니다 (xlsx)');
+}
+function fhDocFileSelected(input) {
+  var file = input.files[0];
+  if (!file || !fhCurrentDocKey) return;
+  var key = fhCurrentDocKey;
+
+  if (key === 'application') {
+    var statusEl = document.getElementById('doc-app-status');
+    if (statusEl) { statusEl.textContent = '✅ 제출완료'; statusEl.style.color = 'var(--green)'; }
+    var badge = document.getElementById('fh-doc-badge');
+    if (badge) { badge.textContent = '필수 완료'; badge.style.background = 'rgba(34,197,94,.1)'; badge.style.color = 'var(--green)'; badge.style.borderColor = 'rgba(34,197,94,.3)'; }
+    var note = document.getElementById('fh-start-note');
+    if (note) { note.textContent = '✅ 상담신청서 업로드 완료 · AI 사전 분석 중...'; note.style.color = 'var(--green)'; }
+    showToast('📋 상담신청서 업로드 완료! AI가 사전 분석을 시작합니다.');
+  } else {
+    var statEl = document.getElementById('stat-' + key);
+    if (statEl) { statEl.textContent = '✅'; statEl.style.color = 'var(--green)'; }
+    showToast('📎 ' + file.name + ' 업로드 완료! OCR 분석 중...');
+  }
+  input.value = '';
+}
+
+// 화상진단 시작
+var fhConsultTimer = null;
+var fhConsultSec = 0;
+var fhTotalMin = 45;
+var fhUsedSec = 0;
+var fhIsPaused = false;
+var fhCurrentPartIdx = 0;
+
+var FH_PARTS = [
+  '오프닝','인적사항','경제적고민','수입지출','자산부채',
+  '설계도면','저축포트','자산배분','재무설계','최종의견','클로징'
+];
+var FH_PART_NAMES = [
+  '0파트 · 오프닝','1파트 · 인적사항','2파트 · 경제적 고민',
+  '3파트 · 수입지출 분석','4파트 · 자산부채 분석',
+  '5파트 · 금융집짓기 설계','6파트 · 저축투자 포트폴리오',
+  '7파트 · 자산배분 포트폴리오','8파트 · 재무설계 7대영역',
+  '9파트 · 최종의견','10파트 · 클로징'
+];
+
+var FH_NOTE_PARTS = [
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'60~90분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
+  { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
+  { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
+  { title:'4파트 · 자산부채 분석', fields:[{l:'총 자산',d:'3억 2천만원'},{l:'총 부채',d:'1억 1천만원'},{l:'순 자산',d:'2억 1천만원'},{l:'부자지수',d:'37점 — 오두막 등급'}] },
+  { title:'5파트 · 금융집짓기 설계', fields:[{l:'지하 (보험+비상금)',d:'⚠️ 사망보장 1억 부족 · 비상금 3개월'},{l:'기둥 (부채·저축·은퇴)',d:'부채 양호 · 저축·은퇴 부족'},{l:'지붕 (투자·세금)',d:'🔴 미설계 — 즉시 시작 필요'}] },
+  { title:'6파트 · 저축투자 포트폴리오', fields:[{l:'여유자금',d:'87만원/월'},{l:'안전자산 55%',d:'48만원 → 예금·CMA'},{l:'성장자산 35%',d:'30만원 → 국내외 ETF'},{l:'꿈 자산 10%',d:'9만원 → 개인투자계좌'}] },
+  { title:'7파트 · 자산배분 포트폴리오', fields:[{l:'골든밸런스',d:'안전 7 : 성장 3'},{l:'목표 금융자산',d:'10억 (현재 7천만 → 15년 달성)'}] },
+  { title:'8파트 · 재무설계 7대영역', fields:[{l:'은퇴설계',d:'목표 월 250만 · 부족 월 95만'},{l:'부채설계',d:'DSR 28% 양호 · 60세 완납'},{l:'저축설계',d:'저축률 12% → 30% 목표'},{l:'투자설계',d:'IRP + ETF 포트폴리오'},{l:'세금설계',d:'연금저축+IRP 연 900만 한도'},{l:'부동산설계',d:'현 거주 외 추가 불필요'},{l:'보험설계',d:'사망 3억 증액 · 실손 갱신 검토'}] },
+  { title:'9파트 · 최종의견', fields:[{l:'강점 1',d:'부채 관리 우수 (DSR 28%)'},{l:'강점 2',d:'꾸준한 저축 습관'},{l:'개선 1',d:'지출 블랙홀 87만원 관리'},{l:'개선 2',d:'은퇴자금 월 87만원 추가 투자'},{l:'개선 3',d:'보험 보장 재구조화'},{l:'재무점수',d:'53점 → 목표 75점 (2년)'}] },
+  { title:'10파트 · 클로징', fields:[{l:'다음 약속',d:'다음달 15일 정기상담'},{l:'만족 여부',d:'매우 만족 (5/5)'},{l:'당부사항',d:'지출 블랙홀 가계부 기록 시작'},{l:'마무리',d:'가정경제 튼튼하고 안정되기를 희망합니다 🙏'}] },
+];
+
+function fhStartConsult() {
+  var ready = document.getElementById('fh-diag-ready');
+  var active = document.getElementById('fh-diag-active');
+  if (ready) ready.style.display = 'none';
+  if (active) { active.style.display = 'flex'; active.style.height = '100%'; }
+
+  // 노트 파트 생성
+  fhBuildNoteParts();
+
+  // 타이머
+  fhConsultSec = 0;
+  fhUsedSec = 0;
+  fhConsultTimer = setInterval(function() {
+    if (fhIsPaused) return;
+    fhConsultSec++;
+    fhUsedSec++;
+    var m = String(Math.floor(fhConsultSec/60)).padStart(2,'0');
+    var s = String(fhConsultSec%60).padStart(2,'0');
+    var el = document.getElementById('fh-consult-timer');
+    if (el) el.textContent = m + ':' + s;
+    // 크레딧 업데이트
+    fhUpdateCredit();
+  }, 1000);
+
+  // 데모 STT
+  fhRunDemo();
+}
+
+function fhBuildNoteParts() {
+  var container = document.getElementById('fh-tab-note');
+  if (!container) return;
+  container.innerHTML = FH_NOTE_PARTS.map(function(p, i) {
+    return '<div id="fh-part-'+i+'" style="margin-bottom:14px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.05);transition:all .3s">'
+      + '<div onclick="fhToggleNotePart('+i+')" style="display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(11,29,58,.02);border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer">'
+      + '<div id="fh-pnum-'+i+'" style="width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:8.5px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+i+'</div>'
+      + '<div style="font-size:11px;font-weight:900;color:var(--navy);flex:1">'+p.title+'</div>'
+      + '<div id="fh-pbadge-'+i+'" style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:7px;background:rgba(0,0,0,.05);color:#bbb">대기</div>'
+      + '</div>'
+      + '<div id="fh-pbody-'+i+'" style="display:none;padding:11px 13px">'
+      + p.fields.map(function(f) {
+          return '<div style="margin-bottom:8px">'
+            + '<div style="font-size:8.5px;font-weight:700;color:var(--muted);margin-bottom:3px">'+f.l+'</div>'
+            + '<div id="fh-fval-'+i+'-'+f.l.replace(/\s/g,'_')+'" style="font-size:10.5px;font-weight:600;color:#bbb;padding:6px 9px;background:var(--gold3);border-radius:7px;border-left:2.5px solid rgba(201,151,42,.3);font-style:italic">— 입력 대기 중</div>'
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }).join('');
+}
+
+function fhToggleNotePart(i) {
+  var body = document.getElementById('fh-pbody-'+i);
+  if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function fhActivatePart(idx) {
+  // 이전 파트 완료
+  if (fhCurrentPartIdx >= 0 && fhCurrentPartIdx !== idx) {
+    var prev = fhCurrentPartIdx;
+    var prevBlock = document.getElementById('fh-part-'+prev);
+    if (prevBlock) prevBlock.style.borderColor = 'rgba(34,197,94,.3)';
+    var prevNum = document.getElementById('fh-pnum-'+prev);
+    if (prevNum) prevNum.style.background = 'var(--green)';
+    var prevBadge = document.getElementById('fh-pbadge-'+prev);
+    if (prevBadge) { prevBadge.textContent = '완료'; prevBadge.style.background = 'rgba(34,197,94,.1)'; prevBadge.style.color = 'var(--green)'; prevBadge.style.borderColor = 'rgba(34,197,94,.3)'; }
+    // 이전 파트 필드 채우기
+    fhFillPartFields(prev);
+    // 이전 프로세스 완료
+    var pp = document.getElementById('fhp'+prev);
+    if (pp) { pp.className = 'fh-proc-item fh-proc-done'; }
+  }
+
+  fhCurrentPartIdx = idx;
+  var block = document.getElementById('fh-part-'+idx);
+  if (block) {
+    block.style.borderColor = 'rgba(201,151,42,.4)';
+    block.style.boxShadow = '0 2px 12px rgba(201,151,42,.1)';
+    block.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  var num = document.getElementById('fh-pnum-'+idx);
+  if (num) num.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+  var badge = document.getElementById('fh-pbadge-'+idx);
+  if (badge) { badge.textContent = '진행중'; badge.style.background = 'rgba(201,151,42,.12)'; badge.style.color = 'var(--gold)'; }
+  var body = document.getElementById('fh-pbody-'+idx);
+  if (body) body.style.display = 'block';
+  // 프로세스바 업데이트
+  var pp = document.getElementById('fhp'+idx);
+  if (pp) { pp.className = 'fh-proc-item fh-proc-active'; pp.scrollIntoView({ behavior:'smooth', inline:'center' }); }
+  // 현재 파트 표시
+  var cur = document.getElementById('fh-cur-part');
+  if (cur) cur.querySelector('div:last-child').textContent = FH_PART_NAMES[idx] || '';
+}
+
+function fhFillPartFields(idx) {
+  var part = FH_NOTE_PARTS[idx];
+  if (!part) return;
+  part.fields.forEach(function(f) {
+    var key = 'fh-fval-'+idx+'-'+f.l.replace(/\s/g,'_');
+    var el = document.getElementById(key);
+    if (el) { el.textContent = f.d; el.style.color = 'var(--navy)'; el.style.fontStyle = 'normal'; el.style.borderLeft = '2.5px solid var(--gold)'; }
+  });
+}
+
+function fhUpdateCredit() {
+  var usedMin = Math.floor(fhUsedSec / 60);
+  var remain = Math.max(0, fhTotalMin - usedMin);
+  var el = document.getElementById('mp-remain-min');
+  if (el) el.childNodes[0].textContent = remain;
+  var used = document.getElementById('mp-used-min');
+  if (used) used.textContent = '사용 ' + usedMin + '분';
+  var bar = document.getElementById('mp-credit-bar');
+  if (bar) bar.style.width = Math.max(0, (remain/fhTotalMin)*100) + '%';
+}
+
+function fhTogglePause() {
+  fhIsPaused = !fhIsPaused;
+  var btn = document.getElementById('fh-pause-btn');
+  if (btn) btn.textContent = fhIsPaused ? '▶ 재개' : '⏸ 일시정지';
+}
+
+function fhEndConsult() {
+  if (!confirm('상담을 종료하시겠습니까?\n종합재무설계 PDF 리포트가 생성됩니다.')) return;
+  if (fhConsultTimer) { clearInterval(fhConsultTimer); fhConsultTimer = null; }
+  // 모든 파트 완료 처리
+  FH_NOTE_PARTS.forEach(function(_, i) { fhFillPartFields(i); });
+  // 리포트 준비
+  fhSwitchTab('report', null);
+  var waiting = document.getElementById('fh-report-waiting');
+  var ready = document.getElementById('fh-report-ready');
+  if (waiting) waiting.style.display = 'none';
+  if (ready) ready.style.display = 'block';
+  showToast('🎉 상담 완료! PDF 리포트가 생성되었습니다.');
+}
+
+function fhDownloadReport() {
+  showToast('📄 종합재무설계 리포트 PDF 다운로드 중...');
+}
+
+function fhSwitchTab(id, btn) {
+  var tabs = ['note','house','portfolio','analysis','report'];
+  tabs.forEach(function(t) {
+    var el = document.getElementById('fh-tab-'+t);
+    if (el) el.style.display = (t===id) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.fh-ntab').forEach(function(t) { t.classList.remove('fh-nt-on'); });
+  if (btn) btn.classList.add('fh-nt-on');
+  else {
+    document.querySelectorAll('.fh-ntab').forEach(function(t) {
+      if (t.textContent.includes('리포트')) t.classList.add('fh-nt-on');
+    });
+  }
+  // 포트폴리오 애니메이션
+  if (id === 'portfolio') {
+    setTimeout(function() {
+      var s = document.getElementById('fh-pf-safe');
+      var g = document.getElementById('fh-pf-growth');
+      var d = document.getElementById('fh-pf-dream');
+      if (s) s.style.width = '55%';
+      if (g) g.style.width = '35%';
+      if (d) d.style.width = '10%';
+    }, 200);
+  }
+}
+
+function fhSendText() {
+  var inp = document.getElementById('fh-text-inp');
+  if (!inp || !inp.value.trim()) return;
+  fhAddSTT('user', inp.value.trim(), null);
+  inp.value = '';
+}
+
+function fhAddSTT(role, text, tag) {
+  var area = document.getElementById('fh-stt-area');
+  if (!area) return;
+  var isAI = role === 'ai';
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:7px;margin-bottom:6px;align-items:flex-start' + (isAI ? '' : ';flex-direction:row-reverse');
+  div.innerHTML = isAI
+    ? '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="'+MONEYA_IMG+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent=\'🤖\'"></div>'
+      + '<div style="max-width:78%"><div style="font-size:10px;color:rgba(255,255,255,.85);padding:5px 9px;border-radius:0 8px 8px 8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);line-height:1.45">'+text+'</div>'
+      + (tag ? '<div style="font-size:8px;color:var(--gold);margin-top:2px">💡 '+tag+'</div>' : '')
+      + '</div>'
+    : '<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,.9);padding:5px 9px;border-radius:8px 0 8px 8px;background:rgba(201,151,42,.15);border:1px solid rgba(201,151,42,.25);max-width:78%;line-height:1.45">'+text+'</div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// 데모 스크립트
+var FH_DEMO = [
+  { delay:1500,  role:'ai',   text:'안녕하세요! AI 재무설계사 머니야입니다. 금융집짓기® 종합 재무상담을 시작하겠습니다. 성함과 나이를 알려주시겠어요?', part:0, tag:'0파트 오프닝' },
+  { delay:6000,  role:'user', text:'안녕하세요, 오상열이고요, 45세입니다.' },
+  { delay:8500,  role:'ai',   text:'반갑습니다 오상열님! 직업과 가족 구성을 알려주세요.', part:1, tag:'1파트 인적사항' },
+  { delay:13000, role:'user', text:'제조업 부장이고요, 아내와 아이 둘 있어요.' },
+  { delay:16000, role:'ai',   text:'4인 가족이시군요. 요즘 가장 걱정되시는 재무 고민이 있으신가요?', part:2, tag:'2파트 경제적 고민' },
+  { delay:20000, role:'user', text:'노후 준비가 너무 늦은 것 같아요. 저축은 하는데 어디 가는지 모르겠어요.' },
+  { delay:23500, role:'ai',   text:'그 고민 충분히 이해합니다. 이제 수입지출을 살펴볼게요. 세후 월 소득이 얼마나 되세요?', part:3, tag:'3파트 수입지출 분석' },
+  { delay:28000, role:'user', text:'세후 400만원 정도요.' },
+  { delay:31000, role:'ai',   text:'400만원이시군요. 지출 항목별로 말씀해 주시겠어요? 생활비, 보험료, 대출, 저축 각각요.', part:3 },
+  { delay:37000, role:'user', text:'생활비 180만, 보험 30만, 대출 55만, 저축 48만이요. 계산이 안 맞네요.' },
+  { delay:40000, role:'ai',   text:'87만원이 지출 블랙홀이에요! 이것만 관리해도 노후가 달라집니다. 자산부채를 살펴볼게요.', part:4, tag:'지출 블랙홀 87만원 발견' },
+];
+
+function fhRunDemo() {
+  FH_DEMO.forEach(function(item) {
+    setTimeout(function() {
+      if (item.role === 'ai') {
+        setTimeout(function() {
+          fhAddSTT('ai', item.text, item.tag || null);
+          if (item.part !== undefined) fhActivatePart(item.part);
+        }, 600);
+      } else {
+        fhAddSTT('user', item.text, null);
+      }
+    }, item.delay);
+  });
+}
+
+// fh-doc-row CSS 인라인 정의
+(function() {
+  var s = document.createElement('style');
+  s.textContent = '.fh-doc-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:0}'
+    + '.fh-doc-stat{font-size:13px;flex-shrink:0}'
+    + '.fh-doc-upload-btn{padding:4px 10px;border-radius:7px;border:1px solid rgba(201,151,42,.35);background:rgba(201,151,42,.08);color:var(--gold2);font-size:9px;font-weight:700;cursor:pointer;font-family:var(--fn);flex-shrink:0}'
+    + '@keyframes mpBlink{0%,100%{opacity:1}50%{opacity:.2}}'
+    + '@keyframes fhWave{0%,100%{height:3px;opacity:.3}50%{height:12px;opacity:1}}';
+  document.head.appendChild(s);
+})();
+
+// mpTab 탭2 전환 시 초기화
+// [제거] var _fhOrigMpTab = typeof mpTab === 'function' ? mpTab : null;
+
+
+/* ━━━ AI진단탭 V4 JS ━━━ */
+
+const DIAG_IMG = 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%ED%99%95%EC%A0%95%EC%9D%B4%EB%AF%B8%EC%A7%80%EC%95%88.png?alt=media&token=c250863d-7cda-424a-800d-884b20e30b1a';
+
+/* 12장 노트 데이터 */
+const DIAG_PARTS = [
+  { id:0,  short:'오프닝',    title:'0. 오프닝',
+    fields:[['상담 목적','금융집짓기® 8단계 종합 재무상담'],['상담 날짜',''],['회차',''],['자료 준비','']] },
+  { id:1,  short:'인적사항',  title:'1. 인적사항',
+    fields:[['성함',''],['나이',''],['결혼 여부',''],['자녀 수',''],['가족 수',''],['직업',''],['맞벌이 여부','']] },
+  { id:2,  short:'경제적고민', title:'2. 경제적 고민/관심',
+    fields:[['주요 걱정',''],['재무 목표',''],['관심 분야',''],['현재 불만','']] },
+  { id:3,  short:'수입지출',  title:'3. 수입지출 분석',
+    fields:[['월 총수입(세후)',''],['생활비',''],['보험료',''],['대출상환',''],['저축·투자',''],['연금',''],['미파악 지출','']] },
+  { id:4,  short:'자산부채',  title:'4. 자산부채 분석',
+    fields:[['부동산 자산',''],['금융 자산',''],['기타 자산',''],['총 자산',''],['담보대출',''],['신용대출',''],['총 부채',''],['순 자산',''],['부자지수','']] },
+  { id:5,  short:'금융집설계', title:'5. 금융집짓기 설계도면',
+    fields:[['지하 — 보험 보장',''],['지하 — 비상예비자금',''],['거실 — 부채설계',''],['건넌방 — 저축설계',''],['안방 — 은퇴설계',''],['지붕 — 투자설계',''],['지붕 — 세금설계',''],['굴뚝 — 부동산설계','']] },
+  { id:6,  short:'저축포트',  title:'6. 저축투자 포트폴리오',
+    fields:[['월 여유자금',''],['안전자산 (50~60%)',''],['성장자산 (30~40%)',''],['꿈 자산 (10~20%)',''],['목표 저축률','']] },
+  { id:7,  short:'자산배분',  title:'7. 자산배분 포트폴리오',
+    fields:[['골든밸런스',''],['안전자산 비중',''],['성장자산 비중',''],['목표 금융자산','']] },
+  { id:8,  short:'재무설계7대', title:'8. 재무설계 7대영역',
+    fields:[['(1) 은퇴진단',''],['(2) 부채진단',''],['(3) 저축진단',''],['(4) 투자진단',''],['(5) 세금진단',''],['(6) 부동산진단',''],['(7) 보험진단','']] },
+  { id:9,  short:'최종의견',  title:'9. 최종의견',
+    fields:[['강점 1',''],['강점 2',''],['강점 3',''],['개선 1',''],['개선 2',''],['개선 3',''],['재무점수',''],['최종 포트폴리오','']] },
+  { id:10, short:'클로징',    title:'10. 클로징',
+    fields:[['다음 약속 (정기상담)',''],['만족 여부',''],['당부사항',''],['마무리 인사','']] },
+  { id:11, short:'리포트',    title:'11. 재무설계 리포트',
+    fields:[] },
+];
+
+/* 초기 자막 (회차별) */
+const DIAG_SESSION_NUM = parseInt(localStorage.getItem('fh_session_count') || '1');
+const DIAG_IS_FIRST = DIAG_SESSION_NUM === 1;
+const DIAG_TODAY = new Date();
+const DIAG_TODAY_STR = DIAG_TODAY.getFullYear() + '.' +
+  String(DIAG_TODAY.getMonth()+1).padStart(2,'0') + '.' +
+  String(DIAG_TODAY.getDate()).padStart(2,'0');
+
+const DIAG_INIT_STT = DIAG_IS_FIRST ? [
+  { r:'ai', t:'안녕하세요! AI 재무설계사 머니야입니다. ' + DIAG_TODAY_STR + ' 초회 종합 재무상담을 시작하겠습니다.', tag:'🌟 초회상담 시작' },
+  { r:'ai', t:'수입지출부터 보험, 저축, 투자, 은퇴까지 전체를 꼼꼼히 살펴드릴게요. 60~90분 예정입니다.' },
+  { r:'user', t:'네, 잘 부탁드립니다!' },
+] : [
+  { r:'ai', t:'안녕하세요! ' + DIAG_SESSION_NUM + '회차 정기상담 ' + DIAG_TODAY_STR + ' 시작합니다. 지난 달 이후 변화사항이 있으셨나요?', tag:'📋 ' + DIAG_SESSION_NUM + '회차 정기상담' },
+  { r:'user', t:'네, 지난달에 비상예비자금을 50만원 더 모았어요.' },
+  { r:'ai', t:'훌륭합니다! 오늘은 변화 내용 확인 후 다음 단계를 함께 점검하겠습니다.' },
+];
+
+const DIAG_DEMO = DIAG_IS_FIRST ? [
+  { d:3500,  r:'ai',   t:'먼저 성함과 나이를 확인할게요. 어떻게 되세요?', p:1, tag:'1. 인적사항' },
+  { d:7000,  r:'user', t:'오상열이고요, 45세입니다.' },
+  { d:9000,  r:'ai',   t:'반갑습니다! 결혼은 하셨나요? 가족이 몇 명이신가요?', p:1 },
+  { d:13000, r:'user', t:'기혼이고요, 아이 둘 있어요. 13살, 10살이요.' },
+  { d:15500, r:'ai',   t:'4인 가족이시군요. 요즘 재무적으로 가장 걱정되시는 게 있으신가요?', p:2, tag:'2. 경제적 고민' },
+  { d:19500, r:'user', t:'노후 준비가 너무 늦은 것 같아요. 저축은 하는데 어디 가는지 모르겠어요.' },
+  { d:22500, r:'ai',   t:'그 고민 충분히 이해합니다. 이제 수입지출을 살펴볼게요. 세후 월 소득이 얼마나 되세요?', p:3, tag:'3. 수입지출 분석' },
+  { d:27000, r:'user', t:'세후 400만원 정도요.' },
+  { d:30000, r:'ai',   t:'생활비, 보험료, 대출, 저축 각각 말씀해 주시겠어요?' },
+  { d:35000, r:'user', t:'생활비 180만, 보험 30만, 대출 55만, 저축 48만이요.' },
+  { d:37500, r:'ai',   t:'87만원이 지출 블랙홀이에요! 이것만 관리해도 노후가 완전히 달라집니다.', p:4, tag:'4. 자산부채 분석' },
+] : [
+  { d:3500,  r:'ai',   t:'지난달 비상예비자금 50만원 추가 잘 하셨어요! 현재 총액이 얼마나 됐나요?', p:2, tag:'전월 변화 점검' },
+  { d:8000,  r:'user', t:'총 350만원 됐어요.' },
+  { d:10500, r:'ai',   t:'월 생활비 대비 약 2개월분이네요. 이번 달도 50만원 추가 가능하실까요?', p:3, tag:'3. 수입지출 점검' },
+];
+
+/* ── 상태 ── */
+let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=0, diagUpKey='';
+
+/* ── DOMContentLoaded 초기화 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  const bi = document.getElementById('diagBannerImg');
+  const ai = document.getElementById('diagAiImg');
+  if (bi) bi.src = DIAG_IMG;
+  if (ai) ai.src = DIAG_IMG;
+
+  const dateEl = document.getElementById('diagTodayDate');
+  if (dateEl) dateEl.textContent = '📅 ' + DIAG_TODAY_STR;
+
+  const chipEl = document.getElementById('diagSessionChip');
+  if (chipEl) {
+    if (DIAG_IS_FIRST) {
+      chipEl.textContent = '🌟 초회상담 (1회차)';
+      chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;';
+    } else {
+      chipEl.textContent = '📋 ' + DIAG_SESSION_NUM + '회차 정기상담';
+      chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:rgba(11,29,58,.08);border:1px solid rgba(11,29,58,.15);color:#0B1D3A;';
+    }
+  }
+  const subEl = document.getElementById('diagSessionSub');
+  if (subEl) subEl.textContent = DIAG_IS_FIRST ? '첫 번째 상담 · 전체 금융집짓기® 진단' : '매월 정기상담 · 전월 이후 변화 점검';
+});
+
+/* ── 아코디언 ── */
+function diagToggle(id, hdEl) {
+  const body = document.getElementById(id);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  const chevId = id.replace('Body','Chev');
+  const chev = document.getElementById(chevId);
+  if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+/* ── 개인정보 동의 ── */
+let diagPrv1=false, diagPrv2=false;
+function diagTogglePrivacy(id) {
+  if (id==='prv1') diagPrv1=!diagPrv1;
+  if (id==='prv2') diagPrv2=!diagPrv2;
+  const box=document.getElementById(id+'-box');
+  const chk=document.getElementById(id+'-chk');
+  const checked = id==='prv1' ? diagPrv1 : diagPrv2;
+  if (box) { box.style.background=checked?'#0B1D3A':'#fff'; box.style.borderColor=checked?'#0B1D3A':'rgba(11,29,58,.25)'; }
+  if (chk) chk.style.display=checked?'block':'none';
+}
+
+/* ── 업로드 ── */
+const diagUpTitles={application:'상담신청서 업로드',ins:'보험증권 업로드',sal:'급여명세서 업로드',pen:'연금명세서 업로드',tax:'세금신고서 업로드',etc:'기타 서류 업로드'};
+function diagOpenUpload(key) {
+  diagUpKey=key;
+  const t=document.getElementById('diagUploadTitle');
+  if(t) t.textContent=diagUpTitles[key]||'서류 업로드';
+  const m=document.getElementById('diagUploadModal');
+  if(m) m.style.display='flex';
+}
+function diagCloseUpload() {
+  const m=document.getElementById('diagUploadModal');
+  if(m) m.style.display='none';
+}
+function diagDoUpload(method) {
+  diagCloseUpload();
+  if(method==='camera') document.getElementById('diagFileCamera').click();
+  else if(method==='image') document.getElementById('diagFileImage').click();
+  else document.getElementById('diagFileDoc').click();
+}
+function diagHandleFile(input) {
+  if(!input.files[0]) return;
+  const file = input.files[0];
+  const fname = file.name;
+
+  if(diagUpKey==='application') {
+    const s=document.getElementById('diagAppStat'); if(s) s.textContent='✅';
+    const b=document.getElementById('diagAppBadge'); if(b){b.textContent='완료';b.style.background='rgba(22,163,74,.1)';b.style.color='#16a34a';b.style.borderColor='rgba(22,163,74,.25)';}
+    const db=document.getElementById('diagDocBadge'); if(db){db.textContent='필수 완료';db.style.background='rgba(22,163,74,.1)';db.style.color='#16a34a';db.style.borderColor='rgba(22,163,74,.25)';}
+    const n=document.getElementById('diagStartNote'); if(n){n.textContent='✅ 상담신청서 분석 중...';n.style.color='#16a34a';}
+    showToast('📋 신청서 업로드 완료! 분석 중...');
+
+    /* 실제 파싱 — 서버로 전송하여 분석 */
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('https://moneya-server.onrender.com/api/parse-application', {
+      method: 'POST',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success && data.clientData) {
+        /* diagFinCtx에 고객 데이터 주입 */
+        Object.assign(diagFinCtx, data.clientData);
+        window.diagApplicationData = data.clientData;
+        const n=document.getElementById('diagStartNote');
+        if(n){
+          n.textContent='✅ 분석 완료 · '+
+            (data.clientData.name||'고객')+'님 ('+
+            (data.clientData.age||'')+'세) · '+
+            '소득 '+(data.clientData.monthlyIncome||'')+'만원';
+          n.style.color='#16a34a';
+        }
+        /* DIAG_PARTS 0번 노트 자동 채우기 */
+        if(DIAG_PARTS[0] && DIAG_PARTS[0].fields) {
+          DIAG_PARTS[0].fields[3][1] = '신청서 완료 ✅';
+        }
+        showToast('🎉 신청서 분석 완료! '+
+          (data.clientData.name||'고객')+'님 정보가 준비됐습니다.');
+      }
+    })
+    .catch(() => {
+      /* 서버 실패 시 → 파일 직접 읽기 (텍스트 파일인 경우) */
+      showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
+    });
+  } else {
+    const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
+    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
+    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
+  }
+  input.value='';
+}
+
+/* ── 상담 시작 ── */
+function diagStartConsult() {
+  const sa=document.getElementById('diagScreenA');
+  const sb=document.getElementById('diagScreenB');
+  if(sa) sa.style.display='none';
+  if(sb) {
+    sb.style.display = 'flex';
+    sb.style.flexDirection = 'column';
+    sb.style.height = '100%';
+    sb.style.overflow = 'hidden';
+/* mp-panel 높이: CSS로 처리 */
+  }
+
+  // 날짜/회차 노트0 필드 채우기
+  DIAG_PARTS[0].fields[1][1] = DIAG_TODAY_STR;
+  DIAG_PARTS[0].fields[2][1] = DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST?'(초회진단)':'(정기상담)');
+
+  const si=document.getElementById('diagSessionInfo');
+  if(si) si.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST?'초회진단':'정기상담');
+
+  diagBuildNotes();
+
+  diagSec=0;
+
+  diagInt=setInterval(function(){
+    if(diagPaused) return;
+    diagSec++;
+    const m=String(Math.floor(diagSec/60)).padStart(2,'0');
+    const s=String(diagSec%60).padStart(2,'0');
+    const el=document.getElementById('diagTimer');
+    if(el) el.textContent=m+':'+s;
+    if(diagSec===45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
+    if(diagSec===60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
+
+  },1000);
+
+  // 실제 음성 연결 시작
+  diagConnectVoice();
+}
+
+/* ── 음성 연결 (WebSocket + AudioWorklet) ── */
+const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
+let diagWs=null, diagAudioCtx=null, diagMicStream=null;
+let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
+/* diagMicOn, diagPaused는 전임자 코드에서 이미 선언됨 (중복 제거) */
+
+const diagFinCtx = {
+  name:'고객', age:0, monthlyIncome:0,
+  totalAssets:0, totalDebt:0, currentStep:0,
+  sessionNo: typeof DIAG_SESSION_NUM!=='undefined'?DIAG_SESSION_NUM:1,
+  mainWorry:'',
+};
+
+async function diagConnectVoice() {
+  try {
+    diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
+  } catch(e) {
+    showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
+    diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
+    return;
+  }
+  diagWs = new WebSocket(DIAG_SERVER_WS+'?mode=consult');
+  diagWs.onopen = function() {
+    diagWs.send(JSON.stringify({type:'start_consult',userName:diagFinCtx.name,financialContext:diagFinCtx}));
+  };
+  diagWs.onmessage = function(e) {
+    try { diagHandleMsg(JSON.parse(e.data)); } catch(err){}
+  };
+  diagWs.onerror = function() { showToast('⚠️ 서버 연결 오류 · 잠시 후 재시도합니다'); };
+  diagWs.onclose = function(e) {
+    if(e.code!==1000 && !diagPaused) {
+      showToast('🔄 연결이 끊어졌습니다 · 재연결 중...');
+      setTimeout(diagConnectVoice,3000);
+    }
+  };
+}
+
+function diagHandleMsg(msg) {
+  if(msg.type==='session_started') {
+    diagSetupAudio();
+    showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
+    const w=document.getElementById('diagWave')||document.querySelector('.diag-wave');
+    if(w) w.classList.remove('muted');
+  } else if(msg.type==='audio') {
+    if(msg.data){diagPlayQueue.push(msg.data);if(!diagIsPlaying)diagPlayNext();}
+  } else if(msg.type==='interrupt') {
+    diagPlayQueue=[];diagIsPlaying=false;
+    try{diagAudioCtx&&diagAudioCtx.suspend().then(()=>diagAudioCtx.resume());}catch(e){}
+  } else if(msg.type==='transcript') {
+    if(msg.text&&msg.text.trim()) {
+      diagAddSTT(msg.role==='user'?'user':'ai',msg.text,null);
+      if(msg.role==='user') {
+        setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
+      }
+      if(msg.role==='assistant') {
+        setTimeout(function(){ diagParseAiSpeech(msg.text); }, 500);
+        diagLastQ = msg.text;
+      }
+    }
+  } else if(msg.type==='smart_note_update') {
+    diagHandleNote(msg);
+  } else if(msg.type==='error') {
+    showToast('⚠️ '+(msg.error||'오류가 발생했습니다'));
+  }
+}
+
+async function diagSetupAudio() {
+  diagAudioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:24000});
+  const wc=`class P extends AudioWorkletProcessor{process(i){const c=i[0][0];if(!c)return true;const p=new Int16Array(c.length);for(let i=0;i<c.length;i++)p[i]=Math.max(-32768,Math.min(32767,c[i]*32768));this.port.postMessage(p.buffer,[p.buffer]);return true;}}registerProcessor('p16',P);`;
+  const blob=new Blob([wc],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  await diagAudioCtx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+  const src=diagAudioCtx.createMediaStreamSource(diagMicStream);
+  diagWorkletNode=new AudioWorkletNode(diagAudioCtx,'p16');
+  diagWorkletNode.port.onmessage=function(e){
+    if(diagWs&&diagWs.readyState===1&&diagMic&&!diagPaused)
+      diagWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(e.data)))}));
+  };
+  src.connect(diagWorkletNode);
+}
+
+function diagPlayNext() {
+  if(!diagPlayQueue.length||!diagAudioCtx){diagIsPlaying=false;return;}
+  diagIsPlaying=true;
+  const raw=atob(diagPlayQueue.shift());
+  const buf=new ArrayBuffer(raw.length);
+  const v=new Uint8Array(buf);
+  for(let i=0;i<raw.length;i++)v[i]=raw.charCodeAt(i);
+  const p=new Int16Array(buf);
+  const f=new Float32Array(p.length);
+  for(let i=0;i<p.length;i++)f[i]=p[i]/32768;
+  const ab=diagAudioCtx.createBuffer(1,f.length,24000);
+  ab.copyToChannel(f,0);
+  const s=diagAudioCtx.createBufferSource();
+  s.buffer=ab;s.connect(diagAudioCtx.destination);s.start();
+  s.onended=diagPlayNext;
+}
+
+function diagHandleNote(msg) {
+  const { noteType, title, content, step } = msg;
+
+  /* ① 단계 이동 — step 신호 수신 시 */
+  if(step !== null && step !== undefined && step !== diagCurPart) {
+    diagActivatePart(step);
+  }
+
+  /* ② 금융집짓기 SVG */
+  if(noteType==='house_svg' && content && content.html) {
+    const slide5=document.getElementById('dslide5');
+    if(slide5){
+      const houseDiv=document.createElement('div');
+      houseDiv.style.cssText='margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid #e5dcc0;';
+      houseDiv.innerHTML=content.html;
+      slide5.appendChild(houseDiv);
+    }
+    if(step===undefined) diagActivatePart(5);
+    showToast('🏠 금융집짓기 설계도면 업데이트');
+    return;
+  }
+
+  /* ③ 필드 채우기 — field+value 형식 */
+  if(content && content.field && content.value) {
+    const partIdx = (step !== undefined ? step : diagCurPart);
+    const fieldKey = content.field.replace(/[\s\(\)\+\·\(\)]/g,'_');
+    const el = document.getElementById('dfv'+partIdx+'_'+fieldKey);
+    if(el) {
+      el.textContent = content.value;
+      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+    }
+    return;
+  }
+
+  /* ④ 텍스트 메모 — text 형식으로 현재 파트의 빈 필드에 채우기 */
+  if(content && content.text && title) {
+    const partIdx = (step !== undefined ? step : diagCurPart);
+    /* 현재 파트의 빈 필드 중 첫 번째에 채우기 */
+    const part = DIAG_PARTS[partIdx];
+    if(part && part.fields) {
+      for(const [l] of part.fields) {
+        const fid = 'dfv'+partIdx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
+        const el = document.getElementById(fid);
+        if(el && el.textContent.includes('입력 대기')) {
+          el.textContent = content.text;
+          el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;';
+          break;
+        }
+      }
+    }
+  }
+}
+
+/* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
+
+/* ── Heartbeat ── */
+setInterval(function(){
+  if(diagWs&&diagWs.readyState===1)
+    diagWs.send(JSON.stringify({type:'ping'}));
+},30000);
+
+/* ── 12장 노트 빌드 ── */
+function diagBuildNotes() {
+  const container=document.getElementById('diagNoteContainer');
+  if(!container) return;
+  container.innerHTML='';
+  DIAG_PARTS.forEach(function(p,i){
+    const slide=document.createElement('div');
+    slide.id='dslide'+i;
+    slide.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;background:#fef9ec;padding:12px 12px 20px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;display:'+(i===0?'block':'none');
+    
+    if(p.id===11) {
+      // 리포트 노트 (세로 스크롤 허용)
+      slide.innerHTML=`
+        <div style="font-size:12px;font-weight:900;color:#0B1D3A;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9972A">📄 ${p.title}</div>
+        <div id="diagReportContent">
+          <div style="background:#fff;border-radius:12px;border:1px solid #e5dcc0;padding:16px;text-align:center;margin-bottom:10px">
+            <div style="font-size:26px;margin-bottom:7px">📄</div>
+            <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">종합재무설계 리포트</div>
+            <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
+            <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
+              <span style="color:#C9972A">✦</span> 금융집짓기® 설계도면<br>
+              <span style="color:#C9972A">✦</span> 3버킷 포트폴리오 분석<br>
+              <span style="color:#C9972A">✦</span> 7대영역 실행 계획<br>
+              <span style="color:#C9972A">✦</span> 재무점수 및 등급 · 월별 액션플랜
+            </div>
+          </div>
+          <div id="diagReportReady" style="display:none">
+            <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <div style="font-size:28px">🏆</div>
+                <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div>
+                <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
+                <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">53</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
+              </div>
+              <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      // 일반 노트 (0~10파트)
+      const fieldsHtml = p.fields.map(function([l,v]){
+        const fid='dfv'+i+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
+        return `<div style="margin-bottom:8px">
+          <div style="font-size:8px;font-weight:700;color:#6b7280;margin-bottom:2px">${l}</div>
+          <div id="${fid}" style="font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:#fff8e6;border-left:2.5px solid rgba(201,151,42,.3);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#bbb;font-style:italic">— 입력 대기 중</div>
+        </div>`;
+      }).join('');
+      slide.innerHTML=`
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9972A;flex-shrink:0">
+          <div style="width:22px;height:22px;border-radius:50%;background:#0B1D3A;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0" id="dpnum${i}">${i}</div>
+          <div style="font-size:11px;font-weight:900;color:#0B1D3A;flex:1">${p.title}</div>
+          <div style="font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.05);color:#bbb" id="dpbadge${i}">${i===0?'진행중':'대기'}</div>
+        </div>
+        ${fieldsHtml}`;
+    }
+    container.appendChild(slide);
+  });
+  // 0번 노트 활성화
+  const pn=document.getElementById('dpnum0'); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
+  const pb=document.getElementById('dpbadge0'); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
+
+  // 프로세스 바 빌드
+  const grid=document.getElementById('diagProcGrid');
+  if(grid){
+    grid.innerHTML=DIAG_PARTS.map(function(p,i){
+      return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
+    }).join('');
+  }
+}
+
+/* ── 파트 활성화 ── */
+function diagActivatePart(idx) {
+  if(diagCurPart>=0 && diagCurPart!==idx) {
+    diagFillPart(diagCurPart);
+    const prevSlide=document.getElementById('dslide'+diagCurPart);
+    if(prevSlide) prevSlide.style.display='none';
+    const pn=document.getElementById('dpnum'+diagCurPart); if(pn) pn.style.background='#16a34a';
+    const pb=document.getElementById('dpbadge'+diagCurPart); if(pb){pb.textContent='완료';pb.style.background='rgba(22,163,74,.1)';pb.style.color='#16a34a';pb.style.border='1px solid rgba(22,163,74,.25)';}
+    const ps=document.getElementById('dps'+diagCurPart); if(ps){ps.classList.remove('active');ps.classList.add('done');}
+  }
+  diagCurPart=idx;
+  const slide=document.getElementById('dslide'+idx);
+  if(slide) slide.style.display='block';
+  const pn=document.getElementById('dpnum'+idx); if(pn) pn.style.background='linear-gradient(135deg,#C9972A,#E8B84B)';
+  const pb=document.getElementById('dpbadge'+idx); if(pb){pb.textContent='진행중';pb.style.background='rgba(201,151,42,.12)';pb.style.color='#C9972A';pb.style.border='1px solid rgba(201,151,42,.3)';}
+  const ps=document.getElementById('dps'+idx);
+  if(ps){
+    document.querySelectorAll('[id^="dps"]').forEach(function(el){
+      el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
+    });
+    ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
+    ps.scrollIntoView({behavior:'smooth',inline:'center'});
+  }
+  // 서버에 단계 전달
+  if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
+  // 서버에서 노트 업데이트 요청
+  if(diagFinCtx) diagFinCtx.currentStep=idx;
+  const pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx].short;
+  const sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+DIAG_PARTS[idx].short;
+}
+
+function diagJumpPart(i) { diagActivatePart(i); }
+
+/* ── 파트 필드 채우기 ── */
+function diagFillPart(idx) {
+  const part=DIAG_PARTS[idx];
+  if(!part||!part.fields) return;
+  part.fields.forEach(function([l,v]){
+    if(!v) return;
+    const fid='dfv'+idx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
+    const el=document.getElementById(fid);
+    if(el){el.textContent=v;el.style.color='#0B1D3A';el.style.fontStyle='normal';el.style.borderLeftColor='#C9972A';}
+  });
+}
+
+/* ── STT 자막 ── */
+function diagAddSTT(role, text, tag) {
+  const area=document.getElementById('diagStt'); if(!area) return;
+  const isAI=role==='ai';
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:flex-start'+(isAI?'':';flex-direction:row-reverse');
+  div.innerHTML=isAI
+    ?`<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖'"></div>
+     <div><div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05)">${text}</div>${tag?`<div style="font-size:7.5px;color:#E8B84B;margin-top:1px;padding-left:2px">💡 ${tag}</div>`:''}</div>`
+    :`<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>
+     <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">${text}</div>`;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+
+/* ── 컨트롤 ── */
+function diagToggleMic() {
+  diagMic=!diagMic;
+  const ico=document.getElementById('diagMicIco');
+  if(ico) ico.textContent=diagMic?'🎤':'🔇';
+}
+function diagToggleCamera() {
+  diagCam=!diagCam;
+  const ph=document.getElementById('diagPipPh');
+  const vid=document.getElementById('diagPipVideo');
+  const dot=document.getElementById('diagCamDot');
+  if(diagCam){
+    if(ph) ph.style.display='none';
+    if(vid) vid.style.display='block';
+    if(dot) dot.style.background='#22c55e';
+    navigator.mediaDevices?.getUserMedia({video:true,audio:false})
+      .then(function(s){if(vid) vid.srcObject=s;})
+      .catch(function(){if(vid) vid.style.display='none';if(ph) ph.style.display='flex';});
+  } else {
+    if(ph) ph.style.display='flex';
+    if(vid){vid.style.display='none';if(vid.srcObject){vid.srcObject.getTracks().forEach(function(t){t.stop();});vid.srcObject=null;}}
+    if(dot) dot.style.background='rgba(255,255,255,.2)';
+  }
+}
+function diagToggleRec() {
+  diagRec=!diagRec;
+  const btn=document.getElementById('diagRecBtn');
+  if(btn) btn.textContent=diagRec?'⏹ 녹화중':'⏺ 녹화';
+  showToast(diagRec?'⏺ 녹화 시작 · '+DIAG_TODAY_STR+' 자동 저장':'⏹ 녹화가 저장됩니다');
+}
+function diagTogglePause() {
+  diagPaused=!diagPaused;
+  const ov=document.getElementById('diagPauseOv');
+  if(ov) ov.style.display=diagPaused?'flex':'none';
+  const ico=document.getElementById('diagPauseIco');
+  const lbl=document.getElementById('diagPauseLbl');
+  const btn=document.getElementById('diagPauseBtn');
+  if(ico) ico.textContent=diagPaused?'▶':'⏸';
+  if(lbl) lbl.textContent=diagPaused?'재개':'일시정지';
+  if(btn) btn.textContent=diagPaused?'▶ 재개':'⏸ 일시정지';
+  const w=document.getElementById('diagWave');
+  if(w) {
+    w.querySelectorAll('div').forEach(function(d){
+      d.style.animation=diagPaused?'none':'';
+    });
+  }
+  /* WS 일시정지/재개 전송 */
+  if(diagWs && diagWs.readyState===1) {
+    if(diagPaused) {
+      diagPlayQueue=[];
+      diagWs.send(JSON.stringify({type:'pause'}));
+      showToast('⏸ 일시정지');
+    } else {
+      diagWs.send(JSON.stringify({type:'resume'}));
+      showToast('▶ 재개');
+    }
+  }
+}
+function diagShowEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex'; }
+function diagHideEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='none'; }
+function diagEndConsult() {
+  diagHideEndModal();
+  clearInterval(diagInt);
+  DIAG_PARTS.forEach(function(_,i){ diagFillPart(i); });
+  // 리포트 활성화
+  const nr=document.getElementById('diagReportReady');
+  if(nr) nr.style.display='block';
+  const rd=document.getElementById('diagReportDate');
+  if(rd) rd.textContent=DIAG_TODAY_STR+' · '+DIAG_SESSION_NUM+'회차 · '+Math.floor(diagSec/60)+1+'분 상담';
+  diagActivatePart(11);
+  // 히스토리에 리포트 추가
+  const list=document.getElementById('reportHistList');
+  if(list) {
+    const mins=Math.floor(diagSec/60)+1;
+    const label=DIAG_IS_FIRST?'초회진단':DIAG_SESSION_NUM+'회차 정기상담';
+    const div=document.createElement('div');
+    div.className='rhc';
+    div.innerHTML=`<div class="rhc-icon">📄</div>
+      <div class="rhc-info"><div class="rhc-title">${DIAG_TODAY_STR} ${label} 리포트</div><div class="rhc-sub">${mins}분 · 금융집짓기® 8단계</div></div>
+      <div class="rhc-score">53</div>
+      <button class="rhc-dl" onclick="showToast('📄 PDF 다운로드 중...')">PDF</button>`;
+    list.insertBefore(div, list.firstChild);
+  }
+  showToast('🎉 '+DIAG_SESSION_NUM+'회차 상담 완료! PDF 리포트가 생성되었습니다 📄');
+}
+function diagSendText() {
+  const inp=document.getElementById('diagTextInp');
+  if(!inp||!inp.value.trim()) return;
+  const txt=inp.value.trim();
+  diagAddSTT('user',txt,null);
+  inp.value='';
+  if(diagWs&&diagWs.readyState===1)
+    diagWs.send(JSON.stringify({type:'text_input',text:txt}));
+}
+
+
+/* ━━━ STT 기반 상담노트 자동 채우기 ━━━ */
+
+/* diagDetectStep 제거 — 단계이동은 update_smart_note 도구로만 */
+
+/* 고객 답변에서 인적사항 자동 채우기 */
+let diagLastQuestion = ''; // 머니야 마지막 질문 추적
+
+/* ━━━ 상담노트 자동채우기 — 복명복창 파싱 방식 ━━━ */
+
+/* 머니야 마지막 질문 추적 */
+let diagLastQ = '';
+let diagLastFilledPartIdx = -1;
+let diagLastFilledLabel = '';
+
+/* 머니야 발화 → 복명복창 파싱 → 노트 자동 기입 */
+function diagParseAiSpeech(aiText) {
+  const t = aiText;
+
+  /* ── 단계 전환 감지 ── */
+  const stepMap = [
+    { step:1, keys:['인적사항', '성함부터', '이름부터'] },
+    { step:2, keys:['경제적으로 가장 고민', '고민되시거나 관심'] },
+    { step:3, keys:['수입과 지출을 살펴', '월 소득이 세후로'] },
+    { step:4, keys:['자산과 부채', '자산부채'] },
+    { step:5, keys:['금융집을 함께 그려', '금융집짓기 설계'] },
+    { step:9, keys:['최종 의견', '강점부터'] },
+    { step:10, keys:['클로징', '다음 약속'] },
+    { step:11, keys:['리포트를 만들어'] },
+  ];
+  for(const {step, keys} of stepMap) {
+    if(keys.some(k => t.includes(k)) && step > diagCurPart) {
+      setTimeout(() => diagActivatePart(step), 500);
+      break;
+    }
+  }
+
+  /* ── 복명복창 파싱 → 노트 기입 ── */
+  /* 패턴: "아, [값]이시군요" / "[값]이군요" / "[값]이라고 하셨죠" */
+  const patterns = [
+    /* 이름 */
+    { part:1, label:'성함', regex:/([가-힣]{2,4})님이시군요/ },
+    { part:1, label:'성함', regex:/([가-힣]{2,4})님이라고/ },
+    /* 나이 */
+    { part:1, label:'나이', regex:/(\d+)세이시군요/ },
+    { part:1, label:'나이', regex:/(\d+)세이군요/ },
+    /* 결혼여부 */
+    { part:1, label:'결혼_여부', regex:/(기혼|미혼|결혼하셨군요|결혼 안 하셨군요)/ },
+    /* 자녀수 */
+    { part:1, label:'자녀_수', regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
+    { part:1, label:'자녀_수', regex:/([가-힣\d]+)[살세]\s*짜리\s*(딸|아들|자녀)/ },
+    /* 가족수 */
+    { part:1, label:'가족_수', regex:/(\d+)명.*가족/ },
+    { part:1, label:'가족_수', regex:/가족.*(\d+)명/ },
+    /* 직업 */
+    { part:1, label:'직업', regex:/([가-힣\s]{2,15})(이시군요|이군요|이라고)\s*하셨/ },
+    /* 맞벌이 */
+    { part:1, label:'맞벌이_여부', regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
+    /* 월소득 */
+    { part:3, label:'월_총수입_세후', regex:/(\d+)만원.*소득/ },
+    { part:3, label:'월_총수입_세후', regex:/소득.*(\d+)만원/ },
+    /* 대출 */
+    { part:3, label:'대출상환', regex:/대출.*(\d+)만원/ },
+    { part:3, label:'보험료', regex:/보험료.*(\d+)만원/ },
+    { part:3, label:'보험료', regex:/(\d+)만원.*보험/ },
+    /* 저축 */
+    { part:3, label:'저축·투자', regex:/저축.*(\d+)만원/ },
+    /* 자산 */
+    { part:4, label:'금융_자산', regex:/금융.*(\d+)만원/ },
+    { part:4, label:'총_자산', regex:/총.{0,3}자산.*(\d+)만원/ },
+    { part:4, label:'총_부채', regex:/총.{0,3}부채.*(\d+)만원/ },
+  ];
+
+  for(const {part, label, regex} of patterns) {
+    const m = t.match(regex);
+    if(m) {
+      const value = m[1] || m[0];
+      diagFillField(part, label, value);
+    }
+  }
+}
+
+/* 특정 파트·필드에 값 채우기 */
+function diagFillField(partIdx, labelKey, value) {
+  if(!value || !DIAG_PARTS[partIdx]) return;
+  const part = DIAG_PARTS[partIdx];
+
+  /* 라벨 키와 일치하는 필드 찾기 (부분 매칭) */
+  for(const [label] of part.fields) {
+    const normalize = s => s.replace(/[\s\(\)\+\·\-]/g,'').toLowerCase();
+    if(normalize(label).includes(normalize(labelKey)) ||
+       normalize(labelKey).includes(normalize(label))) {
+      const fid = 'dfv'+partIdx+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
+      const el = document.getElementById(fid);
+      if(el) {
+        el.textContent = value;
+        el.style.cssText = 'font-size:10px;font-weight:700;padding:6px 9px;border-radius:6px;'+
+          'background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06));'+
+          'border-left:3px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;'+
+          'animation:diagFillAnim .5s ease;';
+        diagLastFilledPartIdx = partIdx;
+        diagLastFilledLabel = label;
+        console.log('[노트]', label, '→', value);
+      }
+      break;
+    }
+  }
+}
+
+/* 고객 직접 발화 → 현재 단계 빈 필드에 채우기 */
+function diagAutoFillNote(userText) {
+  const t = userText.trim();
+  if(!t || t.length < 2) return;
+  const part = DIAG_PARTS[diagCurPart];
+  if(!part || !part.fields) return;
+
+  /* 정정 키워드 감지 */
+  const correctionKeys = ['아니', '아닌', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
+  const isCorrection = correctionKeys.some(k => t.includes(k));
+  if(isCorrection && diagLastFilledPartIdx >= 0) {
+    const fid = 'dfv'+diagLastFilledPartIdx+'_'+diagLastFilledLabel.replace(/[\s\(\)\+\·]/g,'_');
+    const el = document.getElementById(fid);
+    if(el) {
+      el.textContent = '⚠ 수정 중...';
+      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;'+
+        'background:rgba(220,38,38,.08);border-left:2.5px solid #dc2626;line-height:1.4;color:#dc2626;';
+    }
+    return;
+  }
+}
+
+/* 머니야 발화 추적 (마지막 질문 저장) */
+const _origDiagAddSTT = diagAddSTT;
+diagAddSTT = function(role, text, tag) {
+  _origDiagAddSTT(role, text, tag);
+  if(role === 'ai') diagLastQuestion = text;
+};
+
 </script>
 
 
@@ -8130,105 +9201,283 @@ function fhDevClose() {
          탭2: AI 화상진단
     ══════════════════════════════════ -->
     <div class="mp-panel" id="mp-panel-2">
-      <!-- 진단 안내 카드 -->
-      <div style="margin:10px 12px;background:linear-gradient(135deg,#C9972A,#E8B84B);border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%"></div>
-        <div style="font-size:36px;margin-bottom:8px">🤖</div>
-        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:4px">AI 머니야 화상진단</div>
-        <div style="font-size:10px;color:rgba(11,29,58,.7)">오상열 CFP · 금융집짓기® 전문</div>
-      </div>
 
-      <!-- 진단 안내 -->
-      <div class="mpc" style="margin:8px 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">ℹ️</span><span class="mpc-title">진단 안내</span></div>
-        <div class="mpc-bd">
-          <div class="mp-info-row"><span class="mp-info-ic">⏱</span><div><div style="font-size:10px;color:var(--muted)">상담 시간</div><div style="font-size:11px;font-weight:700">월 30분 (첫 달 60분)</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">📹</span><div><div style="font-size:10px;color:var(--muted)">방식</div><div style="font-size:11px;font-weight:700">AI 화상진단 (WebRTC)</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">📋</span><div><div style="font-size:10px;color:var(--muted)">내용</div><div style="font-size:11px;font-weight:700">수입지출·보험·저축·투자·은퇴</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">🤖</span><div><div style="font-size:10px;color:var(--muted)">AI 지원</div><div style="font-size:11px;font-weight:700">RAG 5,706개 지식베이스 활용</div></div></div>
-        </div>
-      </div>
+      <!-- ━━━ 화면A: 준비 화면 ━━━ -->
+      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f2eb;">
 
-      <!-- 이용권 현황 -->
-      <div class="mpc" style="margin:8px 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">🎟</span><span class="mpc-title">이용권 현황</span></div>
-        <div class="mpc-bd">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:11px;color:var(--muted)">이번달 남은 시간</span>
-            <span id="mp-consult-remain" style="font-size:16px;font-weight:900;color:var(--gold)">30분</span>
-          </div>
-          <div style="background:rgba(255,255,255,.1);border-radius:8px;height:6px;overflow:hidden">
-            <div id="mp-consult-bar" style="width:100%;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:8px;transition:width .5s"></div>
-          </div>
-          <div style="font-size:8.5px;color:var(--muted);margin-top:4px">매월 1일 자동 지급 · 미사용 시 이월</div>
-        </div>
-      </div>
-
-      <!-- 사전 서류 제출 -->
-      <div class="mpc" style="margin:0 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">📎</span><span class="mpc-title">사전 서류 제출</span></div>
-        <div class="mpc-bd">
-          <div style="background:rgba(201,151,42,.08);border:1px dashed rgba(201,151,42,.3);border-radius:8px;padding:8px;margin-bottom:8px;font-size:9.5px;color:var(--gold2)">📸 상담 전 제출하시면 더 정확한 상담이 가능합니다</div>
-          <div id="mp-docs-list2" style="display:flex;flex-direction:column;gap:6px">
-            <div class="mp-doc-item" id="doc2-application">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">📋 상담신청서</div><div style="font-size:9px;color:var(--muted)">필수</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('application')">📎 업로드</button>
+        <!-- 배너 -->
+        <div class="diag-banner">
+          <div class="diag-banner-inner">
+            <div class="diag-banner-av">
+              <img id="diagBannerImg" src="" alt="AI머니야" onerror="this.parentElement.textContent='🤖'">
             </div>
-            <div class="mp-doc-item" id="doc2-insurance">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">🏦 보험증권</div><div style="font-size:9px;color:var(--muted)">필수</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('insurance')">📎 업로드</button>
-            </div>
-            <div class="mp-doc-item" id="doc2-pension">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">💰 연금명세서</div><div style="font-size:9px;color:var(--muted)">필수 · 국민연금+퇴직연금</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('pension')">📎 업로드</button>
-            </div>
-            <div class="mp-doc-item" id="doc2-tax">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">📊 세금신고서</div><div style="font-size:9px;color:var(--muted)">선택</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('tax')">📎 업로드</button>
+            <div class="diag-banner-txt">
+              <div class="diag-banner-title">AI 머니야 재무진단</div>
+              <div class="diag-banner-sub">오상열 CFP · 금융집짓기® 공식 AI 수제자</div>
             </div>
           </div>
-          <input type="file" id="mp-doc-file2" accept="image/*,application/pdf" style="display:none" onchange="mpDocFileSelected2(this)">
         </div>
-      </div>
 
-      <!-- 화상상담 시작 버튼 -->
-      <div style="padding:12px">
-        <button onclick="mpStartVideoConsult()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:14px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
-          📹 화상진단 시작하기
-        </button>
-        <div style="text-align:center;font-size:8.5px;color:var(--muted);margin-top:6px">카메라와 마이크 권한이 필요합니다</div>
-      </div>
-
-      <!-- AI 텍스트 진단 (무제한) -->
-      <div class="mpc" style="margin:0 12px 8px">
-        <div class="mpc-hd">
-          <span class="mpc-icon">💬</span>
-          <span class="mpc-title">AI 텍스트 진단</span>
-          <span class="mpc-badge mb-gold">무제한</span>
+        <!-- 세션 정보 -->
+        <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;">
+          <div id="diagTodayDate" style="font-size:9.5px;color:var(--muted);font-weight:500;"></div>
+          <div id="diagSessionChip" style="padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;"></div>
         </div>
-        <div class="mp-chat-area" id="mp-chat-area">
-          <div class="mp-chat-msg mp-fade-in">
-            <div class="mp-chat-av ai">CFP</div>
-            <div>
-              <div class="mp-chat-bubble ai">
-                안녕하세요! 저는 오상열 CFP의 AI 재무 진단사입니다. 😊<br><br>
-                입력하신 재무 데이터를 분석해서 맞춤 조언을 드리겠습니다. 어떤 재무 고민이 있으신가요?
+        <div id="diagSessionSub" style="padding:3px 12px 8px;font-size:9px;color:var(--muted);"></div>
+
+        <!-- 서류 업로드 -->
+        <div class="mpc" style="margin:0 12px 0;">
+          <div class="mpc-hd" onclick="diagToggle('diagDocBody','diagDocChev')">
+            <span class="mpc-icon">📎</span>
+            <span class="mpc-title">사전 서류 제출</span>
+            <span class="mpc-badge mb-gold" id="diagDocBadge">필수 미완료</span>
+            <span class="mpc-chevron" id="diagDocChev">▾</span>
+          </div>
+          <div class="accordion-body open" id="diagDocBody">
+            <div style="padding:10px 14px;">
+              <!-- 상담신청서 (필수) -->
+              <div class="doc-req-wrap">
+                <div class="doc-req-header">
+                  <div class="doc-req-title">📋 상담신청서 <span style="color:var(--red);font-size:8.5px;">필수</span></div>
+                  <span class="doc-status-badge" id="diagAppBadge" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);">미제출</span>
+                </div>
+                <div class="doc-req-card">
+                  <div class="doc-req-row">
+                    <div class="doc-icon">📋</div>
+                    <div style="flex:1;">
+                      <div class="doc-name">금융집짓기® 상담신청서</div>
+                      <div class="doc-desc">고객정보·수입지출·자산부채 포함</div>
+                    </div>
+                    <div class="doc-stat" id="diagAppStat">⬜</div>
+                  </div>
+                  <div class="doc-btn-row">
+                    <button class="btn-dl" onclick="fhDocDownload('application')">⬇️ 양식 다운</button>
+                    <button class="btn-up" onclick="diagOpenUpload('application')">📎 업로드</button>
+                  </div>
+                  <div id="diagStartNote" style="margin-top:7px;font-size:9px;color:var(--muted);line-height:1.5;">업로드 후 AI가 자동으로 고객 정보를 분석합니다</div>
+                </div>
               </div>
-              <div class="mp-chat-time">방금</div>
+              <!-- 선택 서류 -->
+              <div class="doc-opt-wrap">
+                <div class="doc-opt-title">📂 선택 서류 <span style="font-weight:400;color:var(--muted);">(있으면 더 정확한 진단)</span></div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">🏦 보험증권</div><div class="doc-opt-sub">보장 분석용</div></div>
+                  <div id="diagStatIns" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('ins')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">💰 급여명세서</div><div class="doc-opt-sub">수입 분석용</div></div>
+                  <div id="diagStatSal" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('sal')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">🏦 연금명세서</div><div class="doc-opt-sub">은퇴 분석용</div></div>
+                  <div id="diagStatPen" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('pen')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">📊 세금신고서</div><div class="doc-opt-sub">절세 분석용</div></div>
+                  <div id="diagStatTax" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('tax')">업로드</button>
+                </div>
+                <div class="doc-opt-row" style="border-bottom:none;">
+                  <div style="flex:1;"><div class="doc-opt-name">📁 기타</div><div class="doc-opt-sub">기타 자료</div></div>
+                  <div id="diagStatEtc" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('etc')">업로드</button>
+                </div>
+              </div>
+              <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
             </div>
           </div>
         </div>
-        <div class="mp-ai-input-row">
-          <input class="mp-ai-input" id="mp-ai-input" placeholder="재무 진단을 입력하세요..." onkeypress="if(event.key==='Enter')mpSendChat()">
-          <button class="mp-ai-send" onclick="mpSendChat()">➤</button>
+
+        <!-- 시작 버튼 -->
+        <div class="start-area" style="padding:12px;">
+          <button class="start-btn" onclick="diagStartConsult()">
+            🎤 AI 머니야 재무진단 시작하기
+          </button>
+          <div class="start-note">마이크·카메라 권한이 필요합니다</div>
+        </div>
+
+        <!-- AI 학습 안내 -->
+        <div class="mpc" style="margin:0 12px 8px;">
+          <div class="mpc-hd"><span class="mpc-icon">🧠</span><span class="mpc-title">AI 머니야 학습 내역</span></div>
+          <div class="mpc-bd">
+            <div class="learn-card" onclick="showToast('금융집짓기® RAG 지식베이스 5,706개 청크')">
+              <div class="learn-icon" style="background:linear-gradient(135deg,#C9972A,#E8B84B);">📚</div>
+              <div class="learn-info">
+                <div class="learn-title">금융집짓기® 전문 지식베이스</div>
+                <div class="learn-sub">5,706개 청크 · RAG 검색 기반 · 실시간 업데이트</div>
+              </div>
+              <div class="learn-arr">›</div>
+            </div>
+            <div class="learn-card" onclick="showToast('오상열 CFP 20년 상담 데이터 학습 완료')">
+              <div class="learn-icon" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);">👨‍💼</div>
+              <div class="learn-info">
+                <div class="learn-title">오상열 CFP 상담 패턴 학습</div>
+                <div class="learn-sub">2,000건+ 상담 · 500회+ 강의 데이터</div>
+              </div>
+              <div class="learn-arr">›</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 숨겨진 파일 input들 -->
+        <input type="file" id="diagFileCamera" accept="image/*" capture="environment" style="display:none" onchange="diagHandleFile(this)">
+        <input type="file" id="diagFileImage" accept="image/*" style="display:none" onchange="diagHandleFile(this)">
+        <input type="file" id="diagFileDoc" accept=".pdf,.xls,.xlsx,.doc,.docx,image/*" style="display:none" onchange="diagHandleFile(this)">
+
+      </div><!-- /diagScreenA -->
+
+
+      <!-- ━━━ 화면B: 상담 화면 ━━━ -->
+      <div id="diagScreenB" style="display:none;flex-direction:column;height:100%;overflow:hidden;background:var(--navy);position:relative;">
+
+        <!-- 상단바 -->
+        <div class="c-topbar">
+          <div class="c-live">
+            <div class="c-live-dot"></div>
+            <span class="c-live-txt">LIVE 상담 중</span>
+          </div>
+          <div class="c-timer" id="diagTimer">00:00</div>
+          <div class="c-top-btns">
+            <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
+            <button class="c-tbtn c-tbtn-rec" id="diagRecBtn" onclick="diagToggleRec()">⏺ 녹화</button>
+            <button class="c-tbtn c-tbtn-end" onclick="diagShowEndModal()">종료</button>
+          </div>
+        </div>
+
+        <!-- AI 아바타 + PIP -->
+        <div class="c-video-bar">
+          <div class="c-ai-area">
+            <div class="c-ai-av">
+              <img id="diagAiImg" src="" alt="AI" onerror="this.parentElement.textContent='🤖'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            </div>
+            <div>
+              <div class="c-ai-name">AI 머니야</div>
+              <div class="c-wave" id="diagWave">
+                <div class="c-wb" style="height:2px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:9px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:2px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="c-part-center">
+            <div class="c-part-lbl">현재 단계</div>
+            <div class="c-part-name" id="diagPartName">오프닝</div>
+            <div style="font-size:8px;color:rgba(255,255,255,.3);" id="diagCurStepName"></div>
+          </div>
+          <div class="c-pip" onclick="diagToggleCamera()">
+            <div class="c-pip-ph" id="diagPipPh">
+              <span class="c-pip-icon">📷</span>
+              <span class="c-pip-txt">카메라</span>
+            </div>
+            <video id="diagPipVideo" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px;" autoplay muted playsinline></video>
+            <div class="c-cam-dot" id="diagCamDot"></div>
+          </div>
+        </div>
+
+        <!-- 프로세스 바 -->
+        <div class="c-proc-wrap">
+          <div class="c-proc-grid" id="diagProcGrid"></div>
+        </div>
+
+        <!-- 노트 탭바 -->
+        <div class="c-note-tabs">
+          <div class="c-ntab on" onclick="diagSwitchTab(0,this)">📝 상담노트</div>
+          <div class="c-ntab" onclick="diagSwitchTab(1,this)">💬 대화</div>
+          <div class="c-ntab" id="diagSessionInfo">오늘 · 1회차</div>
+        </div>
+
+        <!-- 노트 본문 -->
+        <div class="c-note-body">
+          <!-- 노트 슬라이드 컨테이너 -->
+          <div style="flex:1;position:relative;overflow:hidden;">
+            <div id="diagNoteContainer" style="position:absolute;inset:0;"></div>
+          </div>
+        </div>
+
+        <!-- STT 자막 -->
+        <div class="c-stt" id="diagStt"></div>
+
+        <!-- 하단 컨트롤 -->
+        <div class="c-bottom">
+          <div class="c-btn-row">
+            <div class="c-mini-btn" onclick="diagToggleMic()">
+              <div class="ico" id="diagMicIco">🎤</div>
+              <div class="lbl">마이크</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagToggleCamera()">
+              <div class="ico">📷</div>
+              <div class="lbl">카메라</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagTogglePause()">
+              <div class="ico" id="diagPauseIco">⏸</div>
+              <div class="lbl" id="diagPauseLbl">일시정지</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagOpenUpload('application')">
+              <div class="ico">📎</div>
+              <div class="lbl">서류</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagShowEndModal()">
+              <div class="ico muted-btn" style="background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.35);">🔚</div>
+              <div class="lbl">종료</div>
+            </div>
+          </div>
+          <div class="c-inp-row">
+            <input class="c-inp" id="diagTextInp" placeholder="텍스트로 입력..." onkeypress="if(event.key==='Enter')diagSendText()">
+            <div class="c-send" onclick="diagSendText()">➤</div>
+          </div>
+        </div>
+
+        <!-- PAUSE 오버레이 -->
+        <div class="pause-ov" id="diagPauseOv">
+          <div style="font-size:32px;">⏸</div>
+          <div style="font-size:14px;font-weight:900;color:#fff;">일시정지</div>
+          <button class="resume-btn" onclick="diagTogglePause()">▶ 재개하기</button>
+        </div>
+
+        <!-- 종료 모달 -->
+        <div class="end-modal" id="diagEndModal">
+          <div class="end-box">
+            <div class="end-box-icon">🏁</div>
+            <div class="end-box-title">상담을 종료할까요?</div>
+            <div class="end-box-desc">종료 시 PDF 리포트가 자동 생성됩니다.<br>상담 내용은 히스토리에 저장됩니다.</div>
+            <div class="end-btns">
+              <button class="end-btn end-cancel" onclick="diagHideEndModal()">계속하기</button>
+              <button class="end-btn end-confirm" onclick="diagEndConsult()">종료하기</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /diagScreenB -->
+
+
+      <!-- ━━━ 업로드 모달 ━━━ -->
+      <div class="upload-modal" id="diagUploadModal">
+        <div class="upload-sheet">
+          <div class="upload-sheet-title" id="diagUploadTitle">서류 업로드</div>
+          <div class="upload-methods">
+            <div class="upload-method" onclick="diagDoUpload('camera')">
+              <div class="upload-method-icon">📸</div>
+              <div class="upload-method-name">카메라</div>
+            </div>
+            <div class="upload-method" onclick="diagDoUpload('image')">
+              <div class="upload-method-icon">🖼️</div>
+              <div class="upload-method-name">갤러리</div>
+            </div>
+            <div class="upload-method" onclick="diagDoUpload('file')">
+              <div class="upload-method-icon">📁</div>
+              <div class="upload-method-name">파일</div>
+            </div>
+          </div>
+          <button class="upload-cancel" onclick="diagCloseUpload()">취소</button>
         </div>
       </div>
-      <div style="height:12px"></div>
-    </div>
+
+    </div><!-- /mp-panel-2 -->
 
     <!-- ══════════════════════════════════
          탭3: 콘텐츠 (대폭 강화)
