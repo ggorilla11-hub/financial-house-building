@@ -2199,8 +2199,8 @@ body { color: #1a1a1a; }
 .c-ntab{flex-shrink:0;padding:6px 10px;font-size:9.5px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
 .c-ntab.on{color:var(--gold);border-bottom-color:var(--gold);}
 
-/* 노트 본문 — 높이 제한으로 STT 자막 영역 확보 */
-.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;max-height:calc(100% - 311px);display:flex;flex-direction:column;}
+/* 노트 본문 — flex:1 세로 확보 */
+.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
 .c-note-body::-webkit-scrollbar{display:none;}
 
 /* ── AI진단탭 전용: 높이 체인 확보 ── */
@@ -7745,40 +7745,41 @@ function _onMoneya발화(text) {
   _trainPending = true;
   _trainLog.push({role:'ai', text:text, ts:Date.now()});
 
-  // 평가: 머니야 발화 품질 체크
   var score = _evalMoneyaSpeech(text);
   _trainScores.push(score);
 
-  // 1.5초 후 Claude가 고객으로 자동 답변
+  // 1.8초 후 Claude가 고객으로 자동 답변
   setTimeout(function() {
     var reply = _generateCustomerReply(text);
-    if(reply) {
-      _trainLog.push({role:'user', text:reply, ts:Date.now()});
-      // 텍스트 입력창에 자동 입력 후 전송
-      var inp = document.getElementById('diagTextInp');
-      if(inp) {
-        inp.value = reply;
-        // 전송 이벤트
-        if(diagWs && diagWs.readyState === 1) {
-          diagWs.send(JSON.stringify({type:'text_input', text:reply}));
-        }
-        inp.value = '';
-        // 화면에도 표시
-        var chatLog = document.getElementById('dn_chat_log');
-        if(chatLog) {
-          var b = document.createElement('div');
-          b.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
-          b.innerHTML =
-            '<div style="font-size:9px;color:#C9972A;text-align:right;margin-bottom:2px">🎓 Claude ('+_trainCustomer.name+'역)</div>'+
-            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;'+
-            'align-self:flex-end;background:#fff3cd;color:#0B1D3A;border:1.5px solid #C9972A;border-bottom-right-radius:3px;">'+
-            reply.replace(/</g,'&lt;')+'</div>';
-          chatLog.appendChild(b);
-          chatLog.scrollTop = chatLog.scrollHeight;
-        }
-      }
+    if(!reply) { _trainPending = false; return; }
+    _trainLog.push({role:'user', text:reply, ts:Date.now()});
+
+    // ① 텍스트 입력창에 0.4초 동안 답변 표시 (눈에 보이게)
+    var inp = document.getElementById('diagTextInp');
+    if(inp) {
+      inp.value = reply;
+      inp.style.background = '#fff3cd';
+      inp.style.borderColor = '#C9972A';
     }
-    _trainPending = false;
+
+    // ② 0.4초 후 전송 (입력창에서 보이다가 전송)
+    setTimeout(function() {
+      // 서버로 전송
+      if(diagWs && diagWs.readyState === 1) {
+        diagWs.send(JSON.stringify({type:'text_input', text:reply}));
+      }
+      // STT 자막에도 표시
+      if(typeof diagAddSTT === 'function') {
+        diagAddSTT('user', '🎓 ' + reply, null);
+      }
+      // 입력창 초기화
+      if(inp) {
+        inp.value = '';
+        inp.style.background = '';
+        inp.style.borderColor = '';
+      }
+      _trainPending = false;
+    }, 400);
   }, 1800);
 }
 
@@ -8810,7 +8811,7 @@ function diagBuildNotes() {
 #dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
 #dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
 #dnTabs::-webkit-scrollbar{display:none;}
-.dnt{flex-shrink:0;padding:6px 10px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;cursor:pointer;
+.dnt{flex-shrink:0;padding:7px 11px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;cursor:pointer;
   color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
 .dnt.active{background:#F4F6FA;color:#0B1D3A;}
 .dnt.done{color:#E8B84B;}
@@ -8825,8 +8826,8 @@ function diagBuildNotes() {
 .dncbody{padding:11px 13px;}
 .dnfield{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid #D8E0EC;}
 .dnfield:last-child{border-bottom:none;}
-.dnfl{color:#8896B0;font-size:10.5px;font-weight:500;width:82px;flex-shrink:0;padding-top:1px;}
-.dnfv{font-size:12.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.5;}
+.dnfl{color:#8896B0;font-size:11px;font-weight:500;width:88px;flex-shrink:0;padding-top:1px;}
+.dnfv{font-size:13.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.6;}
 .dnfv.empty{color:#D8E0EC;font-weight:400;font-style:italic;}
 .dnfv.hi{color:#1a3260;}
 .dnfv.warn{color:#C62828;}
@@ -9400,16 +9401,40 @@ function diagBuildNotes() {
       '<tr><td>월 수입</td><td>'+d(now,m1,'income')+'</td><td>'+d(now,m3,'income')+'</td><td>'+d(now,m12,'income')+'</td></tr>';
   };
   dnLoadBA();
-  // 프로세스 바 제거됨 — 노트 내부 탭으로 통합
+
+  // ── 프로세스 바 빌드 (기존 호환)
+  var grid = document.getElementById('diagProcGrid');
+  if(grid){
+    grid.innerHTML = DIAG_PARTS.map(function(p,i){
+      return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
+    }).join('');
+  }
 }
 
 /* ── 파트 활성화 ── */
 function diagActivatePart(idx) {
   diagCurPart = idx;
-  // 노트 탭 전환
-  var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
-  var tabIdx = tabMap[idx] !== undefined ? tabMap[idx] : 0;
+
+  // 새 탭형 노트 전환
+  var tabIdx = idx <= 4 ? idx :
+               idx === 5 ? 5 :
+               idx === 6 ? 6 :
+               idx === 7 ? 6 :
+               idx === 8 ? 7 :
+               idx === 9 ? 8 :
+               idx === 10 ? 9 :
+               idx === 11 ? 10 : idx;
   if(typeof dnGo === 'function') dnGo(tabIdx);
+
+  // 프로세스 바 업데이트
+  var ps = document.getElementById('dps'+idx);
+  if(ps){
+    document.querySelectorAll('[id^="dps"]').forEach(function(el){
+      el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
+    });
+    ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
+    ps.scrollIntoView({behavior:'smooth',inline:'center'});
+  }
   // 서버에 단계 전달
   if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
   if(diagFinCtx) diagFinCtx.currentStep=idx;
@@ -9575,121 +9600,129 @@ let diagLastFilledLabel = '';
 
 /* 머니야 발화 → 복명복창 파싱 → 노트 자동 기입 */
 function diagParseAiSpeech(aiText) {
-  const t = aiText;
+  var t = aiText;
 
-  /* ── 단계 전환 감지 ── */
-  const stepMap = [
-    { step:1, keys:['인적사항', '성함부터', '이름부터'] },
-    { step:2, keys:['경제적으로 가장 고민', '고민되시거나 관심'] },
-    { step:3, keys:['수입과 지출을 살펴', '월 소득이 세후로'] },
-    { step:4, keys:['자산과 부채', '자산부채'] },
-    { step:5, keys:['금융집을 함께 그려', '금융집짓기 설계'] },
-    { step:9, keys:['최종 의견', '강점부터'] },
-    { step:10, keys:['클로징', '다음 약속'] },
-    { step:11, keys:['리포트를 만들어'] },
+  /* ── v6.2 실제 발화 기반 단계 전환 감지 ── */
+  var stepMap = [
+    { step:1, keys:['성함이 어떻게 되시나요', '고객님에 대해 간단히'] },
+    { step:2, keys:['경제적으로 가장 걱정', '고민되시거나 관심 있으신'] },
+    { step:3, keys:['수입과 지출을 함께 정리', '실수령액이 어떻게 되세요', '수입지출을 정리'] },
+    { step:4, keys:['자산과 부채를 정리', '예적금', '자산을 정리'] },
+    { step:5, keys:['금융집짓기', '집을 그릴 때 어디서'] },
+    { step:6, keys:['저축투자 포트폴리오', '투자재원'] },
+    { step:7, keys:['자산배분', '부동산70'] },
+    { step:8, keys:['종합재무설계', '은퇴설계', '7대영역'] },
+    { step:9, keys:['최종의견', 'DESIRE', '강점부터'] },
+    { step:10, keys:['어떻게 도움이 되셨나요', '다음 달에도', '머니야였습니다'] },
   ];
-  for(const {step, keys} of stepMap) {
-    if(keys.some(k => t.includes(k)) && step > diagCurPart) {
-      setTimeout(() => diagActivatePart(step), 500);
+  for(var i=0; i<stepMap.length; i++) {
+    var sm = stepMap[i];
+    if(sm.keys.some(function(k){ return t.includes(k); }) && sm.step > diagCurPart) {
+      (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
       break;
     }
   }
 
-  /* ── 복명복창 파싱 → 노트 기입 ── */
-  /* 패턴: "아, [값]이시군요" / "[값]이군요" / "[값]이라고 하셨죠" */
-  const patterns = [
-    /* 이름 */
-    { part:1, label:'성함', regex:/([가-힣]{2,4})님이시군요/ },
-    { part:1, label:'성함', regex:/([가-힣]{2,4})님이라고/ },
-    /* 나이 */
-    { part:1, label:'나이', regex:/(\d+)세이시군요/ },
-    { part:1, label:'나이', regex:/(\d+)세이군요/ },
-    /* 결혼여부 */
-    { part:1, label:'결혼_여부', regex:/(기혼|미혼|결혼하셨군요|결혼 안 하셨군요)/ },
-    /* 자녀수 */
-    { part:1, label:'자녀_수', regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
-    { part:1, label:'자녀_수', regex:/([가-힣\d]+)[살세]\s*짜리\s*(딸|아들|자녀)/ },
-    /* 가족수 */
-    { part:1, label:'가족_수', regex:/(\d+)명.*가족/ },
-    { part:1, label:'가족_수', regex:/가족.*(\d+)명/ },
-    /* 직업 */
-    { part:1, label:'직업', regex:/([가-힣\s]{2,15})(이시군요|이군요|이라고)\s*하셨/ },
-    /* 맞벌이 */
-    { part:1, label:'맞벌이_여부', regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
-    /* 월소득 */
-    { part:3, label:'월_총수입_세후', regex:/(\d+)만원.*소득/ },
-    { part:3, label:'월_총수입_세후', regex:/소득.*(\d+)만원/ },
-    /* 대출 */
-    { part:3, label:'대출상환', regex:/대출.*(\d+)만원/ },
-    { part:3, label:'보험료', regex:/보험료.*(\d+)만원/ },
-    { part:3, label:'보험료', regex:/(\d+)만원.*보험/ },
-    /* 저축 */
-    { part:3, label:'저축·투자', regex:/저축.*(\d+)만원/ },
-    /* 자산 */
-    { part:4, label:'금융_자산', regex:/금융.*(\d+)만원/ },
-    { part:4, label:'총_자산', regex:/총.{0,3}자산.*(\d+)만원/ },
-    { part:4, label:'총_부채', regex:/총.{0,3}부채.*(\d+)만원/ },
+  /* ── 복명복창 파싱 → 신 ID에 직접 기입 ── */
+  var patterns = [
+    // 인적사항 (note_page=1)
+    { pg:1, key:'name',   regex:/([가-힣]{2,5})님이시군요/ },
+    { pg:1, key:'name',   regex:/아,\s*([가-힣]{2,5})님/ },
+    { pg:1, key:'age',    regex:/(\d+)세이시군요/ },
+    { pg:1, key:'age',    regex:/아,\s*(\d+)세/ },
+    { pg:1, key:'marry',  regex:/(기혼|미혼)이시군요/ },
+    { pg:1, key:'family', regex:/(\d+)인 가족/ },
+    { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
+    { pg:1, key:'child',  regex:/자녀.*(\d+)명/ },
+    { pg:1, key:'job',    regex:/(공무원|직장인|자영업자|프리랜서)이시군요/ },
+    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)이시군요/ },
+    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)로 가계/ },
+    // 고민 (note_page=2)
+    { pg:2, key:'w1',     regex:/말씀하신\s*([^.。]{5,30})을?\s*위해/ },
+    // 수입지출 (note_page=3)
+    { pg:3, key:'income', regex:/월 수입\s*([,\d]+)만/ },
+    { pg:3, key:'income', regex:/수입.*?([\d,]+)만원에서/ },
+    { pg:3, key:'loan_cur', regex:/대출\s*(\d+)만원/ },
+    { pg:3, key:'ins_cur',  regex:/보험.*?(\d+)만원/ },
+    { pg:3, key:'pension_cur', regex:/연금.*?(\d+)만원/ },
+    { pg:3, key:'save_cur',    regex:/저축.*?(\d+)만원/ },
+    { pg:3, key:'living_cur',  regex:/생활비.*?([\d,]+)만원/ },
+    { pg:3, key:'surplus',     regex:/잉여자금.*?([\d,]+)만원/ },
+    // 자산부채 (note_page=4)
+    { pg:4, key:'deposit', regex:/예적금\s*([\d,]+)/ },
+    { pg:4, key:'invest',  regex:/펀드.*?([\d,]+)/ },
+    { pg:4, key:'pension', regex:/연금.*적립.*?([\d,]+)/ },
+    { pg:4, key:'realty',  regex:/부동산.*?([\d,]+)/ },
+    { pg:4, key:'credit',  regex:/신용대출\s*([\d,]+)/ },
+    { pg:4, key:'mortgage',regex:/담보대출\s*([\d,]+)/ },
+    { pg:4, key:'total_asset', regex:/총자산.*?([\d,]+)/ },
+    { pg:4, key:'net',         regex:/순자산.*?([\d,]+)/ },
+    { pg:4, key:'wealth_index',regex:/부자지수.*?([0-9.]+)/ },
+    // 설계도 (note_page=5)
+    { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
+    { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
+    { pg:5, key:'life_age',    regex:/수명.*?(\d+)세/ },
   ];
 
-  for(const {part, label, regex} of patterns) {
-    const m = t.match(regex);
+  for(var j=0; j<patterns.length; j++) {
+    var p = patterns[j];
+    var m = t.match(p.regex);
     if(m) {
-      const value = m[1] || m[0];
-      diagFillField(part, label, value);
+      var val = (m[1]||m[0]).replace(/,/g,'');
+      dnFillById('f'+p.pg+'_'+p.key, val);
     }
   }
 }
 
-/* 특정 파트·필드에 값 채우기 */
+/* 신 ID로 직접 채우기 */
+function dnFillById(id, value) {
+  if(!id || !value) return;
+  var el = document.getElementById(id);
+  if(el) {
+    el.textContent = value;
+    el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
+    el.style.fontStyle = 'normal';
+    el.style.color = '';
+    el.style.background = 'linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06))';
+    el.style.borderLeft = '3px solid #C9972A';
+    el.style.padding = '4px 8px';
+    el.style.borderRadius = '6px';
+    console.log('[노트직접기입]', id, '=', value);
+    return true;
+  }
+  console.warn('[노트기입실패]', id, '요소 없음');
+  return false;
+}
+
+/* 구 시스템 호환 유지 */
 function diagFillField(partIdx, labelKey, value) {
-  if(!value || !DIAG_PARTS[partIdx]) return;
-  const part = DIAG_PARTS[partIdx];
-
-  /* 라벨 키와 일치하는 필드 찾기 (부분 매칭) */
-  for(const [label] of part.fields) {
-    const normalize = s => s.replace(/[\s\(\)\+\·\-]/g,'').toLowerCase();
-    if(normalize(label).includes(normalize(labelKey)) ||
-       normalize(labelKey).includes(normalize(label))) {
-      const fid = 'dfv'+partIdx+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
-      const el = document.getElementById(fid);
-      if(el) {
-        el.textContent = value;
-        el.style.cssText = 'font-size:10px;font-weight:700;padding:6px 9px;border-radius:6px;'+
-          'background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06));'+
-          'border-left:3px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;'+
-          'animation:diagFillAnim .5s ease;';
-        diagLastFilledPartIdx = partIdx;
-        diagLastFilledLabel = label;
-        console.log('[노트]', label, '→', value);
-      }
-      break;
-    }
-  }
+  // 신 ID 매핑 시도
+  var keyMap = {
+    '성함':'name','나이':'age','결혼_여부':'marry','자녀_수':'child',
+    '가족_수':'family','직업':'job','맞벌이_여부':'dual',
+    '월_총수입_세후':'income','대출상환':'loan_cur','보험료':'ins_cur',
+    '저축·투자':'save_cur','금융_자산':'deposit','총_자산':'total_asset','총_부채':'total_debt'
+  };
+  var newKey = keyMap[labelKey] || labelKey.toLowerCase().replace(/[_\s]/g,'');
+  var newId = 'f'+partIdx+'_'+newKey;
+  if(dnFillById(newId, value)) { diagLastFilledPartIdx=partIdx; diagLastFilledLabel=labelKey; }
 }
 
-/* 고객 직접 발화 → 현재 단계 빈 필드에 채우기 */
+/* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
-  const t = userText.trim();
-  if(!t || t.length < 2) return;
-  const part = DIAG_PARTS[diagCurPart];
-  if(!part || !part.fields) return;
-
-  /* 정정 키워드 감지 */
-  const correctionKeys = ['아니', '아닌', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
-  const isCorrection = correctionKeys.some(k => t.includes(k));
-  if(isCorrection && diagLastFilledPartIdx >= 0) {
-    const fid = 'dfv'+diagLastFilledPartIdx+'_'+diagLastFilledLabel.replace(/[\s\(\)\+\·]/g,'_');
-    const el = document.getElementById(fid);
-    if(el) {
-      el.textContent = '⚠ 수정 중...';
-      el.style.cssText = 'font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;'+
-        'background:rgba(220,38,38,.08);border-left:2.5px solid #dc2626;line-height:1.4;color:#dc2626;';
+  var t = (userText||'').trim();
+  if(t.length < 2) return;
+  var correctionKeys = ['아니','틀렸','다시','수정','잘못','아니요','아니오'];
+  if(correctionKeys.some(function(k){ return t.includes(k); })) {
+    if(diagLastFilledPartIdx >= 0) {
+      var fixId = 'f'+diagLastFilledPartIdx+'_'+diagLastFilledLabel;
+      var el = document.getElementById(fixId);
+      if(el) { el.textContent='⚠ 수정 중...'; el.style.color='#C62828'; }
     }
-    return;
   }
 }
 
-/* 머니야 발화 추적 (마지막 질문 저장) */
+/* 머니야 발화 추적 */
 const _origDiagAddSTT = diagAddSTT;
 diagAddSTT = function(role, text, tag) {
   _origDiagAddSTT(role, text, tag);
@@ -10381,7 +10414,10 @@ diagAddSTT = function(role, text, tag) {
           </div>
         </div>
 
-        <!-- 프로세스 바 제거됨 — 노트 내부 탭으로 통합 -->
+        <!-- 프로세스 바 -->
+        <div class="c-proc-wrap">
+          <div class="c-proc-grid" id="diagProcGrid"></div>
+        </div>
 
         <!-- 노트 본문 — 탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
         <div class="c-note-body">
