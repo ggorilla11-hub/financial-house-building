@@ -8676,12 +8676,22 @@ function diagHandleNote(msg) {
   var fields = msg.fields || {};
   var fieldCount = Object.keys(fields).length;
 
-  console.log('[노트처리] pg='+pg+', fields='+JSON.stringify(fields));
+  console.log('[노트처리] pg='+pg+', curPart='+diagCurPart+', fields='+JSON.stringify(fields));
 
-  /* ① 탭 자동 전환 */
+  /* ① 탭 자동 전환 — 최대 1단계씩만 이동 (건너뜀 방지) */
   var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
   var tabIdx = tabMap[pg] !== undefined ? tabMap[pg] : 0;
-  if(typeof dnGo === 'function') dnGo(tabIdx);
+  // 현재 탭보다 2단계 이상 점프하면 중간 탭도 순차적으로 거침
+  var curTabIdx = tabMap[diagCurPart] !== undefined ? tabMap[diagCurPart] : 0;
+  if(tabIdx > curTabIdx + 1) {
+    // 중간 단계를 300ms 간격으로 거쳐서 이동
+    for(var ti = curTabIdx + 1; ti < tabIdx; ti++) {
+      (function(idx){ setTimeout(function(){ if(typeof dnGo==='function') dnGo(idx); }, (idx-curTabIdx)*200); })(ti);
+    }
+    setTimeout(function(){ if(typeof dnGo==='function') dnGo(tabIdx); }, (tabIdx-curTabIdx)*200);
+  } else {
+    if(typeof dnGo === 'function') dnGo(tabIdx);
+  }
   diagCurPart = pg;
 
   /* ② fields 기입 — 3단계 매핑 */
@@ -9656,43 +9666,54 @@ function diagParseAiSpeech(aiText) {
 
   /* ── 복명복창 파싱 → 신 ID에 직접 기입 ── */
   var patterns = [
-    // 인적사항 (note_page=1)
-    { pg:1, key:'name',   regex:/([가-힣]{2,5})님이시군요/ },
-    { pg:1, key:'name',   regex:/아,\s*([가-힣]{2,5})님/ },
-    { pg:1, key:'age',    regex:/(\d+)세이시군요/ },
-    { pg:1, key:'age',    regex:/아,\s*(\d+)세/ },
-    { pg:1, key:'marry',  regex:/(기혼|미혼)이시군요/ },
-    { pg:1, key:'family', regex:/(\d+)인 가족/ },
+    // 인적사항 (note_page=1) — 성함 패턴 최대한 넓게
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님이시군요/ },
+    { pg:1, key:'name', regex:/아,\s*([가-힣]{2,5})님/ },
+    { pg:1, key:'name', regex:/^([가-힣]{2,5})님\s*반갑/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님이라고/ },
+    { pg:1, key:'name', regex:/성함.*?([가-힣]{2,5})님/ },
+    // 나이
+    { pg:1, key:'age', regex:/(\d+)세이시군요/ },
+    { pg:1, key:'age', regex:/아,\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/(\d+)살이시군요/ },
+    // 결혼여부
+    { pg:1, key:'marry', regex:/(기혼|미혼)이시군요/ },
+    { pg:1, key:'marry', regex:/(기혼|미혼)이라고/ },
+    // 가족수
+    { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
     { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
-    { pg:1, key:'child',  regex:/자녀.*(\d+)명/ },
-    { pg:1, key:'job',    regex:/(공무원|직장인|자영업자|프리랜서)이시군요/ },
-    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)이시군요/ },
-    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)로 가계/ },
+    { pg:1, key:'family', regex:/(\d+)명.*가족/ },
+    // 직업
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|프리랜서|의사|간호사|교사|교수)이시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서).*하시는군요/ },
+    // 맞벌이
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이)이시군요/ },
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이)로\s*가계/ },
     // 고민 (note_page=2)
-    { pg:2, key:'w1',     regex:/말씀하신\s*([^.。]{5,30})을?\s*위해/ },
+    { pg:2, key:'w1', regex:/바로\s*그\s*문제.*해결하기.*([^.]{5,30})/ },
+    { pg:2, key:'goal', regex:/오늘\s*([^.]{5,30})\s*해결을 위해/ },
     // 수입지출 (note_page=3)
-    { pg:3, key:'income', regex:/월 수입\s*([,\d]+)만/ },
+    { pg:3, key:'income', regex:/월\s*수입\s*([\d,]+)만/ },
+    { pg:3, key:'income', regex:/([\d,]+)만원.*실수령/ },
     { pg:3, key:'income', regex:/수입.*?([\d,]+)만원에서/ },
-    { pg:3, key:'loan_cur', regex:/대출\s*(\d+)만원/ },
-    { pg:3, key:'ins_cur',  regex:/보험.*?(\d+)만원/ },
-    { pg:3, key:'pension_cur', regex:/연금.*?(\d+)만원/ },
-    { pg:3, key:'save_cur',    regex:/저축.*?(\d+)만원/ },
+    { pg:3, key:'loan_cur', regex:/대출.*?([\d,]+)만원/ },
+    { pg:3, key:'ins_cur',  regex:/보험.*?([\d,]+)만원/ },
+    { pg:3, key:'pension_cur', regex:/연금.*?([\d,]+)만원/ },
+    { pg:3, key:'save_cur',    regex:/저축.*?([\d,]+)만원/ },
     { pg:3, key:'living_cur',  regex:/생활비.*?([\d,]+)만원/ },
     { pg:3, key:'surplus',     regex:/잉여자금.*?([\d,]+)만원/ },
     // 자산부채 (note_page=4)
-    { pg:4, key:'deposit', regex:/예적금\s*([\d,]+)/ },
-    { pg:4, key:'invest',  regex:/펀드.*?([\d,]+)/ },
-    { pg:4, key:'pension', regex:/연금.*적립.*?([\d,]+)/ },
-    { pg:4, key:'realty',  regex:/부동산.*?([\d,]+)/ },
-    { pg:4, key:'credit',  regex:/신용대출\s*([\d,]+)/ },
-    { pg:4, key:'mortgage',regex:/담보대출\s*([\d,]+)/ },
-    { pg:4, key:'total_asset', regex:/총자산.*?([\d,]+)/ },
-    { pg:4, key:'net',         regex:/순자산.*?([\d,]+)/ },
+    { pg:4, key:'deposit',    regex:/예적금\s*([\d,억천만]+)/ },
+    { pg:4, key:'invest',     regex:/펀드.*?([\d,억천만]+)/ },
+    { pg:4, key:'realty',     regex:/부동산.*?([\d,억천만]+)/ },
+    { pg:4, key:'credit',     regex:/신용대출\s*([\d,억천만]+)/ },
+    { pg:4, key:'total_asset',regex:/총자산.*?([\d,억천만]+)/ },
+    { pg:4, key:'net',        regex:/순자산.*?([\d,억천만]+)/ },
     { pg:4, key:'wealth_index',regex:/부자지수.*?([0-9.]+)/ },
     // 설계도 (note_page=5)
     { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
     { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
-    { pg:5, key:'life_age',    regex:/수명.*?(\d+)세/ },
+    { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
   ];
 
   for(var j=0; j<patterns.length; j++) {
