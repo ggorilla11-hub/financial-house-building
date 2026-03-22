@@ -7643,6 +7643,264 @@ function fhDevClose() {
   _fhDevTapCount = 0;
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AI머니야 훈련 모드 (v6.3 타이머 3회 탭)
+   - 업로드된 상담신청서 고객으로 Claude 빙의
+   - 머니야 질문 → Claude 자동 답변
+   - 세션 평가 리포트 자동 생성
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var _trainTapCount = 0;
+var _trainTapTimer = null;
+var _trainMode = false;
+var _trainLog = [];   // {role, text, ts}
+var _trainScores = [];
+var _trainCustomer = null;
+
+function trainModeTap() {
+  _trainTapCount++;
+  clearTimeout(_trainTapTimer);
+  _trainTapTimer = setTimeout(function(){ _trainTapCount = 0; }, 1500);
+  if(_trainTapCount >= 3) {
+    _trainTapCount = 0;
+    activateTrainMode();
+  }
+}
+
+function activateTrainMode() {
+  // 업로드된 상담신청서 데이터 파싱
+  _trainCustomer = parseUploadedApplication();
+  showTrainModeModal();
+}
+
+function parseUploadedApplication() {
+  // diagFinCtx에서 신청서 데이터 읽기
+  var ctx = window.diagFinCtx || {};
+  // 기본값 + 신청서에서 파싱된 값 병합
+  return {
+    name:    ctx.name    || '성춘향',
+    age:     ctx.age     || 57,
+    job:     ctx.job     || '공무원',
+    marry:   ctx.marry   || '기혼',
+    family:  ctx.family  || 2,
+    dual:    ctx.dual    || '맞벌이',
+    income:  ctx.monthlyIncome || 1150,
+    worry:   ctx.worry   || '노후 준비가 제대로 됐는지 모르겠어요',
+    deposit: ctx.totalAssets || 57600,
+    debt:    ctx.totalDebt   || 5000,
+    retireAge: ctx.retireAge || 60,
+    lifeAge:   ctx.lifeAge   || 90,
+    job_detail: ctx.job_detail || '공무원 (남편 12월 퇴직 예정)',
+  };
+}
+
+function showTrainModeModal() {
+  var c = _trainCustomer;
+  var modal = document.getElementById('trainModeModal');
+  if(!modal) return;
+  document.getElementById('tmCustomerInfo').innerHTML =
+    '<b>'+c.name+'</b> · '+c.age+'세 · '+c.job+' · '+c.marry+
+    '<br>월소득 '+c.income+'만원 · 가족 '+c.family+'인 · '+c.dual+
+    '<br>주요 고민: '+c.worry;
+  modal.style.display = 'flex';
+}
+
+function startTrainSession() {
+  document.getElementById('trainModeModal').style.display = 'none';
+  _trainMode = true;
+  _trainLog = [];
+  _trainScores = [];
+
+  // 훈련 모드 표시
+  var timer = document.getElementById('diagTimer');
+  if(timer) { timer.style.color = '#ff6b6b'; timer.style.textShadow = '0 0 8px rgba(255,107,107,.5)'; }
+  showToast('🎓 훈련 모드 시작 — ' + _trainCustomer.name + '으로 빙의');
+
+  // 머니야 발화 모니터링 시작
+  _trainObserveStart();
+}
+
+function _trainObserveStart() {
+  // MutationObserver로 대화록 변화 감지
+  var chatLog = document.getElementById('dn_chat_log');
+  if(!chatLog) return;
+  var observer = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if(node.nodeType !== 1) return;
+        var isAI = node.querySelector && node.querySelector('[style*="background:#0B1D3A"]');
+        if(isAI) {
+          var txt = isAI.textContent || '';
+          if(txt.trim()) _onMoneya발화(txt.trim());
+        }
+      });
+    });
+  });
+  observer.observe(chatLog, { childList: true });
+  window._trainObserver = observer;
+}
+
+var _trainPending = false;
+function _onMoneya발화(text) {
+  if(!_trainMode || _trainPending) return;
+  _trainPending = true;
+  _trainLog.push({role:'ai', text:text, ts:Date.now()});
+
+  // 평가: 머니야 발화 품질 체크
+  var score = _evalMoneyaSpeech(text);
+  _trainScores.push(score);
+
+  // 1.5초 후 Claude가 고객으로 자동 답변
+  setTimeout(function() {
+    var reply = _generateCustomerReply(text);
+    if(reply) {
+      _trainLog.push({role:'user', text:reply, ts:Date.now()});
+      // 텍스트 입력창에 자동 입력 후 전송
+      var inp = document.getElementById('diagTextInp');
+      if(inp) {
+        inp.value = reply;
+        // 전송 이벤트
+        if(diagWs && diagWs.readyState === 1) {
+          diagWs.send(JSON.stringify({type:'text_input', text:reply}));
+        }
+        inp.value = '';
+        // 화면에도 표시
+        var chatLog = document.getElementById('dn_chat_log');
+        if(chatLog) {
+          var b = document.createElement('div');
+          b.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+          b.innerHTML =
+            '<div style="font-size:9px;color:#C9972A;text-align:right;margin-bottom:2px">🎓 Claude ('+_trainCustomer.name+'역)</div>'+
+            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;'+
+            'align-self:flex-end;background:#fff3cd;color:#0B1D3A;border:1.5px solid #C9972A;border-bottom-right-radius:3px;">'+
+            reply.replace(/</g,'&lt;')+'</div>';
+          chatLog.appendChild(b);
+          chatLog.scrollTop = chatLog.scrollHeight;
+        }
+      }
+    }
+    _trainPending = false;
+  }, 1800);
+}
+
+function _generateCustomerReply(moneyaText) {
+  var c = _trainCustomer;
+  var t = moneyaText.toLowerCase();
+
+  // 질문 패턴 매칭 → 신청서 기반 답변 생성
+  if(t.includes('성함') || t.includes('이름')) return c.name + '이요.';
+  if(t.includes('나이')) return c.age + '세예요.';
+  if(t.includes('결혼')) return c.marry === '기혼' ? '네, 기혼이에요.' : '미혼입니다.';
+  if(t.includes('가족') && t.includes('몇')) return c.family + '명이요. ' + (c.job_detail || '');
+  if(t.includes('직업') || t.includes('일을')) return c.job + '이에요. ' + (c.job_detail || '');
+  if(t.includes('맞벌이')) return c.dual === '맞벌이' ? '네, 맞벌이예요.' : '아니요, 외벌이예요.';
+  if(t.includes('걱정') || t.includes('고민')) return c.worry;
+  if(t.includes('수입') || t.includes('실수령') || t.includes('소득')) return '한 달에 ' + c.income + '만원 정도요.';
+  if(t.includes('대출') && (t.includes('원리금') || t.includes('상환'))) return '은행 대출 5천만원 있고요, 월 30만원 내고 있어요.';
+  if(t.includes('보험료')) return '43만원이요.';
+  if(t.includes('연금') && t.includes('납입')) return '연금저축펀드 30만원 넣고 있어요.';
+  if(t.includes('저축') || t.includes('투자')) return '딱히 따로는 없고 남으면 모으는 편이에요.';
+  if(t.includes('남는 돈') || t.includes('잉여')) return '200~300만원? 잘 모르겠어요.';
+  if(t.includes('예적금') || t.includes('청약')) return '예적금 4억 2천 있어요.';
+  if(t.includes('펀드') || t.includes('etf') || t.includes('주식')) return '펀드 8천만원 있어요.';
+  if(t.includes('연금') && t.includes('적립')) return '연금 7천만원 정도요.';
+  if(t.includes('부동산') || t.includes('주택') || t.includes('자가')) return '자가예요. 아파트인데 5억 정도 해요.';
+  if(t.includes('신용대출')) return '5천만원 있어요.';
+  if(t.includes('담보대출')) return '담보대출은 없어요.';
+  if(t.includes('은퇴')) return c.retireAge + '세 생각하고 있어요.';
+  if(t.includes('수명') || t.includes('예상')) return c.lifeAge + '세 정도요.';
+  if(t.includes('꿈') || t.includes('노후')) return '건강하게 여행 다니고 싶어요.';
+  if(t.includes('얼마') && t.includes('필요')) return '한 달에 300만원 정도요.';
+  if(t.includes('국민연금') || t.includes('준비')) return '국민연금은 150만원 정도 예상하고 있어요.';
+  if(t.includes('어떠세요') || t.includes('어떠신가요') || t.includes('맞는 것')) return '네, 맞는 것 같아요.';
+  if(t.includes('동의') || t.includes('하시겠어요')) return '네, 좋습니다.';
+  if(t.includes('감사') || t.includes('수고')) return '네, 감사합니다.';
+  if(t.includes('궁금')) return '아니요, 없어요.';
+  if(t.includes('시간')) return '네, 괜찮아요.';
+
+  // 기본 긍정 응답
+  return '네, 이해했어요.';
+}
+
+function _evalMoneyaSpeech(text) {
+  var score = {text:text.slice(0,60), total:0, detail:{}};
+  // 1. 공감 포함
+  var empathy = /걱정|이해|충분히|그러셨군요|고민|힘드|막막|불안|맞아요/.test(text);
+  score.detail.empathy = empathy ? 5 : 0; score.total += score.detail.empathy;
+  // 2. 질문 하나
+  var qCount = (text.match(/\?|요\?|까\?/g)||[]).length;
+  score.detail.question = qCount === 1 ? 5 : (qCount === 0 ? 0 : 3); score.total += score.detail.question;
+  // 3. (잠시) 없음
+  score.detail.noJamsi = /잠시|pause/.test(text) ? 0 : 5; score.total += score.detail.noJamsi;
+  // 4. 단계명 없음
+  score.detail.noStep = /단계|STEP|인적사항 파악|수입지출 분석/.test(text) ? 0 : 5; score.total += score.detail.noStep;
+  // 5. 짧은 문장 (100자 이하)
+  score.detail.short = text.length <= 100 ? 5 : (text.length <= 150 ? 3 : 0); score.total += score.detail.short;
+  return score;
+}
+
+function endTrainSession() {
+  if(!_trainMode) return;
+  _trainMode = false;
+  if(window._trainObserver) { window._trainObserver.disconnect(); window._trainObserver = null; }
+
+  // 타이머 색상 원복
+  var timer = document.getElementById('diagTimer');
+  if(timer) { timer.style.color = ''; timer.style.textShadow = ''; }
+
+  // 평가 리포트 생성
+  _generateTrainReport();
+}
+
+function _generateTrainReport() {
+  if(_trainScores.length === 0) { showToast('평가할 데이터가 없습니다'); return; }
+
+  var totalScore = _trainScores.reduce(function(s,r){ return s+r.total; }, 0);
+  var avgScore = Math.round(totalScore / _trainScores.length);
+  var maxPossible = 25;
+  var pct = Math.round(avgScore / maxPossible * 100);
+
+  // 등급
+  var grade = pct >= 85 ? '🏆 서비스 출시 가능' : pct >= 70 ? '✅ 양호 — 계속 훈련' : pct >= 55 ? '⚠️ 보통 — 프롬프트 수정 필요' : '❌ 미흡 — 전면 재검토';
+
+  // 문제 패턴 분석
+  var issues = [];
+  var empathyFail = _trainScores.filter(function(s){ return s.detail.empathy === 0; }).length;
+  var qFail = _trainScores.filter(function(s){ return s.detail.question !== 5; }).length;
+  var jamsiFound = _trainScores.filter(function(s){ return s.detail.noJamsi === 0; }).length;
+  var stepFound = _trainScores.filter(function(s){ return s.detail.noStep === 0; }).length;
+  var longText = _trainScores.filter(function(s){ return s.detail.short === 0; }).length;
+  if(empathyFail > 0) issues.push('공감 부족 ' + empathyFail + '회');
+  if(qFail > 0) issues.push('질문 개수 오류 ' + qFail + '회');
+  if(jamsiFound > 0) issues.push('(잠시) 출력 ' + jamsiFound + '회');
+  if(stepFound > 0) issues.push('단계명 언급 ' + stepFound + '회');
+  if(longText > 0) issues.push('발화 과다 ' + longText + '회');
+
+  var reportEl = document.getElementById('trainReportModal');
+  if(!reportEl) return;
+  document.getElementById('tr_score').textContent = pct;
+  document.getElementById('tr_grade').textContent = grade;
+  document.getElementById('tr_count').textContent = _trainScores.length + '회 발화 분석';
+  document.getElementById('tr_issues').innerHTML = issues.length > 0
+    ? issues.map(function(i){ return '<div style="color:#C62828;font-size:11px;margin:2px 0">• '+i+'</div>'; }).join('')
+    : '<div style="color:#2E7D32;font-size:11px">발견된 문제 없음 ✅</div>';
+
+  // 발화별 상세
+  var detail = document.getElementById('tr_detail');
+  if(detail) {
+    detail.innerHTML = _trainScores.slice(-10).map(function(s,i){
+      var pct2 = Math.round(s.total/25*100);
+      var color = pct2>=80?'#2E7D32':pct2>=60?'#C9972A':'#C62828';
+      return '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">'+
+        '<div style="font-size:9px;color:#888">발화 #'+(i+1)+'</div>'+
+        '<div style="font-size:10.5px;color:#333;margin:2px 0">'+s.text+'...</div>'+
+        '<div style="font-size:11px;font-weight:900;color:'+color+'">'+pct2+'점</div>'+
+        '</div>';
+    }).join('');
+  }
+
+  reportEl.style.display = 'flex';
+}
+
 
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -8365,12 +8623,7 @@ function diagHandleMsg(msg) {
       }
 
       if(role==='user') setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
-      if(role==='ai') {
-        /* 머니야 발화 키워드로 즉시 탭 전환 */
-        diagAutoTabFromSpeech(displayText);
-        setTimeout(function(){ diagParseAiSpeech(displayText); }, 500);
-        diagLastQ=displayText;
-      }
+      if(role==='ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ=displayText; }
     }
   } else if(msg.type==='smart_note_update') {
     diagHandleNote(msg);
@@ -8522,61 +8775,6 @@ function dnCalcBudget(f) {
 }
 
 /* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   dnGo — 전역 선언 (diagBuildNotes 밖)
-   어디서 호출해도 항상 작동
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-window.dnGo = function(i) {
-  var panels = document.querySelectorAll('.dnp');
-  var tabs   = document.querySelectorAll('.dnt');
-  if(!panels.length) return; // 아직 빌드 안 됨
-  panels.forEach(function(p,j){ p.classList.toggle('active', j===i); });
-  tabs.forEach(function(t,j){ t.classList.toggle('active', j===i); });
-  var panelsEl = document.getElementById('dnPanels');
-  if(panelsEl) panelsEl.scrollTop = 0;
-  if(i===8 && typeof dnLoadBA==='function') dnLoadBA();
-};
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   머니야 발화 키워드 → 노트 탭 자동 전환
-   update_smart_note 와 무관하게 즉시 작동
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function diagAutoTabFromSpeech(text) {
-  if(!text) return;
-  var t = text;
-  // 순서 중요: 더 구체적인 키워드 먼저
-  if(/성함이 어떻게|이름이 어떻게|먼저 고객님에 대해|성함을 여쭤/.test(t)) {
-    dnGo(1); diagCurPart=1; return;
-  }
-  if(/경제적으로 가장 걱정|고민되시거나|관심 있으신/.test(t)) {
-    dnGo(2); diagCurPart=2; return;
-  }
-  if(/세후 한 달 실수령|월 실수령액|수입과 지출/.test(t)) {
-    dnGo(3); diagCurPart=3; return;
-  }
-  if(/예적금.*얼마|자산을 함께 정리|자산과 부채/.test(t)) {
-    dnGo(4); diagCurPart=4; return;
-  }
-  if(/집을 그릴 때|금융집짓기|기초공사/.test(t)) {
-    dnGo(5); diagCurPart=5; return;
-  }
-  if(/투자재원|저축투자 포트폴리오|100.나이/.test(t)) {
-    dnGo(6); diagCurPart=6; return;
-  }
-  if(/자산배분|부동산.*금융.*3|7:3/.test(t)) {
-    dnGo(6); diagCurPart=7; return;
-  }
-  if(/은퇴설계|꿈꾸는 노후|어떤 노후/.test(t)) {
-    dnGo(7); diagCurPart=8; return;
-  }
-  if(/최종의견|DESIRE|처음에.*걱정이셨/.test(t)) {
-    dnGo(8); diagCurPart=9; return;
-  }
-  if(/도움이 되셨나요|다음 달에.*뵙|머니야였습니다/.test(t)) {
-    dnGo(9); diagCurPart=10; return;
-  }
-}
 
 /* ── Heartbeat ── */
 setInterval(function(){
@@ -9179,6 +9377,14 @@ function diagBuildNotes() {
 </div><!-- /dnWrap -->
 `;
 
+  // ── 탭 전환 함수
+  window.dnGo = function(i) {
+    document.querySelectorAll('.dnp').forEach(function(p,j){ p.classList.toggle('active', j===i); });
+    document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+    document.getElementById('dnPanels').scrollTop = 0;
+    if(i===8) dnLoadBA();
+  };
+
   // ── 히스토리 BA 연동
   window.dnLoadBA = function() {
     var tbody = document.getElementById('dn_ba_tbody');
@@ -9321,7 +9527,11 @@ function diagTogglePause() {
     showToast('▶ 재개');
   }
 }
-function diagShowEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex'; }
+function diagShowEndModal() {
+  // 훈련 모드 중이면 평가 리포트 먼저
+  if(_trainMode) { endTrainSession(); return; }
+  const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex';
+}
 function diagHideEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='none'; }
 function diagEndConsult() {
   diagHideEndModal();
@@ -9389,104 +9599,94 @@ let diagLastFilledLabel = '';
 
 /* 머니야 발화 → 복명복창 파싱 → 노트 자동 기입 */
 function diagParseAiSpeech(aiText) {
-  var t = aiText;
+  const t = aiText;
 
-  /* ── 머니야 발화 키워드 → 노트 탭 자동 전환 ── */
-  var stepTriggers = [
-    { tab:0, pg:0,  keys:['안녕하세요', '머니야입니다', '시간 괜찮으십니까'] },
-    { tab:1, pg:1,  keys:['성함이 어떻게', '먼저 성함', '이름이 어떻게', '고객님에 대해'] },
-    { tab:2, pg:2,  keys:['경제적으로 가장', '고민되시거나', '관심 있으신'] },
-    { tab:3, pg:3,  keys:['수입과 지출', '세후 한 달', '실수령액', '대출 원리금', '보험료는', '저축이나 투자'] },
-    { tab:4, pg:4,  keys:['자산과 부채', '예적금', '금융자산', '담보대출은', '부자지수'] },
-    { tab:5, pg:5,  keys:['금융집을 함께', '집을 그릴 때', '금융집짓기', '기초공사'] },
-    { tab:6, pg:6,  keys:['투자재원', '저축투자 포트', '순투자재원', '100-나이'] },
-    { tab:6, pg:7,  keys:['자산배분', '부동산 70%', '안전자산 70'] },
-    { tab:7, pg:8,  keys:['은퇴설계', '노후를 꿈꾸', '부채설계', '저축설계', '투자설계', '세금설계', '보험설계', '부동산설계'] },
-    { tab:8, pg:9,  keys:['최종의견', 'DESIRE', '강점', '재무점수'] },
-    { tab:9, pg:10, keys:['클로징', '다음 달에', '어떻게 도움'] },
-    { tab:10,pg:11, keys:['리포트', 'PDF'] },
+  /* ── 단계 전환 감지 ── */
+  const stepMap = [
+    { step:1, keys:['인적사항', '성함부터', '이름부터'] },
+    { step:2, keys:['경제적으로 가장 고민', '고민되시거나 관심'] },
+    { step:3, keys:['수입과 지출을 살펴', '월 소득이 세후로'] },
+    { step:4, keys:['자산과 부채', '자산부채'] },
+    { step:5, keys:['금융집을 함께 그려', '금융집짓기 설계'] },
+    { step:9, keys:['최종 의견', '강점부터'] },
+    { step:10, keys:['클로징', '다음 약속'] },
+    { step:11, keys:['리포트를 만들어'] },
   ];
-
-  for(var i=0; i<stepTriggers.length; i++) {
-    var tr = stepTriggers[i];
-    if(tr.keys.some(function(k){ return t.includes(k); })) {
-      if(tr.pg >= diagCurPart) {
-        (function(tab, pg){
-          setTimeout(function(){
-            if(typeof dnGo === 'function') dnGo(tab);
-            diagCurPart = pg;
-            // 프로세스 바 업데이트
-            var pname = document.getElementById('diagPartName');
-            if(pname && DIAG_PARTS[pg]) pname.textContent = DIAG_PARTS[pg].short;
-          }, 300);
-        })(tr.tab, tr.pg);
-        break;
-      }
+  for(const {step, keys} of stepMap) {
+    if(keys.some(k => t.includes(k)) && step > diagCurPart) {
+      setTimeout(() => diagActivatePart(step), 500);
+      break;
     }
   }
 
-  /* ── 복명복창 파싱 → 새 노트 필드 직접 입력 ── */
-  var fillRules = [
-    // 인적사항 (pg=1)
-    { pg:1, key:'name',   regex:/([가-힣]{2,5})님이시군요/ },
-    { pg:1, key:'name',   regex:/([가-힣]{2,5})님$/ },
-    { pg:1, key:'age',    regex:/아,?\s*(\d+)세이시군요/ },
-    { pg:1, key:'age',    regex:/(\d+)세이군요/ },
-    { pg:1, key:'marry',  regex:/(기혼|미혼)(이시군요|이군요)/ },
-    { pg:1, key:'child',  regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
-    { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
-    { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
-    { pg:1, key:'job',    regex:/(직장인|공무원|자영업자?|프리랜서|사업가?)(이시군요|이군요)/ },
-    { pg:1, key:'dual',   regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
-    // 수입지출 (pg=3)
-    { pg:3, key:'income', regex:/(\d+)만원.*수입/ },
-    { pg:3, key:'income', regex:/수입.*(\d+)만원/ },
-    { pg:3, key:'loan_cur', regex:/대출.*(\d+)만원/ },
-    { pg:3, key:'ins_cur',  regex:/보험료.*(\d+)만원/ },
-    { pg:3, key:'ins_cur',  regex:/(\d+)만원.*보험/ },
-    { pg:3, key:'save_cur', regex:/저축.*(\d+)만원/ },
-    { pg:3, key:'pension_cur', regex:/연금.*(\d+)만원/ },
-    // 자산부채 (pg=4)
-    { pg:4, key:'deposit',    regex:/예적금.*(\d+)만원/ },
-    { pg:4, key:'invest',     regex:/투자.*(\d+)만원/ },
-    { pg:4, key:'realty',     regex:/부동산.*(\d+)만원/ },
-    { pg:4, key:'total_asset',regex:/총자산.*(\d+)만원/ },
-    { pg:4, key:'credit',     regex:/신용대출.*(\d+)만원/ },
-    { pg:4, key:'mortgage',   regex:/담보대출.*(\d+)만원/ },
-    { pg:4, key:'net',        regex:/순자산.*(\d+)만원/ },
-    { pg:4, key:'wealth_index', regex:/부자지수[가이]?\s*([\d.]+)/ },
+  /* ── 복명복창 파싱 → 노트 기입 ── */
+  /* 패턴: "아, [값]이시군요" / "[값]이군요" / "[값]이라고 하셨죠" */
+  const patterns = [
+    /* 이름 */
+    { part:1, label:'성함', regex:/([가-힣]{2,4})님이시군요/ },
+    { part:1, label:'성함', regex:/([가-힣]{2,4})님이라고/ },
+    /* 나이 */
+    { part:1, label:'나이', regex:/(\d+)세이시군요/ },
+    { part:1, label:'나이', regex:/(\d+)세이군요/ },
+    /* 결혼여부 */
+    { part:1, label:'결혼_여부', regex:/(기혼|미혼|결혼하셨군요|결혼 안 하셨군요)/ },
+    /* 자녀수 */
+    { part:1, label:'자녀_수', regex:/자녀[가는이]\s*(\d+|한|두|세|네)명?/ },
+    { part:1, label:'자녀_수', regex:/([가-힣\d]+)[살세]\s*짜리\s*(딸|아들|자녀)/ },
+    /* 가족수 */
+    { part:1, label:'가족_수', regex:/(\d+)명.*가족/ },
+    { part:1, label:'가족_수', regex:/가족.*(\d+)명/ },
+    /* 직업 */
+    { part:1, label:'직업', regex:/([가-힣\s]{2,15})(이시군요|이군요|이라고)\s*하셨/ },
+    /* 맞벌이 */
+    { part:1, label:'맞벌이_여부', regex:/(맞벌이|외벌이)(이시군요|이군요)/ },
+    /* 월소득 */
+    { part:3, label:'월_총수입_세후', regex:/(\d+)만원.*소득/ },
+    { part:3, label:'월_총수입_세후', regex:/소득.*(\d+)만원/ },
+    /* 대출 */
+    { part:3, label:'대출상환', regex:/대출.*(\d+)만원/ },
+    { part:3, label:'보험료', regex:/보험료.*(\d+)만원/ },
+    { part:3, label:'보험료', regex:/(\d+)만원.*보험/ },
+    /* 저축 */
+    { part:3, label:'저축·투자', regex:/저축.*(\d+)만원/ },
+    /* 자산 */
+    { part:4, label:'금융_자산', regex:/금융.*(\d+)만원/ },
+    { part:4, label:'총_자산', regex:/총.{0,3}자산.*(\d+)만원/ },
+    { part:4, label:'총_부채', regex:/총.{0,3}부채.*(\d+)만원/ },
   ];
 
-  fillRules.forEach(function(rule){
-    var m = t.match(rule.regex);
+  for(const {part, label, regex} of patterns) {
+    const m = t.match(regex);
     if(m) {
-      var val = String(m[1] || m[0]).trim();
-      var el = document.getElementById('f' + rule.pg + '_' + rule.key);
-      if(el) {
-        el.textContent = val;
-        el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
-        el.style.fontStyle = 'normal';
-        el.style.color = '';
-        console.log('[STT파싱] f'+rule.pg+'_'+rule.key+' = '+val);
-      }
+      const value = m[1] || m[0];
+      diagFillField(part, label, value);
     }
-  });
+  }
 }
 
-/* 특정 파트·필드에 값 채우기 — 새 노트 ID 방식 */
-function diagFillField(partIdx, key, value) {
-  if(!value) return;
-  var el = document.getElementById('f' + partIdx + '_' + key);
-  if(el) {
-    el.textContent = String(value);
-    el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
-    el.style.fontStyle = 'normal';
-    el.style.color = '';
-    console.log('[필드기입] f'+partIdx+'_'+key+' = '+value);
-    // 탭도 자동 전환
-    var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9};
-    if(typeof dnGo === 'function' && tabMap[partIdx] !== undefined) {
-      dnGo(tabMap[partIdx]);
+/* 특정 파트·필드에 값 채우기 */
+function diagFillField(partIdx, labelKey, value) {
+  if(!value || !DIAG_PARTS[partIdx]) return;
+  const part = DIAG_PARTS[partIdx];
+
+  /* 라벨 키와 일치하는 필드 찾기 (부분 매칭) */
+  for(const [label] of part.fields) {
+    const normalize = s => s.replace(/[\s\(\)\+\·\-]/g,'').toLowerCase();
+    if(normalize(label).includes(normalize(labelKey)) ||
+       normalize(labelKey).includes(normalize(label))) {
+      const fid = 'dfv'+partIdx+'_'+label.replace(/[\s\(\)\+\·]/g,'_');
+      const el = document.getElementById(fid);
+      if(el) {
+        el.textContent = value;
+        el.style.cssText = 'font-size:10px;font-weight:700;padding:6px 9px;border-radius:6px;'+
+          'background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06));'+
+          'border-left:3px solid #C9972A;line-height:1.4;color:#0B1D3A;font-style:normal;'+
+          'animation:diagFillAnim .5s ease;';
+        diagLastFilledPartIdx = partIdx;
+        diagLastFilledLabel = label;
+        console.log('[노트]', label, '→', value);
+      }
+      break;
     }
   }
 }
@@ -10161,23 +10361,10 @@ diagAddSTT = function(role, text, tag) {
         <div class="c-topbar">
           <div class="c-live">
             <div class="c-live-dot"></div>
-            <div>
-              <div class="c-ai-av" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--gold);overflow:hidden;vertical-align:middle;margin-right:5px;">
-                <img id="diagAiImg" src="" alt="AI" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-                <span style="font-size:14px;display:none" id="diagAiEmoji">🤖</span>
-              </div>
-              <span class="c-live-txt">AI 머니야</span>
-              <div class="c-wave" id="diagWave" style="display:inline-flex;gap:2px;margin-left:5px;vertical-align:middle;">
-                <div class="c-wb" style="height:2px;"></div>
-                <div class="c-wb" style="height:5px;"></div>
-                <div class="c-wb" style="height:9px;"></div>
-                <div class="c-wb" style="height:5px;"></div>
-                <div class="c-wb" style="height:2px;"></div>
-              </div>
-            </div>
+            <span class="c-live-txt">LIVE 진단 중</span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="c-timer" id="diagTimer">00:00</div>
+            <div class="c-timer" id="diagTimer" onclick="trainModeTap()" style="cursor:pointer">00:00</div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:1px" id="diagSessionInfo">오늘 · 1회차</div>
           </div>
           <div class="c-top-btns">
@@ -10186,20 +10373,53 @@ diagAddSTT = function(role, text, tag) {
           </div>
         </div>
 
+        <!-- AI 아바타 + PIP -->
+        <div class="c-video-bar">
+          <div class="c-ai-area">
+            <div class="c-ai-av">
+              <img id="diagAiImg" src="" alt="AI" onerror="this.parentElement.textContent='🤖'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            </div>
+            <div>
+              <div class="c-ai-name">AI 머니야</div>
+              <div class="c-wave" id="diagWave">
+                <div class="c-wb" style="height:2px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:9px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:2px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="c-part-center">
+            <div class="c-part-lbl">현재 단계</div>
+            <div class="c-part-name" id="diagPartName">오프닝</div>
+            <div style="font-size:8px;color:rgba(255,255,255,.3);" id="diagCurStepName"></div>
+          </div>
+          <div class="c-pip" onclick="diagToggleCamera()">
+            <div class="c-pip-ph" id="diagPipPh">
+              <span class="c-pip-icon">📷</span>
+              <span class="c-pip-txt">카메라</span>
+            </div>
+            <video id="diagPipVideo" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px;" autoplay muted playsinline></video>
+            <div class="c-cam-dot" id="diagCamDot"></div>
+          </div>
+        </div>
+
         <!-- 프로세스 바 -->
         <div class="c-proc-wrap">
           <div class="c-proc-grid" id="diagProcGrid"></div>
         </div>
 
-        <!-- 노트 본문 —  탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
-        <div class="c-note-body" style="flex:1;min-height:0;">
-          <div style="position:relative;overflow:hidden;height:100%;">
+        <!-- 노트 본문 — 탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
+        <div class="c-note-body">
+          <!-- 노트 슬라이드 컨테이너 -->
+          <div style="flex:1;position:relative;overflow:hidden;height:100%;">
             <div id="diagNoteContainer" style="position:absolute;inset:0;"></div>
           </div>
         </div>
 
-        <!-- STT 자막 — 대화록은 노트 내부 dnp9 탭으로 통합 -->
-        <div class="c-stt" id="diagStt" style="display:none;height:0;overflow:hidden;"></div>
+        <!-- STT 자막 -->
+        <div class="c-stt" id="diagStt"></div>
 
         <!-- 하단 컨트롤 -->
         <div class="c-bottom">
@@ -10248,6 +10468,59 @@ diagAddSTT = function(role, text, tag) {
               <button class="end-btn end-cancel" onclick="diagHideEndModal()">계속하기</button>
               <button class="end-btn end-confirm" onclick="diagEndConsult()">종료하기</button>
             </div>
+          </div>
+        </div>
+
+        <!-- ━━━ 훈련 모드 시작 모달 ━━━ -->
+        <div id="trainModeModal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;flex-direction:column">
+          <div style="background:#fff;border-radius:16px;padding:24px 20px;max-width:340px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+            <div style="text-align:center;font-size:28px;margin-bottom:8px">🎓</div>
+            <div style="font-size:15px;font-weight:900;color:#0B1D3A;text-align:center;margin-bottom:4px">AI머니야 훈련 모드</div>
+            <div style="font-size:10px;color:#8896B0;text-align:center;margin-bottom:16px">Claude가 고객으로 빙의하여 자동 답변합니다</div>
+            <div id="tmCustomerInfo" style="background:#f8faff;border-radius:10px;padding:12px;font-size:11.5px;line-height:1.7;color:#1a2340;margin-bottom:16px;border:1px solid #D8E0EC"></div>
+            <div style="font-size:10px;color:#C9972A;background:#fff8e6;border-radius:8px;padding:8px 10px;margin-bottom:16px">
+              💡 머니야가 질문하면 Claude가 1.8초 후 자동으로 답변합니다.<br>종료 시 훈련 평가 리포트가 생성됩니다.
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onclick="document.getElementById('trainModeModal').style.display='none'" style="flex:1;padding:11px;border-radius:10px;border:1px solid #D8E0EC;background:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fn)">취소</button>
+              <button onclick="startTrainSession()" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn)">🎓 훈련 시작</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ━━━ 훈련 평가 리포트 모달 ━━━ -->
+        <div id="trainReportModal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:flex-start;justify-content:center;overflow-y:auto">
+          <div style="background:#fff;border-radius:16px;padding:24px 20px;max-width:380px;width:90%;margin:20px auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+            <div style="text-align:center;font-size:26px;margin-bottom:6px">📊</div>
+            <div style="font-size:14px;font-weight:900;color:#0B1D3A;text-align:center;margin-bottom:16px">머니야 훈련 평가 리포트</div>
+
+            <!-- 점수 -->
+            <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+              <div style="font-size:48px;font-weight:900;color:#E8B84B;line-height:1" id="tr_score">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">점 / 100점</div>
+              <div style="font-size:11px;font-weight:700;color:#E8B84B;margin-top:6px" id="tr_grade">—</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:3px" id="tr_count">—</div>
+            </div>
+
+            <!-- 문제점 -->
+            <div style="background:#fff5f5;border-radius:10px;padding:10px 12px;margin-bottom:10px">
+              <div style="font-size:10px;font-weight:700;color:#C62828;margin-bottom:6px">발견된 문제</div>
+              <div id="tr_issues"></div>
+            </div>
+
+            <!-- 발화별 상세 -->
+            <div style="background:#f8faff;border-radius:10px;padding:10px 12px;margin-bottom:14px;max-height:200px;overflow-y:auto">
+              <div style="font-size:10px;font-weight:700;color:#1a3260;margin-bottom:6px">발화별 점수 (최근 10개)</div>
+              <div id="tr_detail"></div>
+            </div>
+
+            <!-- 서비스 출시 기준 -->
+            <div style="background:#fff8e6;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:10.5px;color:#7a5c00;line-height:1.6">
+              🎯 <b>서비스 출시 기준:</b> 연속 3회 85점 이상<br>
+              현재 세션 점수로 출시 여부를 판단하세요.
+            </div>
+
+            <button onclick="document.getElementById('trainReportModal').style.display='none';endTrainSession()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;font-family:var(--fn)">확인 · 훈련 종료</button>
           </div>
         </div>
 
