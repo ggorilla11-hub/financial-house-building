@@ -2202,6 +2202,16 @@ body { color: #1a1a1a; }
 /* 노트 본문 — flex:1 세로 확보 */
 .c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
 .c-note-body::-webkit-scrollbar{display:none;}
+
+/* ── AI진단탭 전용: 높이 체인 확보 ── */
+/* mp-content가 diag-mode일 때: 스크롤 컨테이너 해제 → flex 컨테이너로 전환 */
+.mp-content.diag-mode{overflow:hidden !important;display:flex !important;flex-direction:column !important;}
+/* mp-panel-2가 diag-active일 때: block → flex + 100% 높이 확보 */
+.mp-panel.diag-active{display:flex !important;flex-direction:column !important;flex:1 !important;min-height:0 !important;}
+/* diagScreenB 내부 래퍼: 높이 100% 명시 */
+#diagScreenB .c-note-body > div{height:100% !important;}
+/* diagNoteContainer 슬라이드: 절대위치 기준점 확보 */
+#diagNoteContainer{position:absolute;inset:0;}
 /* 가로 슬라이드 파트 */
 .c-part-slide{flex-shrink:0;width:100%;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;}
 .c-fval{font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:var(--gold3);border-left:2.5px solid rgba(201,151,42,.3);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -6353,13 +6363,6 @@ function mpClose() {
 }
 
 /* ── 탭 전환 ── */
-function mpTab(idx, btn) {
-  document.querySelectorAll('.mp-tab-btn').forEach(t => t.classList.remove('mp-active'));
-  document.querySelectorAll('.mp-panel').forEach(p => p.classList.remove('mp-active'));
-  btn.classList.add('mp-active');
-  document.getElementById('mp-panel-' + idx).classList.add('mp-active');
-  if(idx === 1) { mpDrawChart(); mpRenderHistory(); }
-}
 
 /* ── 실시간 데이터 반영 ── */
 function mpRefreshData() {
@@ -6871,6 +6874,17 @@ function mpTab(idx, btn) {
   // 탭별 초기화
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
+
+  /* AI진단탭(2) 전용: 높이 체인 확보 */
+  var mpContent = document.querySelector('.mp-content');
+  var panel2 = document.getElementById('mp-panel-2');
+  if(idx === 2) {
+    if(mpContent) mpContent.classList.add('diag-mode');
+    if(panel2) panel2.classList.add('diag-active');
+  } else {
+    if(mpContent) mpContent.classList.remove('diag-mode');
+    if(panel2) panel2.classList.remove('diag-active');
+  }
 }
 
 // ── 수료증 등급 계산 ──
@@ -8345,7 +8359,7 @@ function diagSwitchTab(idx, el) {
   var stt = document.getElementById('diagStt');
   if(idx === 0) {
     if(noteBody) noteBody.style.display = 'flex';
-    if(stt) { stt.style.display = 'none'; }
+    if(stt) stt.style.display = 'none';
   } else {
     if(noteBody) noteBody.style.display = 'none';
     if(stt) { stt.style.display = 'block'; stt.style.flex = '1'; stt.style.overflowY = 'auto'; }
