@@ -8568,6 +8568,21 @@ function diagStartConsult() {
   },1000);
 
   // 실제 음성 연결 시작
+  /* [DEV-001] 브라우저 오디오 자동재생 정책 해제 — 사용자 클릭 이벤트 내에서 AudioContext 생성 */
+  try {
+    var unlockCtx = new (window.AudioContext || window.webkitAudioContext)();
+    unlockCtx.resume().then(function() {
+      console.log('[DEV-001] AudioContext 활성화 성공 — 음성 출력 준비됨');
+      unlockCtx.close();
+    });
+    /* 무음 재생으로 오디오 잠금 해제 */
+    var silentAudio = document.createElement('audio');
+    silentAudio.setAttribute('playsinline', '');
+    silentAudio.setAttribute('webkit-playsinline', '');
+    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    silentAudio.play().catch(function(){});
+  } catch(e) { console.warn('[DEV-001] AudioContext 사전 활성화 실패:', e); }
+
   diagConnectVoice();
 }
 
