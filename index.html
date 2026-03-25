@@ -2363,8 +2363,35 @@ html{visibility:visible !important;}
 
 
 
-  <!-- Vapi SDK [DEV-001] -->
-  <script src="https://unpkg.com/@vapi-ai/web@2.2.5/dist/index.umd.js"></script>
+  <!-- Vapi SDK [DEV-001] — 3중 CDN 폴백 -->
+  <script>
+  (function(){
+    var sources = [
+      'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/index.umd.js',
+      'https://unpkg.com/@vapi-ai/web@2.5.2/dist/index.umd.js',
+      'https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js'
+    ];
+    var idx = 0;
+    function tryLoad() {
+      if(idx >= sources.length) {
+        console.error('[DEV-001] Vapi SDK 로드 실패 — 모든 CDN 불가');
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = sources[idx];
+      s.onload = function() {
+        console.log('[DEV-001] Vapi SDK 로드 성공:', sources[idx]);
+      };
+      s.onerror = function() {
+        console.warn('[DEV-001] CDN 실패:', sources[idx]);
+        idx++;
+        tryLoad();
+      };
+      document.head.appendChild(s);
+    }
+    tryLoad();
+  })();
+  </script>
 
 </head>
 <body>
@@ -8566,6 +8593,29 @@ const diagFinCtx = {
   mainWorry:'',
 };
 
+/* [DEV-001] Vapi SDK 생성자 찾기 — 비동기 로드 대기 포함 */
+function getVapiConstructor() {
+  if(typeof Vapi === 'function') return Vapi;
+  if(typeof Vapi === 'object' && Vapi && Vapi.default) return Vapi.default;
+  if(typeof window.Vapi === 'function') return window.Vapi;
+  if(typeof window.Vapi === 'object' && window.Vapi && window.Vapi.default) return window.Vapi.default;
+  return null;
+}
+
+function waitForVapi(maxWait) {
+  return new Promise(function(resolve) {
+    var ctor = getVapiConstructor();
+    if(ctor) { resolve(ctor); return; }
+    var waited = 0;
+    var iv = setInterval(function() {
+      ctor = getVapiConstructor();
+      waited += 200;
+      if(ctor) { clearInterval(iv); resolve(ctor); }
+      else if(waited >= maxWait) { clearInterval(iv); resolve(null); }
+    }, 200);
+  });
+}
+
 /* [DEV-001] Vapi.ai 음성 연결 */
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
@@ -8584,7 +8634,18 @@ async function diagConnectVoice(isPaid) {
   }
 
   try {
-    vapi = new Vapi(VAPI_PUBLIC_KEY);
+    /* Vapi SDK 로드 대기 (최대 5초) */
+    var VapiConstructor = await waitForVapi(5000);
+    
+    if(!VapiConstructor) {
+      showToast('❌ Vapi SDK 로드 실패 · 페이지를 새로고침 해주세요');
+      console.error('[DEV-001] Vapi SDK가 로드되지 않았습니다. typeof Vapi:', typeof Vapi, 'window.Vapi:', typeof window.Vapi);
+      diagAddSTT('ai', 'AI 음성 엔진 로드에 실패했습니다. 페이지를 새로고침 해주세요.', null);
+      return;
+    }
+    
+    console.log('[DEV-001] Vapi 생성자 확인:', VapiConstructor.name || 'OK');
+    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
 
     /* ── 연결 시작 ── */
@@ -8673,24 +8734,59 @@ function handleVapiToolCall(toolCallList) {
 }
 
 function updateNoteField(tab, field, value, label) {
+  if(!value || !field) return;
+  
   /* 해당 탭으로 자동 이동 */
   var tabIdx = parseInt(tab) || 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
 
-  /* 해당 필드에 값 입력 — 기존 diagHandleNote와 동일한 ID 규칙 */
+  /* 해당 필드에 값 입력 — 3단계 매칭 (diagHandleNote와 동일) */
+  var filled = false;
+  
+  // 방법1: 정확한 ID 매칭
   var el = document.getElementById('f' + tab + '_' + field);
   if(el) {
     dnFill(el, value);
     el.style.background = '#FFF8E6';
     setTimeout(function(){ el.style.background = ''; }, 1000);
+    filled = true;
+    console.log('[노트기입✅]', 'f' + tab + '_' + field, '=', value);
+  }
+  
+  // 방법2: 유사 키워드 매칭 (ID가 정확히 안 맞을 때)
+  if(!filled) {
+    var cands = document.querySelectorAll('[id^="f' + tab + '_"]');
+    for(var i = 0; i < cands.length; i++) {
+      var ck = cands[i].id.replace('f' + tab + '_', '');
+      if(ck.includes(field) || field.includes(ck)) {
+        dnFill(cands[i], value);
+        cands[i].style.background = '#FFF8E6';
+        setTimeout((function(e){ return function(){ e.style.background = ''; }; })(cands[i]), 1000);
+        filled = true;
+        console.log('[노트기입유사✅]', cands[i].id, '=', value);
+        break;
+      }
+    }
+  }
+  
+  if(!filled) {
+    console.warn('[노트기입❌] f' + tab + '_' + field + ' 요소 없음');
   }
 
-  /* 금융집짓기 설계도 업데이트 */
-  if(tab === '5' && typeof updateHouseDiagram === 'function') {
-    updateHouseDiagram(field, value);
+  /* SVG 집짓기 설계도 업데이트 */
+  if(tabIdx >= 4 && tabIdx <= 8) {
+    if(field === 'retire') { var ar = document.getElementById('age_retire'); if(ar) ar.textContent = value + '세'; }
+    if(field === 'life') { var al = document.getElementById('age_life'); if(al) al.textContent = value + '세'; }
+    if(field === 'age') { var an = document.getElementById('age_now'); if(an) an.textContent = value + '세'; }
+  }
+  
+  /* 3단계 수입 입력 시 예산 자동 계산 */
+  if(tab === '3' && field === 'income') {
+    dnCalcBudget({ income: value });
   }
 
-  console.log('[노트 업데이트]', label + ': ' + value);
+  /* 토스트 알림 */
+  showToast('📝 ' + (label || field) + ': ' + String(value).slice(0, 15));
 }
 
 // [비활성화 by DEV-001] 기존 OpenAI Realtime 함수들
