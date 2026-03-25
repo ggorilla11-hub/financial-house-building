@@ -8718,8 +8718,8 @@ async function diagConnectVoice(isPaid) {
       vapiCallActive = false;
       diagMic = false;
       showToast('📞 상담이 종료됐습니다');
-      /* DEV-003: 리포트 생성 — 추후 활성화 */
-      // generateFinalReport();
+      /* [DEV-003] 리포트 자동생성 */
+      generateFinalReport();
     });
 
     /* ── 오류 ── */
@@ -9756,8 +9756,201 @@ function diagEndConsult() {
       '<button class="rhc-dl" onclick="showToast(\'📄 PDF 다운로드 중...\')">PDF</button>';
     list.insertBefore(div, list.firstChild);
   }
-  showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
+  showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! 리포트 생성 중...');
+  /* [DEV-003] 종합리포트 자동생성 */
+  generateFinalReport();
 }
+
+/* ══════════════════════════════════════════════════════════
+   [DEV-003] 종합재무설계 리포트 자동생성
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 상담노트 데이터 수집 ── */
+function collectNoteData() {
+  function gt(id) { var el=document.getElementById(id); return el ? (el.textContent||'').trim().replace(/^—$/,'') : ''; }
+  return {
+    session: { date: gt('f0_date'), session: gt('f0_session') },
+    customer: {
+      name: gt('f1_name'), age: gt('f1_age'), marry: gt('f1_marry'),
+      child: gt('f1_child'), family: gt('f1_family'), job: gt('f1_job'),
+      dual: gt('f1_dual'), retire: gt('f1_retire'), life: gt('f1_life')
+    },
+    worry: { w1: gt('f2_w1'), w2: gt('f2_w2'), w3: gt('f2_w3'), goal: gt('f2_goal') },
+    income: {
+      total: gt('f3_income'), living: gt('f3_living_cur'), savings: gt('f3_save_cur'),
+      pension: gt('f3_pension_cur'), insurance: gt('f3_ins_cur'), loan: gt('f3_loan_cur'), surplus: gt('f3_surplus')
+    },
+    assets: {
+      deposit: gt('f4_deposit'), invest: gt('f4_invest'), pension: gt('f4_pension'),
+      realty: gt('f4_realty'), total_asset: gt('f4_total_asset'),
+      credit: gt('f4_credit'), mortgage: gt('f4_mortgage'),
+      total_debt: gt('f4_total_debt'), net: gt('f4_net'), wealth_index: gt('f4_wi_val')
+    },
+    design: { desire: gt('f5_desire'), next: gt('f5_next'), strategy: gt('f5_strategy') },
+    portfolio: { source: gt('f6_source'), net: gt('f6_net') },
+    retire: { need: gt('f81_need'), ready: gt('f81_ready'), short: gt('f81_short'), rate: gt('f81_rate') },
+    score: gt('f9_score'), grade: gt('f9_grade'),
+    strengths: [gt('f9_s1'), gt('f9_s2'), gt('f9_s3')].filter(Boolean),
+    improvements: [gt('f9_i1'), gt('f9_i2'), gt('f9_i3')].filter(Boolean),
+    actions: [gt('f9_a1'), gt('f9_a2'), gt('f9_a3')].filter(Boolean)
+  };
+}
+
+/* ── 리포트 생성 요청 ── */
+async function generateFinalReport() {
+  var noteData = collectNoteData();
+  /* 최소 데이터 확인 — 이름이라도 있어야 요청 */
+  if(!noteData.customer.name && !noteData.income.total) {
+    console.log('[DEV-003] 노트 데이터 부족 — 리포트 생성 스킵');
+    return;
+  }
+
+  /* 로딩 UI */
+  var contentEl = document.getElementById('diagReportContent');
+  var readyEl = document.getElementById('diagReportReady');
+  var dateEl = document.getElementById('diagReportDate');
+  var scoreEl = document.getElementById('diagReportScore');
+  if(dateEl) dateEl.textContent = '리포트 생성 중...';
+  showToast('📊 AI가 종합재무설계 리포트를 생성하고 있습니다...');
+
+  try {
+    var res = await fetch('https://moneya-server.onrender.com/api/generate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noteData: noteData, chatHistory: null })
+    });
+
+    if(!res.ok) {
+      var errData = await res.json().catch(function(){ return {error:'서버 오류'}; });
+      throw new Error(errData.error || '서버 응답 오류 ' + res.status);
+    }
+
+    var report = await res.json();
+    console.log('[DEV-003] 리포트 수신:', report);
+    renderReport(report);
+
+  } catch(e) {
+    console.error('[DEV-003] 리포트 생성 실패:', e.message);
+    if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차';
+    showToast('⚠️ 리포트 자동생성 실패 — 상담 데이터는 저장되었습니다');
+  }
+}
+
+/* ── 리포트 렌더링 ── */
+function renderReport(report) {
+  var dateEl = document.getElementById('diagReportDate');
+  var scoreEl = document.getElementById('diagReportScore');
+  var readyEl = document.getElementById('diagReportReady');
+  var contentEl = document.getElementById('diagReportContent');
+
+  /* 점수·날짜 */
+  var score = report.finance_score ? report.finance_score.total : (report.wealth_index ? report.wealth_index.score : 0);
+  var grade = report.wealth_index ? report.wealth_index.grade : '';
+  if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 · ' + Math.floor(diagSec/60) + '분 진단';
+  if(scoreEl) scoreEl.textContent = score || '—';
+  if(readyEl) readyEl.style.display = 'block';
+
+  /* 9탭 최종의견에도 반영 */
+  var f9s = document.getElementById('f9_score');
+  var f9g = document.getElementById('f9_grade');
+  if(f9s && score) f9s.innerHTML = score + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+  if(f9g && grade) f9g.textContent = grade;
+
+  /* 강점·개선·액션 */
+  if(report.strengths) {
+    report.strengths.forEach(function(s,i) { var el=document.getElementById('f9_s'+(i+1)); if(el) el.textContent=s; });
+  }
+  if(report.improvements) {
+    report.improvements.forEach(function(s,i) { var el=document.getElementById('f9_i'+(i+1)); if(el) el.textContent=s; });
+  }
+  if(report.actions) {
+    report.actions.forEach(function(s,i) { var el=document.getElementById('f9_a'+(i+1)); if(el) el.textContent=s; });
+  }
+
+  /* 리포트 상세 HTML — diagReportReady 아래에 삽입 */
+  var detailHtml = '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">';
+
+  /* 고객 요약 */
+  if(report.customer) {
+    detailHtml += '<div style="background:#f8faff;border-radius:10px;padding:11px;border:1px solid #D8E0EC">'
+      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">👤 고객 정보</div>'
+      + '<div style="font-size:11px;color:#1a2340;line-height:1.8">'
+      + (report.customer.name||'') + ' · ' + (report.customer.age||'') + '세 · ' + (report.customer.job||'')
+      + '</div></div>';
+  }
+
+  /* 재무점수 세부 */
+  if(report.finance_score) {
+    var fs = report.finance_score;
+    detailHtml += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:10px;padding:12px">'
+      + '<div style="font-size:10px;font-weight:900;color:#E8B84B;margin-bottom:8px">📊 재무점수 세부</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">';
+    var items = [
+      {l:'지출관리',v:fs.expense}, {l:'자산관리',v:fs.asset}, {l:'보험',v:fs.insurance},
+      {l:'은퇴준비',v:fs.retirement}, {l:'부채관리',v:fs.debt}
+    ];
+    items.forEach(function(it) {
+      var c = (it.v||0)>=70 ? '#4ade80' : (it.v||0)>=40 ? '#fbbf24' : '#f87171';
+      detailHtml += '<div style="background:rgba(255,255,255,.06);border-radius:7px;padding:7px;text-align:center">'
+        + '<div style="font-size:8px;color:rgba(255,255,255,.5)">' + it.l + '</div>'
+        + '<div style="font-size:16px;font-weight:900;color:' + c + '">' + (it.v||'—') + '</div></div>';
+    });
+    detailHtml += '</div></div>';
+  }
+
+  /* 강점 */
+  if(report.strengths && report.strengths.length) {
+    detailHtml += '<div style="background:#f0fdf4;border-radius:10px;padding:11px;border:1px solid #86efac">'
+      + '<div style="font-size:10px;font-weight:900;color:#2E7D32;margin-bottom:5px">✅ 강점</div>';
+    report.strengths.forEach(function(s) { detailHtml += '<div style="font-size:10.5px;color:#1a2340;line-height:1.7">• ' + s + '</div>'; });
+    detailHtml += '</div>';
+  }
+
+  /* 개선점 */
+  if(report.improvements && report.improvements.length) {
+    detailHtml += '<div style="background:#fff5f5;border-radius:10px;padding:11px;border:1px solid #fca5a5">'
+      + '<div style="font-size:10px;font-weight:900;color:#C62828;margin-bottom:5px">⚠️ 개선점</div>';
+    report.improvements.forEach(function(s) { detailHtml += '<div style="font-size:10.5px;color:#1a2340;line-height:1.7">• ' + s + '</div>'; });
+    detailHtml += '</div>';
+  }
+
+  /* 실행 액션 */
+  if(report.actions && report.actions.length) {
+    detailHtml += '<div style="background:#fff8e6;border-radius:10px;padding:11px;border:1px solid #E8B84B">'
+      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:5px">🎯 이번 달 액션플랜</div>';
+    report.actions.forEach(function(s,i) { detailHtml += '<div style="font-size:10.5px;color:#1a2340;line-height:1.7"><strong>' + (i+1) + '.</strong> ' + s + '</div>'; });
+    detailHtml += '</div>';
+  }
+
+  /* 다음 상담 */
+  if(report.next_schedule) {
+    detailHtml += '<div style="background:linear-gradient(135deg,rgba(201,151,42,.1),rgba(201,151,42,.05));border-radius:10px;padding:11px;border:1px solid rgba(201,151,42,.3)">'
+      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:3px">📅 다음 상담</div>'
+      + '<div style="font-size:11px;color:#1a2340">' + report.next_schedule + '</div></div>';
+  }
+
+  detailHtml += '</div>';
+
+  /* diagReportReady 바로 뒤에 삽입 */
+  var existingDetail = document.getElementById('diagReportDetail');
+  if(existingDetail) existingDetail.remove();
+  var wrapper = document.createElement('div');
+  wrapper.id = 'diagReportDetail';
+  wrapper.innerHTML = detailHtml;
+  var readyParent = readyEl ? readyEl.parentElement : contentEl;
+  if(readyEl && readyEl.nextSibling) {
+    readyParent.insertBefore(wrapper, readyEl.nextSibling);
+  } else if(readyParent) {
+    readyParent.appendChild(wrapper);
+  }
+
+  /* 리포트 탭으로 이동 */
+  if(typeof dnGo === 'function') dnGo(10);
+
+  showToast('🏆 종합재무설계 리포트가 완성되었습니다!');
+  console.log('[DEV-003] 리포트 렌더링 완료 — 점수:', score, '등급:', grade);
+}
+
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
