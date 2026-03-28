@@ -5638,8 +5638,6 @@ function onPaypleResult(data){
     }
     try { mpCloseSubscribe(); } catch(e) {}
     // 구독 상태 저장
-    localStorage.setItem('fh_subscribed', '1');
-    localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
     // 결제자 정보 (mpCompletePurchase에서 저장한 값)
