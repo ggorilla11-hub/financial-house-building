@@ -2362,7 +2362,7 @@ html{visibility:visible !important;}
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <!-- Vapi Voice AI SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.1.1/dist/vapi.umd.js"></script>
 
 
 
@@ -8558,9 +8558,14 @@ const diagFinCtx = {
 
 async function diagConnectVoice() {
   try {
-    // Vapi SDK 로드 확인
+    // Vapi SDK 로드 확인 (최대 5초 대기)
+    let waitCount = 0;
+    while (typeof Vapi === 'undefined' && waitCount < 10) {
+      await new Promise(r => setTimeout(r, 500));
+      waitCount++;
+    }
     if (typeof Vapi === 'undefined') {
-      showToast('⚠️ Vapi SDK 로딩 중입니다. 잠시 후 다시 시도해 주세요.');
+      showToast('⚠️ Vapi SDK 로딩 실패. 페이지를 새로고침해 주세요.');
       return;
     }
 
