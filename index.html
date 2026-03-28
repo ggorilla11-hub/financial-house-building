@@ -8658,6 +8658,32 @@ async function diagConnectVoice(isPaid) {
   }
 
   try {
+    /* ══════════════════════════════════════════════════════════
+       [에코 방지 최종] getUserMedia monkey-patch
+       Vapi SDK가 내부적으로 getUserMedia를 호출할 때
+       echoCancellation/noiseSuppression/autoGainControl을
+       강제로 주입합니다. SDK 버전과 무관하게 작동합니다.
+       ══════════════════════════════════════════════════════════ */
+    if(!window._vapiGumPatched) {
+      window._vapiGumPatched = true;
+      var origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        if(constraints && typeof constraints === 'object') {
+          var audio = constraints.audio;
+          if(audio) {
+            constraints = Object.assign({}, constraints, {
+              audio: typeof audio === 'object'
+                ? Object.assign({}, audio, { echoCancellation: true, noiseSuppression: true, autoGainControl: true })
+                : { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+          }
+        }
+        console.log('[에코방지] getUserMedia 호출 — AEC 강제 주입:', JSON.stringify(constraints.audio));
+        return origGUM(constraints);
+      };
+      console.log('[에코방지] getUserMedia monkey-patch 적용 완료');
+    }
+
     /* Vapi SDK 로드 대기 (최대 5초) */
     var VapiConstructor = await waitForVapi(5000);
     
