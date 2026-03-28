@@ -2361,11 +2361,10 @@ html{visibility:visible !important;}
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-  <!-- Vapi Voice AI SDK -->
+
+
+  <!-- Vapi SDK [DEV-001] -->
   <script src="https://unpkg.com/@vapi-ai/web@2.2.5/dist/index.umd.js"></script>
-
-
-
 
 </head>
 <body>
@@ -7767,10 +7766,14 @@ function _onMoneya발화(text) {
 
     // ② 0.4초 후 전송 (입력창에서 보이다가 전송)
     setTimeout(function() {
-      // Vapi로 텍스트 전송
-      if(vapi) {
-        try { vapi.send({ type: 'add-message', message: { role: 'user', content: reply } }); } catch(e) {}
+      // [DEV-001] Vapi로 텍스트 전송
+      if(vapi && vapiCallActive) {
+        try{ vapi.send({ type: 'add-message', message: { role: 'user', content: reply } }); }catch(e){}
       }
+      // [비활성화 by DEV-001] 기존 WebSocket
+      // if(diagWs && diagWs.readyState === 1) {
+      //   diagWs.send(JSON.stringify({type:'text_input', text:reply}));
+      // }
       // STT 자막에도 표시
       if(typeof diagAddSTT === 'function') {
         diagAddSTT('user', '🎓 ' + reply, null);
@@ -8541,14 +8544,20 @@ function diagStartConsult() {
   diagConnectVoice();
 }
 
-/* ══ Vapi 음성 AI 시스템 ══ */
-const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2'; // ← 여기에 Vapi Public Key 입력
-const VAPI_ASSISTANT_FREE = '';
+/* ══════════════════════════════════════════════════════════
+   [DEV-001] Vapi.ai 음성 연결
+   ══════════════════════════════════════════════════════════ */
+const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
+const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
 const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9';
 let vapi = null;
-let diagWs = null; // 하위 호환성 유지 (훈련모드 등에서 사용)
-let diagAudioCtx = null, diagMicStream = null;
-let diagWorkletNode = null, diagPlayQueue = [], diagIsPlaying = false;
+let vapiCallActive = false;
+
+// [비활성화 by DEV-001] 기존 OpenAI Realtime
+// const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
+// let diagWs=null, diagAudioCtx=null, diagMicStream=null;
+// let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
+let diagMicStream=null; // 마이크 권한 확인용으로 유지
 
 const diagFinCtx = {
   name:'고객', age:0, monthlyIncome:0,
@@ -8557,6 +8566,7 @@ const diagFinCtx = {
   mainWorry:'',
 };
 
+/* [DEV-001] Vapi.ai 음성 연결 */
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
@@ -8688,27 +8698,8 @@ function updateNoteField(tab, field, value, label) {
 // async function diagSetupAudio() { ... }
 // function diagPlayNext() { ... }
 
-/* ── diagHandleMsg: smart_note_update만 유지 (WebSocket 제거 후 Vapi 이전) ── */
-function diagHandleMsg(msg) {
-  // smart_note_update는 서버사이드 tool call 방식으로 여전히 사용 가능
-  if (msg.type === 'smart_note_update') {
-    diagHandleNote(msg);
-  } else if (msg.type === 'error') {
-    showToast('⚠️ ' + (msg.error || '오류가 발생했습니다'));
-  }
-  // 나머지(session_started, audio, interrupt, transcript)는 Vapi 이벤트에서 처리
-}
-
-/* ── diagSetupAudio / diagPlayNext: Vapi가 오디오 처리, stub 유지 ── */
-async function diagSetupAudio() {
-  // Vapi SDK가 오디오를 직접 처리하므로 별도 AudioWorklet 불필요
-  console.log('[Vapi] 오디오는 Vapi SDK가 처리합니다');
-}
-
-function diagPlayNext() {
-  // Vapi SDK가 TTS 재생을 처리하므로 별도 처리 불필요
-  diagIsPlaying = false;
-}
+/* [DEV-001] 기존 diagHandleMsg — smart_note_update 처리를 위해 유지 */
+/* Vapi에서는 사용하지 않지만 diagHandleNote 함수는 아래에서 그대로 살림 */
 
 function diagHandleNote(msg) {
   console.log('[노트수신RAW]', JSON.stringify(msg));
@@ -8859,7 +8850,11 @@ function dnCalcBudget(f) {
 
 /* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
 
-/* ── Heartbeat (Vapi로 이전 후 불필요) ── */
+// [비활성화 by DEV-001] Heartbeat — Vapi가 자체 관리
+// setInterval(function(){
+//   if(diagWs&&diagWs.readyState===1)
+//     diagWs.send(JSON.stringify({type:'ping'}));
+// },30000);
 
 /* ── 노트/대화 탭 전환 ── */
 function diagSwitchTab(idx, el) {
@@ -9513,8 +9508,9 @@ function diagActivatePart(idx) {
     ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
     ps.scrollIntoView({behavior:'smooth',inline:'center'});
   }
-  // 서버에 단계 전달 (Vapi 메타데이터로 전송)
-  if(vapi) { try { vapi.send({ type: 'add-message', message: { role: 'system', content: '[단계이동] ' + idx + '단계 · ' + (DIAG_PARTS[idx]?.short||'') } }); } catch(e) {} }
+  // 서버에 단계 전달
+  // [비활성화 by DEV-001] 기존 WS step 전송
+  // if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
   if(diagFinCtx) diagFinCtx.currentStep=idx;
   var pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx]?.short||'';
   var sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+(DIAG_PARTS[idx]?.short||'');
@@ -9593,14 +9589,12 @@ function diagTogglePause() {
   if(w) w.querySelectorAll('div').forEach(function(d){ d.style.animation=diagPaused?'none':''; });
 
   if(diagPaused) {
-    /* 일시정지 — Vapi 마이크 음소거 */
-    diagPlayQueue=[];
-    diagIsPlaying=false;
-    if(vapi) { try { vapi.setMuted(true); } catch(e) {} }
+    /* [DEV-001] Vapi 마이크 음소거 */
+    if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
     showToast('⏸ 일시정지');
   } else {
-    /* 재개 — Vapi 마이크 언뮤트 */
-    if(vapi) { try { vapi.setMuted(false); } catch(e) {} }
+    /* [DEV-001] Vapi 마이크 음소거 해제 */
+    if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
     showToast('▶ 재개');
   }
 }
@@ -9613,20 +9607,24 @@ function diagHideEndModal() { const m=document.getElementById('diagEndModal'); i
 function diagEndConsult() {
   diagHideEndModal();
   clearInterval(diagInt);
-  diagPaused = true; // 재연결 방지
+  diagPaused = true;
 
-  /* ── Vapi 통화 종료 ── */
-  if (vapi) {
-    try { vapi.stop(); } catch(e) { console.error('[Vapi 종료 오류]', e); }
+  /* [DEV-001] Vapi 통화 종료 */
+  if(vapi && vapiCallActive) {
+    try{ vapi.stop(); }catch(e){}
     vapi = null;
+    vapiCallActive = false;
   }
 
-  /* ── 오디오 정리 (하위 호환) */
-  diagPlayQueue = [];
-  diagIsPlaying = false;
-  try{ if(diagAudioCtx){ diagAudioCtx.suspend(); diagAudioCtx.close(); diagAudioCtx=null; } }catch(e){}
-  try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
+  /* ── 마이크 스트림 해제 */
   try{ if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } }catch(e){}
+
+  // [비활성화 by DEV-001] 기존 오디오/WS 종료
+  // diagPlayQueue=[];
+  // diagIsPlaying=false;
+  // try{ if(diagAudioCtx){ diagAudioCtx.suspend(); diagAudioCtx.close(); diagAudioCtx=null; } }catch(e){}
+  // try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
+  // if(diagWs) { try{ diagWs.close(1000, 'user_ended'); }catch(e){} diagWs = null; }
 
   // 리포트 활성화
   const nr=document.getElementById('diagReportReady');
@@ -9655,10 +9653,13 @@ function diagSendText() {
   const txt=inp.value.trim();
   diagAddSTT('user',txt,null);
   inp.value='';
-  // Vapi로 텍스트 메시지 전송
-  if(vapi) {
-    try { vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); } catch(e) {}
+  /* [DEV-001] Vapi로 텍스트 전송 */
+  if(vapi && vapiCallActive) {
+    try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
   }
+  // [비활성화 by DEV-001] 기존 WebSocket
+  // if(diagWs&&diagWs.readyState===1)
+  //   diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
 
