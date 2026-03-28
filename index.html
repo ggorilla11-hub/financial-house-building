@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" style="visibility:hidden;">
 <head>
 <meta charset="UTF-8">
 
@@ -59,8 +59,9 @@
 <meta name="twitter:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
 <meta name="twitter:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet"></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <style>
 /* ━━━ CSS 변수 ━━━ */
 /* ── DESIGN SYSTEM UPDATE: 확정 C안 색상 팔레트 ── */
@@ -2019,12 +2020,342 @@ body { color: #1a1a1a; }
   flex: 1;
 }
 
+
+
+/* ━━━ 1단계: AI진단탭 V4 CSS 추가 ━━━ */
+/* ━━━ AI진단탭 V4 CSS ━━━ */
+
+
+/* ━━━ 마이페이지 헤더 ━━━ */
+.mp-hdr{
+  flex-shrink:0;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  padding:10px 14px 0;
+}
+.mp-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.mp-back{font-size:13px;font-weight:700;color:rgba(255,255,255,.75);cursor:pointer;}
+.mp-crown{font-size:10.5px;font-weight:700;color:var(--gold2);background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.35);padding:3px 10px;border-radius:12px;}
+.mp-close{font-size:15px;color:rgba(255,255,255,.45);cursor:pointer;}
+
+/* ━━━ 공통 카드 (화이트 계열) ━━━ */
+.mpc{background:#fff;border:1px solid var(--border);border-radius:14px;margin:8px 12px 0;box-shadow:var(--shadow);overflow:hidden;}
+.mpc-hd{display:flex;align-items:center;gap:8px;padding:11px 14px;background:rgba(11,29,58,.02);border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer;user-select:none;}
+.mpc-icon{font-size:15px;}
+.mpc-title{font-size:12px;font-weight:700;color:var(--navy);flex:1;}
+.mpc-chevron{font-size:11px;color:var(--muted);transition:transform .3s;}
+.mpc-chevron.open{transform:rotate(180deg);}
+.mpc-badge{font-size:8.5px;font-weight:700;padding:2px 8px;border-radius:8px;}
+.mb-gold{background:rgba(201,151,42,.12);color:var(--gold);border:1px solid rgba(201,151,42,.3);}
+.mb-green{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.25);}
+.mb-red{background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);}
+.mpc-bd{padding:12px 14px;}
+
+/* 아코디언 */
+.accordion-body{display:none;overflow:hidden;}
+.accordion-body.open{display:block;}
+
+/* 정보 행 (진단안내) */
+.info-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);}
+.info-row:last-child{border-bottom:none;}
+.info-ic{font-size:16px;width:24px;text-align:center;flex-shrink:0;}
+.info-lbl{font-size:9px;color:var(--muted);}
+.info-val{font-size:11px;font-weight:700;color:var(--navy);}
+
+/* ━━━ 제목 배너 ━━━ */
+.diag-banner{
+  margin:10px 12px 0;
+  background:linear-gradient(135deg,#C9972A,#E8B84B);
+  border-radius:16px;padding:18px 16px;
+  position:relative;overflow:hidden;
+  box-shadow:0 4px 16px rgba(201,151,42,.3);
+}
+.diag-banner::before{content:'';position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.12);border-radius:50%;}
+.diag-banner::after{content:'';position:absolute;bottom:-15px;left:-15px;width:60px;height:60px;background:rgba(255,255,255,.08);border-radius:50%;}
+.diag-banner-inner{position:relative;z-index:1;display:flex;align-items:center;gap:12px;}
+.diag-banner-av{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.15);}
+.diag-banner-av img{width:100%;height:100%;object-fit:cover;}
+.diag-banner-txt{}
+.diag-banner-title{font-size:15px;font-weight:900;color:#0B1D3A;margin-bottom:2px;}
+.diag-banner-sub{font-size:9.5px;color:rgba(11,29,58,.65);}
+
+/* ━━━ 이용권 현황 ━━━ */
+.credit-wrap{padding:12px 14px;}
+.credit-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
+.credit-lbl{font-size:11px;color:var(--muted);}
+.credit-num{font-size:22px;font-weight:900;color:var(--gold);}
+.credit-unit{font-size:11px;font-weight:500;color:var(--muted);margin-left:1px;}
+.credit-bar-track{background:rgba(0,0,0,.07);border-radius:5px;height:7px;overflow:hidden;margin-bottom:5px;}
+.credit-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:5px;}
+.credit-sub{font-size:8.5px;color:var(--muted);}
+.credit-rule{margin-top:8px;padding:8px 10px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.15);border-radius:8px;font-size:8.5px;color:var(--muted);line-height:1.6;}
+
+/* ━━━ 서류 업로드 ━━━ */
+.doc-req-wrap{background:rgba(201,151,42,.05);border:1.5px solid rgba(201,151,42,.25);border-radius:11px;padding:12px;margin-bottom:10px;}
+.doc-req-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.doc-req-title{font-size:10px;font-weight:900;color:var(--navy);display:flex;align-items:center;gap:5px;}
+.doc-status-badge{font-size:8px;font-weight:700;padding:2px 8px;border-radius:7px;}
+.doc-req-card{background:#fff;border-radius:9px;padding:10px 12px;border:1px solid var(--border);}
+.doc-req-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.doc-icon{font-size:20px;flex-shrink:0;}
+.doc-name{font-size:11px;font-weight:700;color:var(--navy);}
+.doc-desc{font-size:8.5px;color:var(--muted);margin-top:1px;}
+.doc-stat{font-size:10px;flex-shrink:0;}
+.doc-btn-row{display:flex;gap:5px;}
+.btn-dl{flex:1;padding:7px 6px;border-radius:8px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.12);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;}
+.btn-up{flex:1;padding:7px 6px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:var(--navy);font-size:9px;font-weight:900;font-family:var(--fn);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;}
+.btn-dl:active,.btn-up:active{transform:scale(.96);}
+.doc-hint{margin-top:8px;font-size:8.5px;color:var(--gold);line-height:1.5;}
+
+.doc-opt-wrap{padding-top:2px;}
+.doc-opt-title{font-size:9px;font-weight:700;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.doc-opt-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);}
+.doc-opt-row:last-child{border-bottom:none;}
+.doc-opt-name{font-size:10.5px;font-weight:700;color:var(--navy);}
+.doc-opt-sub{font-size:8.5px;color:var(--muted);}
+.doc-opt-btn{padding:4px 10px;border-radius:7px;border:1px solid rgba(11,29,58,.15);background:rgba(11,29,58,.04);color:var(--navy);font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;flex-shrink:0;}
+.doc-upload-hint{margin-top:8px;padding:7px 10px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.12);border-radius:8px;font-size:8.5px;color:var(--blue);line-height:1.6;}
+
+/* ━━━ 시작 버튼 ━━━ */
+.start-area{padding:12px 12px 4px;}
+.start-btn{width:100%;padding:15px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;font-size:14px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 6px 18px rgba(11,29,58,.3);transition:all .2s;letter-spacing:.3px;}
+.start-btn:active{transform:scale(.98);}
+.start-note{text-align:center;font-size:8.5px;color:var(--muted);margin-top:5px;}
+
+/* ━━━ AI학습 섹션 ━━━ */
+.learn-card{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:all .2s;margin-bottom:7px;}
+.learn-card:last-child{margin-bottom:0;}
+.learn-card:active{transform:scale(.98);background:var(--gold3);}
+.learn-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.learn-info{flex:1;}
+.learn-title{font-size:11px;font-weight:700;color:var(--navy);}
+.learn-sub{font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.learn-arr{font-size:14px;color:var(--muted);}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [화면B] 상담 화면
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.consult-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--navy);}
+
+/* 상담 상단바 */
+.c-topbar{
+  flex-shrink:0;background:rgba(8,18,40,.97);
+  padding:6px 10px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.c-live{display:flex;align-items:center;gap:5px;}
+.c-live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:blink 1.5s ease infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.c-live-txt{font-size:10.5px;font-weight:700;color:#fff;}
+.c-timer{font-size:14px;font-weight:900;color:var(--gold2);font-variant-numeric:tabular-nums;}
+.c-top-btns{display:flex;gap:5px;align-items:center;}
+.c-tbtn{padding:4px 9px;border-radius:7px;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;border:none;white-space:nowrap;}
+.c-tbtn-pause{background:rgba(255,255,255,.09);color:rgba(255,255,255,.75);}
+.c-tbtn-rec{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)!important;}
+.c-tbtn-rec.on{background:rgba(220,38,38,.3);animation:recpulse 1.5s ease infinite;}
+@keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35);}50%{box-shadow:0 0 0 4px rgba(220,38,38,0);}}
+.c-tbtn-end{background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.3)!important;}
+
+/* 화상 미니바 — 최소화 */
+.c-video-bar{
+  flex-shrink:0;
+  background:linear-gradient(135deg,#060d1f,#0b1730);
+  padding:7px 11px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.c-ai-area{display:flex;align-items:center;gap:7px;flex:1;}
+.c-ai-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 0 8px rgba(201,151,42,.3);}
+.c-ai-av img{width:100%;height:100%;object-fit:cover;}
+.c-ai-name{font-size:9.5px;font-weight:700;color:#fff;margin-bottom:2px;}
+.c-wave{display:flex;align-items:center;gap:2px;height:10px;}
+.c-wb{width:2px;border-radius:2px;background:var(--gold2);animation:cwave .9s ease-in-out infinite;}
+.c-wb:nth-child(1){animation-delay:0s;}
+.c-wb:nth-child(2){animation-delay:.1s;}
+.c-wb:nth-child(3){animation-delay:.2s;}
+.c-wb:nth-child(4){animation-delay:.1s;}
+.c-wb:nth-child(5){animation-delay:0s;}
+@keyframes cwave{0%,100%{height:2px;opacity:.3;}50%{height:10px;opacity:1;}}
+.c-wave.muted .c-wb{animation:none;height:2px;opacity:.2;}
+.c-part-center{flex:1;text-align:center;}
+.c-part-lbl{font-size:7.5px;color:rgba(255,255,255,.35);}
+.c-part-name{font-size:9px;font-weight:700;color:var(--gold2);}
+.c-pip{width:44px;height:57px;border-radius:8px;background:linear-gradient(145deg,#151525,#0a0a18);border:1.5px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;}
+.c-pip video{width:100%;height:100%;object-fit:cover;border-radius:6px;}
+.c-pip-ph{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.c-pip-icon{font-size:16px;}
+.c-pip-txt{font-size:7px;color:rgba(255,255,255,.3);}
+.c-cam-dot{position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);}
+.c-cam-dot.on{background:#22c55e;}
+
+/* 프로세스 — 2~3줄 */
+.c-proc-wrap{flex-shrink:0;background:rgba(11,29,58,.92);padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04);}
+.c-proc-grid{display:flex;flex-wrap:wrap;gap:3px;}
+.c-proc-step{padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);cursor:pointer;white-space:nowrap;transition:all .2s;}
+.c-proc-step.done{color:#86efac;background:rgba(34,197,94,.09);border-color:rgba(34,197,94,.22);}
+.c-proc-step.active{color:var(--gold2);background:rgba(201,151,42,.18);border-color:rgba(201,151,42,.4);}
+
+/* 노트 탭바 */
+.c-note-tabs{flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;}
+.c-note-tabs::-webkit-scrollbar{display:none;}
+.c-ntab{flex-shrink:0;padding:6px 10px;font-size:9.5px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.c-ntab.on{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* 노트 본문 — flex:1 세로 확보 */
+.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
+.c-note-body::-webkit-scrollbar{display:none;}
+
+/* ── AI진단탭 전용: 높이 체인 확보 ── */
+/* mp-content가 diag-mode일 때: 스크롤 컨테이너 해제 → flex 컨테이너로 전환 */
+.mp-content.diag-mode{overflow:hidden !important;display:flex !important;flex-direction:column !important;}
+/* mp-panel-2가 diag-active일 때: block → flex + 100% 높이 확보 */
+.mp-panel.diag-active{display:flex !important;flex-direction:column !important;flex:1 !important;min-height:0 !important;}
+/* diagScreenB 내부 래퍼: 높이 100% 명시 */
+#diagScreenB .c-note-body > div{height:100% !important;}
+/* diagNoteContainer 슬라이드: 절대위치 기준점 확보 */
+#diagNoteContainer{position:absolute;inset:0;}
+/* 가로 슬라이드 파트 */
+.c-part-slide{flex-shrink:0;width:100%;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.1) transparent;}
+.c-fval{font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:var(--gold3);border-left:2.5px solid rgba(201,151,42,.3);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-fval.empty{color:#bbb;font-style:italic;font-size:9px;font-weight:400;}
+.c-fval.filled{color:#0B1D3A;border-left-color:#C9972A;}
+.c-note-page{display:none;padding:10px 11px 16px;}
+.c-note-page.show{display:block;}
+
+/* 파트 블록 */
+.c-part-block{margin-bottom:9px;background:#fff;border-radius:11px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);transition:border-color .3s;}
+.c-part-block.active{border-color:rgba(201,151,42,.4);box-shadow:0 2px 10px rgba(201,151,42,.1);}
+.c-part-block.done{border-color:rgba(22,163,74,.25);}
+.c-part-hd{display:flex;align-items:center;gap:7px;padding:8px 11px;cursor:pointer;background:rgba(11,29,58,.02);border-bottom:1px solid rgba(0,0,0,.04);}
+.c-part-num{width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.c-part-block.active .c-part-num{background:linear-gradient(135deg,var(--gold),var(--gold2));}
+.c-part-block.done .c-part-num{background:var(--green);}
+.c-part-title{font-size:10px;font-weight:900;color:var(--navy);flex:1;}
+.c-part-badge{font-size:7.5px;font-weight:700;padding:2px 7px;border-radius:6px;}
+.cpb-wait{background:rgba(0,0,0,.05);color:#bbb;}
+.cpb-active{background:rgba(201,151,42,.12);color:var(--gold);border:1px solid rgba(201,151,42,.3);}
+.cpb-done{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.25);}
+.c-part-body{padding:9px 11px;display:none;}
+.c-part-block.active .c-part-body,.c-part-block.done .c-part-body{display:block;}
+.c-field{margin-bottom:7px;}
+.c-field label{font-size:8px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px;}
+.c-fval{font-size:10px;font-weight:600;padding:5px 8px;border-radius:6px;background:var(--gold3);border-left:2.5px solid rgba(201,151,42,.3);line-height:1.4;}
+.c-fval.empty{color:#bbb;font-style:italic;font-size:9px;font-weight:400;}
+.c-fval.filled{color:var(--navy);border-left-color:var(--gold);}
+
+/* 금융집 */
+.house-layer{padding:7px 10px;border-radius:8px;display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+
+/* 포트 */
+.pf-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.pf-lbl{font-size:9px;font-weight:700;color:var(--navy);width:48px;flex-shrink:0;}
+.pf-track{flex:1;height:16px;background:rgba(0,0,0,.06);border-radius:8px;overflow:hidden;}
+.pf-fill{height:100%;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:8.5px;font-weight:700;color:#fff;transition:width .8s cubic-bezier(.34,1.3,.64,1);}
+
+/* 리포트 */
+.report-ready{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3);}
+
+/* ━━━ STT — 길게 ━━━ */
+.c-stt{
+  flex-shrink:0;
+  background:rgba(6,14,30,.97);
+  border-top:1px solid rgba(255,255,255,.06);
+  height:110px; /* 고정 높이로 충분히 */
+  overflow-y:auto;
+  padding:7px 11px;
+  scrollbar-width:none;
+}
+.c-stt::-webkit-scrollbar{display:none;}
+.c-stt-msg{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;animation:fadeup .3s ease;}
+.c-stt-msg.user{flex-direction:row-reverse;}
+@keyframes fadeup{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.c-stt-av{width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden;}
+.c-stt-av.user{background:rgba(255,255,255,.12);}
+.c-stt-bubble{max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);}
+.c-stt-msg.user .c-stt-bubble{border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border-color:rgba(201,151,42,.22);}
+.c-stt-tag{font-size:7.5px;color:var(--gold);margin-top:1px;padding-left:2px;}
+
+/* ━━━ 하단 컨트롤 — 작게 ━━━ */
+.c-bottom{
+  flex-shrink:0;
+  background:rgba(6,12,24,.99);
+  border-top:1px solid rgba(255,255,255,.05);
+  padding:6px 10px 10px;
+}
+.c-btn-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;}
+/* 버튼 — 텍스트 엔터버튼과 같은 크기 */
+.c-mini-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+}
+.c-mini-btn .ico{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  transition:all .2s;
+}
+.c-mini-btn:active .ico{transform:scale(.88);}
+.c-mini-btn .lbl{font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;}
+.c-mini-btn.act .ico{background:rgba(201,151,42,.18);border-color:rgba(201,151,42,.38);}
+.c-mini-btn.muted-btn .ico{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.35);}
+.c-inp-row{display:flex;align-items:center;gap:7px;}
+.c-inp{flex:1;padding:8px 11px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.11);color:#fff;font-size:10px;font-family:var(--fn);outline:none;}
+.c-inp::placeholder{color:rgba(255,255,255,.28);}
+.c-inp:focus{border-color:rgba(201,151,42,.4);}
+.c-send{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0;}
+
+/* ━━━ PAUSE 오버레이 ━━━ */
+.pause-ov{position:absolute;inset:0;background:rgba(8,20,40,.88);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:200;}
+.pause-ov.show{display:flex;}
+.resume-btn{margin-top:6px;padding:10px 26px;border-radius:20px;background:linear-gradient(135deg,var(--gold),var(--gold2));font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;border:none;font-family:var(--fn);}
+
+/* ━━━ 종료 모달 ━━━ */
+.end-modal{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:300;}
+.end-modal.show{display:flex;}
+.end-box{background:#fff;border-radius:18px;padding:24px 20px;width:280px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;border:1px solid var(--border);}
+.end-box-icon{font-size:32px;margin-bottom:8px;}
+.end-box-title{font-size:15px;font-weight:900;color:var(--navy);margin-bottom:5px;}
+.end-box-desc{font-size:10px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.end-btns{display:flex;gap:8px;}
+.end-btn{flex:1;padding:11px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:var(--fn);}
+.end-cancel{background:rgba(11,29,58,.07);color:var(--navy);}
+.end-confirm{background:var(--red);color:#fff;}
+
+/* ━━━ 업로드 모달 ━━━ */
+.upload-modal{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.upload-modal.show{display:flex;}
+.upload-sheet{width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;box-shadow:0 -10px 40px rgba(0,0,0,.15);}
+.upload-sheet-title{font-size:13px;font-weight:900;color:var(--navy);text-align:center;margin-bottom:16px;}
+.upload-methods{display:flex;gap:10px;justify-content:center;margin-bottom:14px;}
+.upload-method{flex:1;max-width:110px;padding:14px 10px;border-radius:14px;background:rgba(11,29,58,.04);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:all .2s;}
+.upload-method:active{background:var(--gold3);border-color:rgba(201,151,42,.4);}
+.upload-method-icon{font-size:26px;}
+.upload-method-name{font-size:10px;font-weight:700;color:var(--navy);}
+.upload-cancel{width:100%;padding:12px;border-radius:10px;background:rgba(11,29,58,.06);border:none;color:var(--muted);font-size:12px;font-weight:700;font-family:var(--fn);cursor:pointer;}
+
+/* ━━━ 히스토리탭 리포트 리스트 ━━━ */
+.rhc{background:#fff;border-radius:12px;border:1px solid var(--border);padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer;box-shadow:var(--shadow);transition:all .2s;}
+.rhc:active{transform:scale(.98);}
+.rhc-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.rhc-info{flex:1;}
+.rhc-title{font-size:10.5px;font-weight:700;color:var(--navy);}
+.rhc-sub{font-size:8.5px;color:var(--muted);margin-top:1px;}
+.rhc-score{font-size:18px;font-weight:900;color:var(--gold);}
+.rhc-dl{padding:5px 10px;border-radius:7px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.25);color:var(--gold);font-size:8.5px;font-weight:700;font-family:var(--fn);cursor:pointer;}
+
+/* ━━━ toast ━━━ */
+.toast{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,151,42,.3);color:#fff;font-size:10.5px;font-weight:700;padding:9px 16px;border-radius:20px;white-space:nowrap;opacity:0;transition:opacity .3s;z-index:400;pointer-events:none;}
+.toast.show{opacity:1;}
+
+
+@keyframes diagFill{from{opacity:0;transform:translateX(-4px);}to{opacity:1;transform:none;}}
+
+/* CSS 파싱 완료 후 즉시 표시 — 깜빡임 방지 */
+html{visibility:visible !important;}
+/* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" defer></script>
   
-  <script src="https://cpay.payple.kr/js/v1/payment.js"></script>
+  <script src="https://cpay.payple.kr/js/v1/payment.js" defer></script>
 
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -2032,6 +2363,35 @@ body { color: #1a1a1a; }
 
 
 
+  <!-- Vapi SDK [DEV-001] — 3중 CDN 폴백 -->
+  <script>
+  (function(){
+    var sources = [
+      'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/index.umd.js',
+      'https://unpkg.com/@vapi-ai/web@2.5.2/dist/index.umd.js',
+      'https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js'
+    ];
+    var idx = 0;
+    function tryLoad() {
+      if(idx >= sources.length) {
+        console.error('[DEV-001] Vapi SDK 로드 실패 — 모든 CDN 불가');
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = sources[idx];
+      s.onload = function() {
+        console.log('[DEV-001] Vapi SDK 로드 성공:', sources[idx]);
+      };
+      s.onerror = function() {
+        console.warn('[DEV-001] CDN 실패:', sources[idx]);
+        idx++;
+        tryLoad();
+      };
+      document.head.appendChild(s);
+    }
+    tryLoad();
+  })();
+  </script>
 
 </head>
 <body>
@@ -4438,13 +4798,13 @@ async function runAIComment(){
   const snaps=getSnaps();
   let changeSummary='첫 번째 입력입니다.';
   if(snaps.length>=2){const prev=snaps[snaps.length-2],curr=snaps[snaps.length-1];const netDiff=curr.netAsset-prev.netAsset;changeSummary=`지난 기록 대비: 순자산 ${netDiff>=0?'+':''}${fmt(netDiff)}만원, 저축률 ${curr.savingRate-prev.savingRate>=0?'+':''}${curr.savingRate-prev.savingRate}%p 변화.`;}
-  const prompt=`당신은 20년 경력의 친절한 재무설계사입니다. 아래 고객의 재무 현황을 보고 따뜻하고 쉬운 말로 3~4문장으로 설명해주세요. 전문 용어 없이 자연스럽게 이야기하듯 말해주세요. 잘 된 점은 칭찬하고, 개선할 점은 부드럽게 제안하세요.\n\n고객: ${D.name||'고객'}${D.ageNum?', '+D.ageNum+'세':''}\n월 수입: ${fmt(D.income)}만원, 저축률: ${D.income>0?Math.round(D.savings/D.income*100):0}%\n순자산: ${fmt((D.safeAsset+D.riskAsset)-(D.debtCredit+D.debtCollat))}만원\n보험: ${Object.values(D.ins).filter(v=>v).length}종/8종, 은퇴목표: ${D.retireAge}세\n변화: ${changeSummary}`;
+  const prompt=`당신은 20년 경력의 친절한 재무설계사입니다. 아래 고객의 재무 현황을 보고 따뜻하고 쉬운 말로 3~4문장으로 설명해주세요. 전문 용어 없이 자연스럽게 이야기하듯 말해주세요. 잘 된 점은 칭찬하고, 개선할 점은 부드럽게 제안하세요.___NEWLINE______NEWLINE___고객: ${D.name||'고객'}${D.ageNum?', '+D.ageNum+'세':''}___NEWLINE___월 수입: ${fmt(D.income)}만원, 저축률: ${D.income>0?Math.round(D.savings/D.income*100):0}%___NEWLINE___순자산: ${fmt((D.safeAsset+D.riskAsset)-(D.debtCredit+D.debtCollat))}만원___NEWLINE___보험: ${Object.values(D.ins).filter(v=>v).length}종/8종, 은퇴목표: ${D.retireAge}세___NEWLINE___변화: ${changeSummary}`;
   btn.disabled=true;btn.textContent='⏳ AI 분석 중...';
   box.innerHTML='<span class="ai-typing" style="color:var(--gold2);">AI가 재무 현황을 분석하고 있습니다...</span>';
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const text=data?.content?.[0]?.text||'분석 결과를 불러오지 못했습니다.';
-    box.innerHTML='';let i=0;const interval=setInterval(()=>{if(i<text.length){box.innerHTML=text.slice(0,++i).replace(/\n/g,'<br>')+'<span class="ai-typing">|</span>';}else{box.innerHTML=text.replace(/\n/g,'<br>');clearInterval(interval);}},18);
+    box.innerHTML='';let i=0;const interval=setInterval(()=>{if(i<text.length){box.innerHTML=text.slice(0,++i).replace(/___NEWLINE___/g,'<br>')+'<span class="ai-typing">|</span>';}else{box.innerHTML=text.replace(/___NEWLINE___/g,'<br>');clearInterval(interval);}},18);
   }catch(e){box.innerHTML='<span style="color:#f87171;">네트워크 오류. 잠시 후 다시 시도해주세요.</span>';}
   finally{btn.disabled=false;btn.textContent='✨ AI에게 내 재무 설명 받기';}
 }
@@ -5431,12 +5791,12 @@ function requestCFP(channel){
   if(channel === 'kakao'){
     // 실제: 카카오링크 SDK 호출
     const msg = encodeURIComponent(
-      '[금융집짓기® 상담 요청]\n'+
-      '이름: '+name+'\n'+
-      '재무점수: '+score+'점\n'+
-      '보험충족률: '+insVal+'\n'+
-      '은퇴준비: '+retVal+'\n'+
-      '부자지수: '+wealthVal+'\n'+
+      '[금융집짓기® 상담 요청]___NEWLINE___'+
+      '이름: '+name+'___NEWLINE___'+
+      '재무점수: '+score+'점___NEWLINE___'+
+      '보험충족률: '+insVal+'___NEWLINE___'+
+      '은퇴준비: '+retVal+'___NEWLINE___'+
+      '부자지수: '+wealthVal+'___NEWLINE___'+
       '→ 오상열 CFP에게 전문 상담 요청합니다'
     );
     // 카카오톡 링크 (실제 구현 시 kakao.co.kr/o/profile/오원트)
@@ -6032,13 +6392,6 @@ function mpClose() {
 }
 
 /* ── 탭 전환 ── */
-function mpTab(idx, btn) {
-  document.querySelectorAll('.mp-tab-btn').forEach(t => t.classList.remove('mp-active'));
-  document.querySelectorAll('.mp-panel').forEach(p => p.classList.remove('mp-active'));
-  btn.classList.add('mp-active');
-  document.getElementById('mp-panel-' + idx).classList.add('mp-active');
-  if(idx === 1) { mpDrawChart(); mpRenderHistory(); }
-}
 
 /* ── 실시간 데이터 반영 ── */
 function mpRefreshData() {
@@ -6550,6 +6903,17 @@ function mpTab(idx, btn) {
   // 탭별 초기화
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
+
+  /* AI진단탭(2) 전용: 높이 체인 확보 */
+  var mpContent = document.querySelector('.mp-content');
+  var panel2 = document.getElementById('mp-panel-2');
+  if(idx === 2) {
+    if(mpContent) mpContent.classList.add('diag-mode');
+    if(panel2) panel2.classList.add('diag-active');
+  } else {
+    if(mpContent) mpContent.classList.remove('diag-mode');
+    if(panel2) panel2.classList.remove('diag-active');
+  }
 }
 
 // ── 수료증 등급 계산 ──
@@ -7308,6 +7672,2755 @@ function fhDevClose() {
   _fhDevTapCount = 0;
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AI머니야 훈련 모드 (v6.3 타이머 3회 탭)
+   - 업로드된 상담신청서 고객으로 Claude 빙의
+   - 머니야 질문 → Claude 자동 답변
+   - 세션 평가 리포트 자동 생성
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var _trainTapCount = 0;
+var _trainTapTimer = null;
+var _trainMode = false;
+var _trainLog = [];   // {role, text, ts}
+var _trainScores = [];
+var _trainCustomer = null;
+
+function trainModeTap() {
+  _trainTapCount++;
+  clearTimeout(_trainTapTimer);
+  _trainTapTimer = setTimeout(function(){ _trainTapCount = 0; }, 1500);
+  if(_trainTapCount >= 3) {
+    _trainTapCount = 0;
+    activateTrainMode();
+  }
+}
+
+function activateTrainMode() {
+  // 업로드된 상담신청서 데이터 파싱
+  _trainCustomer = parseUploadedApplication();
+  showTrainModeModal();
+}
+
+function parseUploadedApplication() {
+  // diagFinCtx에서 신청서 데이터 읽기
+  var ctx = window.diagFinCtx || {};
+  // 기본값 + 신청서에서 파싱된 값 병합
+  return {
+    name:    ctx.name    || '성춘향',
+    age:     ctx.age     || 57,
+    job:     ctx.job     || '공무원',
+    marry:   ctx.marry   || '기혼',
+    family:  ctx.family  || 2,
+    dual:    ctx.dual    || '맞벌이',
+    income:  ctx.monthlyIncome || 1150,
+    worry:   ctx.worry   || '노후 준비가 제대로 됐는지 모르겠어요',
+    deposit: ctx.totalAssets || 57600,
+    debt:    ctx.totalDebt   || 5000,
+    retireAge: ctx.retireAge || 60,
+    lifeAge:   ctx.lifeAge   || 90,
+    job_detail: ctx.job_detail || '공무원 (남편 12월 퇴직 예정)',
+  };
+}
+
+function showTrainModeModal() {
+  var c = _trainCustomer;
+  var modal = document.getElementById('trainModeModal');
+  if(!modal) return;
+  document.getElementById('tmCustomerInfo').innerHTML =
+    '<b>'+c.name+'</b> · '+c.age+'세 · '+c.job+' · '+c.marry+
+    '<br>월소득 '+c.income+'만원 · 가족 '+c.family+'인 · '+c.dual+
+    '<br>주요 고민: '+c.worry;
+  modal.style.display = 'flex';
+}
+
+function startTrainSession() {
+  document.getElementById('trainModeModal').style.display = 'none';
+  _trainMode = true;
+  _trainLog = [];
+  _trainScores = [];
+
+  // 훈련 모드 표시
+  var timer = document.getElementById('diagTimer');
+  if(timer) { timer.style.color = '#ff6b6b'; timer.style.textShadow = '0 0 8px rgba(255,107,107,.5)'; }
+  showToast('🎓 훈련 모드 시작 — ' + _trainCustomer.name + '으로 빙의');
+
+  // 머니야 발화 모니터링 시작
+  _trainObserveStart();
+}
+
+function _trainObserveStart() {
+  // MutationObserver로 대화록 변화 감지
+  var chatLog = document.getElementById('dn_chat_log');
+  if(!chatLog) return;
+  var observer = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if(node.nodeType !== 1) return;
+        var isAI = node.querySelector && node.querySelector('[style*="background:#0B1D3A"]');
+        if(isAI) {
+          var txt = isAI.textContent || '';
+          if(txt.trim()) _onMoneya발화(txt.trim());
+        }
+      });
+    });
+  });
+  observer.observe(chatLog, { childList: true });
+  window._trainObserver = observer;
+}
+
+var _trainPending = false;
+function _onMoneya발화(text) {
+  if(!_trainMode || _trainPending) return;
+  _trainPending = true;
+  _trainLog.push({role:'ai', text:text, ts:Date.now()});
+
+  var score = _evalMoneyaSpeech(text);
+  _trainScores.push(score);
+
+  // 1.8초 후 Claude가 고객으로 자동 답변
+  setTimeout(function() {
+    var reply = _generateCustomerReply(text);
+    if(!reply) { _trainPending = false; return; }
+    _trainLog.push({role:'user', text:reply, ts:Date.now()});
+
+    // ① 텍스트 입력창에 0.4초 동안 답변 표시 (눈에 보이게)
+    var inp = document.getElementById('diagTextInp');
+    if(inp) {
+      inp.value = reply;
+      inp.style.background = '#fff3cd';
+      inp.style.borderColor = '#C9972A';
+    }
+
+    // ② 0.4초 후 전송 (입력창에서 보이다가 전송)
+    setTimeout(function() {
+      // [DEV-001] Vapi로 텍스트 전송
+      if(vapi && vapiCallActive) {
+        try{ vapi.send({ type: 'add-message', message: { role: 'user', content: reply } }); }catch(e){}
+      }
+      // [비활성화 by DEV-001] 기존 WebSocket
+      // if(diagWs && diagWs.readyState === 1) {
+      //   diagWs.send(JSON.stringify({type:'text_input', text:reply}));
+      // }
+      // STT 자막에도 표시
+      if(typeof diagAddSTT === 'function') {
+        diagAddSTT('user', '🎓 ' + reply, null);
+      }
+      // 입력창 초기화
+      if(inp) {
+        inp.value = '';
+        inp.style.background = '';
+        inp.style.borderColor = '';
+      }
+      _trainPending = false;
+    }, 400);
+  }, 1800);
+}
+
+function _generateCustomerReply(moneyaText) {
+  var c = _trainCustomer;
+  var t = moneyaText.toLowerCase();
+
+  // 질문 패턴 매칭 → 신청서 기반 답변 생성
+  if(t.includes('성함') || t.includes('이름')) return c.name + '이요.';
+  if(t.includes('나이')) return c.age + '세예요.';
+  if(t.includes('결혼')) return c.marry === '기혼' ? '네, 기혼이에요.' : '미혼입니다.';
+  if(t.includes('가족') && t.includes('몇')) return c.family + '명이요. ' + (c.job_detail || '');
+  if(t.includes('직업') || t.includes('일을')) return c.job + '이에요. ' + (c.job_detail || '');
+  if(t.includes('맞벌이')) return c.dual === '맞벌이' ? '네, 맞벌이예요.' : '아니요, 외벌이예요.';
+  if(t.includes('걱정') || t.includes('고민')) return c.worry;
+  if(t.includes('수입') || t.includes('실수령') || t.includes('소득')) return '한 달에 ' + c.income + '만원 정도요.';
+  if(t.includes('대출') && (t.includes('원리금') || t.includes('상환'))) return '은행 대출 5천만원 있고요, 월 30만원 내고 있어요.';
+  if(t.includes('보험료')) return '43만원이요.';
+  if(t.includes('연금') && t.includes('납입')) return '연금저축펀드 30만원 넣고 있어요.';
+  if(t.includes('저축') || t.includes('투자')) return '딱히 따로는 없고 남으면 모으는 편이에요.';
+  if(t.includes('남는 돈') || t.includes('잉여')) return '200~300만원? 잘 모르겠어요.';
+  if(t.includes('예적금') || t.includes('청약')) return '예적금 4억 2천 있어요.';
+  if(t.includes('펀드') || t.includes('etf') || t.includes('주식')) return '펀드 8천만원 있어요.';
+  if(t.includes('연금') && t.includes('적립')) return '연금 7천만원 정도요.';
+  if(t.includes('부동산') || t.includes('주택') || t.includes('자가')) return '자가예요. 아파트인데 5억 정도 해요.';
+  if(t.includes('신용대출')) return '5천만원 있어요.';
+  if(t.includes('담보대출')) return '담보대출은 없어요.';
+  if(t.includes('은퇴')) return c.retireAge + '세 생각하고 있어요.';
+  if(t.includes('수명') || t.includes('예상')) return c.lifeAge + '세 정도요.';
+  if(t.includes('꿈') || t.includes('노후')) return '건강하게 여행 다니고 싶어요.';
+  if(t.includes('얼마') && t.includes('필요')) return '한 달에 300만원 정도요.';
+  if(t.includes('국민연금') || t.includes('준비')) return '국민연금은 150만원 정도 예상하고 있어요.';
+  if(t.includes('어떠세요') || t.includes('어떠신가요') || t.includes('맞는 것')) return '네, 맞는 것 같아요.';
+  if(t.includes('동의') || t.includes('하시겠어요')) return '네, 좋습니다.';
+  if(t.includes('감사') || t.includes('수고')) return '네, 감사합니다.';
+  if(t.includes('궁금')) return '아니요, 없어요.';
+  if(t.includes('시간')) return '네, 괜찮아요.';
+
+  // 기본 긍정 응답
+  return '네, 이해했어요.';
+}
+
+function _evalMoneyaSpeech(text) {
+  var score = {text:text.slice(0,60), total:0, detail:{}};
+  // 1. 공감 포함
+  var empathy = /걱정|이해|충분히|그러셨군요|고민|힘드|막막|불안|맞아요/.test(text);
+  score.detail.empathy = empathy ? 5 : 0; score.total += score.detail.empathy;
+  // 2. 질문 하나
+  var qCount = (text.match(/\?|요\?|까\?/g)||[]).length;
+  score.detail.question = qCount === 1 ? 5 : (qCount === 0 ? 0 : 3); score.total += score.detail.question;
+  // 3. (잠시) 없음
+  score.detail.noJamsi = /잠시|pause/.test(text) ? 0 : 5; score.total += score.detail.noJamsi;
+  // 4. 단계명 없음
+  score.detail.noStep = /단계|STEP|인적사항 파악|수입지출 분석/.test(text) ? 0 : 5; score.total += score.detail.noStep;
+  // 5. 짧은 문장 (100자 이하)
+  score.detail.short = text.length <= 100 ? 5 : (text.length <= 150 ? 3 : 0); score.total += score.detail.short;
+  return score;
+}
+
+function endTrainSession() {
+  if(!_trainMode) return;
+  _trainMode = false;
+  if(window._trainObserver) { window._trainObserver.disconnect(); window._trainObserver = null; }
+
+  // 타이머 색상 원복
+  var timer = document.getElementById('diagTimer');
+  if(timer) { timer.style.color = ''; timer.style.textShadow = ''; }
+
+  // 평가 리포트 생성
+  _generateTrainReport();
+}
+
+function _generateTrainReport() {
+  if(_trainScores.length === 0) { showToast('평가할 데이터가 없습니다'); return; }
+
+  var totalScore = _trainScores.reduce(function(s,r){ return s+r.total; }, 0);
+  var avgScore = Math.round(totalScore / _trainScores.length);
+  var maxPossible = 25;
+  var pct = Math.round(avgScore / maxPossible * 100);
+
+  // 등급
+  var grade = pct >= 85 ? '🏆 서비스 출시 가능' : pct >= 70 ? '✅ 양호 — 계속 훈련' : pct >= 55 ? '⚠️ 보통 — 프롬프트 수정 필요' : '❌ 미흡 — 전면 재검토';
+
+  // 문제 패턴 분석
+  var issues = [];
+  var empathyFail = _trainScores.filter(function(s){ return s.detail.empathy === 0; }).length;
+  var qFail = _trainScores.filter(function(s){ return s.detail.question !== 5; }).length;
+  var jamsiFound = _trainScores.filter(function(s){ return s.detail.noJamsi === 0; }).length;
+  var stepFound = _trainScores.filter(function(s){ return s.detail.noStep === 0; }).length;
+  var longText = _trainScores.filter(function(s){ return s.detail.short === 0; }).length;
+  if(empathyFail > 0) issues.push('공감 부족 ' + empathyFail + '회');
+  if(qFail > 0) issues.push('질문 개수 오류 ' + qFail + '회');
+  if(jamsiFound > 0) issues.push('(잠시) 출력 ' + jamsiFound + '회');
+  if(stepFound > 0) issues.push('단계명 언급 ' + stepFound + '회');
+  if(longText > 0) issues.push('발화 과다 ' + longText + '회');
+
+  var reportEl = document.getElementById('trainReportModal');
+  if(!reportEl) return;
+  document.getElementById('tr_score').textContent = pct;
+  document.getElementById('tr_grade').textContent = grade;
+  document.getElementById('tr_count').textContent = _trainScores.length + '회 발화 분석';
+  document.getElementById('tr_issues').innerHTML = issues.length > 0
+    ? issues.map(function(i){ return '<div style="color:#C62828;font-size:11px;margin:2px 0">• '+i+'</div>'; }).join('')
+    : '<div style="color:#2E7D32;font-size:11px">발견된 문제 없음 ✅</div>';
+
+  // 발화별 상세
+  var detail = document.getElementById('tr_detail');
+  if(detail) {
+    detail.innerHTML = _trainScores.slice(-10).map(function(s,i){
+      var pct2 = Math.round(s.total/25*100);
+      var color = pct2>=80?'#2E7D32':pct2>=60?'#C9972A':'#C62828';
+      return '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">'+
+        '<div style="font-size:9px;color:#888">발화 #'+(i+1)+'</div>'+
+        '<div style="font-size:10.5px;color:#333;margin:2px 0">'+s.text+'...</div>'+
+        '<div style="font-size:11px;font-weight:900;color:'+color+'">'+pct2+'점</div>'+
+        '</div>';
+    }).join('');
+  }
+
+  reportEl.style.display = 'flex';
+}
+
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3~6단계: AI진단탭 V4 JS 이식
+   fhInitHistoryDashboard + fhDocUpload +
+   DIAG_PARTS + diagStartConsult + diagHandleMsg
+   diagParseAiSpeech + diagFillField 포함
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function fhInitHistoryDashboard() {
+  if (!document.getElementById('fh-hist-tbl')) return;
+  fhRenderHistTbl();
+  fhRenderHistBars(0);
+  fhRenderAIMemos(FH_AI_SAMPLE);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AI진단탭 — 서류 업로드 + 화상상담
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// 파일 input 클릭 라우팅
+var fhCurrentDocKey = '';
+function fhDocUpload(key) {
+  fhCurrentDocKey = key;
+  var inp = document.getElementById('fh-doc-file');
+  if (inp) inp.click();
+}
+function fhDocDownload(key) {
+  showToast('📥 상담신청서 양식 다운로드 준비 중입니다 (xlsx)');
+}
+function fhDocFileSelected(input) {
+  var file = input.files[0];
+  if (!file || !fhCurrentDocKey) return;
+  var key = fhCurrentDocKey;
+
+  if (key === 'application') {
+    var statusEl = document.getElementById('doc-app-status');
+    if (statusEl) { statusEl.textContent = '✅ 제출완료'; statusEl.style.color = 'var(--green)'; }
+    var badge = document.getElementById('fh-doc-badge');
+    if (badge) { badge.textContent = '필수 완료'; badge.style.background = 'rgba(34,197,94,.1)'; badge.style.color = 'var(--green)'; badge.style.borderColor = 'rgba(34,197,94,.3)'; }
+    var note = document.getElementById('fh-start-note');
+    if (note) { note.textContent = '✅ 상담신청서 업로드 완료 · AI 사전 분석 중...'; note.style.color = 'var(--green)'; }
+    showToast('📋 상담신청서 업로드 완료! AI가 사전 분석을 시작합니다.');
+  } else {
+    var statEl = document.getElementById('stat-' + key);
+    if (statEl) { statEl.textContent = '✅'; statEl.style.color = 'var(--green)'; }
+    showToast('📎 ' + file.name + ' 업로드 완료! OCR 분석 중...');
+  }
+  input.value = '';
+}
+
+// 화상진단 시작
+var fhConsultTimer = null;
+var fhConsultSec = 0;
+var fhTotalMin = 45;
+var fhUsedSec = 0;
+var fhIsPaused = false;
+var fhCurrentPartIdx = 0;
+
+var FH_PARTS = [
+  '오프닝','인적사항','경제적고민','수입지출','자산부채',
+  '설계도면','저축포트','자산배분','재무설계','최종의견','클로징'
+];
+var FH_PART_NAMES = [
+  '0파트 · 오프닝','1파트 · 인적사항','2파트 · 경제적 고민',
+  '3파트 · 수입지출 분석','4파트 · 자산부채 분석',
+  '5파트 · 금융집짓기 설계','6파트 · 저축투자 포트폴리오',
+  '7파트 · 자산배분 포트폴리오','8파트 · 재무설계 7대영역',
+  '9파트 · 최종의견','10파트 · 클로징'
+];
+
+var FH_NOTE_PARTS = [
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'60~90분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
+  { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
+  { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
+  { title:'4파트 · 자산부채 분석', fields:[{l:'총 자산',d:'3억 2천만원'},{l:'총 부채',d:'1억 1천만원'},{l:'순 자산',d:'2억 1천만원'},{l:'부자지수',d:'37점 — 오두막 등급'}] },
+  { title:'5파트 · 금융집짓기 설계', fields:[{l:'지하 (보험+비상금)',d:'⚠️ 사망보장 1억 부족 · 비상금 3개월'},{l:'기둥 (부채·저축·은퇴)',d:'부채 양호 · 저축·은퇴 부족'},{l:'지붕 (투자·세금)',d:'🔴 미설계 — 즉시 시작 필요'}] },
+  { title:'6파트 · 저축투자 포트폴리오', fields:[{l:'여유자금',d:'87만원/월'},{l:'안전자산 55%',d:'48만원 → 예금·CMA'},{l:'성장자산 35%',d:'30만원 → 국내외 ETF'},{l:'꿈 자산 10%',d:'9만원 → 개인투자계좌'}] },
+  { title:'7파트 · 자산배분 포트폴리오', fields:[{l:'골든밸런스',d:'안전 7 : 성장 3'},{l:'목표 금융자산',d:'10억 (현재 7천만 → 15년 달성)'}] },
+  { title:'8파트 · 재무설계 7대영역', fields:[{l:'은퇴설계',d:'목표 월 250만 · 부족 월 95만'},{l:'부채설계',d:'DSR 28% 양호 · 60세 완납'},{l:'저축설계',d:'저축률 12% → 30% 목표'},{l:'투자설계',d:'IRP + ETF 포트폴리오'},{l:'세금설계',d:'연금저축+IRP 연 900만 한도'},{l:'부동산설계',d:'현 거주 외 추가 불필요'},{l:'보험설계',d:'사망 3억 증액 · 실손 갱신 검토'}] },
+  { title:'9파트 · 최종의견', fields:[{l:'강점 1',d:'부채 관리 우수 (DSR 28%)'},{l:'강점 2',d:'꾸준한 저축 습관'},{l:'개선 1',d:'지출 블랙홀 87만원 관리'},{l:'개선 2',d:'은퇴자금 월 87만원 추가 투자'},{l:'개선 3',d:'보험 보장 재구조화'},{l:'재무점수',d:'53점 → 목표 75점 (2년)'}] },
+  { title:'10파트 · 클로징', fields:[{l:'다음 약속',d:'다음달 15일 정기상담'},{l:'만족 여부',d:'매우 만족 (5/5)'},{l:'당부사항',d:'지출 블랙홀 가계부 기록 시작'},{l:'마무리',d:'가정경제 튼튼하고 안정되기를 희망합니다 🙏'}] },
+];
+
+function fhStartConsult() {
+  var ready = document.getElementById('fh-diag-ready');
+  var active = document.getElementById('fh-diag-active');
+  if (ready) ready.style.display = 'none';
+  if (active) { active.style.display = 'flex'; active.style.height = '100%'; }
+
+  // 노트 파트 생성
+  fhBuildNoteParts();
+
+  // 타이머
+  fhConsultSec = 0;
+  fhUsedSec = 0;
+  fhConsultTimer = setInterval(function() {
+    if (fhIsPaused) return;
+    fhConsultSec++;
+    fhUsedSec++;
+    var m = String(Math.floor(fhConsultSec/60)).padStart(2,'0');
+    var s = String(fhConsultSec%60).padStart(2,'0');
+    var el = document.getElementById('fh-consult-timer');
+    if (el) el.textContent = m + ':' + s;
+    // 크레딧 업데이트
+    fhUpdateCredit();
+  }, 1000);
+
+  // 데모 STT
+  fhRunDemo();
+}
+
+function fhBuildNoteParts() {
+  var container = document.getElementById('fh-tab-note');
+  if (!container) return;
+  container.innerHTML = FH_NOTE_PARTS.map(function(p, i) {
+    return '<div id="fh-part-'+i+'" style="margin-bottom:14px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.05);transition:all .3s">'
+      + '<div onclick="fhToggleNotePart('+i+')" style="display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(11,29,58,.02);border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer">'
+      + '<div id="fh-pnum-'+i+'" style="width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:8.5px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+i+'</div>'
+      + '<div style="font-size:11px;font-weight:900;color:var(--navy);flex:1">'+p.title+'</div>'
+      + '<div id="fh-pbadge-'+i+'" style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:7px;background:rgba(0,0,0,.05);color:#bbb">대기</div>'
+      + '</div>'
+      + '<div id="fh-pbody-'+i+'" style="display:none;padding:11px 13px">'
+      + p.fields.map(function(f) {
+          return '<div style="margin-bottom:8px">'
+            + '<div style="font-size:8.5px;font-weight:700;color:var(--muted);margin-bottom:3px">'+f.l+'</div>'
+            + '<div id="fh-fval-'+i+'-'+f.l.replace(/\s/g,'_')+'" style="font-size:10.5px;font-weight:600;color:#bbb;padding:6px 9px;background:var(--gold3);border-radius:7px;border-left:2.5px solid rgba(201,151,42,.3);font-style:italic"> 중</div>'
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }).join('');
+}
+
+function fhToggleNotePart(i) {
+  var body = document.getElementById('fh-pbody-'+i);
+  if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function fhActivatePart(idx) {
+  // 이전 파트 완료
+  if (fhCurrentPartIdx >= 0 && fhCurrentPartIdx !== idx) {
+    var prev = fhCurrentPartIdx;
+    var prevBlock = document.getElementById('fh-part-'+prev);
+    if (prevBlock) prevBlock.style.borderColor = 'rgba(34,197,94,.3)';
+    var prevNum = document.getElementById('fh-pnum-'+prev);
+    if (prevNum) prevNum.style.background = 'var(--green)';
+    var prevBadge = document.getElementById('fh-pbadge-'+prev);
+    if (prevBadge) { prevBadge.textContent = '완료'; prevBadge.style.background = 'rgba(34,197,94,.1)'; prevBadge.style.color = 'var(--green)'; prevBadge.style.borderColor = 'rgba(34,197,94,.3)'; }
+    // 이전 파트 필드 채우기
+    fhFillPartFields(prev);
+    // 이전 프로세스 완료
+    var pp = document.getElementById('fhp'+prev);
+    if (pp) { pp.className = 'fh-proc-item fh-proc-done'; }
+  }
+
+  fhCurrentPartIdx = idx;
+  var block = document.getElementById('fh-part-'+idx);
+  if (block) {
+    block.style.borderColor = 'rgba(201,151,42,.4)';
+    block.style.boxShadow = '0 2px 12px rgba(201,151,42,.1)';
+    block.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  var num = document.getElementById('fh-pnum-'+idx);
+  if (num) num.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+  var badge = document.getElementById('fh-pbadge-'+idx);
+  if (badge) { badge.textContent = '진행중'; badge.style.background = 'rgba(201,151,42,.12)'; badge.style.color = 'var(--gold)'; }
+  var body = document.getElementById('fh-pbody-'+idx);
+  if (body) body.style.display = 'block';
+  // 프로세스바 업데이트
+  var pp = document.getElementById('fhp'+idx);
+  if (pp) { pp.className = 'fh-proc-item fh-proc-active'; pp.scrollIntoView({ behavior:'smooth', inline:'center' }); }
+  // 현재 파트 표시
+  var cur = document.getElementById('fh-cur-part');
+  if (cur) cur.querySelector('div:last-child').textContent = FH_PART_NAMES[idx] || '';
+}
+
+function fhFillPartFields(idx) {
+  var part = FH_NOTE_PARTS[idx];
+  if (!part) return;
+  part.fields.forEach(function(f) {
+    var key = 'fh-fval-'+idx+'-'+f.l.replace(/\s/g,'_');
+    var el = document.getElementById(key);
+    if (el) { el.textContent = f.d; el.style.color = 'var(--navy)'; el.style.fontStyle = 'normal'; el.style.borderLeft = '2.5px solid var(--gold)'; }
+  });
+}
+
+function fhUpdateCredit() {
+  var usedMin = Math.floor(fhUsedSec / 60);
+  var remain = Math.max(0, fhTotalMin - usedMin);
+  var el = document.getElementById('mp-remain-min');
+  if (el) el.childNodes[0].textContent = remain;
+  var used = document.getElementById('mp-used-min');
+  if (used) used.textContent = '사용 ' + usedMin + '분';
+  var bar = document.getElementById('mp-credit-bar');
+  if (bar) bar.style.width = Math.max(0, (remain/fhTotalMin)*100) + '%';
+}
+
+function fhTogglePause() {
+  fhIsPaused = !fhIsPaused;
+  var btn = document.getElementById('fh-pause-btn');
+  if (btn) btn.textContent = fhIsPaused ? '▶ 재개' : '⏸ 일시정지';
+}
+
+function fhEndConsult() {
+  if (!confirm('상담을 종료하시겠습니까?\n종합재무설계 PDF 리포트가 생성됩니다.')) return;
+  if (fhConsultTimer) { clearInterval(fhConsultTimer); fhConsultTimer = null; }
+  // 모든 파트 완료 처리
+  FH_NOTE_PARTS.forEach(function(_, i) { fhFillPartFields(i); });
+  // 리포트 준비
+  fhSwitchTab('report', null);
+  var waiting = document.getElementById('fh-report-waiting');
+  var ready = document.getElementById('fh-report-ready');
+  if (waiting) waiting.style.display = 'none';
+  if (ready) ready.style.display = 'block';
+  showToast('🎉 상담 완료! PDF 리포트가 생성되었습니다.');
+}
+
+function fhDownloadReport() {
+  showToast('📄 종합재무설계 리포트 PDF 다운로드 중...');
+}
+
+function fhSwitchTab(id, btn) {
+  var tabs = ['note','house','portfolio','analysis','report'];
+  tabs.forEach(function(t) {
+    var el = document.getElementById('fh-tab-'+t);
+    if (el) el.style.display = (t===id) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.fh-ntab').forEach(function(t) { t.classList.remove('fh-nt-on'); });
+  if (btn) btn.classList.add('fh-nt-on');
+  else {
+    document.querySelectorAll('.fh-ntab').forEach(function(t) {
+      if (t.textContent.includes('리포트')) t.classList.add('fh-nt-on');
+    });
+  }
+  // 포트폴리오 애니메이션
+  if (id === 'portfolio') {
+    setTimeout(function() {
+      var s = document.getElementById('fh-pf-safe');
+      var g = document.getElementById('fh-pf-growth');
+      var d = document.getElementById('fh-pf-dream');
+      if (s) s.style.width = '55%';
+      if (g) g.style.width = '35%';
+      if (d) d.style.width = '10%';
+    }, 200);
+  }
+}
+
+function fhSendText() {
+  var inp = document.getElementById('fh-text-inp');
+  if (!inp || !inp.value.trim()) return;
+  fhAddSTT('user', inp.value.trim(), null);
+  inp.value = '';
+}
+
+function fhAddSTT(role, text, tag) {
+  var area = document.getElementById('fh-stt-area');
+  if (!area) return;
+  var isAI = role === 'ai';
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:7px;margin-bottom:6px;align-items:flex-start' + (isAI ? '' : ';flex-direction:row-reverse');
+  div.innerHTML = isAI
+    ? '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="'+MONEYA_IMG+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent=\'🤖\'"></div>'
+      + '<div style="max-width:78%"><div style="font-size:10px;color:rgba(255,255,255,.85);padding:5px 9px;border-radius:0 8px 8px 8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);line-height:1.45">'+text+'</div>'
+      + (tag ? '<div style="font-size:8px;color:var(--gold);margin-top:2px">💡 '+tag+'</div>' : '')
+      + '</div>'
+    : '<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,.9);padding:5px 9px;border-radius:8px 0 8px 8px;background:rgba(201,151,42,.15);border:1px solid rgba(201,151,42,.25);max-width:78%;line-height:1.45">'+text+'</div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// 데모 스크립트
+var FH_DEMO = [
+  { delay:1500,  role:'ai',   text:'안녕하세요! AI 재무설계사 머니야입니다. 금융집짓기® 종합 재무상담을 시작하겠습니다. 성함과 나이를 알려주시겠어요?', part:0, tag:'0파트 오프닝' },
+  { delay:6000,  role:'user', text:'안녕하세요, 오상열이고요, 45세입니다.' },
+  { delay:8500,  role:'ai',   text:'반갑습니다 오상열님! 직업과 가족 구성을 알려주세요.', part:1, tag:'1파트 인적사항' },
+  { delay:13000, role:'user', text:'제조업 부장이고요, 아내와 아이 둘 있어요.' },
+  { delay:16000, role:'ai',   text:'4인 가족이시군요. 요즘 가장 걱정되시는 재무 고민이 있으신가요?', part:2, tag:'2파트 경제적 고민' },
+  { delay:20000, role:'user', text:'노후 준비가 너무 늦은 것 같아요. 저축은 하는데 어디 가는지 모르겠어요.' },
+  { delay:23500, role:'ai',   text:'그 고민 충분히 이해합니다. 이제 수입지출을 살펴볼게요. 세후 월 소득이 얼마나 되세요?', part:3, tag:'3파트 수입지출 분석' },
+  { delay:28000, role:'user', text:'세후 400만원 정도요.' },
+  { delay:31000, role:'ai',   text:'400만원이시군요. 지출 항목별로 말씀해 주시겠어요? 생활비, 보험료, 대출, 저축 각각요.', part:3 },
+  { delay:37000, role:'user', text:'생활비 180만, 보험 30만, 대출 55만, 저축 48만이요. 계산이 안 맞네요.' },
+  { delay:40000, role:'ai',   text:'87만원이 지출 블랙홀이에요! 이것만 관리해도 노후가 달라집니다. 자산부채를 살펴볼게요.', part:4, tag:'지출 블랙홀 87만원 발견' },
+];
+
+function fhRunDemo() {
+  FH_DEMO.forEach(function(item) {
+    setTimeout(function() {
+      if (item.role === 'ai') {
+        setTimeout(function() {
+          fhAddSTT('ai', item.text, item.tag || null);
+          if (item.part !== undefined) fhActivatePart(item.part);
+        }, 600);
+      } else {
+        fhAddSTT('user', item.text, null);
+      }
+    }, item.delay);
+  });
+}
+
+// fh-doc-row CSS 인라인 정의
+(function() {
+  var s = document.createElement('style');
+  s.textContent = '.fh-doc-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:0}'
+    + '.fh-doc-stat{font-size:13px;flex-shrink:0}'
+    + '.fh-doc-upload-btn{padding:4px 10px;border-radius:7px;border:1px solid rgba(201,151,42,.35);background:rgba(201,151,42,.08);color:var(--gold2);font-size:9px;font-weight:700;cursor:pointer;font-family:var(--fn);flex-shrink:0}'
+    + '@keyframes mpBlink{0%,100%{opacity:1}50%{opacity:.2}}'
+    + '@keyframes fhWave{0%,100%{height:3px;opacity:.3}50%{height:12px;opacity:1}}';
+  document.head.appendChild(s);
+})();
+
+// mpTab 탭2 전환 시 초기화
+// [제거] var _fhOrigMpTab = typeof mpTab === 'function' ? mpTab : null;
+
+
+/* ━━━ AI진단탭 V4 JS ━━━ */
+
+const DIAG_IMG = 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%ED%99%95%EC%A0%95%EC%9D%B4%EB%AF%B8%EC%A7%80%EC%95%88.png?alt=media&token=c250863d-7cda-424a-800d-884b20e30b1a';
+
+/*
+ * ━━━ server.js fields 키 → DIAG_PARTS 필드 라벨 매핑 테이블 ━━━
+ * server.js의 update_smart_note가 보내는 fields 키(영문)를
+ * DIAG_PARTS 배열의 한글 라벨에 연결한다.
+ * 형식: { note_page번호: { 'server_key': 'DIAG_PARTS 라벨' } }
+ */
+const DIAG_FIELD_MAP = {
+  0: { // 오프닝
+    date:        '상담 날짜',
+    session:     '회차',
+    disclaimer:  '자료 준비',
+    purpose:     '상담 목적',
+    time_confirmed: '자료 준비',
+  },
+  1: { // 인적사항
+    name:   '성함',
+    age:    '나이',
+    marry:  '결혼 여부',
+    child:  '자녀 수',
+    family: '가족 수',
+    job:    '직업',
+    dual:   '맞벌이 여부',
+  },
+  2: { // 경제적 고민
+    worry1: '주요 걱정',
+    worry2: '재무 목표',
+    worry3: '관심 분야',
+    goal:   '현재 불만',
+  },
+  3: { // 수입지출
+    income:      '월 총수입(세후)',
+    living_cur:  '생활비',
+    ins_cur:     '보험료',
+    loan_cur:    '대출상환',
+    save_cur:    '저축·투자',
+    pension_cur: '연금',
+    surplus:     '미파악 지출',
+  },
+  4: { // 자산부채
+    realty:       '부동산 자산',
+    invest:       '금융 자산',
+    deposit:      '기타 자산',
+    pension_asset:'총 자산',
+    mortgage:     '담보대출',
+    credit:       '신용대출',
+    total_debt:   '총 부채',
+    net:          '순 자산',
+    wealth_index: '부자지수',
+    total_asset:  '총 자산',
+  },
+  5: { // 금융집짓기 설계도
+    current_age: '지하 — 보험 보장',
+    retire_age:  '지하 — 비상예비자금',
+    life_age:    '거실 — 부채설계',
+    desire:      '안방 — 은퇴설계',
+    strategy:    '지붕 — 투자설계',
+  },
+  6: { // 저축투자 포트폴리오
+    invest_source: '월 여유자금',
+    pen_gap:       '안전자산 (50~60%)',
+    ins_gap:       '성장자산 (30~40%)',
+  },
+  7: { // 자산배분
+    res: '골든밸런스',
+    inv: '성장자산 비중',
+  },
+  8: { // 8대영역 (sub_page 1~8 공통 — 빈 필드 순서 채우기)
+    dream: '(1) 은퇴진단',
+    need:  '(2) 부채진단',
+    rate:  '(3) 저축진단',
+    short: '(4) 투자진단',
+    total: '(5) 세금진단',
+    priority: '(6) 부동산진단',
+    death_cur: '(7) 보험진단',
+    premium:   '(7) 보험진단',
+  },
+  9: { // 최종의견
+    suggest1: '강점 1',
+    suggest2: '강점 2',
+    action1:  '개선 1',
+    action2:  '개선 2',
+    score:    '재무점수',
+  },
+  10: { // 클로징
+    summary:  '다음 약속 (정기상담)',
+  },
+};
+
+
+/* 12장 노트 데이터 */
+const DIAG_PARTS = [
+  { id:0,  short:'오프닝',    title:'0. 오프닝',
+    fields:[['상담 목적','금융집짓기® 8단계 종합 재무상담'],['상담 날짜',''],['회차',''],['자료 준비','']] },
+  { id:1,  short:'인적사항',  title:'1. 인적사항',
+    fields:[['성함',''],['나이',''],['결혼 여부',''],['자녀 수',''],['가족 수',''],['직업',''],['맞벌이 여부','']] },
+  { id:2,  short:'경제적고민', title:'2. 경제적 고민/관심',
+    fields:[['주요 걱정',''],['재무 목표',''],['관심 분야',''],['현재 불만','']] },
+  { id:3,  short:'수입지출',  title:'3. 수입지출 분석',
+    fields:[['월 총수입(세후)',''],['생활비',''],['보험료',''],['대출상환',''],['저축·투자',''],['연금',''],['미파악 지출','']] },
+  { id:4,  short:'자산부채',  title:'4. 자산부채 분석',
+    fields:[['부동산 자산',''],['금융 자산',''],['기타 자산',''],['총 자산',''],['담보대출',''],['신용대출',''],['총 부채',''],['순 자산',''],['부자지수','']] },
+  { id:5,  short:'금융집설계', title:'5. 금융집짓기 설계도면',
+    fields:[['지하 — 보험 보장',''],['지하 — 비상예비자금',''],['거실 — 부채설계',''],['건넌방 — 저축설계',''],['안방 — 은퇴설계',''],['지붕 — 투자설계',''],['지붕 — 세금설계',''],['굴뚝 — 부동산설계','']] },
+  { id:6,  short:'저축포트',  title:'6. 저축투자 포트폴리오',
+    fields:[['월 여유자금',''],['안전자산 (50~60%)',''],['성장자산 (30~40%)',''],['꿈 자산 (10~20%)',''],['목표 저축률','']] },
+  { id:7,  short:'자산배분',  title:'7. 자산배분 포트폴리오',
+    fields:[['골든밸런스',''],['안전자산 비중',''],['성장자산 비중',''],['목표 금융자산','']] },
+  { id:8,  short:'재무설계7대', title:'8. 재무설계 7대영역',
+    fields:[['(1) 은퇴진단',''],['(2) 부채진단',''],['(3) 저축진단',''],['(4) 투자진단',''],['(5) 세금진단',''],['(6) 부동산진단',''],['(7) 보험진단','']] },
+  { id:9,  short:'최종의견',  title:'9. 최종의견',
+    fields:[['강점 1',''],['강점 2',''],['강점 3',''],['개선 1',''],['개선 2',''],['개선 3',''],['재무점수',''],['최종 포트폴리오','']] },
+  { id:10, short:'클로징',    title:'10. 클로징',
+    fields:[['다음 약속 (정기상담)',''],['만족 여부',''],['당부사항',''],['마무리 인사','']] },
+  { id:11, short:'리포트',    title:'11. 재무설계 리포트',
+    fields:[] },
+];
+
+/* 초기 자막 (회차별) */
+const DIAG_SESSION_NUM = parseInt(localStorage.getItem('fh_session_count') || '1');
+const DIAG_IS_FIRST = DIAG_SESSION_NUM === 1;
+const DIAG_TODAY = new Date();
+const DIAG_TODAY_STR = DIAG_TODAY.getFullYear() + '.' +
+  String(DIAG_TODAY.getMonth()+1).padStart(2,'0') + '.' +
+  String(DIAG_TODAY.getDate()).padStart(2,'0');
+
+const DIAG_INIT_STT = DIAG_IS_FIRST ? [
+  { r:'ai', t:'안녕하세요! AI 재무설계사 머니야입니다. ' + DIAG_TODAY_STR + ' 초회 종합 재무상담을 시작하겠습니다.', tag:'🌟 초회상담 시작' },
+  { r:'ai', t:'수입지출부터 보험, 저축, 투자, 은퇴까지 전체를 꼼꼼히 살펴드릴게요. 60~90분 예정입니다.' },
+  { r:'user', t:'네, 잘 부탁드립니다!' },
+] : [
+  { r:'ai', t:'안녕하세요! ' + DIAG_SESSION_NUM + '회차 정기상담 ' + DIAG_TODAY_STR + ' 시작합니다. 지난 달 이후 변화사항이 있으셨나요?', tag:'📋 ' + DIAG_SESSION_NUM + '회차 정기상담' },
+  { r:'user', t:'네, 지난달에 비상예비자금을 50만원 더 모았어요.' },
+  { r:'ai', t:'훌륭합니다! 오늘은 변화 내용 확인 후 다음 단계를 함께 점검하겠습니다.' },
+];
+
+const DIAG_DEMO = DIAG_IS_FIRST ? [
+  { d:3500,  r:'ai',   t:'먼저 성함과 나이를 확인할게요. 어떻게 되세요?', p:1, tag:'1. 인적사항' },
+  { d:7000,  r:'user', t:'오상열이고요, 45세입니다.' },
+  { d:9000,  r:'ai',   t:'반갑습니다! 결혼은 하셨나요? 가족이 몇 명이신가요?', p:1 },
+  { d:13000, r:'user', t:'기혼이고요, 아이 둘 있어요. 13살, 10살이요.' },
+  { d:15500, r:'ai',   t:'4인 가족이시군요. 요즘 재무적으로 가장 걱정되시는 게 있으신가요?', p:2, tag:'2. 경제적 고민' },
+  { d:19500, r:'user', t:'노후 준비가 너무 늦은 것 같아요. 저축은 하는데 어디 가는지 모르겠어요.' },
+  { d:22500, r:'ai',   t:'그 고민 충분히 이해합니다. 이제 수입지출을 살펴볼게요. 세후 월 소득이 얼마나 되세요?', p:3, tag:'3. 수입지출 분석' },
+  { d:27000, r:'user', t:'세후 400만원 정도요.' },
+  { d:30000, r:'ai',   t:'생활비, 보험료, 대출, 저축 각각 말씀해 주시겠어요?' },
+  { d:35000, r:'user', t:'생활비 180만, 보험 30만, 대출 55만, 저축 48만이요.' },
+  { d:37500, r:'ai',   t:'87만원이 지출 블랙홀이에요! 이것만 관리해도 노후가 완전히 달라집니다.', p:4, tag:'4. 자산부채 분석' },
+] : [
+  { d:3500,  r:'ai',   t:'지난달 비상예비자금 50만원 추가 잘 하셨어요! 현재 총액이 얼마나 됐나요?', p:2, tag:'전월 변화 점검' },
+  { d:8000,  r:'user', t:'총 350만원 됐어요.' },
+  { d:10500, r:'ai',   t:'월 생활비 대비 약 2개월분이네요. 이번 달도 50만원 추가 가능하실까요?', p:3, tag:'3. 수입지출 점검' },
+];
+
+/* ── 상태 ── */
+let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=0, diagUpKey='';
+
+/* ── DOMContentLoaded 초기화 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  const bi = document.getElementById('diagBannerImg');
+  const ai = document.getElementById('diagAiImg');
+  if (bi) bi.src = DIAG_IMG;
+  if (ai) ai.src = DIAG_IMG;
+
+  const dateEl = document.getElementById('diagTodayDate');
+  if (dateEl) dateEl.textContent = '📅 ' + DIAG_TODAY_STR;
+
+  const chipEl = document.getElementById('diagSessionChip');
+  if (chipEl) {
+    if (DIAG_IS_FIRST) {
+      chipEl.textContent = '🌟 초회상담 (1회차)';
+      chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;';
+    } else {
+      chipEl.textContent = '📋 ' + DIAG_SESSION_NUM + '회차 정기상담';
+      chipEl.style.cssText = 'padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:rgba(11,29,58,.08);border:1px solid rgba(11,29,58,.15);color:#0B1D3A;';
+    }
+  }
+  const subEl = document.getElementById('diagSessionSub');
+  if (subEl) subEl.textContent = DIAG_IS_FIRST ? '첫 번째 상담 · 전체 금융집짓기® 진단' : '매월 정기상담 · 전월 이후 변화 점검';
+});
+
+/* ── 아코디언 ── */
+function diagToggle(id, hdEl) {
+  const body = document.getElementById(id);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  const chevId = id.replace('Body','Chev');
+  const chev = document.getElementById(chevId);
+  if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+/* ── 개인정보 동의 ── */
+let diagPrv1=false, diagPrv2=false;
+function diagTogglePrivacy(id) {
+  if (id==='prv1') diagPrv1=!diagPrv1;
+  if (id==='prv2') diagPrv2=!diagPrv2;
+  const box=document.getElementById(id+'-box');
+  const chk=document.getElementById(id+'-chk');
+  const checked = id==='prv1' ? diagPrv1 : diagPrv2;
+  if (box) { box.style.background=checked?'#0B1D3A':'#fff'; box.style.borderColor=checked?'#0B1D3A':'rgba(11,29,58,.25)'; }
+  if (chk) chk.style.display=checked?'block':'none';
+}
+
+/* ── 업로드 ── */
+const diagUpTitles={application:'상담신청서 업로드',ins:'보험증권 업로드',sal:'급여명세서 업로드',pen:'연금명세서 업로드',tax:'세금신고서 업로드',etc:'기타 서류 업로드'};
+function diagOpenUpload(key) {
+  diagUpKey=key;
+  const t=document.getElementById('diagUploadTitle');
+  if(t) t.textContent=diagUpTitles[key]||'서류 업로드';
+  const m=document.getElementById('diagUploadModal');
+  if(m) m.style.display='flex';
+}
+function diagCloseUpload() {
+  const m=document.getElementById('diagUploadModal');
+  if(m) m.style.display='none';
+}
+function diagDoUpload(method) {
+  diagCloseUpload();
+  if(method==='camera') document.getElementById('diagFileCamera').click();
+  else if(method==='image') document.getElementById('diagFileImage').click();
+  else document.getElementById('diagFileDoc').click();
+}
+function diagHandleFile(input) {
+  if(!input.files[0]) return;
+  const file = input.files[0];
+  const fname = file.name;
+
+  if(diagUpKey==='application') {
+    const s=document.getElementById('diagAppStat'); if(s) s.textContent='✅';
+    const b=document.getElementById('diagAppBadge'); if(b){b.textContent='완료';b.style.background='rgba(22,163,74,.1)';b.style.color='#16a34a';b.style.borderColor='rgba(22,163,74,.25)';}
+    const db=document.getElementById('diagDocBadge'); if(db){db.textContent='필수 완료';db.style.background='rgba(22,163,74,.1)';db.style.color='#16a34a';db.style.borderColor='rgba(22,163,74,.25)';}
+    const n=document.getElementById('diagStartNote'); if(n){n.textContent='✅ 상담신청서 분석 중...';n.style.color='#16a34a';}
+    showToast('📋 신청서 업로드 완료! 분석 중...');
+
+    /* 실제 파싱 — 서버로 전송하여 분석 */
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('https://moneya-server.onrender.com/api/parse-application', {
+      method: 'POST',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success && data.clientData) {
+        /* diagFinCtx에 고객 데이터 주입 */
+        Object.assign(diagFinCtx, data.clientData);
+        window.diagApplicationData = data.clientData;
+        const n=document.getElementById('diagStartNote');
+        if(n){
+          n.textContent='✅ 분석 완료 · '+
+            (data.clientData.name||'고객')+'님 ('+
+            (data.clientData.age||'')+'세) · '+
+            '소득 '+(data.clientData.monthlyIncome||'')+'만원';
+          n.style.color='#16a34a';
+        }
+        /* DIAG_PARTS 0번 노트 자동 채우기 */
+        if(DIAG_PARTS[0] && DIAG_PARTS[0].fields) {
+          DIAG_PARTS[0].fields[3][1] = '신청서 완료 ✅';
+        }
+        showToast('🎉 신청서 분석 완료! '+
+          (data.clientData.name||'고객')+'님 정보가 준비됐습니다.');
+      }
+    })
+    .catch(() => {
+      /* 서버 실패 시 → 파일 직접 읽기 (텍스트 파일인 경우) */
+      showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
+    });
+  } else {
+    const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
+    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
+    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
+  }
+  input.value='';
+}
+
+/* ── 상담 시작 ── */
+function diagStartConsult() {
+  const sa=document.getElementById('diagScreenA');
+  const sb=document.getElementById('diagScreenB');
+  if(sa) sa.style.display='none';
+  if(sb) {
+    sb.style.display = 'flex';
+    sb.style.flexDirection = 'column';
+    sb.style.height = '100%';
+    sb.style.overflow = 'hidden';
+/* mp-panel 높이: CSS로 처리 */
+  }
+
+  // 날짜/회차 노트0 필드 채우기
+  DIAG_PARTS[0].fields[1][1] = DIAG_TODAY_STR;
+  DIAG_PARTS[0].fields[2][1] = DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST?'(초회진단)':'(정기상담)');
+
+  const si=document.getElementById('diagSessionInfo');
+  if(si) si.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST?'초회진단':'정기상담');
+
+  diagBuildNotes();
+
+  diagSec=0;
+
+  diagInt=setInterval(function(){
+    if(diagPaused) return;
+    diagSec++;
+    const m=String(Math.floor(diagSec/60)).padStart(2,'0');
+    const s=String(diagSec%60).padStart(2,'0');
+    const el=document.getElementById('diagTimer');
+    if(el) el.textContent=m+':'+s;
+    if(diagSec===45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
+    if(diagSec===60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
+
+  },1000);
+
+  // 실제 음성 연결 시작
+  /* [DEV-001] 브라우저 오디오 자동재생 정책 해제 — 사용자 클릭 이벤트 내에서 AudioContext 생성 */
+  try {
+    var unlockCtx = new (window.AudioContext || window.webkitAudioContext)();
+    unlockCtx.resume().then(function() {
+      console.log('[DEV-001] AudioContext 활성화 성공 — 음성 출력 준비됨');
+      unlockCtx.close();
+    });
+    /* 무음 재생으로 오디오 잠금 해제 */
+    var silentAudio = document.createElement('audio');
+    silentAudio.setAttribute('playsinline', '');
+    silentAudio.setAttribute('webkit-playsinline', '');
+    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    silentAudio.play().catch(function(){});
+  } catch(e) { console.warn('[DEV-001] AudioContext 사전 활성화 실패:', e); }
+
+  diagConnectVoice();
+}
+
+/* ══════════════════════════════════════════════════════════
+   [DEV-001] Vapi.ai 음성 연결
+   ══════════════════════════════════════════════════════════ */
+const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
+const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
+const VAPI_ASSISTANT_PAID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98';
+let vapi = null;
+let vapiCallActive = false;
+
+// [비활성화 by DEV-001] 기존 OpenAI Realtime
+// const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
+// let diagWs=null, diagAudioCtx=null, diagMicStream=null;
+// let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
+let diagMicStream=null; // 마이크 권한 확인용으로 유지
+
+const diagFinCtx = {
+  name:'고객', age:0, monthlyIncome:0,
+  totalAssets:0, totalDebt:0, currentStep:0,
+  sessionNo: typeof DIAG_SESSION_NUM!=='undefined'?DIAG_SESSION_NUM:1,
+  mainWorry:'',
+};
+
+/* [DEV-001] Vapi SDK 생성자 찾기 — 비동기 로드 대기 포함 */
+function getVapiConstructor() {
+  if(typeof Vapi === 'function') return Vapi;
+  if(typeof Vapi === 'object' && Vapi && Vapi.default) return Vapi.default;
+  if(typeof window.Vapi === 'function') return window.Vapi;
+  if(typeof window.Vapi === 'object' && window.Vapi && window.Vapi.default) return window.Vapi.default;
+  return null;
+}
+
+function waitForVapi(maxWait) {
+  return new Promise(function(resolve) {
+    var ctor = getVapiConstructor();
+    if(ctor) { resolve(ctor); return; }
+    var waited = 0;
+    var iv = setInterval(function() {
+      ctor = getVapiConstructor();
+      waited += 200;
+      if(ctor) { clearInterval(iv); resolve(ctor); }
+      else if(waited >= maxWait) { clearInterval(iv); resolve(null); }
+    }, 200);
+  });
+}
+
+/* [DEV-001] Vapi.ai 음성 연결 */
+async function diagConnectVoice(isPaid) {
+  /* isPaid 인자 없으면 기본 유료 */
+  if(isPaid === undefined) isPaid = true;
+  try {
+    diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
+  } catch(e) {
+    if(e.name === 'NotAllowedError') {
+      showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
+    } else {
+      showToast('❌ 마이크 연결 오류: ' + e.message);
+    }
+    diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
+    return;
+  }
+
+  try {
+    /* Vapi SDK 로드 대기 (최대 5초) */
+    var VapiConstructor = await waitForVapi(5000);
+    
+    if(!VapiConstructor) {
+      showToast('❌ Vapi SDK 로드 실패 · 페이지를 새로고침 해주세요');
+      console.error('[DEV-001] Vapi SDK가 로드되지 않았습니다. typeof Vapi:', typeof Vapi, 'window.Vapi:', typeof window.Vapi);
+      diagAddSTT('ai', 'AI 음성 엔진 로드에 실패했습니다. 페이지를 새로고침 해주세요.', null);
+      return;
+    }
+    
+    console.log('[DEV-001] Vapi 생성자 확인:', VapiConstructor.name || 'OK');
+    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
+    var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
+
+    /* ── 연결 시작 ── */
+    vapi.on('call-start', function() {
+      vapiCallActive = true;
+      diagMic = true;
+      showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
+      var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
+      if(w) w.classList.remove('muted');
+    });
+
+    /* ── [에코 방지] 머니야 발화 중 마이크 자동 음소거 ── */
+    var _vapiSpeaking = false;
+    var _vapiLastSpeechEnd = 0;
+    vapi.on('speech-start', function() {
+      _vapiSpeaking = true;
+      console.log('[VAPI] 머니야 발화 시작 — 마이크 자동 음소거');
+      try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
+      var w = document.getElementById('diagWave');
+      if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity='0.3'; });
+    });
+    vapi.on('speech-end', function() {
+      _vapiSpeaking = false;
+      _vapiLastSpeechEnd = Date.now();
+      console.log('[VAPI] 머니야 발화 종료 — 500ms 후 마이크 복원');
+      /* 500ms 딜레이 후 마이크 복원 (에코 잔향 완전 소멸 대기) */
+      setTimeout(function() {
+        if(!_vapiSpeaking && !diagPaused) {
+          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
+          var w = document.getElementById('diagWave');
+          if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity=''; });
+        }
+      }, 500);
+    });
+
+    /* ── 메시지 수신 (자막 + Tool Call) ── */
+    vapi.on('message', function(msg) {
+      /* 자막 표시 */
+      if(msg.type === 'transcript' && msg.transcriptType === 'final') {
+        /* [DEV-003 FIX] role 판별 강화 — Vapi 버전별 호환 */
+        console.log('[VAPI-DBG] transcript msg:', JSON.stringify({type:msg.type, role:msg.role, transcriptType:msg.transcriptType, transcript:(msg.transcript||'').slice(0,30)}));
+        var rawRole = (msg.role || '').toLowerCase();
+        var role = (rawRole === 'assistant' || rawRole === 'bot' || rawRole === 'ai') ? 'ai' : 'user';
+        var displayText = msg.transcript;
+        if(!displayText || !displayText.trim()) return;
+
+        /* [에코 방지] 머니야 발화 중이거나 발화 직후 1초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
+        if(role === 'user') {
+          var timeSinceSpeechEnd = Date.now() - (_vapiLastSpeechEnd || 0);
+          if(_vapiSpeaking || timeSinceSpeechEnd < 1000) {
+            console.log('[VAPI-ECHO] 에코 의심 — 무시:', displayText.slice(0,30), '(발화종료 후 ' + timeSinceSpeechEnd + 'ms)');
+            return;
+          }
+        }
+
+        /* STT 영역에 표시 */
+        diagAddSTT(role, displayText, null);
+
+        /* 대화록 탭(dnp9)에도 실시간 기록 */
+        var chatLog = document.getElementById('dn_chat_log');
+        if(chatLog) {
+          var isUser = (role === 'user');
+          var bubble = document.createElement('div');
+          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+          bubble.innerHTML =
+            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
+              (isUser ? '👤 고객' : '🤖 머니야') +
+            '</div>' +
+            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
+              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
+              displayText.replace(/</g, '&lt;') +
+            '</div>';
+          chatLog.appendChild(bubble);
+          chatLog.scrollTop = chatLog.scrollHeight;
+          var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
+          if(placeholder) placeholder.remove();
+        }
+
+        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
+        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
+      }
+
+      /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
+      if(msg.type === 'tool-calls') {
+        handleVapiToolCall(msg.toolCallList);
+      }
+    });
+
+    /* ── 통화 종료 ── */
+    vapi.on('call-end', function() {
+      vapiCallActive = false;
+      diagMic = false;
+      showToast('📞 상담이 종료됐습니다');
+      /* [DEV-003] 리포트 자동생성 */
+      generateFinalReport();
+    });
+
+    /* ── 오류 ── */
+    vapi.on('error', function(e) {
+      console.error('[Vapi 오류]', e);
+      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
+    });
+
+    await vapi.start(assistantId, {
+      /* [에코 방지] 배경 소음/음성 제거 */
+      backgroundDenoisingEnabled: true,
+      backgroundVoiceDenoising: true,
+      /* [에코 방지] 중단 감지 — numWords:2로 짧은 에코는 무시 */
+      stopSpeakingPlan: {
+        numWords: 2,
+        voiceSeconds: 0.3,
+        backoffSeconds: 1.2
+      },
+      /* [한국어] 텍스트 기반 엔드포인팅 — 비영어권 최적화 */
+      startSpeakingPlan: {
+        waitSeconds: 0.5,
+        smartEndpointingPlan: {
+          provider: 'vapi'
+        },
+        transcriptionEndpointingPlan: {
+          onPunctuationSeconds: 0.1,
+          onNoPunctuationSeconds: 1.5,
+          onNumberSeconds: 0.5
+        }
+      }
+    });
+
+  } catch(e) {
+    console.error('[Vapi 연결 오류]', e);
+    showToast('❌ 연결 오류: ' + e.message);
+  }
+}
+
+/* [DEV-002] Tool Call 핸들러 — 상담노트 실시간 업데이트 */
+function handleVapiToolCall(toolCallList) {
+  if(!toolCallList || !toolCallList.length) return;
+  toolCallList.forEach(function(toolCall) {
+    if(toolCall.function && toolCall.function.name === 'update_note') {
+      var args = toolCall.function.arguments;
+      if(typeof args === 'string') { try { args = JSON.parse(args); } catch(e) { return; } }
+      updateNoteField(args.tab, args.field, args.value, args.label);
+    }
+  });
+}
+
+function updateNoteField(tab, field, value, label) {
+  if(!value || !field) return;
+  
+  /* 해당 탭으로 자동 이동 */
+  var tabIdx = parseInt(tab) || 0;
+  if(typeof dnGo === 'function') dnGo(tabIdx);
+
+  /* 해당 필드에 값 입력 — 3단계 매칭 (diagHandleNote와 동일) */
+  var filled = false;
+  
+  // 방법1: 정확한 ID 매칭
+  var el = document.getElementById('f' + tab + '_' + field);
+  if(el) {
+    dnFill(el, value);
+    el.style.background = '#FFF8E6';
+    setTimeout(function(){ el.style.background = ''; }, 1000);
+    filled = true;
+    console.log('[노트기입✅]', 'f' + tab + '_' + field, '=', value);
+  }
+  
+  // 방법2: 유사 키워드 매칭 (ID가 정확히 안 맞을 때)
+  if(!filled) {
+    var cands = document.querySelectorAll('[id^="f' + tab + '_"]');
+    for(var i = 0; i < cands.length; i++) {
+      var ck = cands[i].id.replace('f' + tab + '_', '');
+      if(ck.includes(field) || field.includes(ck)) {
+        dnFill(cands[i], value);
+        cands[i].style.background = '#FFF8E6';
+        setTimeout((function(e){ return function(){ e.style.background = ''; }; })(cands[i]), 1000);
+        filled = true;
+        console.log('[노트기입유사✅]', cands[i].id, '=', value);
+        break;
+      }
+    }
+  }
+  
+  if(!filled) {
+    console.warn('[노트기입❌] f' + tab + '_' + field + ' 요소 없음');
+  }
+
+  /* SVG 집짓기 설계도 업데이트 */
+  if(tabIdx >= 4 && tabIdx <= 8) {
+    if(field === 'retire') { var ar = document.getElementById('age_retire'); if(ar) ar.textContent = value + '세'; }
+    if(field === 'life') { var al = document.getElementById('age_life'); if(al) al.textContent = value + '세'; }
+    if(field === 'age') { var an = document.getElementById('age_now'); if(an) an.textContent = value + '세'; }
+  }
+  
+  /* 3단계 수입 입력 시 예산 자동 계산 */
+  if(tab === '3' && field === 'income') {
+    dnCalcBudget({ income: value });
+  }
+
+  /* 토스트 알림 */
+  showToast('📝 ' + (label || field) + ': ' + String(value).slice(0, 15));
+}
+
+// [비활성화 by DEV-001] 기존 OpenAI Realtime 함수들
+// function diagHandleMsg(msg) { ... }
+// async function diagSetupAudio() { ... }
+// function diagPlayNext() { ... }
+
+/* [DEV-001] 기존 diagHandleMsg — smart_note_update 처리를 위해 유지 */
+/* Vapi에서는 사용하지 않지만 diagHandleNote 함수는 아래에서 그대로 살림 */
+
+function diagHandleNote(msg) {
+  console.log('[노트수신RAW]', JSON.stringify(msg));
+  var pg = parseInt(msg.notePage !== undefined ? msg.notePage : 
+                    msg.note_page !== undefined ? msg.note_page :
+                    msg.step !== undefined ? msg.step : diagCurPart) || 0;
+  var subPage = msg.subPage !== undefined ? msg.subPage : 
+                msg.sub_page !== undefined ? msg.sub_page : null;
+  var fields = msg.fields || {};
+  var fieldCount = Object.keys(fields).length;
+
+  console.log('[노트처리] pg='+pg+', curPart='+diagCurPart+', fields='+JSON.stringify(fields));
+
+  /* ① 탭 자동 전환 — 최대 1단계씩만 이동 (건너뜀 방지) */
+  var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
+  var tabIdx = tabMap[pg] !== undefined ? tabMap[pg] : 0;
+  // 현재 탭보다 2단계 이상 점프하면 중간 탭도 순차적으로 거침
+  var curTabIdx = tabMap[diagCurPart] !== undefined ? tabMap[diagCurPart] : 0;
+  if(tabIdx > curTabIdx + 1) {
+    // 중간 단계를 300ms 간격으로 거쳐서 이동
+    for(var ti = curTabIdx + 1; ti < tabIdx; ti++) {
+      (function(idx){ setTimeout(function(){ if(typeof dnGo==='function') dnGo(idx); }, (idx-curTabIdx)*200); })(ti);
+    }
+    setTimeout(function(){ if(typeof dnGo==='function') dnGo(tabIdx); }, (tabIdx-curTabIdx)*200);
+  } else {
+    if(typeof dnGo === 'function') dnGo(tabIdx);
+  }
+  diagCurPart = pg;
+
+  /* ② fields 기입 — 3단계 매핑 */
+  var filled = 0;
+  if(fieldCount > 0) {
+    Object.keys(fields).forEach(function(k) {
+      var v = fields[k];
+      if(v === null || v === undefined || v === '') return;
+      var vs = String(v);
+
+      // 방법1: f{pg}_{k} 직접
+      var id1 = 'f' + pg + '_' + k;
+      var el = document.getElementById(id1);
+      if(el) { dnFill(el, vs); filled++; console.log('[노트기입✅]', id1, '=', vs); return; }
+
+      // 방법2: sub_page (f81_, f82_ 등)
+      if(subPage !== null) {
+        var id2 = 'f8' + subPage + '_' + k;
+        var el2 = document.getElementById(id2);
+        if(el2) { dnFill(el2, vs); filled++; console.log('[노트기입sub✅]', id2, '=', vs); return; }
+      }
+
+      // 방법3: 부분 키워드 매칭
+      var cands = document.querySelectorAll('[id^="f' + pg + '_"]');
+      var found = false;
+      for(var i=0;i<cands.length;i++){
+        var ck = cands[i].id.replace('f'+pg+'_','');
+        if(ck.includes(k) || k.includes(ck)) {
+          dnFill(cands[i], vs); filled++;
+          console.log('[노트기입유사✅]', cands[i].id, '=', vs);
+          found = true; break;
+        }
+      }
+      if(!found) console.warn('[노트기입❌] f'+pg+'_'+k+' 요소 없음. 존재 ID:', Array.from(cands).map(function(c){return c.id;}));
+    });
+  }
+
+  /* ③ SVG 집 */
+  if(pg>=4&&pg<=8){
+    var wi=parseFloat(fields.wealth_index||fields.wi||0);
+    if(wi>0){
+      var bar=document.getElementById('f4_wi_bar');if(bar)bar.style.width=Math.min(wi/2*100,100)+'%';
+      var wv=document.getElementById('f4_wi_val');if(wv)wv.textContent=wi.toFixed(1);
+      var wd=document.getElementById('f4_wi_diag');if(wd)wd.textContent=wi>=2?'우량 ✅':wi>=1?'평균 이상 ✅':'평균 미달 ⚠️';
+    }
+    if(fields.current_age){var an=document.getElementById('age_now');if(an)an.textContent=fields.current_age+'세';}
+    if(fields.retire_age){var ar=document.getElementById('age_retire');if(ar)ar.textContent=fields.retire_age+'세';}
+    if(fields.life_age){var al=document.getElementById('age_life');if(al)al.textContent=fields.life_age+'세';}
+  }
+  if(pg===3&&fields.income) dnCalcBudget(fields);
+  if(fields.score){
+    var sc=document.getElementById('f9_score');if(sc)sc.innerHTML=fields.score+'<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+    var sg=document.getElementById('f9_grade');if(sg)sg.textContent=fields.grade||'계산중';
+    var rs=document.getElementById('diagReportScore');if(rs)rs.textContent=fields.score;
+  }
+
+  /* ④ 토스트 — 실제 채워진 값 표시 */
+  var pn = DIAG_PARTS[pg]?DIAG_PARTS[pg].short:'노트'+pg;
+  var firstVal = fieldCount > 0 ? String(Object.values(fields)[0]).slice(0,10) : '';
+  if(filled > 0) {
+    showToast('📝 '+pn+' — '+firstVal+(fieldCount>1?' 외 '+(fieldCount-1)+'개':''));
+  } else if(fieldCount > 0) {
+    showToast('⚠️ '+pn+' 수신됐지만 ID 매핑 실패 (콘솔 확인)');
+  }
+}
+
+function dnFill(el,text){
+  if(!el)return;
+  el.textContent=text;
+  el.className=(el.className||'').replace(/\bempty\b/g,'').trim();
+  el.style.fontStyle='normal';
+  el.style.color='';
+}
+
+/* ── 예산표 자동 계산 함수 */
+function dnCalcBudget(f) {
+  const inc = parseFloat(f.income)||0;
+  if(!inc) return;
+  // 가족수로 비율 결정
+  const fam = parseInt(f.family||document.getElementById('f1_family')?.textContent)||2;
+  const pcts = {1:{l:20,s:50},2:{l:30,s:40},3:{l:40,s:30},4:{l:50,s:20},5:{l:60,s:10}};
+  const p = pcts[Math.min(fam,5)] || pcts[2];
+  const fmt2 = function(n){ return Math.round(n)+'만'; };
+
+  // 예산 계산
+  const bLiv = inc*p.l/100, bSave = inc*p.s/100, bPen = inc*0.1, bIns = inc*0.1, bLoan = inc*0.1;
+
+  // 현재값
+  const cLiv = parseFloat(f.living_cur)||0;
+  const cSave = parseFloat(f.save_cur)||0;
+  const cPen = parseFloat(f.pension_cur)||0;
+  const cIns = parseFloat(f.ins_cur)||0;
+  const cLoan = parseFloat(f.loan_cur)||0;
+  const surplus = parseFloat(f.surplus)||0;
+
+  function diagStr(cur, bud) {
+    if(!cur) return '—';
+    if(cur > bud*1.1) return '<span class="ng">▲ 초과</span>';
+    if(cur < bud*0.9) return '<span class="ng">▼ 부족</span>';
+    return '<span class="ok">✓ 적정</span>';
+  }
+
+  // 테이블 채우기
+  var set = function(id, v){ var e=document.getElementById(id); if(e) e.innerHTML=v; };
+  set('f3_income', '<strong>'+fmt2(inc)+'원</strong>');
+  set('f3_living_cur', fmt2(cLiv)+'원'); set('f3_living_pct', p.l+'%'); set('f3_living_exp', fmt2(bLiv)+'원'); set('f3_living_diag', diagStr(cLiv,bLiv));
+  set('f3_save_cur', fmt2(cSave)+'원'); set('f3_save_pct', p.s+'%'); set('f3_save_exp', fmt2(bSave)+'원'); set('f3_save_diag', diagStr(cSave,bSave));
+  set('f3_pension_cur', fmt2(cPen)+'원'); set('f3_pension_exp', fmt2(bPen)+'원'); set('f3_pension_diag', diagStr(cPen,bPen));
+  set('f3_ins_cur', fmt2(cIns)+'원'); set('f3_ins_exp', fmt2(bIns)+'원'); set('f3_ins_diag', diagStr(cIns,bIns));
+  set('f3_loan_cur', fmt2(cLoan)+'원'); set('f3_loan_exp', fmt2(bLoan)+'원'); set('f3_loan_diag', diagStr(cLoan,bLoan));
+  set('f3_surplus', fmt2(surplus)+'원');
+  set('f3_total', fmt2(inc)+'원');
+  var hint=document.getElementById('f3_family_hint'); if(hint) hint.textContent=fam+'인 가족 기준 예산 적용';
+  // 진단 코멘트
+  var com = document.getElementById('f3_diag_comment');
+  if(com && cLiv>0 && bLiv>0) {
+    var ratio = (cLiv/bLiv).toFixed(1);
+    com.innerHTML = '💡 생활비가 기준 대비 '+ratio+'배입니다. '+(cSave<bSave?'저축투자 예산을 늘리세요.':'저축투자가 양호합니다.');
+  }
+}
+
+/* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
+
+// [비활성화 by DEV-001] Heartbeat — Vapi가 자체 관리
+// setInterval(function(){
+//   if(diagWs&&diagWs.readyState===1)
+//     diagWs.send(JSON.stringify({type:'ping'}));
+// },30000);
+
+/* ── 노트/대화 탭 전환 ── */
+function diagSwitchTab(idx, el) {
+  document.querySelectorAll('.c-ntab').forEach(function(t){ t.classList.remove('on'); });
+  if(el) el.classList.add('on');
+  var noteBody = document.querySelector('.c-note-body');
+  var stt = document.getElementById('diagStt');
+  if(idx === 0) {
+    if(noteBody) noteBody.style.display = 'flex';
+    if(stt) stt.style.display = 'none';
+  } else {
+    if(noteBody) noteBody.style.display = 'none';
+    if(stt) { stt.style.display = 'block'; stt.style.flex = '1'; stt.style.overflowY = 'auto'; }
+  }
+}
+
+/* ── 12장 노트 빌드 ── */
+function diagBuildNotes() {
+  const container = document.getElementById('diagNoteContainer');
+  if(!container) return;
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // v2 상담노트 — 탭형 완성 버전
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  container.innerHTML = `
+<style>
+#dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
+#dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
+#dnTabs::-webkit-scrollbar{display:none;}
+.dnt{flex-shrink:0;padding:7px 11px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;cursor:pointer;
+  color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
+.dnt.active{background:#F4F6FA;color:#0B1D3A;}
+.dnt.done{color:#E8B84B;}
+#dnPanels{flex:1;overflow-y:auto;padding:10px 10px 30px;scrollbar-width:thin;}
+.dnp{display:none;}
+.dnp.active{display:block;}
+.dncard{background:#fff;border-radius:11px;box-shadow:0 1px 8px rgba(11,29,58,.06);margin-bottom:9px;overflow:hidden;border:1px solid #D8E0EC;}
+.dnchd{background:linear-gradient(135deg,#0B1D3A,#1a3260);padding:9px 13px;display:flex;align-items:center;gap:8px;}
+.dncicon{font-size:15px;}
+.dnctitle{color:#fff;font-size:12px;font-weight:900;}
+.dncsub{color:rgba(255,255,255,.5);font-size:9.5px;margin-top:1px;}
+.dncbody{padding:11px 13px;}
+.dnfield{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid #D8E0EC;}
+.dnfield:last-child{border-bottom:none;}
+.dnfl{color:#8896B0;font-size:11px;font-weight:500;width:88px;flex-shrink:0;padding-top:1px;}
+.dnfv{font-size:13.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.6;}
+.dnfv.empty{color:#D8E0EC;font-weight:400;font-style:italic;}
+.dnfv.hi{color:#1a3260;}
+.dnfv.warn{color:#C62828;}
+.dnfv.good{color:#2E7D32;}
+.dnfv.gold{color:#C9972A;}
+.dndiv{display:flex;align-items:center;gap:6px;padding:4px 0 7px;color:#8896B0;font-size:9.5px;font-weight:700;}
+.dndiv::before,.dndiv::after{content:'';flex:1;height:1px;background:#D8E0EC;}
+/* 예산표 */
+.dntable{width:100%;border-collapse:collapse;font-size:10px;}
+.dntable th{background:#0B1D3A;color:#fff;padding:5px 6px;text-align:center;font-weight:700;font-size:9.5px;}
+.dntable td{padding:5px 6px;border-bottom:1px solid #D8E0EC;text-align:right;}
+.dntable td:first-child{text-align:left;font-weight:600;color:#8896B0;}
+.dntable tr.tot td{font-weight:900;color:#0B1D3A;background:#f0f4ff;}
+.ok{color:#2E7D32;font-weight:900;font-size:9px;}
+.ng{color:#C62828;font-weight:900;font-size:9px;}
+.st{color:#C9972A;font-weight:900;font-size:9px;}
+/* 자산박스 */
+.dnag{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.dnab{background:#f8faff;border-radius:8px;padding:8px 10px;border:1px solid #D8E0EC;}
+.dnab-l{font-size:9px;color:#8896B0;margin-bottom:2px;}
+.dnab-v{font-size:13px;font-weight:900;color:#0B1D3A;}
+.dnab-u{font-size:8.5px;color:#8896B0;}
+.dnab.red .dnab-v{color:#C62828;}
+.dnab.gold .dnab-v{color:#C9972A;}
+.dnab.green .dnab-v{color:#2E7D32;}
+/* 부자지수 */
+.wi-bg{background:#D8E0EC;border-radius:99px;height:8px;overflow:hidden;margin:4px 0;}
+.wi-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#C9972A,#E8B84B);}
+/* SVG 집 */
+.dn-house{background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border-radius:10px;padding:10px;margin-bottom:9px;}
+.dn-house-title{font-size:11px;font-weight:900;color:#0B1D3A;margin-bottom:4px;text-align:center;}
+.dn-fhsvg{width:100%;height:auto;display:block;}
+/* DESIRE */
+.desire-list{display:flex;flex-direction:column;gap:4px;}
+.dstep{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid #D8E0EC;background:#f8faff;}
+.dstep.cur{background:linear-gradient(135deg,#fff8e1,#fff3cd);border-color:#C9972A;}
+.dstep.done{background:#f0f9f0;border-color:#2E7D32;opacity:.75;}
+.dbadge{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:900;background:#D8E0EC;color:#8896B0;}
+.dstep.cur .dbadge{background:#C9972A;color:#fff;}
+.dstep.done .dbadge{background:#2E7D32;color:#fff;}
+.dtitle{font-size:11px;font-weight:700;color:#1a2340;}
+.ddesc{font-size:9px;color:#8896B0;margin-top:1px;}
+.dstep.cur .dtitle{color:#C9972A;}
+/* 점수 */
+.dn-score{background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:16px;text-align:center;margin-bottom:9px;}
+.dn-score-num{font-size:46px;font-weight:900;color:#E8B84B;line-height:1;}
+.dn-score-lbl{color:rgba(255,255,255,.4);font-size:10px;margin-top:2px;}
+.dn-score-grade{display:inline-block;margin-top:6px;background:#C9972A;color:#0B1D3A;font-size:10.5px;font-weight:900;padding:3px 12px;border-radius:20px;}
+/* 액션 */
+.dn-actions{display:flex;flex-direction:column;gap:6px;}
+.dn-action{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f8faff;border-radius:8px;border-left:3px solid #C9972A;}
+.dn-action.green{border-left-color:#2E7D32;}
+.dn-action.red{border-left-color:#C62828;}
+.dn-anum{width:19px;height:19px;border-radius:50%;flex-shrink:0;background:#0B1D3A;color:#E8B84B;font-size:9.5px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.dn-anum.green{background:#2E7D32;}
+.dn-anum.red{background:#C62828;}
+.dn-atext{font-size:11px;font-weight:500;line-height:1.5;}
+/* 히스토리 BA */
+.ba-tbl{width:100%;border-collapse:collapse;font-size:9.5px;}
+.ba-tbl th{background:#0B1D3A;color:#fff;padding:5px 4px;text-align:center;font-size:9px;font-weight:700;}
+.ba-tbl th:first-child{text-align:left;padding-left:8px;}
+.ba-tbl td{padding:5px 4px;text-align:center;border-bottom:1px solid #D8E0EC;}
+.ba-tbl td:first-child{text-align:left;font-weight:700;padding-left:8px;color:#0B1D3A;}
+.v-up{color:#2E7D32;font-weight:900;}
+.v-dn{color:#C62828;font-weight:900;}
+/* 대화록 */
+.dn-chat{display:flex;flex-direction:column;gap:6px;}
+.dn-bubble{max-width:87%;padding:8px 11px;border-radius:12px;font-size:11px;line-height:1.6;}
+.dn-bubble.m{background:#0B1D3A;color:#fff;align-self:flex-start;border-bottom-left-radius:3px;}
+.dn-bubble.c{background:#e8f0fe;color:#0B1D3A;align-self:flex-end;border-bottom-right-radius:3px;}
+.dn-who{font-size:8.5px;color:#8896B0;margin-bottom:2px;}
+.dn-who.m{color:#C9972A;}
+.dn-sync{align-self:center;background:#f0f9f0;border:1px solid #2E7D32;color:#2E7D32;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;}
+/* 정보박스 */
+.dn-info{padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.6;margin-top:7px;}
+.dn-info.gold{background:#fff8e6;color:#7a5c00;}
+.dn-info.green{background:#f0f9f0;color:#1a5c24;}
+.dn-info.red{background:#fff5f5;color:#8b0000;}
+/* 계산표 */
+.dn-calc{background:#f8faff;border-radius:8px;padding:10px;}
+.dn-calc-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #D8E0EC;font-size:11px;}
+.dn-calc-row:last-child{border-bottom:none;font-weight:900;}
+.dn-calc-lbl{color:#8896B0;}
+.dn-calc-val{font-weight:700;}
+/* 보험 그리드 */
+.ins-g{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.ins-c{background:#f8faff;border-radius:6px;padding:6px 2px;text-align:center;border:1px solid #D8E0EC;}
+.ins-c.ok{background:#f0f9f0;border-color:#2E7D32;}
+.ins-c.ng{background:#fff5f5;border-color:#C62828;}
+.ins-n{font-size:8px;color:#8896B0;}
+.ins-s{font-size:9px;font-weight:900;margin-top:2px;}
+.ins-c.ok .ins-s{color:#2E7D32;}
+.ins-c.ng .ins-s{color:#C62828;}
+</style>
+
+<div id="dnWrap">
+  <!-- 탭 헤더 -->
+  <div id="dnTabs">
+    <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
+    <button class="dnt done" onclick="dnGo(1)">👤 인적</button>
+    <button class="dnt done" onclick="dnGo(2)">💭 고민</button>
+    <button class="dnt done" onclick="dnGo(3)">💰 수지</button>
+    <button class="dnt done" onclick="dnGo(4)">🏦 자산</button>
+    <button class="dnt done" onclick="dnGo(5)">🏠 집짓기</button>
+    <button class="dnt done" onclick="dnGo(6)">📈 포트폴리오</button>
+    <button class="dnt done" onclick="dnGo(7)">🎯 종합설계</button>
+    <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
+    <button class="dnt" onclick="dnGo(9)">💬 대화록</button>
+    <button class="dnt" onclick="dnGo(10)">📄 리포트</button>
+  </div>
+  <div id="dnPanels">
+
+  <!-- 패널0: 표지 -->
+  <div class="dnp active" id="dnp0">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📋</div><div><div class="dnctitle">오프닝 / 표지</div><div class="dncsub">진단 기본 정보</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">진단 날짜</span><span class="dnfv hi" id="f0_date"></span></div>
+        <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv hi" id="f0_session"></span></div>
+        <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
+        <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app"></span></div>
+        <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널1: 인적사항 -->
+  <div class="dnp" id="dnp1">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">👤</div><div><div class="dnctitle">인적사항</div><div class="dncsub">기본 정보</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">성함</span><span class="dnfv hi" id="f1_name"></span></div>
+        <div class="dnfield"><span class="dnfl">나이</span><span class="dnfv" id="f1_age"></span></div>
+        <div class="dnfield"><span class="dnfl">결혼여부</span><span class="dnfv" id="f1_marry"></span></div>
+        <div class="dnfield"><span class="dnfl">자녀</span><span class="dnfv" id="f1_child"></span></div>
+        <div class="dnfield"><span class="dnfl">가족수</span><span class="dnfv" id="f1_family"></span></div>
+        <div class="dnfield"><span class="dnfl">직업</span><span class="dnfv" id="f1_job"></span></div>
+        <div class="dnfield"><span class="dnfl">맞벌이</span><span class="dnfv" id="f1_dual"></span></div>
+        <div class="dnfield"><span class="dnfl">은퇴예정</span><span class="dnfv" id="f1_retire"></span></div>
+        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f1_life"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널2: 경제적 고민 -->
+  <div class="dnp" id="dnp2">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💭</div><div><div class="dnctitle">경제적 고민</div><div class="dncsub">오늘 진단의 대의명분</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">고민 1</span><span class="dnfv warn" id="f2_w1"></span></div>
+        <div class="dnfield"><span class="dnfl">고민 2</span><span class="dnfv warn" id="f2_w2"></span></div>
+        <div class="dnfield"><span class="dnfl">고민 3</span><span class="dnfv" id="f2_w3">—</span></div>
+        <div class="dnfield"><span class="dnfl">목표</span><span class="dnfv hi" id="f2_goal"></span></div>
+        <div class="dnfield"><span class="dnfl">머니야 공감</span><span class="dnfv" id="f2_ans" style="font-size:10.5px;color:#555"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널3: 수입지출 -->
+  <div class="dnp" id="dnp3">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💰</div><div><div class="dnctitle">수입지출 분석표</div><div class="dncsub" id="f3_family_hint">가족수 확인 후 기준 적용</div></div></div>
+      <div class="dncbody">
+        <table class="dntable">
+          <thead><tr><th>항목</th><th>현재</th><th>기준%</th><th>예산</th><th>진단</th></tr></thead>
+          <tbody>
+            <tr><td>수입</td><td><strong id="f3_income">—</strong></td><td>—</td><td>—</td><td>—</td></tr>
+            <tr><td>생활비</td><td id="f3_living_cur">—</td><td id="f3_living_pct">—</td><td id="f3_living_exp">—</td><td id="f3_living_diag">—</td></tr>
+            <tr><td>저축투자</td><td id="f3_save_cur">—</td><td id="f3_save_pct">—</td><td id="f3_save_exp">—</td><td id="f3_save_diag">—</td></tr>
+            <tr><td>노후연금</td><td id="f3_pension_cur">—</td><td>10%</td><td id="f3_pension_exp">—</td><td id="f3_pension_diag">—</td></tr>
+            <tr><td>보장성보험</td><td id="f3_ins_cur">—</td><td>10%</td><td id="f3_ins_exp">—</td><td id="f3_ins_diag">—</td></tr>
+            <tr><td>대출원리금</td><td id="f3_loan_cur">—</td><td>10%</td><td id="f3_loan_exp">—</td><td id="f3_loan_diag">—</td></tr>
+            <tr><td>잉여자금</td><td id="f3_surplus">—</td><td>—</td><td>—</td><td>—</td></tr>
+            <tr class="tot"><td>합계</td><td id="f3_total">—</td><td>100%</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <div class="dn-info gold" id="f3_diag_comment">수입지출 정보 수집 후 진단이 표시됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널4: 자산부채 -->
+  <div class="dnp" id="dnp4">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">자산부채 분석표</div><div class="dncsub">부자지수 · 부채비율 · 비상예비자금</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">자산</div>
+        <div class="dnag">
+          <div class="dnab"><div class="dnab-l">예적금</div><div class="dnab-v" id="f4_deposit">—<span class="dnab-u"></span></div></div>
+          <div class="dnab"><div class="dnab-l">펀드·ETF</div><div class="dnab-v" id="f4_invest">—</div></div>
+          <div class="dnab"><div class="dnab-l">연금적립</div><div class="dnab-v" id="f4_pension">—</div></div>
+          <div class="dnab"><div class="dnab-l">부동산</div><div class="dnab-v" id="f4_realty">—</div></div>
+        </div>
+        <div class="dnag" style="margin-top:5px">
+          <div class="dnab gold"><div class="dnab-l">총자산</div><div class="dnab-v" id="f4_total_asset">—</div></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">부채</div>
+        <div class="dnag">
+          <div class="dnab red"><div class="dnab-l">신용대출</div><div class="dnab-v" id="f4_credit">—</div></div>
+          <div class="dnab"><div class="dnab-l">담보대출</div><div class="dnab-v" id="f4_mortgage">—</div></div>
+        </div>
+        <div class="dnag" style="margin-top:5px">
+          <div class="dnab red"><div class="dnab-l">총부채</div><div class="dnab-v" id="f4_total_debt">—</div></div>
+          <div class="dnab green"><div class="dnab-l">순자산</div><div class="dnab-v" id="f4_net">—</div></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">진단 지표</div>
+        <div style="font-size:9px;color:#8896B0;display:flex;justify-content:space-between;margin-bottom:2px"><span>0</span><span>평균(1.0)</span><span>우량(2.0)</span></div>
+        <div class="wi-bg"><div class="wi-fill" id="f4_wi_bar" style="width:0%"></div></div>
+        <div style="text-align:center;font-size:19px;font-weight:900;color:#C9972A;margin-top:4px" id="f4_wi_val">—</div>
+        <div style="text-align:center;font-size:9.5px;color:#8896B0" id="f4_wi_diag">부자지수 계산 대기</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px">
+          <div style="background:#f0f9f0;border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:#8896B0">부채비율</div>
+            <div style="font-size:16px;font-weight:900;color:#2E7D32" id="f4_dr_val">—</div>
+            <div style="font-size:9px;color:#2E7D32" id="f4_dr_diag">—</div>
+          </div>
+          <div style="background:#fff8e6;border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:#8896B0">비상예비자금</div>
+            <div style="font-size:12px;font-weight:900;color:#C9972A" id="f4_emerg_need">—</div>
+            <div style="font-size:9px;color:#C9972A" id="f4_emerg_diag">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널5: 금융집짓기 SVG -->
+  <div class="dnp" id="dnp5">
+    <div class="dn-house">
+      <div class="dn-house-title">금융집짓기® 재무설계도</div>
+      <div style="font-size:9.5px;color:#8896B0;text-align:center;margin-bottom:7px" id="fh_subtitle">진단 진행 중...</div>
+      <svg class="dn-fhsvg" viewBox="0 0 440 300" xmlns="http://www.w3.org/2000/svg">
+        <line x1="14" y1="192" x2="426" y2="192" stroke="#6d4c41" stroke-width="3" stroke-linecap="round"/>
+        <text x="220" y="205" text-anchor="middle" font-size="8" fill="#8d6e63" font-family="'Noto Sans KR',sans-serif">인생이라는 평평한 땅</text>
+        <rect x="44" y="192" width="352" height="86" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5" rx="2"/>
+        <text x="220" y="208" text-anchor="middle" font-size="9" fill="#F57F17" font-weight="700" font-family="'Noto Sans KR',sans-serif">7. 기초 (보험)</text>
+        <line x1="88"  y1="212" x2="88"  y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="132" y1="212" x2="132" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="176" y1="212" x2="176" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="220" y1="212" x2="220" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="264" y1="212" x2="264" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="308" y1="212" x2="308" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="352" y1="212" x2="352" y2="272" stroke="#F9A825" stroke-width=".8"/>
+        <line x1="44"  y1="226" x2="396" y2="226" stroke="#F9A825" stroke-width=".8"/>
+        <text x="66"  y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">사망</text>
+        <text x="110" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">장해</text>
+        <text x="154" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">암</text>
+        <text x="198" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">뇌</text>
+        <text x="242" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">심장</text>
+        <text x="286" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">실비</text>
+        <text x="330" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">입원</text>
+        <text x="374" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">치매</text>
+        <text id="ins_death"  x="66"  y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_injury" x="110" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_cancer" x="154" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_brain"  x="198" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_heart"  x="242" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_actual" x="286" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_hosp"   x="330" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <text id="ins_dem"    x="374" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
+        <rect x="44" y="112" width="352" height="80" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.5" rx="2"/>
+        <line x1="300" y1="112" x2="300" y2="192" stroke="#1565C0" stroke-width=".8"/>
+        <text x="78" y="126" text-anchor="middle" font-size="8" fill="#C62828" font-weight="700" font-family="'Noto Sans KR',sans-serif">2.거실</text>
+        <text x="78" y="137" text-anchor="middle" font-size="8" fill="#C62828" font-family="'Noto Sans KR',sans-serif">부채설계</text>
+        <line x1="78" y1="143" x2="78" y2="182" stroke="#C62828" stroke-width="1.5" marker-end="url(#aRed2)"/>
+        <text id="debt_val" x="96" y="172" text-anchor="middle" font-size="7" fill="#C62828" font-family="'Noto Sans KR',sans-serif">—</text>
+        <text x="175" y="148" text-anchor="middle" font-size="8" fill="#1B5E20" font-weight="700" font-family="'Noto Sans KR',sans-serif">3.건넌방</text>
+        <text x="175" y="159" text-anchor="middle" font-size="8" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">저축설계</text>
+        <line x1="175" y1="185" x2="175" y2="164" stroke="#388E3C" stroke-width="1.5" marker-end="url(#aGreen2)"/>
+        <text id="savings_val" x="175" y="180" text-anchor="middle" font-size="7" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">—</text>
+        <text x="358" y="130" text-anchor="middle" font-size="8" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">1.안방</text>
+        <text x="358" y="141" text-anchor="middle" font-size="8" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">은퇴설계</text>
+        <text id="retire_rate" x="358" y="165" text-anchor="middle" font-size="13" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">—%</text>
+        <text x="358" y="178" text-anchor="middle" font-size="7" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">준비율</text>
+        <rect x="20" y="76" width="400" height="36" fill="#B0BEC5" stroke="#546E7A" stroke-width="1.2" rx="2"/>
+        <line x1="153" y1="76" x2="153" y2="112" stroke="#546E7A" stroke-width=".8"/>
+        <line x1="287" y1="76" x2="287" y2="112" stroke="#546E7A" stroke-width=".8"/>
+        <text x="38"  y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">현재</text>
+        <text id="age_now" x="38" y="108" text-anchor="middle" font-size="10" fill="#1565C0" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <text x="208" y="89" text-anchor="end" font-size="7" fill="#B71C1C" font-family="'Noto Sans KR',sans-serif">은퇴</text>
+        <text id="age_retire" x="226" y="108" text-anchor="start" font-size="10" fill="#E53935" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <circle cx="220" cy="92" r="2" fill="#E53935" opacity=".6"/>
+        <text x="402" y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">사망예정</text>
+        <text id="age_life" x="402" y="108" text-anchor="middle" font-size="10" fill="#555" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
+        <polygon points="220,18 20,76 420,76" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+        <text x="135" y="48" text-anchor="middle" font-size="9" fill="#0D47A1" font-weight="700" font-family="'Noto Sans KR',sans-serif">4.투자설계</text>
+        <text x="135" y="60" text-anchor="middle" font-size="7" fill="#0D47A1" font-family="'Noto Sans KR',sans-serif">안전70%·위험30%</text>
+        <text x="300" y="48" text-anchor="middle" font-size="9" fill="#4A148C" font-weight="700" font-family="'Noto Sans KR',sans-serif">5.세금설계</text>
+        <text x="300" y="60" text-anchor="middle" font-size="7" fill="#4A148C" font-family="'Noto Sans KR',sans-serif">ISA·IRP·연금</text>
+        <line x1="220" y1="18" x2="220" y2="278" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,3"/>
+        <line x1="44" y1="190" x2="220" y2="114" stroke="#43A047" stroke-width="1.3" stroke-dasharray="4,3"/>
+        <text x="122" y="163" text-anchor="middle" font-size="7" fill="#2E7D32" transform="rotate(-28,122,163)" font-family="'Noto Sans KR',sans-serif">내진설계</text>
+        <rect x="308" y="8" width="30" height="30" fill="#CFD8DC" stroke="#546E7A" stroke-width="1" rx="2"/>
+        <text x="323" y="20" text-anchor="middle" font-size="7.5" fill="#37474F" font-weight="700" font-family="'Noto Sans KR',sans-serif">6.굴뚝</text>
+        <text x="323" y="33" text-anchor="middle" font-size="7.5" fill="#37474F" font-family="'Noto Sans KR',sans-serif">부동산</text>
+        <rect id="desire-hl" x="0" y="0" width="0" height="0" fill="none" stroke="#E53935" stroke-width="2.5" stroke-dasharray="6,3" rx="3"/>
+        <defs>
+          <marker id="aRed2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10z" fill="#C62828"/>
+          </marker>
+          <marker id="aGreen2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10z" fill="#388E3C"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📐</div><div><div class="dnctitle">설계도 요약</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">현재 단계</span><span class="dnfv gold" id="f5_desire"></span></div>
+        <div class="dnfield"><span class="dnfl">다음 단계</span><span class="dnfv" id="f5_next"></span></div>
+        <div class="dnfield"><span class="dnfl">실행 전략</span><span class="dnfv" id="f5_strategy"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널6: 포트폴리오 -->
+  <div class="dnp" id="dnp6">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📈</div><div><div class="dnctitle">저축투자 포트폴리오</div><div class="dncsub">100-나이 법칙</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">투자재원 계산</div>
+        <div class="dn-calc">
+          <div class="dn-calc-row"><span class="dn-calc-lbl">저축투자 예산</span><span class="dn-calc-val" id="f6_budget">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">현재 저축투자</span><span class="dn-calc-val" id="f6_cur_save">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">투자재원</span><span class="dn-calc-val" id="f6_source">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 노후연금 부족</span><span class="dn-calc-val" id="f6_pen_gap" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 보험 부족 ×½</span><span class="dn-calc-val" id="f6_ins_gap" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl" style="font-weight:900">순투자재원</span><span class="dn-calc-val" id="f6_net" style="color:#2E7D32;font-size:13px">—</span></div>
+        </div>
+        <div class="dndiv" style="margin-top:10px">배분</div>
+        <div class="dnag">
+          <div class="dnab"><div class="dnab-l" id="f6_save_label">저축 (%)</div><div class="dnab-v" id="f6_save_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">적금·CMA·청약</div></div>
+          <div class="dnab gold"><div class="dnab-l" id="f6_inv_label">투자 (%)</div><div class="dnab-v" id="f6_inv_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">ISA·IRP·연금저축</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🎯</div><div><div class="dnctitle">자산배분 포트폴리오</div><div class="dncsub">오상열 CFP 기준 · 참고용</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">부동산 비중</span><span class="dnfv" id="f7_res"></span></div>
+        <div class="dnfield"><span class="dnfl">금융 비중</span><span class="dnfv" id="f7_inv"></span></div>
+        <div class="dnfield"><span class="dnfl">금융자산 합계</span><span class="dnfv hi" id="f7_fin_total"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널7: 종합설계 7대영역 -->
+  <div class="dnp" id="dnp7">
+    <!-- 8-1 은퇴 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏖️</div><div><div class="dnctitle">8-1 은퇴설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream"></span></div>
+        <div class="dnfield"><span class="dnfl">은퇴나이</span><span class="dnfv" id="f81_age">—</span></div>
+        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f81_life">—</span></div>
+        <div class="dndiv">계산</div>
+        <div class="dn-calc">
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 필요자금</span><span class="dn-calc-val" id="f81_need">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 준비자금</span><span class="dn-calc-val" id="f81_ready">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 부족자금</span><span class="dn-calc-val" id="f81_short" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">순은퇴일시금</span><span class="dn-calc-val" id="f81_net" style="color:#C62828">—</span></div>
+          <div class="dn-calc-row"><span class="dn-calc-lbl">월 추가저축</span><span class="dn-calc-val" id="f81_monthly" style="color:#C62828">—</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f0f4ff;border-radius:7px">
+          <span style="font-size:10px;color:#8896B0">은퇴준비율</span>
+          <span style="font-size:16px;font-weight:900;color:#1a3260" id="f81_rate">—</span>
+        </div>
+      </div>
+    </div>
+    <!-- 8-2 부채 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💳</div><div><div class="dnctitle">8-2 부채설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">주요 부채</span><span class="dnfv" id="f82_priority"></span></div>
+        <div class="dnfield"><span class="dnfl">담보대출</span><span class="dnfv" id="f82_mortgage">—</span></div>
+        <div class="dnfield"><span class="dnfl">상환 전략</span><span class="dnfv">신용: 즉시상환(소→대) · 담보: 은퇴전 완납</span></div>
+      </div>
+    </div>
+    <!-- 8-3 저축 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">8-3 저축설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal"></span></div>
+        <div class="dnfield"><span class="dnfl">월 가능액</span><span class="dnfv hi" id="f83_possible">—</span></div>
+        <div class="dnfield"><span class="dnfl">현재 저축</span><span class="dnfv" id="f83_current">—</span></div>
+        <div class="dnfield"><span class="dnfl">추가 필요</span><span class="dnfv warn" id="f83_gap">—</span></div>
+      </div>
+    </div>
+    <!-- 8-4 투자 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">8-4 투자설계</div><div class="dncsub">가중평균수익률</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">현재 부자지수</span><span class="dnfv hi" id="f84_wi">—</span></div>
+        <div class="dnfield"><span class="dnfl">금융자산 목표</span><span class="dnfv">10억원</span></div>
+        <div class="dnfield"><span class="dnfl">현재 금융자산</span><span class="dnfv" id="f84_current">—</span></div>
+        <div class="dnfield"><span class="dnfl">달성 필요액</span><span class="dnfv warn" id="f84_gap">—</span></div>
+        <div class="dnfield"><span class="dnfl">리밸런싱</span><span class="dnfv" id="f84_rebal">—</span></div>
+      </div>
+    </div>
+    <!-- 8-5 세금 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🧾</div><div><div class="dnctitle">8-5 세금설계</div><div class="dncsub">결정세액 0원 전략</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">연금저축펀드</span><span class="dnfv" id="f85_pension"></span></div>
+        <div class="dnfield"><span class="dnfl">IRP</span><span class="dnfv" id="f85_irp">—</span></div>
+        <div class="dnfield"><span class="dnfl">합산한도</span><span class="dnfv">연 900만원</span></div>
+        <div class="dnfield"><span class="dnfl">현재 환급 예상</span><span class="dnfv warn" id="f85_tax">—</span></div>
+        <div class="dnfield"><span class="dnfl">최대 환급 가능</span><span class="dnfv good" id="f85_refund">—</span></div>
+      </div>
+    </div>
+    <!-- 8-6 부동산 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">8-6 부동산설계</div></div></div>
+      <div class="dncbody">
+        <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own"></span></div>
+        <div class="dnfield"><span class="dnfl">현재 형태</span><span class="dnfv" id="f86_type">—</span></div>
+        <div class="dnfield"><span class="dnfl">주택 가격</span><span class="dnfv" id="f86_price">—</span></div>
+        <div class="dnfield"><span class="dnfl">향후 전략</span><span class="dnfv" id="f86_strategy">—</span></div>
+      </div>
+    </div>
+    <!-- 8-7 보험 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🛡️</div><div><div class="dnctitle">8-7 보험설계</div><div class="dncsub">8대 위험 기둥</div></div></div>
+      <div class="dncbody">
+        <div class="ins-g">
+          <div class="ins-c ng" id="ins_col_death"><div class="ins-n">사망</div><div class="ins-s" id="ins_death_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_inj"><div class="ins-n">장해</div><div class="ins-s" id="ins_inj_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_cancer"><div class="ins-n">암진단</div><div class="ins-s" id="ins_cancer_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_brain"><div class="ins-n">뇌혈관</div><div class="ins-s" id="ins_brain_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_heart"><div class="ins-n">심혈관</div><div class="ins-s" id="ins_heart_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_actual"><div class="ins-n">실비</div><div class="ins-s" id="ins_actual_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_hosp"><div class="ins-n">입원수술</div><div class="ins-s" id="ins_hosp_st">!</div></div>
+          <div class="ins-c ng" id="ins_col_dem"><div class="ins-n">치매간병</div><div class="ins-s" id="ins_dem_st">!</div></div>
+        </div>
+        <div class="dnfield" style="margin-top:8px"><span class="dnfl">현재 보험료</span><span class="dnfv" id="f87_premium">—</span></div>
+        <div class="dn-info red" style="margin-top:7px">⚠️ 보험증권 업로드 후 정확한 분석 가능합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널8: 최종의견 -->
+  <div class="dnp" id="dnp8">
+    <!-- 점수 -->
+    <div class="dn-score">
+      <div class="dn-score-num" id="f9_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
+      <div class="dn-score-lbl">종합 재무점수 (100점 만점)</div>
+      <div class="dn-score-grade" id="f9_grade">—</div>
+    </div>
+    <!-- DESIRE 로드맵 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">🗺️</div><div><div class="dnctitle">DESIRE 로드맵</div><div class="dncsub" id="desire_cur_step">현재 단계 계산 중</div></div></div>
+      <div class="dncbody">
+        <div class="desire-list" id="desire_list">
+          <div class="dstep" id="ds_D"><div class="dbadge">D</div><div><div class="dtitle">DEBT FREE — 신용대출 상환</div><div class="ddesc" id="ds_D_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_E"><div class="dbadge">E</div><div><div class="dtitle">EMERGENCY FUND — 비상예비자금</div><div class="ddesc" id="ds_E_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_S"><div class="dbadge">S</div><div><div class="dtitle">SAVINGS — 적립식 저축투자</div><div class="ddesc" id="ds_S_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_I"><div class="dbadge">I</div><div><div class="dtitle">INVESTMENT — 금융자산 10억</div><div class="ddesc" id="ds_I_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_R"><div class="dbadge">R</div><div><div class="dtitle">REPAY MORTGAGE — 담보대출 상환</div><div class="ddesc" id="ds_R_desc">확인 중</div></div></div>
+          <div class="dstep" id="ds_E2"><div class="dbadge">E</div><div><div class="dtitle">EARLY RETIREMENT — 조기은퇴</div><div class="ddesc">상속증여 플랜 완성 후 졸업</div></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 히스토리 BA -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">비포 & 에프터</div><div class="dncsub">히스토리 데이터</div></div></div>
+      <div class="dncbody">
+        <div style="overflow-x:auto">
+          <table class="ba-tbl">
+            <thead><tr><th>항목</th><th>전월</th><th>전분기</th><th>전년</th></tr></thead>
+            <tbody id="dn_ba_tbody">
+              <tr><td colspan="4" style="text-align:center;padding:12px;color:#8896B0;font-size:9.5px">2회 이상 상담 후 비교 데이터가 표시됩니다</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- 강점/개선/액션 -->
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">⭐</div><div><div class="dnctitle">강점 · 개선점 · 액션</div></div></div>
+      <div class="dncbody">
+        <div class="dndiv">강점</div>
+        <div class="dn-actions" style="margin-bottom:9px">
+          <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1"></div></div>
+          <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2"></div></div>
+          <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3"></div></div>
+        </div>
+        <div class="dndiv">개선점</div>
+        <div class="dn-actions" style="margin-bottom:9px">
+          <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1"></div></div>
+          <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2"></div></div>
+          <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3"></div></div>
+        </div>
+        <div class="dndiv">이번 달 실행 액션</div>
+        <div class="dn-actions">
+          <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1"></div></div>
+          <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2"></div></div>
+          <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널9: 대화록 -->
+  <div class="dnp" id="dnp9">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 노트 싱크</div></div></div>
+      <div class="dncbody">
+        <div class="dn-chat" id="dn_chat_log">
+          <div style="text-align:center;font-size:10px;color:#8896B0;padding:10px">상담 시작 후 대화가 여기에 기록됩니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패널10: 리포트 -->
+  <div class="dnp" id="dnp10">
+    <div class="dncard">
+      <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">종합재무설계 리포트</div><div class="dncsub">상담 완료 후 자동 발급</div></div></div>
+      <div class="dncbody" id="diagReportContent">
+        <div style="text-align:center;padding:16px">
+          <div style="font-size:26px;margin-bottom:7px">📄</div>
+          <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">종합재무설계 리포트</div>
+          <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
+          <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
+            <span style="color:#C9972A">✦</span> 금융집짓기® 설계도면<br>
+            <span style="color:#C9972A">✦</span> 7대영역 실행 계획<br>
+            <span style="color:#C9972A">✦</span> DESIRE 로드맵<br>
+            <span style="color:#C9972A">✦</span> 재무점수 및 등급 · 월별 액션플랜
+          </div>
+        </div>
+        <div id="diagReportReady" style="display:none">
+          <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div style="font-size:28px">🏆</div>
+              <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div>
+              <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
+              <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">—</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
+            </div>
+            <button onclick="downloadReportPDF()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /dnPanels -->
+</div><!-- /dnWrap -->
+`;
+
+  // ── 탭 전환 함수
+  window.dnGo = function(i) {
+    document.querySelectorAll('.dnp').forEach(function(p,j){ p.classList.toggle('active', j===i); });
+    document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+    document.getElementById('dnPanels').scrollTop = 0;
+    if(i===8) dnLoadBA();
+  };
+
+  // ── 히스토리 BA 연동
+  window.dnLoadBA = function() {
+    var tbody = document.getElementById('dn_ba_tbody');
+    if(!tbody) return;
+    var snaps = [];
+    try { snaps = JSON.parse(localStorage.getItem('fh_snap_list')||'[]'); } catch(e){}
+    if(snaps.length < 2) return;
+    var now = snaps[0].summary;
+    function d(a,b,k,unit){ if(!a||!b) return '—'; var v=(a[k]||0)-(b[k]||0); if(!v) return '±0'; return '<span class="'+(v>0?'v-up':'v-dn')+'">'+(v>0?'+':'')+v+(unit||'만')+'</span>'; }
+    var m1=snaps[1]?.summary, m3=snaps[Math.min(3,snaps.length-1)]?.summary, m12=snaps[snaps.length-1]?.summary;
+    tbody.innerHTML='<tr><td>순자산</td><td>'+d(now,m1,'totalAsset')+'</td><td>'+d(now,m3,'totalAsset')+'</td><td>'+d(now,m12,'totalAsset')+'</td></tr>'+
+      '<tr><td>재무점수</td><td>'+d(now,m1,'score','점')+'</td><td>'+d(now,m3,'score','점')+'</td><td>'+d(now,m12,'score','점')+'</td></tr>'+
+      '<tr><td>월 수입</td><td>'+d(now,m1,'income')+'</td><td>'+d(now,m3,'income')+'</td><td>'+d(now,m12,'income')+'</td></tr>';
+  };
+  dnLoadBA();
+
+  // ── 프로세스 바 빌드 (기존 호환)
+  var grid = document.getElementById('diagProcGrid');
+  if(grid){
+    grid.innerHTML = DIAG_PARTS.map(function(p,i){
+      return '<span id="dps'+i+'" onclick="diagJumpPart('+i+')" style="padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(i===0?'color:#E8B84B;background:rgba(201,151,42,.18);border:1px solid rgba(201,151,42,.4);':'color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);')+'">'+p.short+'</span>';
+    }).join('');
+  }
+}
+
+/* ── 파트 활성화 ── */
+function diagActivatePart(idx) {
+  diagCurPart = idx;
+
+  // 새 탭형 노트 전환
+  var tabIdx = idx <= 4 ? idx :
+               idx === 5 ? 5 :
+               idx === 6 ? 6 :
+               idx === 7 ? 6 :
+               idx === 8 ? 7 :
+               idx === 9 ? 8 :
+               idx === 10 ? 9 :
+               idx === 11 ? 10 : idx;
+  if(typeof dnGo === 'function') dnGo(tabIdx);
+
+  // 프로세스 바 업데이트
+  var ps = document.getElementById('dps'+idx);
+  if(ps){
+    document.querySelectorAll('[id^="dps"]').forEach(function(el){
+      el.style.color='rgba(255,255,255,.28)';el.style.background='rgba(255,255,255,.04)';el.style.border='1px solid rgba(255,255,255,.06)';
+    });
+    ps.style.color='#E8B84B';ps.style.background='rgba(201,151,42,.18)';ps.style.border='1px solid rgba(201,151,42,.4)';
+    ps.scrollIntoView({behavior:'smooth',inline:'center'});
+  }
+  // 서버에 단계 전달
+  // [비활성화 by DEV-001] 기존 WS step 전송
+  // if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
+  if(diagFinCtx) diagFinCtx.currentStep=idx;
+  var pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx]?.short||'';
+  var sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+(DIAG_PARTS[idx]?.short||'');
+}
+
+function diagJumpPart(i) { diagActivatePart(i); }
+
+/* ── 파트 필드 채우기 ── */
+function diagFillPart(idx) {
+  const part=DIAG_PARTS[idx];
+  if(!part||!part.fields) return;
+  part.fields.forEach(function([l,v]){
+    if(!v) return;
+    const fid='dfv'+idx+'_'+l.replace(/[\s\(\)\+\·]/g,'_');
+    const el=document.getElementById(fid);
+    if(el){el.textContent=v;el.style.color='#0B1D3A';el.style.fontStyle='normal';el.style.borderLeftColor='#C9972A';}
+  });
+}
+
+/* ── STT 자막 ── */
+function diagAddSTT(role, text, tag) {
+  const area=document.getElementById('diagStt'); if(!area) return;
+  const isAI=role==='ai';
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:flex-start'+(isAI?'':';flex-direction:row-reverse');
+  div.innerHTML=isAI
+    ?`<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖'"></div>
+     <div><div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05)">${text}</div>${tag?`<div style="font-size:7.5px;color:#E8B84B;margin-top:1px;padding-left:2px">💡 ${tag}</div>`:''}</div>`
+    :`<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>
+     <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">${text}</div>`;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+
+/* ── 컨트롤 ── */
+function diagToggleMic() {
+  diagMic=!diagMic;
+  const ico=document.getElementById('diagMicIco');
+  if(ico) ico.textContent=diagMic?'🎤':'🔇';
+}
+function diagToggleCamera() {
+  diagCam=!diagCam;
+  const ph=document.getElementById('diagPipPh');
+  const vid=document.getElementById('diagPipVideo');
+  const dot=document.getElementById('diagCamDot');
+  if(diagCam){
+    if(ph) ph.style.display='none';
+    if(vid) vid.style.display='block';
+    if(dot) dot.style.background='#22c55e';
+    navigator.mediaDevices?.getUserMedia({video:true,audio:false})
+      .then(function(s){if(vid) vid.srcObject=s;})
+      .catch(function(){if(vid) vid.style.display='none';if(ph) ph.style.display='flex';});
+  } else {
+    if(ph) ph.style.display='flex';
+    if(vid){vid.style.display='none';if(vid.srcObject){vid.srcObject.getTracks().forEach(function(t){t.stop();});vid.srcObject=null;}}
+    if(dot) dot.style.background='rgba(255,255,255,.2)';
+  }
+}
+function diagToggleRec() {
+  diagRec=!diagRec;
+  const btn=document.getElementById('diagRecBtn');
+  if(btn) btn.textContent=diagRec?'⏹ 녹화중':'⏺ 녹화';
+  showToast(diagRec?'⏺ 녹화 시작 · '+DIAG_TODAY_STR+' 자동 저장':'⏹ 녹화가 저장됩니다');
+}
+function diagTogglePause() {
+  diagPaused=!diagPaused;
+  const ov=document.getElementById('diagPauseOv');
+  if(ov) ov.style.display=diagPaused?'flex':'none';
+  const ico=document.getElementById('diagPauseIco');
+  const lbl=document.getElementById('diagPauseLbl');
+  const btn=document.getElementById('diagPauseBtn');
+  if(ico) ico.textContent=diagPaused?'▶':'⏸';
+  if(lbl) lbl.textContent=diagPaused?'재개':'일시정지';
+  if(btn) btn.textContent=diagPaused?'▶ 재개':'⏸ 일시정지';
+  const w=document.getElementById('diagWave');
+  if(w) w.querySelectorAll('div').forEach(function(d){ d.style.animation=diagPaused?'none':''; });
+
+  if(diagPaused) {
+    /* [DEV-001] Vapi 마이크 음소거 */
+    if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
+    showToast('⏸ 일시정지');
+  } else {
+    /* [DEV-001] Vapi 마이크 음소거 해제 */
+    if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
+    showToast('▶ 재개');
+  }
+}
+function diagShowEndModal() {
+  // 훈련 모드 중이면 평가 리포트 먼저
+  if(_trainMode) { endTrainSession(); return; }
+  const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex';
+}
+function diagHideEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='none'; }
+function diagEndConsult() {
+  diagHideEndModal();
+  clearInterval(diagInt);
+  diagPaused = true;
+
+  /* [DEV-001] Vapi 통화 종료 */
+  if(vapi && vapiCallActive) {
+    try{ vapi.stop(); }catch(e){}
+    vapi = null;
+    vapiCallActive = false;
+  }
+
+  /* ── 마이크 스트림 해제 */
+  try{ if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } }catch(e){}
+
+  // [비활성화 by DEV-001] 기존 오디오/WS 종료
+  // diagPlayQueue=[];
+  // diagIsPlaying=false;
+  // try{ if(diagAudioCtx){ diagAudioCtx.suspend(); diagAudioCtx.close(); diagAudioCtx=null; } }catch(e){}
+  // try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
+  // if(diagWs) { try{ diagWs.close(1000, 'user_ended'); }catch(e){} diagWs = null; }
+
+  // 리포트 활성화
+  const nr=document.getElementById('diagReportReady');
+  if(nr) nr.style.display='block';
+  const rd=document.getElementById('diagReportDate');
+  if(rd) rd.textContent=DIAG_TODAY_STR+' · '+DIAG_SESSION_NUM+'회차 · '+Math.floor(diagSec/60)+'분 진단';
+  if(typeof dnGo==='function') dnGo(10); // 리포트 탭으로
+  // 히스토리에 리포트 추가
+  const list=document.getElementById('reportHistList');
+  if(list) {
+    const mins=Math.floor(diagSec/60);
+    const label=DIAG_IS_FIRST?'초회진단':DIAG_SESSION_NUM+'회차 정기상담';
+    const div=document.createElement('div');
+    div.className='rhc';
+    div.innerHTML='<div class="rhc-icon">📄</div>'+
+      '<div class="rhc-info"><div class="rhc-title">'+DIAG_TODAY_STR+' '+label+' 리포트</div><div class="rhc-sub">'+mins+'분 · 금융집짓기® 진단</div></div>'+
+      '<div class="rhc-score" id="diagReportScore">—</div>'+
+      '<button class="rhc-dl" onclick="showToast(\'📄 PDF 다운로드 중...\')">PDF</button>';
+    list.insertBefore(div, list.firstChild);
+  }
+  showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! 리포트 생성 중...');
+  /* [DEV-003] 종합리포트 자동생성 */
+  generateFinalReport();
+}
+
+/* ══════════════════════════════════════════════════════════
+   [DEV-003] 종합재무설계 리포트 자동생성
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 상담노트 데이터 수집 ── */
+function collectNoteData() {
+  function gt(id) { var el=document.getElementById(id); return el ? (el.textContent||'').trim().replace(/^—$/,'').replace(/^중$/,'') : ''; }
+  
+  /* 대화 내용 수집 — dn_chat_log + diagStt */
+  var chatSummary = '';
+  var chatLog = document.getElementById('dn_chat_log');
+  if(chatLog) {
+    var bubbles = chatLog.querySelectorAll('div[style*="border-radius:12px"]');
+    var msgs = [];
+    bubbles.forEach(function(b) {
+      var txt = (b.textContent||'').trim();
+      if(txt && txt.length > 1) msgs.push(txt);
+    });
+    chatSummary = msgs.slice(-20).join(' / ');  /* 최근 20개 */
+  }
+  if(!chatSummary) {
+    var sttArea = document.getElementById('diagStt');
+    if(sttArea) {
+      var sttBubbles = sttArea.querySelectorAll('.c-stt-bubble, [style*="border-radius"]');
+      var sttMsgs = [];
+      sttBubbles.forEach(function(b) {
+        var txt = (b.textContent||'').trim();
+        if(txt && txt.length > 1) sttMsgs.push(txt);
+      });
+      chatSummary = sttMsgs.slice(-20).join(' / ');
+    }
+  }
+
+  return {
+    session: { date: gt('f0_date') || DIAG_TODAY_STR, session: gt('f0_session') || DIAG_SESSION_NUM+'회차', minutes: Math.floor(diagSec/60) },
+    customer: {
+      name: gt('f1_name'), age: gt('f1_age'), marry: gt('f1_marry'),
+      child: gt('f1_child'), family: gt('f1_family'), job: gt('f1_job'),
+      dual: gt('f1_dual'), retire: gt('f1_retire'), life: gt('f1_life')
+    },
+    worry: { w1: gt('f2_w1'), w2: gt('f2_w2'), w3: gt('f2_w3'), goal: gt('f2_goal') },
+    income: {
+      total: gt('f3_income'), living: gt('f3_living_cur'), savings: gt('f3_save_cur'),
+      pension: gt('f3_pension_cur'), insurance: gt('f3_ins_cur'), loan: gt('f3_loan_cur'), surplus: gt('f3_surplus')
+    },
+    assets: {
+      deposit: gt('f4_deposit'), invest: gt('f4_invest'), pension: gt('f4_pension'),
+      realty: gt('f4_realty'), total_asset: gt('f4_total_asset'),
+      credit: gt('f4_credit'), mortgage: gt('f4_mortgage'),
+      total_debt: gt('f4_total_debt'), net: gt('f4_net'), wealth_index: gt('f4_wi_val')
+    },
+    design: { desire: gt('f5_desire'), next: gt('f5_next'), strategy: gt('f5_strategy') },
+    portfolio: { source: gt('f6_source'), net: gt('f6_net') },
+    retire: { need: gt('f81_need'), ready: gt('f81_ready'), short: gt('f81_short'), rate: gt('f81_rate') },
+    score: gt('f9_score'), grade: gt('f9_grade'),
+    strengths: [gt('f9_s1'), gt('f9_s2'), gt('f9_s3')].filter(Boolean),
+    improvements: [gt('f9_i1'), gt('f9_i2'), gt('f9_i3')].filter(Boolean),
+    actions: [gt('f9_a1'), gt('f9_a2'), gt('f9_a3')].filter(Boolean),
+    chatSummary: chatSummary
+  };
+}
+
+/* ── 리포트 생성 요청 ── */
+async function generateFinalReport() {
+  var noteData = collectNoteData();
+  /* 최소 데이터 확인 — 이름이라도 있어야 요청 */
+  if(!noteData.customer.name && !noteData.income.total) {
+    console.log('[DEV-003] 노트 데이터 부족 — 리포트 생성 스킵');
+    return;
+  }
+
+  /* 로딩 UI */
+  var contentEl = document.getElementById('diagReportContent');
+  var readyEl = document.getElementById('diagReportReady');
+  var dateEl = document.getElementById('diagReportDate');
+  var scoreEl = document.getElementById('diagReportScore');
+  if(dateEl) dateEl.textContent = '리포트 생성 중...';
+  showToast('📊 AI가 종합재무설계 리포트를 생성하고 있습니다...');
+
+  try {
+    var res = await fetch('https://moneya-server.onrender.com/api/generate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noteData: noteData, chatHistory: noteData.chatSummary || null })
+    });
+
+    if(!res.ok) {
+      var errData = await res.json().catch(function(){ return {error:'서버 오류'}; });
+      throw new Error(errData.error || '서버 응답 오류 ' + res.status);
+    }
+
+    var report = await res.json();
+    console.log('[DEV-003] 리포트 수신:', report);
+    renderReport(report);
+
+  } catch(e) {
+    console.error('[DEV-003] 리포트 생성 실패:', e.message);
+    if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차';
+    showToast('⚠️ 리포트 자동생성 실패 — 상담 데이터는 저장되었습니다');
+  }
+}
+
+/* ── 리포트 렌더링 ── */
+function renderReport(report) {
+  var dateEl = document.getElementById('diagReportDate');
+  var scoreEl = document.getElementById('diagReportScore');
+  var readyEl = document.getElementById('diagReportReady');
+  var contentEl = document.getElementById('diagReportContent');
+
+  /* 점수·날짜 */
+  var score = report.finance_score ? report.finance_score.total : (report.wealth_index ? report.wealth_index.score : 0);
+  var grade = report.wealth_index ? report.wealth_index.grade : '';
+  var custName = report.customer ? report.customer.name : '';
+  if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 · ' + Math.floor(diagSec/60) + '분 진단';
+  if(scoreEl) scoreEl.textContent = score || '—';
+  if(readyEl) readyEl.style.display = 'block';
+
+  /* 9탭 최종의견에도 반영 */
+  var f9s = document.getElementById('f9_score');
+  var f9g = document.getElementById('f9_grade');
+  if(f9s && score) f9s.innerHTML = score + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+  if(f9g && grade) f9g.textContent = grade;
+  if(report.strengths) report.strengths.forEach(function(s,i) { var el=document.getElementById('f9_s'+(i+1)); if(el) el.textContent=s; });
+  if(report.improvements) report.improvements.forEach(function(s,i) { var el=document.getElementById('f9_i'+(i+1)); if(el) el.textContent=s; });
+  if(report.actions) report.actions.forEach(function(s,i) { var el=document.getElementById('f9_a'+(i+1)); if(el) el.textContent=s; });
+
+  /* ── 리포트 HTML 조립 ── */
+  var h = '<div id="reportPrintArea" style="display:flex;flex-direction:column;gap:9px;margin-top:10px">';
+
+  /* 헤더 */
+  h += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:16px;text-align:center;border:1.5px solid rgba(201,151,42,.4)">'
+    + '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px">오원트금융연구소 · 금융집짓기® · AI머니야</div>'
+    + '<div style="font-size:15px;font-weight:900;color:#fff;margin-bottom:2px">종합재무설계 리포트</div>'
+    + '<div style="font-size:10px;color:rgba(255,255,255,.5)">' + DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 · ' + Math.floor(diagSec/60) + '분 진단</div>'
+    + '<div style="margin-top:10px;display:flex;justify-content:center;gap:16px">'
+    + '<div><div style="font-size:36px;font-weight:900;color:#E8B84B;line-height:1">' + (score||'—') + '</div><div style="font-size:9px;color:rgba(255,255,255,.4)">재무점수</div></div>'
+    + '<div><div style="font-size:36px;font-weight:900;color:#E8B84B;line-height:1">' + (grade||'—') + '</div><div style="font-size:9px;color:rgba(255,255,255,.4)">등급</div></div>'
+    + '</div></div>';
+
+  /* 1. 고객 정보 */
+  if(report.customer) {
+    var c = report.customer;
+    h += '<div style="background:#f8faff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
+      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">👤 고객 정보</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10.5px;color:#1a2340;line-height:2">'
+      + '<div>성함: <strong>' + (c.name||'—') + '</strong></div>'
+      + '<div>나이: <strong>' + (c.age||'—') + '세</strong></div>'
+      + '<div>직업: <strong>' + (c.job||'—') + '</strong></div>'
+      + '<div>가족: <strong>' + (c.family||'—') + '인</strong></div>'
+      + '</div></div>';
+  }
+
+  /* 2. 수입지출 */
+  if(report.income) {
+    var inc = report.income;
+    h += '<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
+      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">💰 수입지출 분석</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'
+      + '<div style="background:#f0f4ff;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">월 수입</div><div style="font-size:14px;font-weight:900;color:#0B1D3A">' + (inc.monthly||'—') + '<span style="font-size:9px">만</span></div></div>'
+      + '<div style="background:#f0fdf4;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">저축</div><div style="font-size:14px;font-weight:900;color:#2E7D32">' + (inc.savings||'—') + '<span style="font-size:9px">만</span></div></div>'
+      + '<div style="background:#fff5f5;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">생활비</div><div style="font-size:14px;font-weight:900;color:#C62828">' + (inc.living||'—') + '<span style="font-size:9px">만</span></div></div>'
+      + '<div style="background:#fff8e6;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">잉여자금</div><div style="font-size:14px;font-weight:900;color:#C9972A">' + (inc.surplus||'—') + '<span style="font-size:9px">만</span></div></div>'
+      + '</div></div>';
+  }
+
+  /* 3. 자산부채 */
+  if(report.assets) {
+    var a = report.assets;
+    h += '<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
+      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">🏦 자산부채 현황</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">'
+      + '<div style="background:#f0f4ff;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">총자산</div><div style="font-size:13px;font-weight:900;color:#0B1D3A">' + (a.total||'—') + '</div></div>'
+      + '<div style="background:#fff5f5;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">총부채</div><div style="font-size:13px;font-weight:900;color:#C62828">' + (a.debt||'—') + '</div></div>'
+      + '<div style="background:#f0fdf4;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">순자산</div><div style="font-size:13px;font-weight:900;color:#2E7D32">' + (a.net||'—') + '</div></div>'
+      + '</div></div>';
+  }
+
+  /* 4. 재무점수 세부 */
+  if(report.finance_score) {
+    var fs = report.finance_score;
+    h += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:10px;padding:12px">'
+      + '<div style="font-size:10px;font-weight:900;color:#E8B84B;margin-bottom:8px">📊 재무점수 세부 (100점 만점)</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">';
+    [{l:'지출관리',v:fs.expense},{l:'자산관리',v:fs.asset},{l:'보험',v:fs.insurance},{l:'은퇴준비',v:fs.retirement},{l:'부채관리',v:fs.debt}].forEach(function(it) {
+      var c = (it.v||0)>=70?'#4ade80':(it.v||0)>=40?'#fbbf24':'#f87171';
+      h += '<div style="background:rgba(255,255,255,.06);border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:rgba(255,255,255,.5)">'+it.l+'</div><div style="font-size:16px;font-weight:900;color:'+c+'">'+(it.v||'—')+'</div></div>';
+    });
+    h += '</div></div>';
+  }
+
+  /* 5. DESIRE 단계 */
+  if(report.desire_stage) {
+    var ds = report.desire_stage;
+    h += '<div style="background:#fff8e6;border-radius:10px;padding:12px;border:1px solid #E8B84B">'
+      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:4px">🗺️ DESIRE 로드맵 현재 단계</div>'
+      + '<div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:3px">' + (ds.stage||'—') + '</div>'
+      + '<div style="font-size:10px;color:#555;line-height:1.6">' + (ds.description||'') + '</div></div>';
+  }
+
+  /* 6. 강점 */
+  if(report.strengths && report.strengths.length) {
+    h += '<div style="background:#f0fdf4;border-radius:10px;padding:12px;border:1px solid #86efac">'
+      + '<div style="font-size:10px;font-weight:900;color:#2E7D32;margin-bottom:5px">✅ 강점</div>';
+    report.strengths.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0">'+  (i+1)+'. '+s+'</div>'; });
+    h += '</div>';
+  }
+
+  /* 7. 개선점 */
+  if(report.improvements && report.improvements.length) {
+    h += '<div style="background:#fff5f5;border-radius:10px;padding:12px;border:1px solid #fca5a5">'
+      + '<div style="font-size:10px;font-weight:900;color:#C62828;margin-bottom:5px">⚠️ 개선점</div>';
+    report.improvements.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0">'+(i+1)+'. '+s+'</div>'; });
+    h += '</div>';
+  }
+
+  /* 8. 실행 액션 */
+  if(report.actions && report.actions.length) {
+    h += '<div style="background:#fff8e6;border-radius:10px;padding:12px;border:1px solid #E8B84B">'
+      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:5px">🎯 이번 달 액션플랜</div>';
+    report.actions.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0"><strong>'+(i+1)+'.</strong> '+s+'</div>'; });
+    h += '</div>';
+  }
+
+  /* 9. 다음 상담 */
+  if(report.next_schedule) {
+    h += '<div style="background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.05));border-radius:10px;padding:12px;border:1px solid rgba(201,151,42,.35)">'
+      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:3px">📅 다음 상담 권장일</div>'
+      + '<div style="font-size:12px;font-weight:700;color:#0B1D3A">' + report.next_schedule + '</div></div>';
+  }
+
+  /* 10. 푸터 */
+  h += '<div style="text-align:center;font-size:8px;color:#8896B0;line-height:1.8;padding:8px 0">'
+    + '오원트금융연구소 · 오상열 CFP · 010-5424-5332<br>'
+    + '금융집짓기® AI머니야 · 본 리포트는 참고용이며 투자 권유가 아닙니다</div>';
+
+  h += '</div>';  /* /reportPrintArea */
+
+  /* ── PDF 다운로드 + 공유 버튼 ── */
+  h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">'
+    + '<button onclick="downloadReportPDF()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:13px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
+    + '<button onclick="shareReportKakao()" style="padding:10px;border-radius:8px;border:none;background:#FEE500;color:#3A1D1D;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">💛 카톡</button>'
+    + '<button onclick="shareReportSMS()" style="padding:10px;border-radius:8px;border:none;background:#34C759;color:#fff;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">💬 문자</button>'
+    + '<button onclick="shareReportEmail()" style="padding:10px;border-radius:8px;border:none;background:#007AFF;color:#fff;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">✉️ 이메일</button>'
+    + '</div></div>';
+
+  /* ── DOM 삽입 ── */
+  var existingDetail = document.getElementById('diagReportDetail');
+  if(existingDetail) existingDetail.remove();
+  var wrapper = document.createElement('div');
+  wrapper.id = 'diagReportDetail';
+  wrapper.innerHTML = h;
+  var readyParent = readyEl ? readyEl.parentElement : contentEl;
+  if(readyEl && readyEl.nextSibling) {
+    readyParent.insertBefore(wrapper, readyEl.nextSibling);
+  } else if(readyParent) {
+    readyParent.appendChild(wrapper);
+  }
+
+  /* 리포트 데이터 전역 저장 (공유용) */
+  window._lastReport = report;
+  window._lastReportScore = score;
+  window._lastReportGrade = grade;
+  window._lastReportName = custName;
+
+  /* 리포트 탭으로 이동 */
+  if(typeof dnGo === 'function') dnGo(10);
+
+  showToast('🏆 종합재무설계 리포트가 완성되었습니다!');
+  console.log('[DEV-003] 리포트 렌더링 완료 — 점수:', score, '등급:', grade);
+}
+
+/* ══════════════════════════════════════════════════════════
+   [DEV-003] PDF 다운로드
+   ══════════════════════════════════════════════════════════ */
+function downloadReportPDF() {
+  var printArea = document.getElementById('reportPrintArea');
+  if(!printArea) { showToast('⚠️ 리포트가 아직 생성되지 않았습니다'); return; }
+  showToast('📄 PDF 생성 중... 잠시만 기다려 주세요');
+
+  /* html2canvas + jsPDF 동적 로드 */
+  function loadScript(src) {
+    return new Promise(function(resolve, reject) {
+      if(document.querySelector('script[src="'+src+'"]')) { resolve(); return; }
+      var s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  Promise.all([
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js')
+  ]).then(function() {
+    /* 임시로 배경색 설정 (투명 방지) */
+    printArea.style.background = '#fff';
+    printArea.style.padding = '16px';
+    printArea.style.borderRadius = '0';
+
+    html2canvas(printArea, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    }).then(function(canvas) {
+      var imgData = canvas.toDataURL('image/png');
+      var pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+      var pdfW = pdf.internal.pageSize.getWidth();
+      var pdfH = pdf.internal.pageSize.getHeight();
+      var imgW = pdfW - 20; /* 좌우 10mm 마진 */
+      var imgH = (canvas.height * imgW) / canvas.width;
+
+      /* 여러 페이지 처리 */
+      var yOffset = 0;
+      var pageH = pdfH - 20; /* 상하 10mm 마진 */
+      while(yOffset < imgH) {
+        if(yOffset > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, 10 - yOffset, imgW, imgH);
+        yOffset += pageH;
+      }
+
+      var fileName = '금융집짓기_리포트_' + (window._lastReportName||'고객') + '_' + DIAG_TODAY_STR.replace(/\./g,'') + '.pdf';
+      pdf.save(fileName);
+
+      /* 스타일 복원 */
+      printArea.style.background = '';
+      printArea.style.padding = '';
+      printArea.style.borderRadius = '';
+
+      showToast('✅ PDF 다운로드 완료! — ' + fileName);
+    }).catch(function(e) {
+      console.error('[DEV-003] PDF 생성 오류:', e);
+      showToast('⚠️ PDF 생성 실패 — 다시 시도해 주세요');
+    });
+  }).catch(function(e) {
+    console.error('[DEV-003] 라이브러리 로드 실패:', e);
+    showToast('⚠️ PDF 라이브러리 로드 실패');
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   [DEV-003] 리포트 공유하기
+   ══════════════════════════════════════════════════════════ */
+function getReportShareText() {
+  var name = window._lastReportName || '고객';
+  var score = window._lastReportScore || '—';
+  var grade = window._lastReportGrade || '';
+  var r = window._lastReport || {};
+  var lines = [
+    '🏠 금융집짓기® 종합재무설계 리포트',
+    '━━━━━━━━━━━━━━━━━',
+    '📅 ' + DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차',
+    '👤 ' + name + ' · 재무점수 ' + score + '점' + (grade ? ' · ' + grade : ''),
+    ''
+  ];
+  if(r.strengths && r.strengths.length) {
+    lines.push('✅ 강점');
+    r.strengths.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
+    lines.push('');
+  }
+  if(r.improvements && r.improvements.length) {
+    lines.push('⚠️ 개선점');
+    r.improvements.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
+    lines.push('');
+  }
+  if(r.actions && r.actions.length) {
+    lines.push('🎯 이번 달 액션플랜');
+    r.actions.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
+    lines.push('');
+  }
+  if(r.next_schedule) lines.push('📅 다음 상담: ' + r.next_schedule);
+  lines.push('');
+  lines.push('💡 오원트금융연구소 · 오상열 CFP');
+  lines.push('🔗 https://financial-house-building.vercel.app');
+  return lines.join('\n');
+}
+
+function shareReportKakao() {
+  var text = getReportShareText();
+  if(window.Kakao && window.Kakao.isInitialized()) {
+    window.Kakao.Share.sendDefault({
+      objectType: 'text',
+      text: text,
+      link: { mobileWebUrl: 'https://financial-house-building.vercel.app', webUrl: 'https://financial-house-building.vercel.app' }
+    });
+  } else {
+    /* 카카오 SDK 없으면 클립보드 복사 */
+    copyToClipboard(text);
+    showToast('📋 리포트 내용이 복사되었습니다! 카카오톡에 붙여넣기 하세요');
+  }
+}
+
+function shareReportSMS() {
+  var text = getReportShareText();
+  var encoded = encodeURIComponent(text);
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var sep = isIOS ? '&' : '?';
+  window.location.href = 'sms:' + sep + 'body=' + encoded;
+  showToast('💬 문자 앱으로 이동합니다');
+}
+
+function shareReportEmail() {
+  var name = window._lastReportName || '고객';
+  var score = window._lastReportScore || '—';
+  var text = getReportShareText();
+  var subject = encodeURIComponent('🏠 금융집짓기® 재무설계 리포트 — ' + name + '님 ' + score + '점');
+  var body = encodeURIComponent(text);
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  showToast('✉️ 이메일 앱으로 이동합니다');
+}
+
+function copyToClipboard(text) {
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(function() { fallbackCopyText(text); });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
+function diagSendText() {
+  const inp=document.getElementById('diagTextInp');
+  if(!inp||!inp.value.trim()) return;
+  const txt=inp.value.trim();
+  diagAddSTT('user',txt,null);
+  inp.value='';
+  /* [DEV-001] Vapi로 텍스트 전송 */
+  if(vapi && vapiCallActive) {
+    try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
+  }
+  // [비활성화 by DEV-001] 기존 WebSocket
+  // if(diagWs&&diagWs.readyState===1)
+  //   diagWs.send(JSON.stringify({type:'text_input',text:txt}));
+}
+
+
+/* ━━━ STT 기반 상담노트 자동 채우기 ━━━ */
+
+/* diagDetectStep 제거 — 단계이동은 update_smart_note 도구로만 */
+
+/* 고객 답변에서 인적사항 자동 채우기 */
+let diagLastQuestion = ''; // 머니야 마지막 질문 추적
+
+/* ━━━ 상담노트 자동채우기 — 복명복창 파싱 방식 ━━━ */
+
+/* 머니야 마지막 질문 추적 */
+let diagLastQ = '';
+let diagLastFilledPartIdx = -1;
+let diagLastFilledLabel = '';
+
+/* 머니야 발화 → 복명복창 파싱 → 노트 자동 기입 */
+function diagParseAiSpeech(aiText) {
+  var t = aiText;
+
+  /* ── v6.3 단계 전환 감지 — 점프 방지 포함 ── */
+  var stepMap = [
+    { step:1, keys:['성함이 어떻게 되시나요','고객님에 대해 간단히','먼저 고객님에 대해'] },
+    { step:2, keys:['경제적으로 가장 걱정','고민되시거나 관심 있으신','가장 걱정되시거나'] },
+    { step:3, keys:['수입과 지출을 함께 정리','지금까지 고민을 들었고','실수령액이 어떻게 되세요'] },
+    { step:4, keys:['수입지출을 봤고, 이제 자산','자산과 부채를 정리해','예적금, 청약통장은'] },
+    { step:5, keys:['집을 그릴 때 어디서','금융도 마찬가지입니다','금융집짓기 설계도'] },
+    { step:6, keys:['저축투자 포트폴리오','투자재원을 계산'] },
+    { step:7, keys:['자산배분 포트폴리오','부동산70'] },
+    { step:8, keys:['꿈꾸는 노후','은퇴설계를 시작','7대영역'] },
+    { step:9, keys:['최종의견','DESIRE 단계','강점부터'] },
+    { step:10, keys:['어떻게 도움이 되셨나요','다음 달에도','머니야였습니다'] },
+  ];
+  for(var i=0; i<stepMap.length; i++) {
+    var sm = stepMap[i];
+    if(sm.keys.some(function(k){ return t.includes(k); })) {
+      // 반드시 현재 단계보다 높아야 하고, 최대 2칸까지만 점프 허용
+      if(sm.step > diagCurPart && sm.step <= diagCurPart + 2) {
+        (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
+      }
+      break;
+    }
+  }
+
+  /* ── 복명복창 파싱 → 신 ID에 직접 기입 ── */
+  var patterns = [
+    // 인적사항 (note_page=1) — 성함 패턴 최대한 넓게
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님이시군요/ },
+    { pg:1, key:'name', regex:/아,\s*([가-힣]{2,5})님/ },
+    { pg:1, key:'name', regex:/^([가-힣]{2,5})님\s*반갑/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님이라고/ },
+    { pg:1, key:'name', regex:/성함.*?([가-힣]{2,5})님/ },
+    // 나이
+    { pg:1, key:'age', regex:/(\d+)세이시군요/ },
+    { pg:1, key:'age', regex:/아,\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/(\d+)살이시군요/ },
+    // 결혼여부
+    { pg:1, key:'marry', regex:/(기혼|미혼)이시군요/ },
+    { pg:1, key:'marry', regex:/(기혼|미혼)이라고/ },
+    // 가족수
+    { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
+    { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
+    { pg:1, key:'family', regex:/(\d+)명.*가족/ },
+    // 직업
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|프리랜서|의사|간호사|교사|교수)이시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서).*하시는군요/ },
+    // 맞벌이
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이)이시군요/ },
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이)로\s*가계/ },
+    // 고민 (note_page=2)
+    { pg:2, key:'w1', regex:/바로\s*그\s*문제.*해결하기.*([^.]{5,30})/ },
+    { pg:2, key:'goal', regex:/오늘\s*([^.]{5,30})\s*해결을 위해/ },
+    // 수입지출 (note_page=3)
+    { pg:3, key:'income', regex:/월\s*수입\s*([\d,]+)만/ },
+    { pg:3, key:'income', regex:/([\d,]+)만원.*실수령/ },
+    { pg:3, key:'income', regex:/수입.*?([\d,]+)만원에서/ },
+    { pg:3, key:'loan_cur', regex:/대출.*?([\d,]+)만원/ },
+    { pg:3, key:'ins_cur',  regex:/보험.*?([\d,]+)만원/ },
+    { pg:3, key:'pension_cur', regex:/연금.*?([\d,]+)만원/ },
+    { pg:3, key:'save_cur',    regex:/저축.*?([\d,]+)만원/ },
+    { pg:3, key:'living_cur',  regex:/생활비.*?([\d,]+)만원/ },
+    { pg:3, key:'surplus',     regex:/잉여자금.*?([\d,]+)만원/ },
+    // 자산부채 (note_page=4)
+    { pg:4, key:'deposit',    regex:/예적금\s*([\d,억천만]+)/ },
+    { pg:4, key:'invest',     regex:/펀드.*?([\d,억천만]+)/ },
+    { pg:4, key:'realty',     regex:/부동산.*?([\d,억천만]+)/ },
+    { pg:4, key:'credit',     regex:/신용대출\s*([\d,억천만]+)/ },
+    { pg:4, key:'total_asset',regex:/총자산.*?([\d,억천만]+)/ },
+    { pg:4, key:'net',        regex:/순자산.*?([\d,억천만]+)/ },
+    { pg:4, key:'wealth_index',regex:/부자지수.*?([0-9.]+)/ },
+    // 설계도 (note_page=5)
+    { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
+    { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
+    { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
+  ];
+
+  for(var j=0; j<patterns.length; j++) {
+    var p = patterns[j];
+    var m = t.match(p.regex);
+    if(m) {
+      var val = (m[1]||m[0]).replace(/,/g,'');
+      dnFillById('f'+p.pg+'_'+p.key, val);
+    }
+  }
+}
+
+/* 신 ID로 직접 채우기 */
+function dnFillById(id, value) {
+  if(!id || !value) return;
+  var el = document.getElementById(id);
+  if(el) {
+    el.textContent = value;
+    el.className = (el.className||'').replace(/\bempty\b/g,'').trim();
+    el.style.fontStyle = 'normal';
+    el.style.color = '';
+    el.style.background = 'linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.06))';
+    el.style.borderLeft = '3px solid #C9972A';
+    el.style.padding = '4px 8px';
+    el.style.borderRadius = '6px';
+    console.log('[노트직접기입]', id, '=', value);
+    return true;
+  }
+  console.warn('[노트기입실패]', id, '요소 없음');
+  return false;
+}
+
+/* 구 시스템 호환 유지 */
+function diagFillField(partIdx, labelKey, value) {
+  // 신 ID 매핑 시도
+  var keyMap = {
+    '성함':'name','나이':'age','결혼_여부':'marry','자녀_수':'child',
+    '가족_수':'family','직업':'job','맞벌이_여부':'dual',
+    '월_총수입_세후':'income','대출상환':'loan_cur','보험료':'ins_cur',
+    '저축·투자':'save_cur','금융_자산':'deposit','총_자산':'total_asset','총_부채':'total_debt'
+  };
+  var newKey = keyMap[labelKey] || labelKey.toLowerCase().replace(/[_\s]/g,'');
+  var newId = 'f'+partIdx+'_'+newKey;
+  if(dnFillById(newId, value)) { diagLastFilledPartIdx=partIdx; diagLastFilledLabel=labelKey; }
+}
+
+/* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
+function diagAutoFillNote(userText) {
+  var t = (userText||'').trim();
+  if(t.length < 2) return;
+  var correctionKeys = ['아니','틀렸','다시','수정','잘못','아니요','아니오'];
+  if(correctionKeys.some(function(k){ return t.includes(k); })) {
+    if(diagLastFilledPartIdx >= 0) {
+      var fixId = 'f'+diagLastFilledPartIdx+'_'+diagLastFilledLabel;
+      var el = document.getElementById(fixId);
+      if(el) { el.textContent='⚠ 수정 중...'; el.style.color='#C62828'; }
+    }
+  }
+}
+
+/* 머니야 발화 추적 */
+const _origDiagAddSTT = diagAddSTT;
+diagAddSTT = function(role, text, tag) {
+  _origDiagAddSTT(role, text, tag);
+  if(role === 'ai') diagLastQuestion = text;
+};
+
 </script>
 
 
@@ -7813,105 +10926,331 @@ function fhDevClose() {
          탭2: AI 화상진단
     ══════════════════════════════════ -->
     <div class="mp-panel" id="mp-panel-2">
-      <!-- 진단 안내 카드 -->
-      <div style="margin:10px 12px;background:linear-gradient(135deg,#C9972A,#E8B84B);border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%"></div>
-        <div style="font-size:36px;margin-bottom:8px">🤖</div>
-        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:4px">AI 머니야 화상진단</div>
-        <div style="font-size:10px;color:rgba(11,29,58,.7)">오상열 CFP · 금융집짓기® 전문</div>
-      </div>
 
-      <!-- 진단 안내 -->
-      <div class="mpc" style="margin:8px 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">ℹ️</span><span class="mpc-title">진단 안내</span></div>
-        <div class="mpc-bd">
-          <div class="mp-info-row"><span class="mp-info-ic">⏱</span><div><div style="font-size:10px;color:var(--muted)">상담 시간</div><div style="font-size:11px;font-weight:700">월 30분 (첫 달 60분)</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">📹</span><div><div style="font-size:10px;color:var(--muted)">방식</div><div style="font-size:11px;font-weight:700">AI 화상진단 (WebRTC)</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">📋</span><div><div style="font-size:10px;color:var(--muted)">내용</div><div style="font-size:11px;font-weight:700">수입지출·보험·저축·투자·은퇴</div></div></div>
-          <div class="mp-info-row"><span class="mp-info-ic">🤖</span><div><div style="font-size:10px;color:var(--muted)">AI 지원</div><div style="font-size:11px;font-weight:700">RAG 5,706개 지식베이스 활용</div></div></div>
-        </div>
-      </div>
+      <!-- ━━━ 화면A: 준비 화면 ━━━ -->
+      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f2eb;">
 
-      <!-- 이용권 현황 -->
-      <div class="mpc" style="margin:8px 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">🎟</span><span class="mpc-title">이용권 현황</span></div>
-        <div class="mpc-bd">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:11px;color:var(--muted)">이번달 남은 시간</span>
-            <span id="mp-consult-remain" style="font-size:16px;font-weight:900;color:var(--gold)">30분</span>
-          </div>
-          <div style="background:rgba(255,255,255,.1);border-radius:8px;height:6px;overflow:hidden">
-            <div id="mp-consult-bar" style="width:100%;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:8px;transition:width .5s"></div>
-          </div>
-          <div style="font-size:8.5px;color:var(--muted);margin-top:4px">매월 1일 자동 지급 · 미사용 시 이월</div>
-        </div>
-      </div>
-
-      <!-- 사전 서류 제출 -->
-      <div class="mpc" style="margin:0 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">📎</span><span class="mpc-title">사전 서류 제출</span></div>
-        <div class="mpc-bd">
-          <div style="background:rgba(201,151,42,.08);border:1px dashed rgba(201,151,42,.3);border-radius:8px;padding:8px;margin-bottom:8px;font-size:9.5px;color:var(--gold2)">📸 상담 전 제출하시면 더 정확한 상담이 가능합니다</div>
-          <div id="mp-docs-list2" style="display:flex;flex-direction:column;gap:6px">
-            <div class="mp-doc-item" id="doc2-application">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">📋 상담신청서</div><div style="font-size:9px;color:var(--muted)">필수</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('application')">📎 업로드</button>
+        <!-- 배너 -->
+        <div class="diag-banner">
+          <div class="diag-banner-inner">
+            <div class="diag-banner-av">
+              <img id="diagBannerImg" src="" alt="AI머니야" onerror="this.parentElement.textContent='🤖'">
             </div>
-            <div class="mp-doc-item" id="doc2-insurance">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">🏦 보험증권</div><div style="font-size:9px;color:var(--muted)">필수</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('insurance')">📎 업로드</button>
-            </div>
-            <div class="mp-doc-item" id="doc2-pension">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">💰 연금명세서</div><div style="font-size:9px;color:var(--muted)">필수 · 국민연금+퇴직연금</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('pension')">📎 업로드</button>
-            </div>
-            <div class="mp-doc-item" id="doc2-tax">
-              <span style="font-size:9px;color:rgba(255,255,255,.3)">⬜</span>
-              <div style="flex:1"><div style="font-size:11px;font-weight:700">📊 세금신고서</div><div style="font-size:9px;color:var(--muted)">선택</div></div>
-              <button class="mp-doc-btn" onclick="mpDocUpload2('tax')">📎 업로드</button>
+            <div class="diag-banner-txt">
+              <div class="diag-banner-title">AI 머니야 재무진단</div>
+              <div class="diag-banner-sub">오상열 CFP · 금융집짓기® 공식 AI 수제자</div>
             </div>
           </div>
-          <input type="file" id="mp-doc-file2" accept="image/*,application/pdf" style="display:none" onchange="mpDocFileSelected2(this)">
         </div>
-      </div>
 
-      <!-- 화상상담 시작 버튼 -->
-      <div style="padding:12px">
-        <button onclick="mpStartVideoConsult()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:14px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
-          📹 화상진단 시작하기
-        </button>
-        <div style="text-align:center;font-size:8.5px;color:var(--muted);margin-top:6px">카메라와 마이크 권한이 필요합니다</div>
-      </div>
-
-      <!-- AI 텍스트 진단 (무제한) -->
-      <div class="mpc" style="margin:0 12px 8px">
-        <div class="mpc-hd">
-          <span class="mpc-icon">💬</span>
-          <span class="mpc-title">AI 텍스트 진단</span>
-          <span class="mpc-badge mb-gold">무제한</span>
+        <!-- 세션 정보 -->
+        <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;">
+          <div id="diagTodayDate" style="font-size:9.5px;color:var(--muted);font-weight:500;"></div>
+          <div id="diagSessionChip" style="padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;"></div>
         </div>
-        <div class="mp-chat-area" id="mp-chat-area">
-          <div class="mp-chat-msg mp-fade-in">
-            <div class="mp-chat-av ai">CFP</div>
-            <div>
-              <div class="mp-chat-bubble ai">
-                안녕하세요! 저는 오상열 CFP의 AI 재무 진단사입니다. 😊<br><br>
-                입력하신 재무 데이터를 분석해서 맞춤 조언을 드리겠습니다. 어떤 재무 고민이 있으신가요?
+        <div id="diagSessionSub" style="padding:3px 12px 8px;font-size:9px;color:var(--muted);"></div>
+
+        <!-- 서류 업로드 -->
+        <div class="mpc" style="margin:0 12px 0;">
+          <div class="mpc-hd" onclick="diagToggle('diagDocBody','diagDocChev')">
+            <span class="mpc-icon">📎</span>
+            <span class="mpc-title">사전 서류 제출</span>
+            <span class="mpc-badge mb-gold" id="diagDocBadge">필수 미완료</span>
+            <span class="mpc-chevron" id="diagDocChev">▾</span>
+          </div>
+          <div class="accordion-body open" id="diagDocBody">
+            <div style="padding:10px 14px;">
+              <!-- 상담신청서 (필수) -->
+              <div class="doc-req-wrap">
+                <div class="doc-req-header">
+                  <div class="doc-req-title">📋 상담신청서 <span style="color:var(--red);font-size:8.5px;">필수</span></div>
+                  <span class="doc-status-badge" id="diagAppBadge" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);">미제출</span>
+                </div>
+                <div class="doc-req-card">
+                  <div class="doc-req-row">
+                    <div class="doc-icon">📋</div>
+                    <div style="flex:1;">
+                      <div class="doc-name">금융집짓기® 상담신청서</div>
+                      <div class="doc-desc">고객정보·수입지출·자산부채 포함</div>
+                    </div>
+                    <div class="doc-stat" id="diagAppStat">⬜</div>
+                  </div>
+                  <div class="doc-btn-row">
+                    <button class="btn-dl" onclick="fhDocDownload('application')">⬇️ 양식 다운</button>
+                    <button class="btn-up" onclick="diagOpenUpload('application')">📎 업로드</button>
+                  </div>
+                  <div id="diagStartNote" style="margin-top:7px;font-size:9px;color:var(--muted);line-height:1.5;">업로드 후 AI가 자동으로 고객 정보를 분석합니다</div>
+                </div>
               </div>
-              <div class="mp-chat-time">방금</div>
+              <!-- 선택 서류 -->
+              <div class="doc-opt-wrap">
+                <div class="doc-opt-title">📂 선택 서류 <span style="font-weight:400;color:var(--muted);">(있으면 더 정확한 진단)</span></div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">🏦 보험증권</div><div class="doc-opt-sub">보장 분석용</div></div>
+                  <div id="diagStatIns" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('ins')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">💰 급여명세서</div><div class="doc-opt-sub">수입 분석용</div></div>
+                  <div id="diagStatSal" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('sal')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">🏦 연금명세서</div><div class="doc-opt-sub">은퇴 분석용</div></div>
+                  <div id="diagStatPen" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('pen')">업로드</button>
+                </div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">📊 세금신고서</div><div class="doc-opt-sub">절세 분석용</div></div>
+                  <div id="diagStatTax" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('tax')">업로드</button>
+                </div>
+                <div class="doc-opt-row" style="border-bottom:none;">
+                  <div style="flex:1;"><div class="doc-opt-name">📁 기타</div><div class="doc-opt-sub">기타 자료</div></div>
+                  <div id="diagStatEtc" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="diagOpenUpload('etc')">업로드</button>
+                </div>
+              </div>
+              <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
             </div>
           </div>
         </div>
-        <div class="mp-ai-input-row">
-          <input class="mp-ai-input" id="mp-ai-input" placeholder="재무 진단을 입력하세요..." onkeypress="if(event.key==='Enter')mpSendChat()">
-          <button class="mp-ai-send" onclick="mpSendChat()">➤</button>
+
+        <!-- 시작 버튼 -->
+        <div class="start-area" style="padding:12px;">
+          <button class="start-btn" onclick="diagStartConsult()">
+            🎤 AI 머니야 재무진단 시작하기
+          </button>
+          <div class="start-note">마이크·카메라 권한이 필요합니다</div>
+        </div>
+
+        <!-- AI 학습 안내 -->
+        <div class="mpc" style="margin:0 12px 8px;">
+          <div class="mpc-hd"><span class="mpc-icon">🧠</span><span class="mpc-title">AI 머니야 학습 내역</span></div>
+          <div class="mpc-bd">
+            <div class="learn-card" onclick="showToast('금융집짓기® RAG 지식베이스 5,706개 청크')">
+              <div class="learn-icon" style="background:linear-gradient(135deg,#C9972A,#E8B84B);">📚</div>
+              <div class="learn-info">
+                <div class="learn-title">금융집짓기® 전문 지식베이스</div>
+                <div class="learn-sub">5,706개 청크 · RAG 검색 기반 · 실시간 업데이트</div>
+              </div>
+              <div class="learn-arr">›</div>
+            </div>
+            <div class="learn-card" onclick="showToast('오상열 CFP 20년 상담 데이터 학습 완료')">
+              <div class="learn-icon" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);">👨‍💼</div>
+              <div class="learn-info">
+                <div class="learn-title">오상열 CFP 상담 패턴 학습</div>
+                <div class="learn-sub">2,000건+ 상담 · 500회+ 강의 데이터</div>
+              </div>
+              <div class="learn-arr">›</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 숨겨진 파일 input들 -->
+        <input type="file" id="diagFileCamera" accept="image/*" capture="environment" style="display:none" onchange="diagHandleFile(this)">
+        <input type="file" id="diagFileImage" accept="image/*" style="display:none" onchange="diagHandleFile(this)">
+        <input type="file" id="diagFileDoc" accept=".pdf,.xls,.xlsx,.doc,.docx,image/*" style="display:none" onchange="diagHandleFile(this)">
+
+      </div><!-- /diagScreenA -->
+
+
+      <!-- ━━━ 화면B: 상담 화면 ━━━ -->
+      <div id="diagScreenB" style="display:none;flex-direction:column;height:100%;overflow:hidden;background:var(--navy);position:relative;">
+
+        <!-- 상단바 — 타이머 + 날짜/회차 한 줄 -->
+        <div class="c-topbar">
+          <div class="c-live">
+            <div class="c-live-dot"></div>
+            <span class="c-live-txt">LIVE 진단 중</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="c-timer" id="diagTimer" onclick="trainModeTap()" style="cursor:pointer">00:00</div>
+            <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:1px" id="diagSessionInfo">오늘 · 1회차</div>
+          </div>
+          <div class="c-top-btns">
+            <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
+            <button class="c-tbtn c-tbtn-end" onclick="diagShowEndModal()">종료</button>
+          </div>
+        </div>
+
+        <!-- AI 아바타 + PIP -->
+        <div class="c-video-bar">
+          <div class="c-ai-area">
+            <div class="c-ai-av">
+              <img id="diagAiImg" src="" alt="AI" onerror="this.parentElement.textContent='🤖'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            </div>
+            <div>
+              <div class="c-ai-name">AI 머니야</div>
+              <div class="c-wave" id="diagWave">
+                <div class="c-wb" style="height:2px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:9px;"></div>
+                <div class="c-wb" style="height:5px;"></div>
+                <div class="c-wb" style="height:2px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="c-part-center">
+            <div class="c-part-lbl">현재 단계</div>
+            <div class="c-part-name" id="diagPartName">오프닝</div>
+            <div style="font-size:8px;color:rgba(255,255,255,.3);" id="diagCurStepName"></div>
+          </div>
+          <div class="c-pip" onclick="diagToggleCamera()">
+            <div class="c-pip-ph" id="diagPipPh">
+              <span class="c-pip-icon">📷</span>
+              <span class="c-pip-txt">카메라</span>
+            </div>
+            <video id="diagPipVideo" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px;" autoplay muted playsinline></video>
+            <div class="c-cam-dot" id="diagCamDot"></div>
+          </div>
+        </div>
+
+        <!-- 프로세스 바 -->
+        <div class="c-proc-wrap">
+          <div class="c-proc-grid" id="diagProcGrid"></div>
+        </div>
+
+        <!-- 노트 본문 — 탭 UI는 diagNoteContainer 내부 dnTabs로 통합 -->
+        <div class="c-note-body">
+          <!-- 노트 슬라이드 컨테이너 -->
+          <div style="flex:1;position:relative;overflow:hidden;height:100%;">
+            <div id="diagNoteContainer" style="position:absolute;inset:0;"></div>
+          </div>
+        </div>
+
+        <!-- STT 자막 -->
+        <div class="c-stt" id="diagStt"></div>
+
+        <!-- 하단 컨트롤 -->
+        <div class="c-bottom">
+          <div class="c-btn-row">
+            <div class="c-mini-btn" onclick="diagToggleMic()">
+              <div class="ico" id="diagMicIco">🎤</div>
+              <div class="lbl">마이크</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagToggleCamera()">
+              <div class="ico">📷</div>
+              <div class="lbl">카메라</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagTogglePause()">
+              <div class="ico" id="diagPauseIco">⏸</div>
+              <div class="lbl" id="diagPauseLbl">일시정지</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagOpenUpload('application')">
+              <div class="ico">📎</div>
+              <div class="lbl">서류</div>
+            </div>
+            <div class="c-mini-btn" onclick="diagShowEndModal()">
+              <div class="ico muted-btn" style="background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.35);">🔚</div>
+              <div class="lbl">종료</div>
+            </div>
+          </div>
+          <div class="c-inp-row">
+            <input class="c-inp" id="diagTextInp" placeholder="텍스트로 입력..." onkeypress="if(event.key==='Enter')diagSendText()">
+            <div class="c-send" onclick="diagSendText()">➤</div>
+          </div>
+        </div>
+
+        <!-- PAUSE 오버레이 -->
+        <div class="pause-ov" id="diagPauseOv">
+          <div style="font-size:32px;">⏸</div>
+          <div style="font-size:14px;font-weight:900;color:#fff;">일시정지</div>
+          <button class="resume-btn" onclick="diagTogglePause()">▶ 재개하기</button>
+        </div>
+
+        <!-- 종료 모달 -->
+        <div class="end-modal" id="diagEndModal">
+          <div class="end-box">
+            <div class="end-box-icon">🏁</div>
+            <div class="end-box-title">상담을 종료할까요?</div>
+            <div class="end-box-desc">종료 시 PDF 리포트가 자동 생성됩니다.<br>상담 내용은 히스토리에 저장됩니다.</div>
+            <div class="end-btns">
+              <button class="end-btn end-cancel" onclick="diagHideEndModal()">계속하기</button>
+              <button class="end-btn end-confirm" onclick="diagEndConsult()">종료하기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ━━━ 훈련 모드 시작 모달 ━━━ -->
+        <div id="trainModeModal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;flex-direction:column">
+          <div style="background:#fff;border-radius:16px;padding:24px 20px;max-width:340px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+            <div style="text-align:center;font-size:28px;margin-bottom:8px">🎓</div>
+            <div style="font-size:15px;font-weight:900;color:#0B1D3A;text-align:center;margin-bottom:4px">AI머니야 훈련 모드</div>
+            <div style="font-size:10px;color:#8896B0;text-align:center;margin-bottom:16px">Claude가 고객으로 빙의하여 자동 답변합니다</div>
+            <div id="tmCustomerInfo" style="background:#f8faff;border-radius:10px;padding:12px;font-size:11.5px;line-height:1.7;color:#1a2340;margin-bottom:16px;border:1px solid #D8E0EC"></div>
+            <div style="font-size:10px;color:#C9972A;background:#fff8e6;border-radius:8px;padding:8px 10px;margin-bottom:16px">
+              💡 머니야가 질문하면 Claude가 1.8초 후 자동으로 답변합니다.<br>종료 시 훈련 평가 리포트가 생성됩니다.
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onclick="document.getElementById('trainModeModal').style.display='none'" style="flex:1;padding:11px;border-radius:10px;border:1px solid #D8E0EC;background:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fn)">취소</button>
+              <button onclick="startTrainSession()" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn)">🎓 훈련 시작</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ━━━ 훈련 평가 리포트 모달 ━━━ -->
+        <div id="trainReportModal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:flex-start;justify-content:center;overflow-y:auto">
+          <div style="background:#fff;border-radius:16px;padding:24px 20px;max-width:380px;width:90%;margin:20px auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+            <div style="text-align:center;font-size:26px;margin-bottom:6px">📊</div>
+            <div style="font-size:14px;font-weight:900;color:#0B1D3A;text-align:center;margin-bottom:16px">머니야 훈련 평가 리포트</div>
+
+            <!-- 점수 -->
+            <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+              <div style="font-size:48px;font-weight:900;color:#E8B84B;line-height:1" id="tr_score">—</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">점 / 100점</div>
+              <div style="font-size:11px;font-weight:700;color:#E8B84B;margin-top:6px" id="tr_grade">—</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:3px" id="tr_count">—</div>
+            </div>
+
+            <!-- 문제점 -->
+            <div style="background:#fff5f5;border-radius:10px;padding:10px 12px;margin-bottom:10px">
+              <div style="font-size:10px;font-weight:700;color:#C62828;margin-bottom:6px">발견된 문제</div>
+              <div id="tr_issues"></div>
+            </div>
+
+            <!-- 발화별 상세 -->
+            <div style="background:#f8faff;border-radius:10px;padding:10px 12px;margin-bottom:14px;max-height:200px;overflow-y:auto">
+              <div style="font-size:10px;font-weight:700;color:#1a3260;margin-bottom:6px">발화별 점수 (최근 10개)</div>
+              <div id="tr_detail"></div>
+            </div>
+
+            <!-- 서비스 출시 기준 -->
+            <div style="background:#fff8e6;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:10.5px;color:#7a5c00;line-height:1.6">
+              🎯 <b>서비스 출시 기준:</b> 연속 3회 85점 이상<br>
+              현재 세션 점수로 출시 여부를 판단하세요.
+            </div>
+
+            <button onclick="document.getElementById('trainReportModal').style.display='none';endTrainSession()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;font-family:var(--fn)">확인 · 훈련 종료</button>
+          </div>
+        </div>
+
+      </div><!-- /diagScreenB -->
+
+
+      <!-- ━━━ 업로드 모달 ━━━ -->
+      <div class="upload-modal" id="diagUploadModal">
+        <div class="upload-sheet">
+          <div class="upload-sheet-title" id="diagUploadTitle">서류 업로드</div>
+          <div class="upload-methods">
+            <div class="upload-method" onclick="diagDoUpload('camera')">
+              <div class="upload-method-icon">📸</div>
+              <div class="upload-method-name">카메라</div>
+            </div>
+            <div class="upload-method" onclick="diagDoUpload('image')">
+              <div class="upload-method-icon">🖼️</div>
+              <div class="upload-method-name">갤러리</div>
+            </div>
+            <div class="upload-method" onclick="diagDoUpload('file')">
+              <div class="upload-method-icon">📁</div>
+              <div class="upload-method-name">파일</div>
+            </div>
+          </div>
+          <button class="upload-cancel" onclick="diagCloseUpload()">취소</button>
         </div>
       </div>
-      <div style="height:12px"></div>
-    </div>
+
+    </div><!-- /mp-panel-2 -->
 
     <!-- ══════════════════════════════════
          탭3: 콘텐츠 (대폭 강화)
