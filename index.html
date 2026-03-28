@@ -2364,7 +2364,27 @@ html{visibility:visible !important;}
 
 
   <!-- Vapi SDK [DEV-001] -->
-  <script src="https://unpkg.com/@vapi-ai/web@2.2.5/dist/index.umd.js"></script>
+  <script>
+  // Vapi SDK 동적 로드
+  (function() {
+    var urls = [
+      'https://unpkg.com/@vapi-ai/web@2.2.5/dist/index.umd.js',
+      'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.2.5/dist/vapi.umd.js',
+      'https://unpkg.com/@vapi-ai/web@latest/dist/index.umd.js'
+    ];
+    var idx = 0;
+    function tryLoad() {
+      if (idx >= urls.length) { console.error('[Vapi] 모든 CDN 로드 실패'); return; }
+      var s = document.createElement('script');
+      s.src = urls[idx];
+      s.onload = function() { console.log('[Vapi] SDK 로드 성공:', urls[idx]); };
+      s.onerror = function() { console.warn('[Vapi] 로드 실패, 다음 시도:', urls[idx]); idx++; tryLoad(); };
+      document.head.appendChild(s);
+      idx++;
+    }
+    tryLoad();
+  })();
+  </script>
 
 </head>
 <body>
