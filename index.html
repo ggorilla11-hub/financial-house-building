@@ -2188,6 +2188,7 @@ body { color: #1a1a1a; }
 
 /* 프로세스 — 2~3줄 */
 .c-proc-wrap{flex-shrink:0;background:rgba(11,29,58,.92);padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04);}
+@keyframes mvpRecBlink{0%,100%{opacity:1;}50%{opacity:.4;}}
 .c-proc-grid{display:flex;flex-wrap:wrap;gap:3px;}
 .c-proc-step{padding:3px 8px;border-radius:7px;font-size:7.5px;font-weight:700;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);cursor:pointer;white-space:nowrap;transition:all .2s;}
 .c-proc-step.done{color:#86efac;background:rgba(34,197,94,.09);border-color:rgba(34,197,94,.22);}
@@ -2500,9 +2501,9 @@ html{visibility:visible !important;}
     <!-- 고민 연동 메시지 + CTA -->
     <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.4);border-radius:14px;padding:16px;margin-bottom:12px;">
       <div id="fn-r-worry-msg" style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:14px;text-align:center;"></div>
-      <button onclick="fnSkipToSim()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
-        🏠 금융집짓기 시뮬레이터 시작하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">7대 영역 정밀 진단 · 몬테카를로 · AI 분석 · 무료</span>
+      <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
+        🏥 유료 AI 재무검진 시작하기
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
       </button>
 
       <!-- 개발자 메뉴 트리거 -->
@@ -3360,7 +3361,7 @@ html{visibility:visible !important;}
 </div>
 
 
-<div class="sim-wrap" id="sim-wrap">
+<div class="sim-wrap" id="sim-wrap" style="display:none !important;">
   
   <div class="sim-body" id="sim-body">
 
@@ -6352,11 +6353,334 @@ function mpCompletePurchase() {
   confirmPay(mpSelectedPlan);
 }
 
-/* ── 마이페이지 열기/닫기 ── */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MVP 추가 함수들
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// MVP: CTA 버튼 클릭 → develop은 결제 건너뛰고 바로 진입
+function mvpStartCheckup() {
+  // ★ 시뮬레이터 즉시 숨기기 (보였다가 가리는 문제 해결)
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
+
+  // 원트큐브 결과화면 숨기기
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+
+  // ★ develop 테스트용: 결제 없이 바로 구독 완료 처리
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  mpIsSubscribed = true;
+
+  // 헤더 버튼 업데이트
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+
+  showToast('🎉 테스트 모드: AI 재무검진에 바로 진입합니다');
+  // 마이페이지(AI 재무검진) 즉시 오픈 (딜레이 제거)
+  mpOpen();
+}
+
+// MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
+function mvpCompletePurchase() {
+  var nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
+  var phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
+  var emailVal = (document.getElementById('mvp-email') || {}).value || '';
+  var privacyChecked = (document.getElementById('mvp-privacy') || {}).checked || false;
+
+  // 유효성 검사
+  if (!nameVal.trim()) {
+    showToast('이름을 입력해 주세요.');
+    document.getElementById('mvp-name').focus();
+    return;
+  }
+  if (!phoneVal.trim()) {
+    showToast('전화번호를 입력해 주세요.');
+    document.getElementById('mvp-phone').focus();
+    return;
+  }
+  if (!emailVal.trim() || emailVal.indexOf('@') < 0) {
+    showToast('올바른 이메일을 입력해 주세요.');
+    document.getElementById('mvp-email').focus();
+    return;
+  }
+  if (!privacyChecked) {
+    showToast('개인정보 수집 동의에 체크해 주세요.');
+    return;
+  }
+
+  // 결제자 정보 저장 (기존 페이플 결제 흐름과 연동)
+  window._fhPayerName  = nameVal.trim();
+  window._fhPayerEmail = emailVal.trim();
+  window._fhPayerPhone = phoneVal.trim();
+
+  // 가짜 user 객체 생성 (기존 Google user 의존 코드 호환)
+  window._fhCurrentUser = {
+    displayName: nameVal.trim(),
+    email: emailVal.trim(),
+    phoneNumber: phoneVal.trim(),
+    uid: 'mvp_' + Date.now()
+  };
+
+  // 구글시트 저장 (기존 웹훅 서버 활용)
+  mvpSaveToSheet(nameVal.trim(), phoneVal.trim(), emailVal.trim());
+
+  // ★ develop 테스트용: 결제 건너뛰고 바로 구독 완료
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  mpIsSubscribed = true;
+
+  try { mpCloseSubscribe(); } catch(e) {}
+
+  var _greeting = nameVal.trim() + '님, AI 재무검진 회원이 되셨습니다! 🏥';
+  showToast(_greeting);
+
+  // 헤더 버튼 업데이트
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+
+  // 마이페이지 자동 오픈
+  setTimeout(function(){ mpOpen(); }, 1500);
+}
+
+// MVP: 구글시트 DB 저장 + 안내 발송
+function mvpSaveToSheet(name, phone, email) {
+  // 웹훅 서버로 고객 정보 전송
+  fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:  name,
+      email: email,
+      phone: phone,
+      plan:  'ai-checkup-mvp',
+      source: 'mvp-simple-form',
+      timestamp: new Date().toISOString()
+    })
+  }).then(function(r) {
+    console.log('[MVP 구글시트] 저장 완료:', r.status);
+  }).catch(function(e) {
+    console.log('[MVP 구글시트] 저장 오류:', e);
+  });
+}
+
+// MVP: 검진안내 → AI진단 탭으로 이동 + 바로 상담 시작
+function mvpGoToDiag() {
+  var tabs = document.querySelectorAll('.mp-tab-btn');
+  for(var i=0; i<tabs.length; i++){
+    if(tabs[i].textContent.indexOf('AI진단') >= 0){
+      mpTab(2, tabs[i]);
+      break;
+    }
+  }
+  // 준비화면(diagScreenA) 건너뛰고 바로 상담 시작
+  setTimeout(function(){
+    diagStartConsult();
+  }, 500);
+}
+
+// MVP: 검진안내 → AI진단 탭의 서류 업로드로 이동
+// MVP: 어코디언 토글 (검진안내 탭용)
+function mvpToggle(bodyId, chevId) {
+  var body = document.getElementById(bodyId);
+  var chev = document.getElementById(chevId);
+  if(body) body.classList.toggle('open');
+  if(chev) chev.textContent = body && body.classList.contains('open') ? '▾' : '▸';
+}
+
+// MVP: 파일 업로드 (카테고리별 + 날짜 기록)
+var _mvpUploadTarget = '';
+function mvpDocUpload(category) {
+  _mvpUploadTarget = category;
+  var fileInput = document.getElementById('mvpFileInput');
+  if(fileInput) fileInput.click();
+}
+function mvpHandleUpload(input) {
+  if(!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var cat = _mvpUploadTarget;
+  var now = new Date();
+  var dateStr = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  // 상태 아이콘 업데이트
+  var statMap = { application:'mvpAppStat', ins:'mvpStatIns', pen:'mvpStatPen', tax:'mvpStatTax', etc:'mvpStatEtc' };
+  var dateMap = { application:'mvpAppDate', ins:'mvpDateIns', pen:'mvpDatePen', tax:'mvpDateTax', etc:'mvpDateEtc' };
+  var badgeMap = { application:'mvpAppBadge' };
+
+  var statEl = document.getElementById(statMap[cat]);
+  if(statEl) statEl.textContent = '✅';
+  var dateEl = document.getElementById(dateMap[cat]);
+  if(dateEl) { dateEl.style.display = 'block'; dateEl.textContent = '📅 ' + dateStr + ' · ' + file.name; }
+  var badgeEl = document.getElementById(badgeMap[cat]);
+  if(badgeEl) { badgeEl.textContent = '제출완료'; badgeEl.style.background = 'rgba(34,197,94,.1)'; badgeEl.style.color = '#16a34a'; badgeEl.style.borderColor = 'rgba(34,197,94,.25)'; }
+
+  // 기존 diagOpenUpload도 호출 (AI진단 탭과 연동)
+  if(typeof diagOpenUpload === 'function') {
+    try { diagOpenUpload(cat); } catch(e){}
+  }
+
+  showToast('✅ ' + file.name + ' 업로드 완료 (' + dateStr + ')');
+  input.value = ''; // 리셋
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MVP 녹음 기능
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var mvpRecorder = null;
+var mvpRecChunks = [];
+var mvpIsRecording = false;
+var mvpRecStartTime = null;
+
+function mvpToggleRecord() {
+  if(mvpIsRecording) {
+    mvpStopRecord();
+  } else {
+    mvpStartRecord();
+  }
+}
+
+function mvpStartRecord() {
+  // 마이크 접근
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    mvpRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    mvpRecChunks = [];
+    mvpRecStartTime = new Date();
+
+    mvpRecorder.ondataavailable = function(e) {
+      if(e.data.size > 0) mvpRecChunks.push(e.data);
+    };
+
+    mvpRecorder.onstop = function() {
+      var blob = new Blob(mvpRecChunks, { type: 'audio/webm' });
+      mvpSaveRecording(blob);
+      stream.getTracks().forEach(function(t){ t.stop(); });
+    };
+
+    mvpRecorder.start();
+    mvpIsRecording = true;
+
+    // UI 업데이트 - 빨간색 강조
+    var ico = document.getElementById('mvpRecIco');
+    var lbl = document.getElementById('mvpRecLbl');
+    var btn = ico ? ico.closest('.c-mini-btn') : null;
+    if(ico) { ico.textContent = '⏹'; ico.style.color = '#fff'; ico.style.background = 'rgba(255,0,0,.8)'; ico.style.borderColor = '#ff0000'; }
+    if(lbl) { lbl.textContent = '녹음중'; lbl.style.color = '#ff4444'; lbl.style.fontWeight = '900'; }
+    if(btn) { btn.style.animation = 'mvpRecBlink 1s infinite'; }
+
+    var dateStr = mvpRecStartTime.getFullYear() + '.' +
+      String(mvpRecStartTime.getMonth()+1).padStart(2,'0') + '.' +
+      String(mvpRecStartTime.getDate()).padStart(2,'0') + ' ' +
+      String(mvpRecStartTime.getHours()).padStart(2,'0') + ':' +
+      String(mvpRecStartTime.getMinutes()).padStart(2,'0');
+    showToast('🔴 녹음 시작: ' + dateStr);
+
+  }).catch(function(err) {
+    console.error('[녹음] 마이크 접근 실패:', err);
+    showToast('마이크 접근을 허용해 주세요.');
+  });
+}
+
+function mvpStopRecord() {
+  if(mvpRecorder && mvpRecorder.state !== 'inactive') {
+    mvpRecorder.stop();
+  }
+  mvpIsRecording = false;
+
+  // UI 복원
+  var ico = document.getElementById('mvpRecIco');
+  var lbl = document.getElementById('mvpRecLbl');
+  var btn = ico ? ico.closest('.c-mini-btn') : null;
+  if(ico) { ico.textContent = '⏺'; ico.style.color = ''; ico.style.background = ''; ico.style.borderColor = ''; }
+  if(lbl) { lbl.textContent = '녹음'; lbl.style.color = ''; lbl.style.fontWeight = ''; }
+  if(btn) { btn.style.animation = ''; }
+
+  showToast('✅ 녹음 저장 완료 · 마이페이지에서 재생 가능');
+}
+
+function mvpSaveRecording(blob) {
+  var now = mvpRecStartTime || new Date();
+  var dateStr = now.getFullYear() + '.' +
+    String(now.getMonth()+1).padStart(2,'0') + '.' +
+    String(now.getDate()).padStart(2,'0');
+  var timeStr = String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+
+  // Blob URL 생성
+  var url = URL.createObjectURL(blob);
+
+  // localStorage에 녹음 목록 저장
+  var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
+  recordings.push({
+    date: dateStr,
+    time: timeStr,
+    url: url,
+    size: blob.size,
+    duration: mvpRecStartTime ? Math.round((Date.now() - mvpRecStartTime.getTime()) / 1000) : 0,
+    id: 'rec_' + Date.now()
+  });
+  localStorage.setItem('mvp_recordings', JSON.stringify(recordings));
+
+  // Blob도 별도 저장 (IndexedDB 간이 버전 - sessionStorage 대안)
+  // 세션 유지를 위해 window 객체에 저장
+  if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
+  window._mvpRecBlobs['rec_' + Date.now()] = url;
+}
+
+// 마이페이지에서 녹음 목록 렌더링
+function mvpRenderRecordings() {
+  var container = document.getElementById('mvpRecList');
+  if(!container) return;
+  var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
+  if(recordings.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:11px;">녹음된 상담이 없습니다.<br>AI진단 탭에서 녹음 버튼을 눌러주세요.</div>';
+    return;
+  }
+  container.innerHTML = recordings.map(function(r, i) {
+    var mins = Math.floor(r.duration / 60);
+    var secs = r.duration % 60;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);">' +
+      '<div style="font-size:24px;">🎙️</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--navy);">상담 녹음 #' + (i+1) + '</div>' +
+        '<div style="font-size:9px;color:var(--muted);">📅 ' + r.date + ' ' + r.time + ' · ' + mins + '분 ' + secs + '초</div>' +
+      '</div>' +
+      '<button onclick="mvpPlayRec(' + i + ')" style="padding:6px 12px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);">▶ 재생</button>' +
+    '</div>';
+  }).join('');
+}
+
+function mvpPlayRec(idx) {
+  var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
+  if(!recordings[idx]) return;
+  var r = recordings[idx];
+  // 오디오 재생
+  if(r.url) {
+    var audio = new Audio(r.url);
+    audio.play().catch(function(e) {
+      showToast('재생할 수 없습니다. 같은 세션에서만 재생 가능합니다.');
+    });
+    showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
+  }
+}
+
 function mpOpen() {
   mpRefreshData();
   document.getElementById('mypageOverlay').classList.add('mp-open');
   mpDrawChart();
+  // MVP: 시뮬레이터 숨기기 (AI 재무검진 모드에서는 보이지 않아야 함)
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
 }
 function mpClose() {
   document.getElementById('mypageOverlay').classList.remove('mp-open');
@@ -6874,6 +7198,7 @@ function mpTab(idx, btn) {
   // 탭별 초기화
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
+  if(idx === 6 && typeof mvpRenderRecordings === 'function') mvpRenderRecordings();
 
   /* AI진단탭(2) 전용: 높이 체인 확보 */
   var mpContent = document.querySelector('.mp-content');
@@ -6881,6 +7206,14 @@ function mpTab(idx, btn) {
   if(idx === 2) {
     if(mpContent) mpContent.classList.add('diag-mode');
     if(panel2) panel2.classList.add('diag-active');
+    // MVP: AI진단 탭 진입 시 바로 상담 화면으로 전환 (준비화면 건너뛰기)
+    setTimeout(function(){
+      var sa = document.getElementById('diagScreenA');
+      var sb = document.getElementById('diagScreenB');
+      if(sa && sb && sb.style.display !== 'flex') {
+        diagStartConsult();
+      }
+    }, 300);
   } else {
     if(mpContent) mpContent.classList.remove('diag-mode');
     if(panel2) panel2.classList.remove('diag-active');
@@ -7000,7 +7333,7 @@ function mpStartVideoConsult() {
 // ── FAQ ──
 const MP_FAQ = [
   { q:'금융집짓기®란 무엇인가요?', a:'오원트금융연구소에서 개발한 재무설계 방법론으로, 집을 짓듯이 체계적으로 금융 계획을 세우는 프로그램입니다.' },
-  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 60분, 이후 매월 30분 크레딧이 제공됩니다.' },
+  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 40분, 이후 매월 30분 크레딧이 제공됩니다.' },
   { q:'구독 해지는 어떻게 하나요?', a:'계정 탭 > 구독 관리에서 해지 신청하실 수 있습니다. 해지 후에도 이번 달 말까지 이용 가능합니다.' },
   { q:'재무설계 리포트는 어디서 보나요?', a:'시뮬레이터에서 저장하기를 누르면 히스토리 탭에 자동 기록됩니다.' },
   { q:'오상열 CFP 직접 상담은?', a:'서비스 탭 > 강의·상담 신청에서 비대면/대면 상담을 신청하실 수 있습니다.' },
@@ -7978,7 +8311,7 @@ var FH_PART_NAMES = [
 ];
 
 var FH_NOTE_PARTS = [
-  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'60~90분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'40분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
   { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
   { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
   { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
@@ -8533,8 +8866,15 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    if(diagSec===45*60) showToast('⏰ 45분 경과 · 마무리 준비해 주세요');
-    if(diagSec===60*60) showToast('⏰ 60분 도달 · 클로징을 시작하겠습니다');
+    if(diagSec===35*60) showToast('⏰ 35분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
+    if(diagSec===39*60) showToast('⚠️ 39분 경과 · 1분 남았습니다!');
+    if(diagSec===40*60) {
+      showToast('🔴 40분 도달 · 음성 진단이 종료됩니다');
+      // 자동 종료
+      diagEndConsult();
+      // 녹음 중이면 자동 저장
+      if(mvpIsRecording) mvpStopRecord();
+    }
 
   },1000);
 
@@ -10071,11 +10411,11 @@ diagAddSTT = function(role, text, tag) {
     </div>
 
   </div>
-  <!-- Google 로그인 -->
+  <!-- Google 로그인 (MVP: 숨김 - 간단 입력폼으로 대체) -->
   <div style="margin-bottom:10px">
 
-    <!-- 로그인 전 -->
-    <div id="fh-before-login">
+    <!-- 기존 Google 로그인 (숨김) -->
+    <div id="fh-before-login" style="display:none">
       <button onclick="fhGoogleLogin()"
         style="width:100%;padding:11px 12px;border-radius:10px;
         border:1.5px solid #ddd;background:#fff;
@@ -10098,7 +10438,42 @@ diagAddSTT = function(role, text, tag) {
       </div>
     </div>
 
-    <!-- 로그인 후 -->
+    <!-- MVP: 간단 입력 폼 (이름/전번/이메일) -->
+    <div id="mvp-simple-login">
+      <div style="background:#fff;border-radius:12px;padding:14px;border:1.5px solid #eee;">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 상담 신청 정보 입력</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="mvp-name" type="text" placeholder="이름 (필수)" required
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
+            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
+            transition:border-color .2s;"
+            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+          <input id="mvp-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678" required
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
+            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
+            transition:border-color .2s;"
+            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+          <input id="mvp-email" type="email" placeholder="이메일 (필수) 예: name@email.com" required
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
+            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
+            transition:border-color .2s;"
+            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+          <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
+            <input id="mvp-privacy" type="checkbox"
+              style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
+            <span style="font-size:10px;color:#666;line-height:1.5;">
+              [필수] 개인정보 수집 및 이용에 동의합니다.<br>
+              <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무검진 상담 및 안내 | 보유기간: 서비스 이용 종료 시까지</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div style="font-size:9px;color:#999;margin-top:5px;text-align:center">
+        🔒 입력하신 정보는 재무검진 안내에만 사용됩니다
+      </div>
+    </div>
+
+    <!-- 로그인 후 (기존 유지 - 숨김) -->
     <div id="fh-after-login" style="display:none">
       <div style="display:flex;align-items:center;gap:10px;
         padding:10px 12px;border-radius:10px;
@@ -10127,7 +10502,7 @@ diagAddSTT = function(role, text, tag) {
     </div>
 
   </div>
-  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mpCompletePurchase()">
+  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
     지금 ₩9,900/월 구독 시작하기 →
   </button>
 
@@ -10136,24 +10511,24 @@ diagAddSTT = function(role, text, tag) {
 
 <div class="mypage-overlay" id="mypageOverlay">
 
-  <!-- ── 헤더 ── -->
+  <!-- ── 헤더 (MVP: 돌아가기/X 숨김) ── -->
   <div class="mp-header">
     <div class="mp-header-row">
-      <button class="mp-back-btn" onclick="mpClose()">← 돌아가기</button>
-      <span class="mp-title-txt">👑 회원전용</span>
-      <button class="mp-back-btn" onclick="mpClose()" style="font-size:16px;color:rgba(255,255,255,.4)">✕</button>
+      <button class="mp-back-btn" onclick="mpClose()" style="display:none">← 돌아가기</button>
+      <span class="mp-title-txt">🏥 AI 재무검진</span>
+      <button class="mp-back-btn" onclick="mpClose()" style="display:none;font-size:16px;color:rgba(255,255,255,.4)">✕</button>
     </div>
   </div>
 
-  <!-- ── 탭 바 (7탭으로 확장) ── -->
+  <!-- ── 탭 바 (MVP: 3탭으로 축소) ── -->
   <div class="mp-tabs">
-    <button class="mp-tab-btn mp-active" onclick="mpTab(0,this)">🏠 홈</button>
-    <button class="mp-tab-btn" onclick="mpTab(1,this)">📈 히스토리</button>
+    <button class="mp-tab-btn mp-active" onclick="mpTab(0,this)">🏥 검진안내</button>
+    <button class="mp-tab-btn" onclick="mpTab(1,this)" style="display:none">📈 히스토리</button>
     <button class="mp-tab-btn" onclick="mpTab(2,this)">📹 AI진단</button>
-    <button class="mp-tab-btn" onclick="mpTab(3,this)">📚 콘텐츠</button>
+    <button class="mp-tab-btn" onclick="mpTab(3,this)" style="display:none">📚 콘텐츠</button>
     <button class="mp-tab-btn" onclick="mpTab(4,this)" style="display:none">🗺️ DESIRE</button>
-    <button class="mp-tab-btn" onclick="mpTab(5,this)">📋 서비스</button>
-    <button class="mp-tab-btn" onclick="mpTab(6,this)">⚙️ 계정</button>
+    <button class="mp-tab-btn" onclick="mpTab(5,this)" style="display:none">📋 서비스</button>
+    <button class="mp-tab-btn" onclick="mpTab(6,this)">👤 마이페이지</button>
   </div>
 
   <div class="mp-content">
@@ -10162,6 +10537,176 @@ diagAddSTT = function(role, text, tag) {
          탭0: 홈
     ══════════════════════════════════ -->
     <div class="mp-panel mp-active" id="mp-panel-0">
+
+      <!-- ━━━ MVP: 검진안내 콘텐츠 (어코디언 스타일) ━━━ -->
+      <div id="mvp-checkup-guide" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f2eb;">
+
+        <!-- 배너 -->
+        <div class="diag-banner">
+          <div class="diag-banner-inner">
+            <div class="diag-banner-av">🏥</div>
+            <div class="diag-banner-txt">
+              <div class="diag-banner-title">AI 재무검진 안내</div>
+              <div class="diag-banner-sub">오상열 CFP · 금융집짓기® 8대 영역 종합 진단</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 진단 안내 어코디언 -->
+        <div class="mpc" style="margin:8px 12px 0;">
+          <div class="mpc-hd" onclick="mvpToggle('mvpGuideBody','mvpGuideChev')" style="background:var(--navy);padding:11px 14px;">
+            <span class="mpc-icon" style="color:#fff;">ℹ️</span>
+            <span class="mpc-title" style="color:#fff;font-weight:900;">진단 안내</span>
+            <span class="mpc-chevron" id="mvpGuideChev" style="color:rgba(255,255,255,.6);">▾</span>
+          </div>
+          <div class="accordion-body open" id="mvpGuideBody">
+            <div style="padding:10px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 40분</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">방식</div><div style="font-size:12px;font-weight:700;color:var(--navy);">AI 음성 재무진단</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">내용</div><div style="font-size:12px;font-weight:700;color:var(--navy);">수입지출 · 보험 · 저축 · 투자 · 은퇴</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 0;">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🧠</div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">AI 지원</div><div style="font-size:12px;font-weight:700;color:var(--navy);">RAG 5,706개 지식베이스 활용</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이용권 현황 어코디언 -->
+        <div class="mpc" style="margin:8px 12px 0;">
+          <div class="mpc-hd" onclick="mvpToggle('mvpCreditBody','mvpCreditChev')" style="background:var(--navy);padding:11px 14px;">
+            <span class="mpc-icon" style="color:#fff;">🎫</span>
+            <span class="mpc-title" style="color:#fff;font-weight:900;">이용권 현황</span>
+            <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;">40<span style="font-size:10px;font-weight:500;">분</span></span>
+            <span class="mpc-chevron" id="mvpCreditChev" style="color:rgba(255,255,255,.6);">▾</span>
+          </div>
+          <div class="accordion-body open" id="mvpCreditBody">
+            <div style="padding:10px 14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:11px;color:var(--muted);">이번달 남은 시간</span>
+                <span style="font-size:20px;font-weight:900;color:var(--gold);">40 <span style="font-size:10px;font-weight:500;">분</span></span>
+              </div>
+              <div style="width:100%;height:6px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden;">
+                <div style="width:100%;height:100%;background:linear-gradient(90deg,#C9972A,#E8B84B);border-radius:3px;"></div>
+              </div>
+              <div style="font-size:9px;color:var(--muted);margin-top:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
+              <div style="margin-top:8px;padding:6px 10px;background:rgba(201,151,42,.08);border-radius:8px;font-size:9.5px;color:var(--navy);">
+                🌟 초회상담 40분 · 금융집짓기® 8단계 전체 진단
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 사전 서류 제출 어코디언 -->
+        <div class="mpc" style="margin:8px 12px 0;">
+          <div class="mpc-hd" onclick="mvpToggle('mvpDocBody','mvpDocChev')" style="background:var(--navy);padding:11px 14px;">
+            <span class="mpc-icon" style="color:#fff;">📎</span>
+            <span class="mpc-title" style="color:#fff;font-weight:900;">사전 서류 제출</span>
+            <span class="mpc-badge mb-gold" id="mvpDocBadge">필수 미완료</span>
+            <span class="mpc-chevron" id="mvpDocChev" style="color:rgba(255,255,255,.6);">▾</span>
+          </div>
+          <div class="accordion-body open" id="mvpDocBody">
+            <div style="padding:10px 14px;">
+              <!-- 상담신청서 (필수) -->
+              <div class="doc-req-wrap">
+                <div class="doc-req-header">
+                  <div class="doc-req-title">📋 상담신청서 <span style="color:var(--red);font-size:8.5px;">필수</span></div>
+                  <span class="doc-status-badge" id="mvpAppBadge" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);">미제출</span>
+                </div>
+                <div class="doc-req-card">
+                  <div class="doc-req-row">
+                    <div class="doc-icon">📋</div>
+                    <div style="flex:1;">
+                      <div class="doc-name">금융집짓기® 상담신청서</div>
+                      <div class="doc-desc">고객정보·수입지출·자산부채 포함</div>
+                    </div>
+                    <div class="doc-stat" id="mvpAppStat">⬜</div>
+                  </div>
+                  <div class="doc-btn-row">
+                    <button class="btn-dl" onclick="fhDocDownload('application')">⬇️ 양식 다운</button>
+                    <button class="btn-up" onclick="mvpDocUpload('application')">📎 업로드</button>
+                  </div>
+                  <div id="mvpAppDate" style="margin-top:5px;font-size:8.5px;color:var(--muted);display:none;"></div>
+                  <div style="margin-top:5px;font-size:9px;color:var(--muted);line-height:1.5;">업로드 후 AI가 자동으로 고객 정보를 분석합니다</div>
+                </div>
+              </div>
+              <!-- 선택 서류 (카테고리별) -->
+              <div class="doc-opt-wrap">
+                <div class="doc-opt-title">📂 선택 서류 <span style="font-weight:400;color:var(--muted);">(있으면 더 정확한 진단)</span></div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">🛡️ 보험증권</div><div class="doc-opt-sub">보장 분석용</div></div>
+                  <div id="mvpStatIns" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="mvpDocUpload('ins')">업로드</button>
+                </div>
+                <div id="mvpDateIns" style="padding:0 14px 4px;font-size:8.5px;color:var(--muted);display:none;"></div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">💰 연금명세서</div><div class="doc-opt-sub">국민연금 · 퇴직연금 · 개인연금</div></div>
+                  <div id="mvpStatPen" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="mvpDocUpload('pen')">업로드</button>
+                </div>
+                <div id="mvpDatePen" style="padding:0 14px 4px;font-size:8.5px;color:var(--muted);display:none;"></div>
+                <div class="doc-opt-row">
+                  <div style="flex:1;"><div class="doc-opt-name">📊 세금신고서</div><div class="doc-opt-sub">종합소득세 · 원천징수영수증</div></div>
+                  <div id="mvpStatTax" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="mvpDocUpload('tax')">업로드</button>
+                </div>
+                <div id="mvpDateTax" style="padding:0 14px 4px;font-size:8.5px;color:var(--muted);display:none;"></div>
+                <div class="doc-opt-row" style="border-bottom:none;">
+                  <div style="flex:1;"><div class="doc-opt-name">📁 기타 자료</div><div class="doc-opt-sub">급여명세서 · 부동산 등기 등</div></div>
+                  <div id="mvpStatEtc" style="font-size:12px;">⬜</div>
+                  <button class="doc-opt-btn" onclick="mvpDocUpload('etc')">업로드</button>
+                </div>
+                <div id="mvpDateEtc" style="padding:0 14px 4px;font-size:8.5px;color:var(--muted);display:none;"></div>
+              </div>
+              <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 개인정보 수집 동의 어코디언 -->
+        <div class="mpc" style="margin:8px 12px 0;">
+          <div class="mpc-hd" onclick="mvpToggle('mvpPrivBody','mvpPrivChev')" style="background:var(--navy);padding:11px 14px;">
+            <span class="mpc-icon" style="color:#fff;">🔒</span>
+            <span class="mpc-title" style="color:#fff;font-weight:900;">개인정보 수집 동의</span>
+            <span class="mpc-chevron" id="mvpPrivChev" style="color:rgba(255,255,255,.6);">▾</span>
+          </div>
+          <div class="accordion-body open" id="mvpPrivBody">
+            <div style="padding:10px 14px;">
+              <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                <input id="mvp-privacy-guide" type="checkbox" style="width:18px;height:18px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;">
+                <span style="font-size:10px;color:#444;line-height:1.6;">
+                  [필수] 개인정보 수집 및 이용에 동의합니다.<br>
+                  <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무검진 상담 | 보유기간: 서비스 이용 종료 시까지</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 재무검진 시작 버튼 -->
+        <div class="start-area" style="padding:12px;">
+          <button class="start-btn" onclick="mvpGoToDiag()">
+            🎙️ 유료 AI 재무검진 시작하기
+          </button>
+          <div class="start-note">AI진단 탭으로 이동하여 상담이 시작됩니다</div>
+        </div>
+
+        <!-- 숨겨진 파일 input -->
+        <input type="file" id="mvpFileInput" accept=".pdf,.xls,.xlsx,.doc,.docx,image/*" style="display:none" onchange="mvpHandleUpload(this)">
+
+      </div>
+
+      <!-- 기존 홈 내용 (MVP: 숨김) -->
+      <div id="mvp-old-home" style="display:none;">
       <div class="mp-welcome mp-fade-in">
         <div class="mp-wb-grade">🥈 실버 회원</div>
         <div class="mp-wb-name" id="mp-wb-name">회원 님, 환영합니다!</div>
@@ -10240,6 +10785,7 @@ diagAddSTT = function(role, text, tag) {
         </div>
       </div>
       <div style="height:12px"></div>
+      </div><!-- /mvp-old-home -->
     </div>
 
     <!-- ══════════════════════════════════
@@ -10510,8 +11056,8 @@ diagAddSTT = function(role, text, tag) {
           </div>
         </div>
 
-        <!-- 프로세스 바 -->
-        <div class="c-proc-wrap">
+        <!-- 프로세스 바 (MVP: 중복 삭제 - 하단 노트탭에 동일 기능 있음) -->
+        <div class="c-proc-wrap" style="display:none;">
           <div class="c-proc-grid" id="diagProcGrid"></div>
         </div>
 
@@ -10537,9 +11083,9 @@ diagAddSTT = function(role, text, tag) {
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
             </div>
-            <div class="c-mini-btn" onclick="diagTogglePause()">
-              <div class="ico" id="diagPauseIco">⏸</div>
-              <div class="lbl" id="diagPauseLbl">일시정지</div>
+            <div class="c-mini-btn" onclick="mvpToggleRecord()">
+              <div class="ico" id="mvpRecIco">⏺</div>
+              <div class="lbl" id="mvpRecLbl">녹음</div>
             </div>
             <div class="c-mini-btn" onclick="diagOpenUpload('application')">
               <div class="ico">📎</div>
@@ -10859,7 +11405,7 @@ diagAddSTT = function(role, text, tag) {
 
       <!-- 멤버십 플랜 -->
       <div class="mpc mp-fade-in" style="margin:8px 12px 0">
-        <div class="mpc-hd"><span class="mpc-icon">👑</span><span class="mpc-title">멤버십 플랜</span></div>
+        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;"><span class="mpc-icon" style="color:#fff;">👑</span><span class="mpc-title" style="color:#fff;font-weight:900;">멤버십 플랜</span></div>
         <div class="mpc-bd">
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
@@ -10874,11 +11420,11 @@ diagAddSTT = function(role, text, tag) {
         </div>
       </div>
 
-      <!-- 구독 관리 -->
+      <!-- 구독 관리 (MVP: 작동하지 않는 항목 숨김) -->
       <div class="mp-grade-card" style="margin:8px 12px 0">
         <div class="mp-grade-hd"><span class="mp-grade-title">구독 관리</span></div>
         <div class="mp-grade-body">
-          <div class="mp-menu-item" onclick="showToast('개인정보 수정 화면입니다')">
+          <div class="mp-menu-item" style="display:none" onclick="showToast('개인정보 수정 화면입니다')">
             <span class="mp-menu-icon">👤</span><span class="mp-menu-lbl">개인정보 수정</span><span class="mp-menu-arr">›</span>
           </div>
           <div class="mp-menu-item" onclick="showToast('구독 관리 화면입니다')">
@@ -10886,21 +11432,21 @@ diagAddSTT = function(role, text, tag) {
             <div style="flex:1"><div class="mp-menu-lbl">구독 관리</div><div class="mp-menu-sub">실버 · 다음 결제 2026.04.15</div></div>
             <span class="mp-menu-arr">›</span>
           </div>
-          <div class="mp-menu-item" onclick="showToast('결제 내역을 불러옵니다')">
+          <div class="mp-menu-item" style="display:none" onclick="showToast('결제 내역을 불러옵니다')">
             <span class="mp-menu-icon">📋</span><span class="mp-menu-lbl">결제 내역</span><span class="mp-menu-arr">›</span>
           </div>
         </div>
       </div>
 
-      <!-- FAQ + 약관 -->
+      <!-- FAQ + 약관 (MVP: 작동하지 않는 항목 숨김) -->
       <div class="mp-menu-list" style="margin:8px 12px 0">
         <div class="mp-menu-item" onclick="mpShowFAQ()">
           <span class="mp-menu-icon">❓</span><span class="mp-menu-lbl">고객센터 / FAQ</span><span class="mp-menu-arr">›</span>
         </div>
-        <div class="mp-menu-item" onclick="showToast('이용약관 화면입니다')">
+        <div class="mp-menu-item" style="display:none" onclick="showToast('이용약관 화면입니다')">
           <span class="mp-menu-icon">📄</span><span class="mp-menu-lbl">이용약관</span><span class="mp-menu-arr">›</span>
         </div>
-        <div class="mp-menu-item" onclick="showToast('개인정보처리방침 화면입니다')">
+        <div class="mp-menu-item" style="display:none" onclick="showToast('개인정보처리방침 화면입니다')">
           <span class="mp-menu-icon">🔒</span><span class="mp-menu-lbl">개인정보처리방침</span><span class="mp-menu-arr">›</span>
         </div>
         <div class="mp-menu-item" onclick="mpShareApp()">
@@ -10914,7 +11460,7 @@ diagAddSTT = function(role, text, tag) {
           <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소</div><div class="mp-menu-sub">취소 후 이번 달 말까지 이용 가능</div></div>
           <span class="mp-menu-arr">›</span>
         </div>
-        <div class="mp-menu-item mp-danger" onclick="mpWithdraw()">
+        <div class="mp-menu-item mp-danger" style="display:none" onclick="mpWithdraw()">
           <span class="mp-menu-icon">🗑️</span><span class="mp-menu-lbl">회원탈퇴</span>
         </div>
       </div>
@@ -10923,6 +11469,14 @@ diagAddSTT = function(role, text, tag) {
       <div id="mp-faq-panel" style="display:none;margin:8px 12px 0">
         <div style="font-size:11px;font-weight:900;color:var(--gold);margin-bottom:8px">❓ 자주 묻는 질문</div>
         <div id="mp-faq-list"></div>
+      </div>
+
+      <!-- 상담 녹음 (마이페이지 맨 아래) -->
+      <div class="mpc mp-fade-in" style="margin:8px 12px 0">
+        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;"><span class="mpc-icon" style="color:#fff;">🎙️</span><span class="mpc-title" style="color:#fff;font-weight:900;">상담 녹음</span></div>
+        <div class="mpc-bd">
+          <div id="mvpRecList" style="min-height:60px;"></div>
+        </div>
       </div>
 
       <div id="fh-dev-version" style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)"
