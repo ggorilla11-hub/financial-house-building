@@ -8993,6 +8993,14 @@ const diagFinCtx = {
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
+
+  /* ── 기존 Vapi 인스턴스 정리 (중복 방지) ── */
+  if(vapi) {
+    try { vapi.stop(); } catch(e) { console.log('[Vapi] 기존 인스턴스 정리:', e.message); }
+    vapi = null;
+    vapiCallActive = false;
+  }
+
   try {
     diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
