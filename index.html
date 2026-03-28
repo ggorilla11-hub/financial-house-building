@@ -8585,7 +8585,13 @@ async function diagConnectVoice(isPaid) {
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
+    console.log('[DEBUG] vapiSDK:', typeof vapiSDK, vapiSDK);
+    console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
+    console.log('[DEBUG] assistantId:', assistantId);
+    var result = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
+    console.log('[DEBUG] run result:', result);
+    vapi = result;
+    if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
       vapiCallActive = true;
