@@ -8584,9 +8584,11 @@ async function diagConnectVoice(isPaid) {
   }
 
   try {
-    vapi = vapiSDK.run(VAPI_PUBLIC_KEY);
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    vapi.start(assistantId);
+    vapi = vapiSDK.run({
+      apiKey: VAPI_PUBLIC_KEY,
+      assistant: assistantId,
+    });
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
       vapiCallActive = true;
