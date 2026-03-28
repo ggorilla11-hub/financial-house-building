@@ -8585,7 +8585,7 @@ async function diagConnectVoice(isPaid) {
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY });
+    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
       vapiCallActive = true;
@@ -8650,9 +8650,6 @@ async function diagConnectVoice(isPaid) {
       console.error('[Vapi 오류]', e);
       showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
-
-    /* ── 모든 이벤트 등록 후 통화 시작 ── */
-    vapi.start(assistantId).catch(function(e){ console.error('Vapi start 실패:', e); });
 
   } catch(e) {
     console.error('[Vapi 연결 오류]', e);
