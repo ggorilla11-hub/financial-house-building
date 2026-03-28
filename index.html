@@ -8672,12 +8672,39 @@ async function diagConnectVoice(isPaid) {
       if(w) w.classList.remove('muted');
     });
 
+    /* ── [디버그] 모바일 화면 로그 ── */
+    var _dbgEl = document.createElement('div');
+    _dbgEl.id = 'vapiDebugLog';
+    _dbgEl.style.cssText = 'position:fixed;bottom:60px;left:5px;right:5px;max-height:120px;overflow-y:auto;background:rgba(0,0,0,.85);color:#0f0;font-size:9px;font-family:monospace;padding:6px;border-radius:8px;z-index:99999;display:none;line-height:1.5;';
+    document.body.appendChild(_dbgEl);
+    /* 3번 연속 탭으로 디버그 패널 토글 */
+    var _dbgTapCount = 0;
+    var _dbgTapTimer = null;
+    document.addEventListener('click', function() {
+      _dbgTapCount++;
+      clearTimeout(_dbgTapTimer);
+      _dbgTapTimer = setTimeout(function() {
+        if(_dbgTapCount >= 3) {
+          _dbgEl.style.display = _dbgEl.style.display === 'none' ? 'block' : 'none';
+        }
+        _dbgTapCount = 0;
+      }, 400);
+    });
+    function _dbg(msg) {
+      console.log(msg);
+      var t = new Date().toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      _dbgEl.innerHTML += '<div>' + t + ' ' + msg + '</div>';
+      _dbgEl.scrollTop = _dbgEl.scrollHeight;
+      /* 최대 30줄 유지 */
+      while(_dbgEl.children.length > 30) _dbgEl.removeChild(_dbgEl.firstChild);
+    }
+
     /* ── [에코 방지] 머니야 발화 중 마이크 자동 음소거 ── */
     var _vapiSpeaking = false;
     var _vapiLastSpeechEnd = 0;
     vapi.on('speech-start', function() {
       _vapiSpeaking = true;
-      console.log('[VAPI] 머니야 발화 시작 — 마이크 자동 음소거');
+      _dbg('🔇 speech-start — 마이크 음소거');
       try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
       var w = document.getElementById('diagWave');
       if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity='0.3'; });
@@ -8685,13 +8712,14 @@ async function diagConnectVoice(isPaid) {
     vapi.on('speech-end', function() {
       _vapiSpeaking = false;
       _vapiLastSpeechEnd = Date.now();
-      console.log('[VAPI] 머니야 발화 종료 — 500ms 후 마이크 복원');
+      _dbg('🔊 speech-end — 500ms 후 복원');
       /* 500ms 딜레이 후 마이크 복원 (에코 잔향 완전 소멸 대기) */
       setTimeout(function() {
         if(!_vapiSpeaking && !diagPaused) {
           try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
           var w = document.getElementById('diagWave');
           if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity=''; });
+          _dbg('🎤 마이크 복원 완료');
         }
       }, 500);
     });
@@ -8701,7 +8729,7 @@ async function diagConnectVoice(isPaid) {
       /* 자막 표시 */
       if(msg.type === 'transcript' && msg.transcriptType === 'final') {
         /* [DEV-003 FIX] role 판별 강화 — Vapi 버전별 호환 */
-        console.log('[VAPI-DBG] transcript msg:', JSON.stringify({type:msg.type, role:msg.role, transcriptType:msg.transcriptType, transcript:(msg.transcript||'').slice(0,30)}));
+        _dbg('📝 role=' + msg.role + ' | ' + (msg.transcript||'').slice(0,20));
         var rawRole = (msg.role || '').toLowerCase();
         var role = (rawRole === 'assistant' || rawRole === 'bot' || rawRole === 'ai') ? 'ai' : 'user';
         var displayText = msg.transcript;
@@ -8711,7 +8739,7 @@ async function diagConnectVoice(isPaid) {
         if(role === 'user') {
           var timeSinceSpeechEnd = Date.now() - (_vapiLastSpeechEnd || 0);
           if(_vapiSpeaking || timeSinceSpeechEnd < 1000) {
-            console.log('[VAPI-ECHO] 에코 의심 — 무시:', displayText.slice(0,30), '(발화종료 후 ' + timeSinceSpeechEnd + 'ms)');
+            _dbg('🚫 에코무시: ' + displayText.slice(0,15) + ' (' + timeSinceSpeechEnd + 'ms)');
             return;
           }
         }
