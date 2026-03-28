@@ -2362,7 +2362,7 @@ html{visibility:visible !important;}
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <!-- Vapi Voice AI SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.1.1/dist/vapi.umd.js"></script>
+  <script src="https://unpkg.com/@vapi-ai/web@2.2.5/dist/index.umd.js"></script>
 
 
 
@@ -8543,7 +8543,8 @@ function diagStartConsult() {
 
 /* ══ Vapi 음성 AI 시스템 ══ */
 const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2'; // ← 여기에 Vapi Public Key 입력
-const VAPI_ASSISTANT_ID = '46b3efa5-52cc-49c6-ad42-c157fce08da9'; // AI 머니야 Assistant ID
+const VAPI_ASSISTANT_FREE = '';
+const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9';
 let vapi = null;
 let diagWs = null; // 하위 호환성 유지 (훈련모드 등에서 사용)
 let diagAudioCtx = null, diagMicStream = null;
@@ -8556,167 +8557,136 @@ const diagFinCtx = {
   mainWorry:'',
 };
 
-async function diagConnectVoice() {
+async function diagConnectVoice(isPaid) {
+  /* isPaid 인자 없으면 기본 유료 */
+  if(isPaid === undefined) isPaid = true;
   try {
-    // Vapi SDK 로드 확인 (최대 5초 대기)
-    let waitCount = 0;
-    while (typeof Vapi === 'undefined' && waitCount < 10) {
-      await new Promise(r => setTimeout(r, 500));
-      waitCount++;
+    diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
+  } catch(e) {
+    if(e.name === 'NotAllowedError') {
+      showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
+    } else {
+      showToast('❌ 마이크 연결 오류: ' + e.message);
     }
-    if (typeof Vapi === 'undefined') {
-      showToast('⚠️ Vapi SDK 로딩 실패. 페이지를 새로고침해 주세요.');
-      return;
-    }
+    diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
+    return;
+  }
 
-    // Vapi 인스턴스 생성
+  try {
     vapi = new Vapi(VAPI_PUBLIC_KEY);
+    var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
 
-    // ── Vapi 이벤트 리스너 ──
-
-    // 통화 시작
+    /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
+      vapiCallActive = true;
+      diagMic = true;
       showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
-      const w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
-      if (w) w.classList.remove('muted');
+      var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
+      if(w) w.classList.remove('muted');
     });
 
-    // 통화 종료
-    vapi.on('call-end', function() {
-      showToast('📞 음성 연결이 종료되었습니다');
-      const w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
-      if (w) w.classList.add('muted');
-    });
+    /* ── 메시지 수신 (자막 + Tool Call) ── */
+    vapi.on('message', function(msg) {
+      /* 자막 표시 */
+      if(msg.type === 'transcript' && msg.transcriptType === 'final') {
+        var role = msg.role === 'assistant' ? 'ai' : 'user';
+        var displayText = msg.transcript;
+        if(!displayText || !displayText.trim()) return;
 
-    // 발화 시작 (AI)
-    vapi.on('speech-start', function() {
-      const w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
-      if (w) w.classList.remove('muted');
-    });
+        /* STT 영역에 표시 */
+        diagAddSTT(role, displayText, null);
 
-    // 발화 종료 (AI)
-    vapi.on('speech-end', function() {
-      // 파형 유지 (사용자 발화 중일 수 있으므로)
-    });
-
-    // 메시지 수신 (자막 + 노트 자동채우기)
-    vapi.on('message', function(message) {
-      // 전사(transcript) 메시지 처리
-      if (message.type === 'transcript') {
-        var text = (message.transcript || '').trim();
-        if (!text) return;
-
-        var displayText = text
-          .replace(/\(잠시\)/g,'').replace(/\(pause\)/g,'').replace(/\(쉬고\)/g,'')
-          .replace(/\(침묵\)/g,'').replace(/\s+/g,' ').trim();
-        if (!displayText) return;
-
-        var role = message.role === 'user' ? 'user' : 'ai';
-
-        // STT 자막 표시
-        if (message.transcriptType === 'final') {
-          diagAddSTT(role, displayText, null);
-
-          // 대화록 탭(dnp9)에도 실시간 기록
-          var chatLog = document.getElementById('dn_chat_log');
-          if (chatLog) {
-            var isUser = (role === 'user');
-            var bubble = document.createElement('div');
-            bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
-            bubble.innerHTML =
-              '<div style="font-size:9px;color:'+(isUser?'#8896B0':'#C9972A')+';margin-bottom:2px;'+(isUser?'text-align:right;':'')+'">'+
-                (isUser?'👤 고객':'🤖 머니야')+
-              '</div>'+
-              '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:'+(isUser?'flex-end':'flex-start')+';'+
-                (isUser?'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;':'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;')+'">'+
-                displayText.replace(/</g,'&lt;')+
-              '</div>';
-            chatLog.appendChild(bubble);
-            chatLog.scrollTop = chatLog.scrollHeight;
-            var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
-            if (placeholder) placeholder.remove();
-          }
-
-          if (role === 'user') setTimeout(function(){ diagAutoFillNote(text); }, 300);
-          if (role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
+        /* 대화록 탭(dnp9)에도 실시간 기록 */
+        var chatLog = document.getElementById('dn_chat_log');
+        if(chatLog) {
+          var isUser = (role === 'user');
+          var bubble = document.createElement('div');
+          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+          bubble.innerHTML =
+            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
+              (isUser ? '👤 고객' : '🤖 머니야') +
+            '</div>' +
+            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
+              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
+              displayText.replace(/</g, '&lt;') +
+            '</div>';
+          chatLog.appendChild(bubble);
+          chatLog.scrollTop = chatLog.scrollHeight;
+          var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
+          if(placeholder) placeholder.remove();
         }
+
+        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
+        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
       }
 
-      // tool-calls: update_note 자동채우기
-      if (message.type === 'tool-calls' && message.toolCallList) {
-        handleVapiToolCall(message.toolCallList);
+      /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
+      if(msg.type === 'tool-calls') {
+        handleVapiToolCall(msg.toolCallList);
       }
     });
 
-    // 오류 처리
-    vapi.on('error', function(err) {
-      console.error('[Vapi 오류]', err);
-      showToast('⚠️ 음성 연결 오류: ' + (err.message || '다시 시도해 주세요'));
+    /* ── 통화 종료 ── */
+    vapi.on('call-end', function() {
+      vapiCallActive = false;
+      diagMic = false;
+      showToast('📞 상담이 종료됐습니다');
+      /* DEV-003: 리포트 생성 — 추후 활성화 */
+      // generateFinalReport();
     });
 
-    // ── Vapi 통화 시작 (Assistant ID 방식) ──
-    showToast('🎤 AI 머니야 접속 중...');
-    await vapi.start(VAPI_ASSISTANT_ID, {
-      transcriber: {
-        provider: 'deepgram',
-        model: 'nova-2',
-        language: 'ko',
-      },
-      backgroundDenoisingEnabled: true,
+    /* ── 오류 ── */
+    vapi.on('error', function(e) {
+      console.error('[Vapi 오류]', e);
+      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
+
+    await vapi.start(assistantId);
 
   } catch(e) {
     console.error('[Vapi 연결 오류]', e);
-    showToast('❌ 음성 연결에 실패했습니다. 마이크 권한을 확인해 주세요.');
-    diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
+    showToast('❌ 연결 오류: ' + e.message);
   }
 }
 
-/* ── Vapi tool call 노트 자동채우기 핸들러 ── */
+/* [DEV-002] Tool Call 핸들러 — 상담노트 실시간 업데이트 */
 function handleVapiToolCall(toolCallList) {
+  if(!toolCallList || !toolCallList.length) return;
   toolCallList.forEach(function(toolCall) {
-    if (toolCall.function && toolCall.function.name === 'update_note') {
+    if(toolCall.function && toolCall.function.name === 'update_note') {
       var args = toolCall.function.arguments;
-      if (typeof args === 'string') {
-        try { args = JSON.parse(args); } catch(e) { return; }
-      }
+      if(typeof args === 'string') { try { args = JSON.parse(args); } catch(e) { return; } }
       updateNoteField(args.tab, args.field, args.value, args.label);
     }
   });
 }
 
 function updateNoteField(tab, field, value, label) {
-  // 탭 전환
-  if (typeof dnGo === 'function') {
-    var tabNum = parseInt(tab) || 0;
-    var tabMap = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:6,8:7,9:8,10:9,11:10};
-    dnGo(tabMap[tabNum] !== undefined ? tabMap[tabNum] : tabNum);
-  }
+  /* 해당 탭으로 자동 이동 */
+  var tabIdx = parseInt(tab) || 0;
+  if(typeof dnGo === 'function') dnGo(tabIdx);
 
-  // 필드 채우기
-  var el = document.getElementById('diag_' + field) || document.getElementById(field);
-  if (el) {
-    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-      el.value = value;
-    } else {
-      el.textContent = value;
-    }
+  /* 해당 필드에 값 입력 — 기존 diagHandleNote와 동일한 ID 규칙 */
+  var el = document.getElementById('f' + tab + '_' + field);
+  if(el) {
+    dnFill(el, value);
     el.style.background = '#FFF8E6';
-    el.style.borderLeft = '3px solid #C9972A';
-    setTimeout(function() {
-      el.style.background = '';
-      el.style.borderLeft = '';
-    }, 800);
+    setTimeout(function(){ el.style.background = ''; }, 1000);
   }
 
-  // 설계도(탭5) 업데이트
-  if (tab === '5' || tab === 5) {
-    if (typeof updateHouseDiagram === 'function') updateHouseDiagram(field, value);
+  /* 금융집짓기 설계도 업데이트 */
+  if(tab === '5' && typeof updateHouseDiagram === 'function') {
+    updateHouseDiagram(field, value);
   }
 
-  console.log('[노트 자동채우기]', label, ':', value);
-  showToast('📝 ' + label + ': ' + String(value).slice(0, 20));
+  console.log('[노트 업데이트]', label + ': ' + value);
 }
+
+// [비활성화 by DEV-001] 기존 OpenAI Realtime 함수들
+// function diagHandleMsg(msg) { ... }
+// async function diagSetupAudio() { ... }
+// function diagPlayNext() { ... }
 
 /* ── diagHandleMsg: smart_note_update만 유지 (WebSocket 제거 후 Vapi 이전) ── */
 function diagHandleMsg(msg) {
