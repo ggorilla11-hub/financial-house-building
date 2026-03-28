@@ -8636,7 +8636,16 @@ async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
   try {
-    diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    diagMicStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 16000
+      },
+      video: false
+    });
     showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
   } catch(e) {
     if(e.name === 'NotAllowedError') {
@@ -8670,6 +8679,22 @@ async function diagConnectVoice(isPaid) {
       showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
       var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
       if(w) w.classList.remove('muted');
+
+      /* [에코 방지] AEC 학습 시간 확보 — 첫 5초간 마이크 음소거 */
+      try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
+      setTimeout(function() {
+        if(vapiCallActive && !diagPaused) {
+          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
+          console.log('[에코방지] AEC 학습 완료 — 마이크 활성화');
+        }
+      }, 5000);
+
+      /* [안내문구] 텍스트 전환 안내 — 1회만 */
+      setTimeout(function() {
+        if(vapiCallActive) {
+          diagAddSTT('system', '💡 음성이 겹치는 경우 하단 텍스트 입력창으로 편하게 상담하실 수 있습니다.', null);
+        }
+      }, 8000);
     });
 
     /* ── [디버그] 모바일 화면 로그 ── */
@@ -8712,8 +8737,8 @@ async function diagConnectVoice(isPaid) {
     vapi.on('speech-end', function() {
       _vapiSpeaking = false;
       _vapiLastSpeechEnd = Date.now();
-      _dbg('🔊 speech-end — 500ms 후 복원');
-      /* 500ms 딜레이 후 마이크 복원 (에코 잔향 완전 소멸 대기) */
+      _dbg('🔊 speech-end — 800ms 후 복원');
+      /* 800ms 딜레이 후 마이크 복원 (에코 잔향 완전 소멸 대기) */
       setTimeout(function() {
         if(!_vapiSpeaking && !diagPaused) {
           try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
@@ -8721,7 +8746,7 @@ async function diagConnectVoice(isPaid) {
           if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity=''; });
           _dbg('🎤 마이크 복원 완료');
         }
-      }, 500);
+      }, 800);
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
@@ -8735,10 +8760,10 @@ async function diagConnectVoice(isPaid) {
         var displayText = msg.transcript;
         if(!displayText || !displayText.trim()) return;
 
-        /* [에코 방지] 머니야 발화 중이거나 발화 직후 1초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
+        /* [에코 방지] 머니야 발화 중이거나 발화 직후 1.5초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
         if(role === 'user') {
           var timeSinceSpeechEnd = Date.now() - (_vapiLastSpeechEnd || 0);
-          if(_vapiSpeaking || timeSinceSpeechEnd < 1000) {
+          if(_vapiSpeaking || timeSinceSpeechEnd < 1500) {
             _dbg('🚫 에코무시: ' + displayText.slice(0,15) + ' (' + timeSinceSpeechEnd + 'ms)');
             return;
           }
@@ -8793,18 +8818,18 @@ async function diagConnectVoice(isPaid) {
     });
 
     await vapi.start(assistantId, {
-      /* [에코 방지] 배경 소음/음성 제거 */
+      /* [에코 방지] 배경 소음/음성 제거 — Vapi 서버 레벨 */
       backgroundDenoisingEnabled: true,
       backgroundVoiceDenoising: true,
-      /* [에코 방지] 중단 감지 — numWords:2로 짧은 에코는 무시 */
+      /* [에코 방지] 중단 감지 — Dashboard 설정과 동기화 */
       stopSpeakingPlan: {
-        numWords: 2,
-        voiceSeconds: 0.3,
-        backoffSeconds: 1.2
+        numWords: 3,
+        voiceSeconds: 0.4,
+        backoffSeconds: 1.5
       },
-      /* [한국어] 텍스트 기반 엔드포인팅 — 비영어권 최적화 */
+      /* [한국어] 엔드포인팅 — Dashboard 설정과 동기화 */
       startSpeakingPlan: {
-        waitSeconds: 0.5,
+        waitSeconds: 0.6,
         smartEndpointingPlan: {
           provider: 'vapi'
         },
