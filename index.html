@@ -2350,6 +2350,10 @@ body { color: #1a1a1a; }
 
 /* CSS 파싱 완료 후 즉시 표시 — 깜빡임 방지 */
 html{visibility:visible !important;}
+
+/* ━━━ MVP: 시뮬레이터 완전 숨김 (음성 코드에 영향 없음) ━━━ */
+#sim-wrap, .sim-wrap { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
+
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
 
@@ -3694,7 +3698,7 @@ html{visibility:visible !important;}
   <div class="inp-sec">
     <div class="inp-sec-title">📥 개인 입력 변수</div>
     <div class="slid-v2"><div class="sl-top"><span class="sl-name">월 소득</span><span><span class="sl-val" id="r6-inc-v">400</span><span class="sl-unit">만원</span></span></div><input type="range" min="100" max="2000" step="50" value="400" oninput="svoV2('r6-inc-v',this,'만원');updateInsNeeds()"></div>
-    <div class="slid-v2"><div class="sl-top"><span class="sl-name">현재 나이</span><span><span class="sl-val" id="r6-age-v">40</span><span class="sl-unit">세</span></span></div><input type="range" min="20" max="70" value="40" oninput="svoV2('r6-age-v',this,'세');updateInsNeeds()"></div>
+    <div class="slid-v2"><div class="sl-top"><span class="sl-name">현재 나이</span><span><span class="sl-val" id="r6-age-v">30</span><span class="sl-unit">세</span></span></div><input type="range" min="20" max="70" value="40" oninput="svoV2('r6-age-v',this,'세');updateInsNeeds()"></div>
     <div class="slid-v2"><div class="sl-top"><span class="sl-name">총 부채</span><span><span class="sl-val" id="r6-debt-v">10,000</span><span class="sl-unit">만원</span></span></div><input type="range" min="0" max="100000" step="1000" value="10000" oninput="svofV2('r6-debt-v',this,'만원');updateInsNeeds()"></div>
     <div class="slid-v2"><div class="sl-top"><span class="sl-name">현재 월 보험료</span><span><span class="sl-val" id="r6-pay-v">20</span><span class="sl-unit">만원</span></span></div><input type="range" min="0" max="100" step="2" value="20" oninput="svoV2('r6-pay-v',this,'만원')"></div>
     <div class="slid-v2"><div class="sl-top"><span class="sl-name">위험자산 규모</span><span><span class="sl-val" id="r6-risk-v">3,000</span><span class="sl-unit">만원</span></span></div><input type="range" min="0" max="50000" step="500" value="3000" oninput="svofV2('r6-risk-v',this,'만원')"></div>
@@ -6541,6 +6545,8 @@ var mvpRecorder = null;
 var mvpRecChunks = [];
 var mvpIsRecording = false;
 var mvpRecStartTime = null;
+var mvpRecAudioCtx = null;
+var mvpRecMicStream = null;
 
 function mvpToggleRecord() {
   if(mvpIsRecording) {
@@ -6551,9 +6557,34 @@ function mvpToggleRecord() {
 }
 
 function mvpStartRecord() {
-  // 마이크 접근
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-    mvpRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(micStream) {
+    mvpRecMicStream = micStream;
+    mvpRecAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var dest = mvpRecAudioCtx.createMediaStreamDestination();
+
+    // 1) 마이크 스트림 → 믹서
+    var micSource = mvpRecAudioCtx.createMediaStreamSource(micStream);
+    micSource.connect(dest);
+
+    // 2) 페이지 내 모든 audio/video 엘리먼트(머니야 음성) → 믹서
+    var mediaEls = document.querySelectorAll('audio, video');
+    mediaEls.forEach(function(el) {
+      try {
+        if(!el._mvpCaptured) {
+          var source = mvpRecAudioCtx.createMediaElementSource(el);
+          source.connect(dest);
+          source.connect(mvpRecAudioCtx.destination); // 스피커에도 계속 출력
+          el._mvpCaptured = true;
+        }
+      } catch(e) {
+        // 이미 캡처된 엘리먼트는 무시
+        console.log('[녹음] 오디오 캡처 스킵:', e.message);
+      }
+    });
+
+    // 3) 합성된 스트림으로 녹음
+    var mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mvpRecorder = new MediaRecorder(dest.stream, { mimeType: mimeType });
     mvpRecChunks = [];
     mvpRecStartTime = new Date();
 
@@ -6562,12 +6593,11 @@ function mvpStartRecord() {
     };
 
     mvpRecorder.onstop = function() {
-      var blob = new Blob(mvpRecChunks, { type: 'audio/webm' });
+      var blob = new Blob(mvpRecChunks, { type: mimeType });
       mvpSaveRecording(blob);
-      stream.getTracks().forEach(function(t){ t.stop(); });
     };
 
-    mvpRecorder.start();
+    mvpRecorder.start(1000); // 1초 간격으로 데이터 수집
     mvpIsRecording = true;
 
     // UI 업데이트 - 빨간색 강조
@@ -6583,7 +6613,7 @@ function mvpStartRecord() {
       String(mvpRecStartTime.getDate()).padStart(2,'0') + ' ' +
       String(mvpRecStartTime.getHours()).padStart(2,'0') + ':' +
       String(mvpRecStartTime.getMinutes()).padStart(2,'0');
-    showToast('🔴 녹음 시작: ' + dateStr);
+    showToast('🔴 녹음 시작 (머니야+고객 음성): ' + dateStr);
 
   }).catch(function(err) {
     console.error('[녹음] 마이크 접근 실패:', err);
@@ -6596,6 +6626,12 @@ function mvpStopRecord() {
     mvpRecorder.stop();
   }
   mvpIsRecording = false;
+
+  // 마이크 스트림 해제 (녹음 전용 - 기존 상담 마이크에 영향 없음)
+  if(mvpRecMicStream) {
+    mvpRecMicStream.getTracks().forEach(function(t){ t.stop(); });
+    mvpRecMicStream = null;
+  }
 
   // UI 복원
   var ico = document.getElementById('mvpRecIco');
@@ -6664,7 +6700,6 @@ function mvpPlayRec(idx) {
   var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
   if(!recordings[idx]) return;
   var r = recordings[idx];
-  // 오디오 재생
   if(r.url) {
     var audio = new Audio(r.url);
     audio.play().catch(function(e) {
@@ -6672,6 +6707,59 @@ function mvpPlayRec(idx) {
     });
     showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
   }
+}
+
+/* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
+var mvpTextOnlyMode = false;
+
+function mvpVoiceTimeUp() {
+  // 녹음 중이면 자동 저장
+  if(typeof mvpIsRecording !== 'undefined' && mvpIsRecording) {
+    mvpStopRecord();
+  }
+
+  // 크레딧 차감
+  var usedMin = Math.ceil(diagSec / 60);
+  localStorage.setItem('mvp_credit_min', '0');
+  localStorage.setItem('mvp_last_session_min', String(usedMin));
+
+  // ★ Vapi 음성만 음소거 (연결은 유지 → 텍스트 전송 가능)
+  if(vapi && vapiCallActive) {
+    try { vapi.setMuted(true); } catch(e) {}
+    // Vapi 오디오 출력도 음소거 (스피커에서 안 들리게)
+    try {
+      var audioEls = document.querySelectorAll('audio');
+      audioEls.forEach(function(a) { a.muted = true; a.volume = 0; });
+    } catch(e) {}
+  }
+
+  // 마이크 스트림 해제
+  try {
+    if(diagMicStream) {
+      diagMicStream.getTracks().forEach(function(t){ t.stop(); });
+      diagMicStream = null;
+    }
+  } catch(e) {}
+
+  mvpTextOnlyMode = true;
+
+  // UI 업데이트: 마이크 아이콘 변경, 상태 표시
+  var micIco = document.getElementById('diagMicIco');
+  if(micIco) micIco.textContent = '🔇';
+
+  // 타이머 중지 (더 이상 시간 증가 안 함)
+  clearInterval(diagInt);
+
+  // 상단 LIVE 표시 변경
+  var liveTxt = document.querySelector('.c-live-txt');
+  if(liveTxt) liveTxt.textContent = '텍스트 상담 중';
+  var liveDot = document.querySelector('.c-live-dot');
+  if(liveDot) liveDot.style.background = '#3b82f6';
+
+  // STT 영역에 안내 메시지
+  diagAddSTT('ai', '⏰ 음성 크레딧 30분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
+
+  showToast('🔵 음성 종료 · 텍스트 무제한 상담 계속 가능');
 }
 
 function mpOpen() {
@@ -7333,7 +7421,7 @@ function mpStartVideoConsult() {
 // ── FAQ ──
 const MP_FAQ = [
   { q:'금융집짓기®란 무엇인가요?', a:'오원트금융연구소에서 개발한 재무설계 방법론으로, 집을 짓듯이 체계적으로 금융 계획을 세우는 프로그램입니다.' },
-  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 40분, 이후 매월 30분 크레딧이 제공됩니다.' },
+  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 30분, 이후 매월 30분 크레딧이 제공됩니다.' },
   { q:'구독 해지는 어떻게 하나요?', a:'계정 탭 > 구독 관리에서 해지 신청하실 수 있습니다. 해지 후에도 이번 달 말까지 이용 가능합니다.' },
   { q:'재무설계 리포트는 어디서 보나요?', a:'시뮬레이터에서 저장하기를 누르면 히스토리 탭에 자동 기록됩니다.' },
   { q:'오상열 CFP 직접 상담은?', a:'서비스 탭 > 강의·상담 신청에서 비대면/대면 상담을 신청하실 수 있습니다.' },
@@ -8311,7 +8399,7 @@ var FH_PART_NAMES = [
 ];
 
 var FH_NOTE_PARTS = [
-  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'40분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'30분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
   { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
   { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
   { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
@@ -8866,14 +8954,11 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    if(diagSec===35*60) showToast('⏰ 35분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
-    if(diagSec===39*60) showToast('⚠️ 39분 경과 · 1분 남았습니다!');
-    if(diagSec===40*60) {
-      showToast('🔴 40분 도달 · 음성 진단이 종료됩니다');
-      // 자동 종료
-      diagEndConsult();
-      // 녹음 중이면 자동 저장
-      if(mvpIsRecording) mvpStopRecord();
+    if(diagSec===25*60) showToast('⏰ 25분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
+    if(diagSec===29*60) showToast('⚠️ 29분 경과 · 1분 남았습니다!');
+    if(diagSec===30*60) {
+      // ★ 음성만 종료, 텍스트 상담은 계속 가능
+      mvpVoiceTimeUp();
     }
 
   },1000);
@@ -9952,6 +10037,19 @@ function diagEndConsult() {
   clearInterval(diagInt);
   diagPaused = true;
 
+  /* MVP: 녹음 중이면 자동 저장 */
+  if(typeof mvpIsRecording !== 'undefined' && mvpIsRecording) {
+    mvpStopRecord();
+  }
+
+  /* MVP: 크레딧 차감 (사용 시간 저장) */
+  var usedMin = Math.ceil(diagSec / 60);
+  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '30');
+  var remaining = Math.max(0, totalCredit - usedMin);
+  localStorage.setItem('mvp_credit_min', String(remaining));
+  localStorage.setItem('mvp_last_session_min', String(usedMin));
+  console.log('[크레딧] 사용: ' + usedMin + '분, 잔여: ' + remaining + '분');
+
   /* [DEV-001] Vapi 통화 종료 */
   if(vapi && vapiCallActive) {
     try{ vapi.stop(); }catch(e){}
@@ -10563,7 +10661,7 @@ diagAddSTT = function(role, text, tag) {
             <div style="padding:10px 14px;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
-                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 40분</div></div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 30분</div></div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
@@ -10586,21 +10684,21 @@ diagAddSTT = function(role, text, tag) {
           <div class="mpc-hd" onclick="mvpToggle('mvpCreditBody','mvpCreditChev')" style="background:var(--navy);padding:11px 14px;">
             <span class="mpc-icon" style="color:#fff;">🎫</span>
             <span class="mpc-title" style="color:#fff;font-weight:900;">이용권 현황</span>
-            <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;">40<span style="font-size:10px;font-weight:500;">분</span></span>
+            <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;">30<span style="font-size:10px;font-weight:500;">분</span></span>
             <span class="mpc-chevron" id="mvpCreditChev" style="color:rgba(255,255,255,.6);">▾</span>
           </div>
           <div class="accordion-body open" id="mvpCreditBody">
             <div style="padding:10px 14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <span style="font-size:11px;color:var(--muted);">이번달 남은 시간</span>
-                <span style="font-size:20px;font-weight:900;color:var(--gold);">40 <span style="font-size:10px;font-weight:500;">분</span></span>
+                <span style="font-size:20px;font-weight:900;color:var(--gold);">30 <span style="font-size:10px;font-weight:500;">분</span></span>
               </div>
               <div style="width:100%;height:6px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden;">
                 <div style="width:100%;height:100%;background:linear-gradient(90deg,#C9972A,#E8B84B);border-radius:3px;"></div>
               </div>
               <div style="font-size:9px;color:var(--muted);margin-top:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
               <div style="margin-top:8px;padding:6px 10px;background:rgba(201,151,42,.08);border-radius:8px;font-size:9.5px;color:var(--navy);">
-                🌟 초회상담 40분 · 금융집짓기® 8단계 전체 진단
+                🌟 초회상담 30분 · 금융집짓기® 8단계 전체 진단
               </div>
             </div>
           </div>
