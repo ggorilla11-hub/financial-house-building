@@ -8776,7 +8776,29 @@ async function diagConnectVoice(isPaid) {
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
+    var _muteTimer = null;
     vapi.on('message', function(msg) {
+
+      /* [에코 방지] partial transcript에서도 AI 발화 즉시 감지 → 마이크 닫기 */
+      if(msg.type === 'transcript' && msg.transcriptType === 'partial') {
+        var partialRole = (msg.role || '').toLowerCase();
+        if(partialRole === 'assistant' || partialRole === 'bot' || partialRole === 'ai') {
+          if(!_vapiSpeaking) {
+            _vapiSpeaking = true;
+            try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
+          }
+          clearTimeout(_muteTimer);
+          _muteTimer = setTimeout(function() {
+            _vapiSpeaking = false;
+            _vapiLastSpeechEnd = Date.now();
+            if(!diagPaused) {
+              try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
+              _dbg('🎤 마이크 복원 (partial 타이머)');
+            }
+          }, 1500);
+        }
+      }
+
       /* 자막 표시 */
       if(msg.type === 'transcript' && msg.transcriptType === 'final') {
         /* [DEV-003 FIX] role 판별 강화 — Vapi 버전별 호환 */
@@ -8785,6 +8807,24 @@ async function diagConnectVoice(isPaid) {
         var role = (rawRole === 'assistant' || rawRole === 'bot' || rawRole === 'ai') ? 'ai' : 'user';
         var displayText = msg.transcript;
         if(!displayText || !displayText.trim()) return;
+
+        /* [에코 방지 최종] assistant 발화 감지 시 마이크 닫기 */
+        if(role === 'ai') {
+          _vapiSpeaking = true;
+          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
+          _dbg('🔇 AI발화 감지 — 마이크 닫음');
+          /* 이전 복원 타이머 취소 */
+          clearTimeout(_muteTimer);
+          /* AI 발화 끝나면 1.5초 후 마이크 복원 */
+          _muteTimer = setTimeout(function() {
+            _vapiSpeaking = false;
+            _vapiLastSpeechEnd = Date.now();
+            if(!diagPaused) {
+              try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
+              _dbg('🎤 AI발화 종료 추정 — 마이크 복원');
+            }
+          }, 1500);
+        }
 
         /* [에코 방지] 머니야 발화 중이거나 발화 직후 1.5초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
         if(role === 'user') {
