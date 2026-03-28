@@ -2363,35 +2363,6 @@ html{visibility:visible !important;}
 
 
 
-  <!-- Vapi SDK [DEV-001] — 3중 CDN 폴백 -->
-  <script>
-  (function(){
-    var sources = [
-      'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/index.umd.js',
-      'https://unpkg.com/@vapi-ai/web@2.5.2/dist/index.umd.js',
-      'https://cdn.jsdelivr.net/gh/balacodeio/Vapi-Web-UMD@latest/dist/latest/vapi-web-bundle.min.js'
-    ];
-    var idx = 0;
-    function tryLoad() {
-      if(idx >= sources.length) {
-        console.error('[DEV-001] Vapi SDK 로드 실패 — 모든 CDN 불가');
-        return;
-      }
-      var s = document.createElement('script');
-      s.src = sources[idx];
-      s.onload = function() {
-        console.log('[DEV-001] Vapi SDK 로드 성공:', sources[idx]);
-      };
-      s.onerror = function() {
-        console.warn('[DEV-001] CDN 실패:', sources[idx]);
-        idx++;
-        tryLoad();
-      };
-      document.head.appendChild(s);
-    }
-    tryLoad();
-  })();
-  </script>
 
 </head>
 <body>
@@ -7793,14 +7764,10 @@ function _onMoneya발화(text) {
 
     // ② 0.4초 후 전송 (입력창에서 보이다가 전송)
     setTimeout(function() {
-      // [DEV-001] Vapi로 텍스트 전송
-      if(vapi && vapiCallActive) {
-        try{ vapi.send({ type: 'add-message', message: { role: 'user', content: reply } }); }catch(e){}
+      // 서버로 전송
+      if(diagWs && diagWs.readyState === 1) {
+        diagWs.send(JSON.stringify({type:'text_input', text:reply}));
       }
-      // [비활성화 by DEV-001] 기존 WebSocket
-      // if(diagWs && diagWs.readyState === 1) {
-      //   diagWs.send(JSON.stringify({type:'text_input', text:reply}));
-      // }
       // STT 자막에도 표시
       if(typeof diagAddSTT === 'function') {
         diagAddSTT('user', '🎓 ' + reply, null);
@@ -8568,38 +8535,14 @@ function diagStartConsult() {
   },1000);
 
   // 실제 음성 연결 시작
-  /* [DEV-001] 브라우저 오디오 자동재생 정책 해제 — 사용자 클릭 이벤트 내에서 AudioContext 생성 */
-  try {
-    var unlockCtx = new (window.AudioContext || window.webkitAudioContext)();
-    unlockCtx.resume().then(function() {
-      console.log('[DEV-001] AudioContext 활성화 성공 — 음성 출력 준비됨');
-      unlockCtx.close();
-    });
-    /* 무음 재생으로 오디오 잠금 해제 */
-    var silentAudio = document.createElement('audio');
-    silentAudio.setAttribute('playsinline', '');
-    silentAudio.setAttribute('webkit-playsinline', '');
-    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-    silentAudio.play().catch(function(){});
-  } catch(e) { console.warn('[DEV-001] AudioContext 사전 활성화 실패:', e); }
-
   diagConnectVoice();
 }
 
-/* ══════════════════════════════════════════════════════════
-   [DEV-001] Vapi.ai 음성 연결
-   ══════════════════════════════════════════════════════════ */
-const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
-const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
-const VAPI_ASSISTANT_PAID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98';
-let vapi = null;
-let vapiCallActive = false;
-
-// [비활성화 by DEV-001] 기존 OpenAI Realtime
-// const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
-// let diagWs=null, diagAudioCtx=null, diagMicStream=null;
-// let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
-let diagMicStream=null; // 마이크 권한 확인용으로 유지
+/* ── 음성 연결 (WebSocket + AudioWorklet) ── */
+const DIAG_SERVER_WS = 'wss://moneya-server.onrender.com';
+let diagWs=null, diagAudioCtx=null, diagMicStream=null;
+let diagWorkletNode=null, diagPlayQueue=[], diagIsPlaying=false;
+/* diagMicOn, diagPaused는 전임자 코드에서 이미 선언됨 (중복 제거) */
 
 const diagFinCtx = {
   name:'고객', age:0, monthlyIncome:0,
@@ -8608,212 +8551,120 @@ const diagFinCtx = {
   mainWorry:'',
 };
 
-/* [DEV-001] Vapi SDK 생성자 찾기 — 비동기 로드 대기 포함 */
-function getVapiConstructor() {
-  if(typeof Vapi === 'function') return Vapi;
-  if(typeof Vapi === 'object' && Vapi && Vapi.default) return Vapi.default;
-  if(typeof window.Vapi === 'function') return window.Vapi;
-  if(typeof window.Vapi === 'object' && window.Vapi && window.Vapi.default) return window.Vapi.default;
-  return null;
-}
-
-function waitForVapi(maxWait) {
-  return new Promise(function(resolve) {
-    var ctor = getVapiConstructor();
-    if(ctor) { resolve(ctor); return; }
-    var waited = 0;
-    var iv = setInterval(function() {
-      ctor = getVapiConstructor();
-      waited += 200;
-      if(ctor) { clearInterval(iv); resolve(ctor); }
-      else if(waited >= maxWait) { clearInterval(iv); resolve(null); }
-    }, 200);
-  });
-}
-
-/* [DEV-001] Vapi.ai 음성 연결 */
-async function diagConnectVoice(isPaid) {
-  /* isPaid 인자 없으면 기본 유료 */
-  if(isPaid === undefined) isPaid = true;
+async function diagConnectVoice() {
   try {
     diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
   } catch(e) {
-    if(e.name === 'NotAllowedError') {
-      showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
-    } else {
-      showToast('❌ 마이크 연결 오류: ' + e.message);
-    }
+    showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
     diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
     return;
   }
-
-  try {
-    /* Vapi SDK 로드 대기 (최대 5초) */
-    var VapiConstructor = await waitForVapi(5000);
-    
-    if(!VapiConstructor) {
-      showToast('❌ Vapi SDK 로드 실패 · 페이지를 새로고침 해주세요');
-      console.error('[DEV-001] Vapi SDK가 로드되지 않았습니다. typeof Vapi:', typeof Vapi, 'window.Vapi:', typeof window.Vapi);
-      diagAddSTT('ai', 'AI 음성 엔진 로드에 실패했습니다. 페이지를 새로고침 해주세요.', null);
-      return;
+  diagWs = new WebSocket(DIAG_SERVER_WS+'?mode=consult');
+  diagWs.onopen = function() {
+    diagWs.send(JSON.stringify({type:'start_consult',userName:diagFinCtx.name,financialContext:diagFinCtx}));
+  };
+  diagWs.onmessage = function(e) {
+    try { diagHandleMsg(JSON.parse(e.data)); } catch(err){}
+  };
+  diagWs.onerror = function() { showToast('⚠️ 서버 연결 오류'); };
+  diagWs.onclose = function(e) {
+    /* 정상 종료(1000) 또는 일시정지 상태에서는 재연결 안 함 */
+    if(e.code === 1000 || diagPaused) return;
+    /* 비정상 종료 시 1회만 재연결 시도 */
+    if(!diagWs._reconnected) {
+      diagWs._reconnected = true;
+      showToast('🔄 연결이 끊어졌습니다 · 재연결 중...');
+      setTimeout(diagConnectVoice, 3000);
+    } else {
+      showToast('⚠️ 연결이 불안정합니다. 페이지를 새로고침 해주세요.');
     }
-    
-    console.log('[DEV-001] Vapi 생성자 확인:', VapiConstructor.name || 'OK');
-    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
-    var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
+  };
+}
 
-    /* ── 연결 시작 ── */
-    vapi.on('call-start', function() {
-      vapiCallActive = true;
-      diagMic = true;
-      showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
-      var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
-      if(w) w.classList.remove('muted');
-    });
+function diagHandleMsg(msg) {
+  if(msg.type==='session_started') {
+    diagSetupAudio();
+    showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
+    const w=document.getElementById('diagWave')||document.querySelector('.diag-wave');
+    if(w) w.classList.remove('muted');
+  } else if(msg.type==='audio') {
+    if(msg.data){diagPlayQueue.push(msg.data);if(!diagIsPlaying)diagPlayNext();}
+  } else if(msg.type==='interrupt') {
+    diagPlayQueue=[];diagIsPlaying=false;
+    try{diagAudioCtx&&diagAudioCtx.suspend().then(()=>diagAudioCtx.resume());}catch(e){}
+  } else if(msg.type==='transcript') {
+    if(msg.text&&msg.text.trim()) {
+      var displayText = msg.text
+        .replace(/\(잠시\)/g,'').replace(/\(pause\)/g,'').replace(/\(쉬고\)/g,'')
+        .replace(/\(침묵\)/g,'').replace(/\s+/g,' ').trim();
+      if(!displayText) return;
+      var role = msg.role==='user'?'user':'ai';
+      diagAddSTT(role, displayText, null);
 
-    /* ── 메시지 수신 (자막 + Tool Call) ── */
-    vapi.on('message', function(msg) {
-      /* 자막 표시 */
-      if(msg.type === 'transcript' && msg.transcriptType === 'final') {
-        /* [DEV-003 FIX] role 판별 강화 — Vapi 버전별 호환 */
-        console.log('[VAPI-DBG] transcript msg:', JSON.stringify({type:msg.type, role:msg.role, transcriptType:msg.transcriptType, transcript:(msg.transcript||'').slice(0,30)}));
-        var rawRole = (msg.role || '').toLowerCase();
-        var role = (rawRole === 'assistant' || rawRole === 'bot' || rawRole === 'ai') ? 'ai' : 'user';
-        var displayText = msg.transcript;
-        if(!displayText || !displayText.trim()) return;
-
-        /* STT 영역에 표시 */
-        diagAddSTT(role, displayText, null);
-
-        /* 대화록 탭(dnp9)에도 실시간 기록 */
-        var chatLog = document.getElementById('dn_chat_log');
-        if(chatLog) {
-          var isUser = (role === 'user');
-          var bubble = document.createElement('div');
-          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
-          bubble.innerHTML =
-            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-              (isUser ? '👤 고객' : '🤖 머니야') +
-            '</div>' +
-            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
-              displayText.replace(/</g, '&lt;') +
-            '</div>';
-          chatLog.appendChild(bubble);
-          chatLog.scrollTop = chatLog.scrollHeight;
-          var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
-          if(placeholder) placeholder.remove();
-        }
-
-        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
-        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
+      /* ── 대화록 탭(dnp9)에도 실시간 기록 */
+      var chatLog = document.getElementById('dn_chat_log');
+      if(chatLog) {
+        var isUser = (role==='user');
+        var bubble = document.createElement('div');
+        bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+        bubble.innerHTML =
+          '<div style="font-size:9px;color:'+(isUser?'#8896B0':'#C9972A')+';margin-bottom:2px;'+(isUser?'text-align:right;':'')+'">'+
+            (isUser?'👤 고객':'🤖 머니야')+
+          '</div>'+
+          '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:'+(isUser?'flex-end':'flex-start')+';'+
+            (isUser?'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;':'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;')+'">'+
+            displayText.replace(/</g,'&lt;')+
+          '</div>';
+        chatLog.appendChild(bubble);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        // 첫 메시지면 안내 문구 제거
+        var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
+        if(placeholder) placeholder.remove();
       }
 
-      /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
-      if(msg.type === 'tool-calls') {
-        handleVapiToolCall(msg.toolCallList);
-      }
-    });
-
-    /* ── 통화 종료 ── */
-    vapi.on('call-end', function() {
-      vapiCallActive = false;
-      diagMic = false;
-      showToast('📞 상담이 종료됐습니다');
-      /* [DEV-003] 리포트 자동생성 */
-      generateFinalReport();
-    });
-
-    /* ── 오류 ── */
-    vapi.on('error', function(e) {
-      console.error('[Vapi 오류]', e);
-      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
-    });
-
-    await vapi.start(assistantId);
-
-  } catch(e) {
-    console.error('[Vapi 연결 오류]', e);
-    showToast('❌ 연결 오류: ' + e.message);
+      if(role==='user') setTimeout(function(){ diagAutoFillNote(msg.text); }, 300);
+      if(role==='ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ=displayText; }
+    }
+  } else if(msg.type==='smart_note_update') {
+    diagHandleNote(msg);
+  } else if(msg.type==='error') {
+    showToast('⚠️ '+(msg.error||'오류가 발생했습니다'));
   }
 }
 
-/* [DEV-002] Tool Call 핸들러 — 상담노트 실시간 업데이트 */
-function handleVapiToolCall(toolCallList) {
-  if(!toolCallList || !toolCallList.length) return;
-  toolCallList.forEach(function(toolCall) {
-    if(toolCall.function && toolCall.function.name === 'update_note') {
-      var args = toolCall.function.arguments;
-      if(typeof args === 'string') { try { args = JSON.parse(args); } catch(e) { return; } }
-      updateNoteField(args.tab, args.field, args.value, args.label);
-    }
-  });
+async function diagSetupAudio() {
+  diagAudioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:24000});
+  const wc=`class P extends AudioWorkletProcessor{process(i){const c=i[0][0];if(!c)return true;const p=new Int16Array(c.length);for(let i=0;i<c.length;i++)p[i]=Math.max(-32768,Math.min(32767,c[i]*32768));this.port.postMessage(p.buffer,[p.buffer]);return true;}}registerProcessor('p16',P);`;
+  const blob=new Blob([wc],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  await diagAudioCtx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+  const src=diagAudioCtx.createMediaStreamSource(diagMicStream);
+  diagWorkletNode=new AudioWorkletNode(diagAudioCtx,'p16');
+  diagWorkletNode.port.onmessage=function(e){
+    if(diagWs&&diagWs.readyState===1&&diagMic&&!diagPaused)
+      diagWs.send(JSON.stringify({type:'audio',data:btoa(String.fromCharCode(...new Uint8Array(e.data)))}));
+  };
+  src.connect(diagWorkletNode);
 }
 
-function updateNoteField(tab, field, value, label) {
-  if(!value || !field) return;
-  
-  /* 해당 탭으로 자동 이동 */
-  var tabIdx = parseInt(tab) || 0;
-  if(typeof dnGo === 'function') dnGo(tabIdx);
-
-  /* 해당 필드에 값 입력 — 3단계 매칭 (diagHandleNote와 동일) */
-  var filled = false;
-  
-  // 방법1: 정확한 ID 매칭
-  var el = document.getElementById('f' + tab + '_' + field);
-  if(el) {
-    dnFill(el, value);
-    el.style.background = '#FFF8E6';
-    setTimeout(function(){ el.style.background = ''; }, 1000);
-    filled = true;
-    console.log('[노트기입✅]', 'f' + tab + '_' + field, '=', value);
-  }
-  
-  // 방법2: 유사 키워드 매칭 (ID가 정확히 안 맞을 때)
-  if(!filled) {
-    var cands = document.querySelectorAll('[id^="f' + tab + '_"]');
-    for(var i = 0; i < cands.length; i++) {
-      var ck = cands[i].id.replace('f' + tab + '_', '');
-      if(ck.includes(field) || field.includes(ck)) {
-        dnFill(cands[i], value);
-        cands[i].style.background = '#FFF8E6';
-        setTimeout((function(e){ return function(){ e.style.background = ''; }; })(cands[i]), 1000);
-        filled = true;
-        console.log('[노트기입유사✅]', cands[i].id, '=', value);
-        break;
-      }
-    }
-  }
-  
-  if(!filled) {
-    console.warn('[노트기입❌] f' + tab + '_' + field + ' 요소 없음');
-  }
-
-  /* SVG 집짓기 설계도 업데이트 */
-  if(tabIdx >= 4 && tabIdx <= 8) {
-    if(field === 'retire') { var ar = document.getElementById('age_retire'); if(ar) ar.textContent = value + '세'; }
-    if(field === 'life') { var al = document.getElementById('age_life'); if(al) al.textContent = value + '세'; }
-    if(field === 'age') { var an = document.getElementById('age_now'); if(an) an.textContent = value + '세'; }
-  }
-  
-  /* 3단계 수입 입력 시 예산 자동 계산 */
-  if(tab === '3' && field === 'income') {
-    dnCalcBudget({ income: value });
-  }
-
-  /* 토스트 알림 */
-  showToast('📝 ' + (label || field) + ': ' + String(value).slice(0, 15));
+function diagPlayNext() {
+  if(!diagPlayQueue.length||!diagAudioCtx){diagIsPlaying=false;return;}
+  diagIsPlaying=true;
+  const raw=atob(diagPlayQueue.shift());
+  const buf=new ArrayBuffer(raw.length);
+  const v=new Uint8Array(buf);
+  for(let i=0;i<raw.length;i++)v[i]=raw.charCodeAt(i);
+  const p=new Int16Array(buf);
+  const f=new Float32Array(p.length);
+  for(let i=0;i<p.length;i++)f[i]=p[i]/32768;
+  const ab=diagAudioCtx.createBuffer(1,f.length,24000);
+  ab.copyToChannel(f,0);
+  const s=diagAudioCtx.createBufferSource();
+  s.buffer=ab;s.connect(diagAudioCtx.destination);s.start();
+  s.onended=diagPlayNext;
 }
-
-// [비활성화 by DEV-001] 기존 OpenAI Realtime 함수들
-// function diagHandleMsg(msg) { ... }
-// async function diagSetupAudio() { ... }
-// function diagPlayNext() { ... }
-
-/* [DEV-001] 기존 diagHandleMsg — smart_note_update 처리를 위해 유지 */
-/* Vapi에서는 사용하지 않지만 diagHandleNote 함수는 아래에서 그대로 살림 */
 
 function diagHandleNote(msg) {
   console.log('[노트수신RAW]', JSON.stringify(msg));
@@ -8964,11 +8815,11 @@ function dnCalcBudget(f) {
 
 /* diagSendText는 전임자 함수에서 WS 전송 포함하여 통합 */
 
-// [비활성화 by DEV-001] Heartbeat — Vapi가 자체 관리
-// setInterval(function(){
-//   if(diagWs&&diagWs.readyState===1)
-//     diagWs.send(JSON.stringify({type:'ping'}));
-// },30000);
+/* ── Heartbeat ── */
+setInterval(function(){
+  if(diagWs&&diagWs.readyState===1)
+    diagWs.send(JSON.stringify({type:'ping'}));
+},30000);
 
 /* ── 노트/대화 탭 전환 ── */
 function diagSwitchTab(idx, el) {
@@ -9554,7 +9405,7 @@ function diagBuildNotes() {
               <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
               <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">—</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
             </div>
-            <button onclick="downloadReportPDF()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
+            <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
           </div>
         </div>
       </div>
@@ -9623,8 +9474,7 @@ function diagActivatePart(idx) {
     ps.scrollIntoView({behavior:'smooth',inline:'center'});
   }
   // 서버에 단계 전달
-  // [비활성화 by DEV-001] 기존 WS step 전송
-  // if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
+  if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'step_update',step:idx}));
   if(diagFinCtx) diagFinCtx.currentStep=idx;
   var pname=document.getElementById('diagPartName'); if(pname) pname.textContent=DIAG_PARTS[idx]?.short||'';
   var sname=document.getElementById('diagCurStepName'); if(sname) sname.textContent=idx+'단계 · '+(DIAG_PARTS[idx]?.short||'');
@@ -9703,12 +9553,16 @@ function diagTogglePause() {
   if(w) w.querySelectorAll('div').forEach(function(d){ d.style.animation=diagPaused?'none':''; });
 
   if(diagPaused) {
-    /* [DEV-001] Vapi 마이크 음소거 */
-    if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
+    /* 일시정지 — 즉시 오디오 정지, 큐 비우기 */
+    diagPlayQueue=[];
+    diagIsPlaying=false;
+    try{ if(diagAudioCtx) diagAudioCtx.suspend(); }catch(e){}
+    if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'pause'}));
     showToast('⏸ 일시정지');
   } else {
-    /* [DEV-001] Vapi 마이크 음소거 해제 */
-    if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
+    /* 재개 — AudioContext 즉시 resume */
+    try{ if(diagAudioCtx) diagAudioCtx.resume(); }catch(e){}
+    if(diagWs&&diagWs.readyState===1) diagWs.send(JSON.stringify({type:'resume'}));
     showToast('▶ 재개');
   }
 }
@@ -9721,24 +9575,20 @@ function diagHideEndModal() { const m=document.getElementById('diagEndModal'); i
 function diagEndConsult() {
   diagHideEndModal();
   clearInterval(diagInt);
-  diagPaused = true;
+  diagPaused = true; // 재연결 방지
 
-  /* [DEV-001] Vapi 통화 종료 */
-  if(vapi && vapiCallActive) {
-    try{ vapi.stop(); }catch(e){}
-    vapi = null;
-    vapiCallActive = false;
-  }
-
-  /* ── 마이크 스트림 해제 */
+  /* ── 오디오 완전 정지 */
+  diagPlayQueue=[];
+  diagIsPlaying=false;
+  try{ if(diagAudioCtx){ diagAudioCtx.suspend(); diagAudioCtx.close(); diagAudioCtx=null; } }catch(e){}
+  try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
   try{ if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } }catch(e){}
 
-  // [비활성화 by DEV-001] 기존 오디오/WS 종료
-  // diagPlayQueue=[];
-  // diagIsPlaying=false;
-  // try{ if(diagAudioCtx){ diagAudioCtx.suspend(); diagAudioCtx.close(); diagAudioCtx=null; } }catch(e){}
-  // try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
-  // if(diagWs) { try{ diagWs.close(1000, 'user_ended'); }catch(e){} diagWs = null; }
+  /* ── WS 완전 종료 (code 1000 = 정상종료, 재연결 안 함) */
+  if(diagWs) {
+    try{ diagWs.close(1000, 'user_ended'); }catch(e){}
+    diagWs = null;
+  }
 
   // 리포트 활성화
   const nr=document.getElementById('diagReportReady');
@@ -9759,451 +9609,16 @@ function diagEndConsult() {
       '<button class="rhc-dl" onclick="showToast(\'📄 PDF 다운로드 중...\')">PDF</button>';
     list.insertBefore(div, list.firstChild);
   }
-  showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! 리포트 생성 중...');
-  /* [DEV-003] 종합리포트 자동생성 */
-  generateFinalReport();
+  showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
 }
-
-/* ══════════════════════════════════════════════════════════
-   [DEV-003] 종합재무설계 리포트 자동생성
-   ══════════════════════════════════════════════════════════ */
-
-/* ── 상담노트 데이터 수집 ── */
-function collectNoteData() {
-  function gt(id) { var el=document.getElementById(id); return el ? (el.textContent||'').trim().replace(/^—$/,'').replace(/^중$/,'') : ''; }
-  
-  /* 대화 내용 수집 — dn_chat_log + diagStt */
-  var chatSummary = '';
-  var chatLog = document.getElementById('dn_chat_log');
-  if(chatLog) {
-    var bubbles = chatLog.querySelectorAll('div[style*="border-radius:12px"]');
-    var msgs = [];
-    bubbles.forEach(function(b) {
-      var txt = (b.textContent||'').trim();
-      if(txt && txt.length > 1) msgs.push(txt);
-    });
-    chatSummary = msgs.slice(-20).join(' / ');  /* 최근 20개 */
-  }
-  if(!chatSummary) {
-    var sttArea = document.getElementById('diagStt');
-    if(sttArea) {
-      var sttBubbles = sttArea.querySelectorAll('.c-stt-bubble, [style*="border-radius"]');
-      var sttMsgs = [];
-      sttBubbles.forEach(function(b) {
-        var txt = (b.textContent||'').trim();
-        if(txt && txt.length > 1) sttMsgs.push(txt);
-      });
-      chatSummary = sttMsgs.slice(-20).join(' / ');
-    }
-  }
-
-  return {
-    session: { date: gt('f0_date') || DIAG_TODAY_STR, session: gt('f0_session') || DIAG_SESSION_NUM+'회차', minutes: Math.floor(diagSec/60) },
-    customer: {
-      name: gt('f1_name'), age: gt('f1_age'), marry: gt('f1_marry'),
-      child: gt('f1_child'), family: gt('f1_family'), job: gt('f1_job'),
-      dual: gt('f1_dual'), retire: gt('f1_retire'), life: gt('f1_life')
-    },
-    worry: { w1: gt('f2_w1'), w2: gt('f2_w2'), w3: gt('f2_w3'), goal: gt('f2_goal') },
-    income: {
-      total: gt('f3_income'), living: gt('f3_living_cur'), savings: gt('f3_save_cur'),
-      pension: gt('f3_pension_cur'), insurance: gt('f3_ins_cur'), loan: gt('f3_loan_cur'), surplus: gt('f3_surplus')
-    },
-    assets: {
-      deposit: gt('f4_deposit'), invest: gt('f4_invest'), pension: gt('f4_pension'),
-      realty: gt('f4_realty'), total_asset: gt('f4_total_asset'),
-      credit: gt('f4_credit'), mortgage: gt('f4_mortgage'),
-      total_debt: gt('f4_total_debt'), net: gt('f4_net'), wealth_index: gt('f4_wi_val')
-    },
-    design: { desire: gt('f5_desire'), next: gt('f5_next'), strategy: gt('f5_strategy') },
-    portfolio: { source: gt('f6_source'), net: gt('f6_net') },
-    retire: { need: gt('f81_need'), ready: gt('f81_ready'), short: gt('f81_short'), rate: gt('f81_rate') },
-    score: gt('f9_score'), grade: gt('f9_grade'),
-    strengths: [gt('f9_s1'), gt('f9_s2'), gt('f9_s3')].filter(Boolean),
-    improvements: [gt('f9_i1'), gt('f9_i2'), gt('f9_i3')].filter(Boolean),
-    actions: [gt('f9_a1'), gt('f9_a2'), gt('f9_a3')].filter(Boolean),
-    chatSummary: chatSummary
-  };
-}
-
-/* ── 리포트 생성 요청 ── */
-async function generateFinalReport() {
-  var noteData = collectNoteData();
-  /* 최소 데이터 확인 — 이름이라도 있어야 요청 */
-  if(!noteData.customer.name && !noteData.income.total) {
-    console.log('[DEV-003] 노트 데이터 부족 — 리포트 생성 스킵');
-    return;
-  }
-
-  /* 로딩 UI */
-  var contentEl = document.getElementById('diagReportContent');
-  var readyEl = document.getElementById('diagReportReady');
-  var dateEl = document.getElementById('diagReportDate');
-  var scoreEl = document.getElementById('diagReportScore');
-  if(dateEl) dateEl.textContent = '리포트 생성 중...';
-  showToast('📊 AI가 종합재무설계 리포트를 생성하고 있습니다...');
-
-  try {
-    var res = await fetch('https://moneya-server.onrender.com/api/generate-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ noteData: noteData, chatHistory: noteData.chatSummary || null })
-    });
-
-    if(!res.ok) {
-      var errData = await res.json().catch(function(){ return {error:'서버 오류'}; });
-      throw new Error(errData.error || '서버 응답 오류 ' + res.status);
-    }
-
-    var report = await res.json();
-    console.log('[DEV-003] 리포트 수신:', report);
-    renderReport(report);
-
-  } catch(e) {
-    console.error('[DEV-003] 리포트 생성 실패:', e.message);
-    if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차';
-    showToast('⚠️ 리포트 자동생성 실패 — 상담 데이터는 저장되었습니다');
-  }
-}
-
-/* ── 리포트 렌더링 ── */
-function renderReport(report) {
-  var dateEl = document.getElementById('diagReportDate');
-  var scoreEl = document.getElementById('diagReportScore');
-  var readyEl = document.getElementById('diagReportReady');
-  var contentEl = document.getElementById('diagReportContent');
-
-  /* 점수·날짜 */
-  var score = report.finance_score ? report.finance_score.total : (report.wealth_index ? report.wealth_index.score : 0);
-  var grade = report.wealth_index ? report.wealth_index.grade : '';
-  var custName = report.customer ? report.customer.name : '';
-  if(dateEl) dateEl.textContent = DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 · ' + Math.floor(diagSec/60) + '분 진단';
-  if(scoreEl) scoreEl.textContent = score || '—';
-  if(readyEl) readyEl.style.display = 'block';
-
-  /* 9탭 최종의견에도 반영 */
-  var f9s = document.getElementById('f9_score');
-  var f9g = document.getElementById('f9_grade');
-  if(f9s && score) f9s.innerHTML = score + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
-  if(f9g && grade) f9g.textContent = grade;
-  if(report.strengths) report.strengths.forEach(function(s,i) { var el=document.getElementById('f9_s'+(i+1)); if(el) el.textContent=s; });
-  if(report.improvements) report.improvements.forEach(function(s,i) { var el=document.getElementById('f9_i'+(i+1)); if(el) el.textContent=s; });
-  if(report.actions) report.actions.forEach(function(s,i) { var el=document.getElementById('f9_a'+(i+1)); if(el) el.textContent=s; });
-
-  /* ── 리포트 HTML 조립 ── */
-  var h = '<div id="reportPrintArea" style="display:flex;flex-direction:column;gap:9px;margin-top:10px">';
-
-  /* 헤더 */
-  h += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:16px;text-align:center;border:1.5px solid rgba(201,151,42,.4)">'
-    + '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px">오원트금융연구소 · 금융집짓기® · AI머니야</div>'
-    + '<div style="font-size:15px;font-weight:900;color:#fff;margin-bottom:2px">종합재무설계 리포트</div>'
-    + '<div style="font-size:10px;color:rgba(255,255,255,.5)">' + DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차 · ' + Math.floor(diagSec/60) + '분 진단</div>'
-    + '<div style="margin-top:10px;display:flex;justify-content:center;gap:16px">'
-    + '<div><div style="font-size:36px;font-weight:900;color:#E8B84B;line-height:1">' + (score||'—') + '</div><div style="font-size:9px;color:rgba(255,255,255,.4)">재무점수</div></div>'
-    + '<div><div style="font-size:36px;font-weight:900;color:#E8B84B;line-height:1">' + (grade||'—') + '</div><div style="font-size:9px;color:rgba(255,255,255,.4)">등급</div></div>'
-    + '</div></div>';
-
-  /* 1. 고객 정보 */
-  if(report.customer) {
-    var c = report.customer;
-    h += '<div style="background:#f8faff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
-      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">👤 고객 정보</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10.5px;color:#1a2340;line-height:2">'
-      + '<div>성함: <strong>' + (c.name||'—') + '</strong></div>'
-      + '<div>나이: <strong>' + (c.age||'—') + '세</strong></div>'
-      + '<div>직업: <strong>' + (c.job||'—') + '</strong></div>'
-      + '<div>가족: <strong>' + (c.family||'—') + '인</strong></div>'
-      + '</div></div>';
-  }
-
-  /* 2. 수입지출 */
-  if(report.income) {
-    var inc = report.income;
-    h += '<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
-      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">💰 수입지출 분석</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'
-      + '<div style="background:#f0f4ff;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">월 수입</div><div style="font-size:14px;font-weight:900;color:#0B1D3A">' + (inc.monthly||'—') + '<span style="font-size:9px">만</span></div></div>'
-      + '<div style="background:#f0fdf4;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">저축</div><div style="font-size:14px;font-weight:900;color:#2E7D32">' + (inc.savings||'—') + '<span style="font-size:9px">만</span></div></div>'
-      + '<div style="background:#fff5f5;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">생활비</div><div style="font-size:14px;font-weight:900;color:#C62828">' + (inc.living||'—') + '<span style="font-size:9px">만</span></div></div>'
-      + '<div style="background:#fff8e6;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">잉여자금</div><div style="font-size:14px;font-weight:900;color:#C9972A">' + (inc.surplus||'—') + '<span style="font-size:9px">만</span></div></div>'
-      + '</div></div>';
-  }
-
-  /* 3. 자산부채 */
-  if(report.assets) {
-    var a = report.assets;
-    h += '<div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #D8E0EC">'
-      + '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px">🏦 자산부채 현황</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">'
-      + '<div style="background:#f0f4ff;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">총자산</div><div style="font-size:13px;font-weight:900;color:#0B1D3A">' + (a.total||'—') + '</div></div>'
-      + '<div style="background:#fff5f5;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">총부채</div><div style="font-size:13px;font-weight:900;color:#C62828">' + (a.debt||'—') + '</div></div>'
-      + '<div style="background:#f0fdf4;border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:#8896B0">순자산</div><div style="font-size:13px;font-weight:900;color:#2E7D32">' + (a.net||'—') + '</div></div>'
-      + '</div></div>';
-  }
-
-  /* 4. 재무점수 세부 */
-  if(report.finance_score) {
-    var fs = report.finance_score;
-    h += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:10px;padding:12px">'
-      + '<div style="font-size:10px;font-weight:900;color:#E8B84B;margin-bottom:8px">📊 재무점수 세부 (100점 만점)</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">';
-    [{l:'지출관리',v:fs.expense},{l:'자산관리',v:fs.asset},{l:'보험',v:fs.insurance},{l:'은퇴준비',v:fs.retirement},{l:'부채관리',v:fs.debt}].forEach(function(it) {
-      var c = (it.v||0)>=70?'#4ade80':(it.v||0)>=40?'#fbbf24':'#f87171';
-      h += '<div style="background:rgba(255,255,255,.06);border-radius:7px;padding:7px;text-align:center"><div style="font-size:8px;color:rgba(255,255,255,.5)">'+it.l+'</div><div style="font-size:16px;font-weight:900;color:'+c+'">'+(it.v||'—')+'</div></div>';
-    });
-    h += '</div></div>';
-  }
-
-  /* 5. DESIRE 단계 */
-  if(report.desire_stage) {
-    var ds = report.desire_stage;
-    h += '<div style="background:#fff8e6;border-radius:10px;padding:12px;border:1px solid #E8B84B">'
-      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:4px">🗺️ DESIRE 로드맵 현재 단계</div>'
-      + '<div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:3px">' + (ds.stage||'—') + '</div>'
-      + '<div style="font-size:10px;color:#555;line-height:1.6">' + (ds.description||'') + '</div></div>';
-  }
-
-  /* 6. 강점 */
-  if(report.strengths && report.strengths.length) {
-    h += '<div style="background:#f0fdf4;border-radius:10px;padding:12px;border:1px solid #86efac">'
-      + '<div style="font-size:10px;font-weight:900;color:#2E7D32;margin-bottom:5px">✅ 강점</div>';
-    report.strengths.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0">'+  (i+1)+'. '+s+'</div>'; });
-    h += '</div>';
-  }
-
-  /* 7. 개선점 */
-  if(report.improvements && report.improvements.length) {
-    h += '<div style="background:#fff5f5;border-radius:10px;padding:12px;border:1px solid #fca5a5">'
-      + '<div style="font-size:10px;font-weight:900;color:#C62828;margin-bottom:5px">⚠️ 개선점</div>';
-    report.improvements.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0">'+(i+1)+'. '+s+'</div>'; });
-    h += '</div>';
-  }
-
-  /* 8. 실행 액션 */
-  if(report.actions && report.actions.length) {
-    h += '<div style="background:#fff8e6;border-radius:10px;padding:12px;border:1px solid #E8B84B">'
-      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:5px">🎯 이번 달 액션플랜</div>';
-    report.actions.forEach(function(s,i) { h += '<div style="font-size:10.5px;color:#1a2340;line-height:1.8;padding:2px 0"><strong>'+(i+1)+'.</strong> '+s+'</div>'; });
-    h += '</div>';
-  }
-
-  /* 9. 다음 상담 */
-  if(report.next_schedule) {
-    h += '<div style="background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.05));border-radius:10px;padding:12px;border:1px solid rgba(201,151,42,.35)">'
-      + '<div style="font-size:10px;font-weight:900;color:#C9972A;margin-bottom:3px">📅 다음 상담 권장일</div>'
-      + '<div style="font-size:12px;font-weight:700;color:#0B1D3A">' + report.next_schedule + '</div></div>';
-  }
-
-  /* 10. 푸터 */
-  h += '<div style="text-align:center;font-size:8px;color:#8896B0;line-height:1.8;padding:8px 0">'
-    + '오원트금융연구소 · 오상열 CFP · 010-5424-5332<br>'
-    + '금융집짓기® AI머니야 · 본 리포트는 참고용이며 투자 권유가 아닙니다</div>';
-
-  h += '</div>';  /* /reportPrintArea */
-
-  /* ── PDF 다운로드 + 공유 버튼 ── */
-  h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">'
-    + '<button onclick="downloadReportPDF()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:13px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
-    + '<button onclick="shareReportKakao()" style="padding:10px;border-radius:8px;border:none;background:#FEE500;color:#3A1D1D;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">💛 카톡</button>'
-    + '<button onclick="shareReportSMS()" style="padding:10px;border-radius:8px;border:none;background:#34C759;color:#fff;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">💬 문자</button>'
-    + '<button onclick="shareReportEmail()" style="padding:10px;border-radius:8px;border:none;background:#007AFF;color:#fff;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer">✉️ 이메일</button>'
-    + '</div></div>';
-
-  /* ── DOM 삽입 ── */
-  var existingDetail = document.getElementById('diagReportDetail');
-  if(existingDetail) existingDetail.remove();
-  var wrapper = document.createElement('div');
-  wrapper.id = 'diagReportDetail';
-  wrapper.innerHTML = h;
-  var readyParent = readyEl ? readyEl.parentElement : contentEl;
-  if(readyEl && readyEl.nextSibling) {
-    readyParent.insertBefore(wrapper, readyEl.nextSibling);
-  } else if(readyParent) {
-    readyParent.appendChild(wrapper);
-  }
-
-  /* 리포트 데이터 전역 저장 (공유용) */
-  window._lastReport = report;
-  window._lastReportScore = score;
-  window._lastReportGrade = grade;
-  window._lastReportName = custName;
-
-  /* 리포트 탭으로 이동 */
-  if(typeof dnGo === 'function') dnGo(10);
-
-  showToast('🏆 종합재무설계 리포트가 완성되었습니다!');
-  console.log('[DEV-003] 리포트 렌더링 완료 — 점수:', score, '등급:', grade);
-}
-
-/* ══════════════════════════════════════════════════════════
-   [DEV-003] PDF 다운로드
-   ══════════════════════════════════════════════════════════ */
-function downloadReportPDF() {
-  var printArea = document.getElementById('reportPrintArea');
-  if(!printArea) { showToast('⚠️ 리포트가 아직 생성되지 않았습니다'); return; }
-  showToast('📄 PDF 생성 중... 잠시만 기다려 주세요');
-
-  /* html2canvas + jsPDF 동적 로드 */
-  function loadScript(src) {
-    return new Promise(function(resolve, reject) {
-      if(document.querySelector('script[src="'+src+'"]')) { resolve(); return; }
-      var s = document.createElement('script');
-      s.src = src; s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  Promise.all([
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js')
-  ]).then(function() {
-    /* 임시로 배경색 설정 (투명 방지) */
-    printArea.style.background = '#fff';
-    printArea.style.padding = '16px';
-    printArea.style.borderRadius = '0';
-
-    html2canvas(printArea, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false
-    }).then(function(canvas) {
-      var imgData = canvas.toDataURL('image/png');
-      var pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-      var pdfW = pdf.internal.pageSize.getWidth();
-      var pdfH = pdf.internal.pageSize.getHeight();
-      var imgW = pdfW - 20; /* 좌우 10mm 마진 */
-      var imgH = (canvas.height * imgW) / canvas.width;
-
-      /* 여러 페이지 처리 */
-      var yOffset = 0;
-      var pageH = pdfH - 20; /* 상하 10mm 마진 */
-      while(yOffset < imgH) {
-        if(yOffset > 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, 10 - yOffset, imgW, imgH);
-        yOffset += pageH;
-      }
-
-      var fileName = '금융집짓기_리포트_' + (window._lastReportName||'고객') + '_' + DIAG_TODAY_STR.replace(/\./g,'') + '.pdf';
-      pdf.save(fileName);
-
-      /* 스타일 복원 */
-      printArea.style.background = '';
-      printArea.style.padding = '';
-      printArea.style.borderRadius = '';
-
-      showToast('✅ PDF 다운로드 완료! — ' + fileName);
-    }).catch(function(e) {
-      console.error('[DEV-003] PDF 생성 오류:', e);
-      showToast('⚠️ PDF 생성 실패 — 다시 시도해 주세요');
-    });
-  }).catch(function(e) {
-    console.error('[DEV-003] 라이브러리 로드 실패:', e);
-    showToast('⚠️ PDF 라이브러리 로드 실패');
-  });
-}
-
-/* ══════════════════════════════════════════════════════════
-   [DEV-003] 리포트 공유하기
-   ══════════════════════════════════════════════════════════ */
-function getReportShareText() {
-  var name = window._lastReportName || '고객';
-  var score = window._lastReportScore || '—';
-  var grade = window._lastReportGrade || '';
-  var r = window._lastReport || {};
-  var lines = [
-    '🏠 금융집짓기® 종합재무설계 리포트',
-    '━━━━━━━━━━━━━━━━━',
-    '📅 ' + DIAG_TODAY_STR + ' · ' + DIAG_SESSION_NUM + '회차',
-    '👤 ' + name + ' · 재무점수 ' + score + '점' + (grade ? ' · ' + grade : ''),
-    ''
-  ];
-  if(r.strengths && r.strengths.length) {
-    lines.push('✅ 강점');
-    r.strengths.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
-    lines.push('');
-  }
-  if(r.improvements && r.improvements.length) {
-    lines.push('⚠️ 개선점');
-    r.improvements.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
-    lines.push('');
-  }
-  if(r.actions && r.actions.length) {
-    lines.push('🎯 이번 달 액션플랜');
-    r.actions.forEach(function(s,i) { lines.push('  ' + (i+1) + '. ' + s); });
-    lines.push('');
-  }
-  if(r.next_schedule) lines.push('📅 다음 상담: ' + r.next_schedule);
-  lines.push('');
-  lines.push('💡 오원트금융연구소 · 오상열 CFP');
-  lines.push('🔗 https://financial-house-building.vercel.app');
-  return lines.join('\n');
-}
-
-function shareReportKakao() {
-  var text = getReportShareText();
-  if(window.Kakao && window.Kakao.isInitialized()) {
-    window.Kakao.Share.sendDefault({
-      objectType: 'text',
-      text: text,
-      link: { mobileWebUrl: 'https://financial-house-building.vercel.app', webUrl: 'https://financial-house-building.vercel.app' }
-    });
-  } else {
-    /* 카카오 SDK 없으면 클립보드 복사 */
-    copyToClipboard(text);
-    showToast('📋 리포트 내용이 복사되었습니다! 카카오톡에 붙여넣기 하세요');
-  }
-}
-
-function shareReportSMS() {
-  var text = getReportShareText();
-  var encoded = encodeURIComponent(text);
-  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  var sep = isIOS ? '&' : '?';
-  window.location.href = 'sms:' + sep + 'body=' + encoded;
-  showToast('💬 문자 앱으로 이동합니다');
-}
-
-function shareReportEmail() {
-  var name = window._lastReportName || '고객';
-  var score = window._lastReportScore || '—';
-  var text = getReportShareText();
-  var subject = encodeURIComponent('🏠 금융집짓기® 재무설계 리포트 — ' + name + '님 ' + score + '점');
-  var body = encodeURIComponent(text);
-  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
-  showToast('✉️ 이메일 앱으로 이동합니다');
-}
-
-function copyToClipboard(text) {
-  if(navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(function() { fallbackCopyText(text); });
-  } else {
-    fallbackCopyText(text);
-  }
-}
-
-function fallbackCopyText(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-}
-
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
   const txt=inp.value.trim();
   diagAddSTT('user',txt,null);
   inp.value='';
-  /* [DEV-001] Vapi로 텍스트 전송 */
-  if(vapi && vapiCallActive) {
-    try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
-  }
-  // [비활성화 by DEV-001] 기존 WebSocket
-  // if(diagWs&&diagWs.readyState===1)
-  //   diagWs.send(JSON.stringify({type:'text_input',text:txt}));
+  if(diagWs&&diagWs.readyState===1)
+    diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
 
