@@ -8586,9 +8586,8 @@ async function diagConnectVoice(isPaid) {
     console.log('[DEBUG] vapiSDK:', typeof vapiSDK, vapiSDK);
     console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
     console.log('[DEBUG] assistantId:', assistantId);
-    var result = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
-    console.log('[DEBUG] run result:', result);
-    vapi = result;
+    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY });
+    console.log('[DEBUG] run result:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
@@ -8654,6 +8653,9 @@ async function diagConnectVoice(isPaid) {
       console.error('[Vapi 오류]', e);
       showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
+
+    /* ── 통화 시작 (이벤트 등록 후 마지막에 호출) ── */
+    vapi.start(assistantId);
 
   } catch(e) {
     console.error('[Vapi 연결 오류]', e);
