@@ -8586,7 +8586,7 @@ async function diagConnectVoice(isPaid) {
     console.log('[DEBUG] vapiSDK:', typeof vapiSDK, vapiSDK);
     console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
     console.log('[DEBUG] assistantId:', assistantId);
-    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY });
+    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
     console.log('[DEBUG] run result:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
