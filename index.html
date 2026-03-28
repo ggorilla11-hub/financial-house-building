@@ -8763,8 +8763,8 @@ async function diagConnectVoice(isPaid) {
     vapi.on('speech-end', function() {
       _vapiSpeaking = false;
       _vapiLastSpeechEnd = Date.now();
-      _dbg('🔊 speech-end — 800ms 후 복원');
-      /* 800ms 딜레이 후 마이크 복원 (에코 잔향 완전 소멸 대기) */
+      _dbg('🔊 speech-end — 3.5s 후 복원');
+      /* 3.5초 딜레이 후 마이크 복원 (스피커 잔향 완전 소멸) */
       setTimeout(function() {
         if(!_vapiSpeaking && !diagPaused) {
           try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
@@ -8772,7 +8772,7 @@ async function diagConnectVoice(isPaid) {
           if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity=''; });
           _dbg('🎤 마이크 복원 완료');
         }
-      }, 800);
+      }, 3500);
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
@@ -8793,9 +8793,9 @@ async function diagConnectVoice(isPaid) {
             _vapiLastSpeechEnd = Date.now();
             if(!diagPaused) {
               try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-              _dbg('🎤 마이크 복원 (partial 타이머)');
+              _dbg('🎤 마이크 복원 (partial 타이머 3.5s)');
             }
-          }, 1500);
+          }, 3500);
         }
       }
 
@@ -8815,21 +8815,21 @@ async function diagConnectVoice(isPaid) {
           _dbg('🔇 AI발화 감지 — 마이크 닫음');
           /* 이전 복원 타이머 취소 */
           clearTimeout(_muteTimer);
-          /* AI 발화 끝나면 1.5초 후 마이크 복원 */
+          /* AI 발화 끝나면 3.5초 후 마이크 복원 — 스피커 잔향 완전 소멸 대기 */
           _muteTimer = setTimeout(function() {
             _vapiSpeaking = false;
             _vapiLastSpeechEnd = Date.now();
             if(!diagPaused) {
               try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-              _dbg('🎤 AI발화 종료 추정 — 마이크 복원');
+              _dbg('🎤 AI발화 종료 추정 — 마이크 복원 (3.5s)');
             }
-          }, 1500);
+          }, 3500);
         }
 
-        /* [에코 방지] 머니야 발화 중이거나 발화 직후 1.5초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
+        /* [에코 방지] 머니야 발화 중이거나 발화 직후 3.5초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
         if(role === 'user') {
           var timeSinceSpeechEnd = Date.now() - (_vapiLastSpeechEnd || 0);
-          if(_vapiSpeaking || timeSinceSpeechEnd < 1500) {
+          if(_vapiSpeaking || timeSinceSpeechEnd < 3500) {
             _dbg('🚫 에코무시: ' + displayText.slice(0,15) + ' (' + timeSinceSpeechEnd + 'ms)');
             return;
           }
