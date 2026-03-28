@@ -6244,7 +6244,7 @@ const MP_MEMBER_KEY = 'fh_member_v1';
 // 스키마 버전 관리 — 버전이 바뀌면 구독 세션 키만 자동 초기화
 // 히스토리/스냅샷 데이터는 절대 삭제하지 않음
 // ─────────────────────────────────────────
-const FH_SCHEMA_VERSION = '20260320f';
+const FH_SCHEMA_VERSION = '20260320f-keep';
 const FH_VERSION_KEY    = 'fh_schema_ver';
 
 (function fhVersionGuard() {
@@ -6252,8 +6252,6 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
   if (storedVer !== FH_SCHEMA_VERSION) {
     // 구독 세션 관련 키만 초기화 (결제 실수 방지, 테스트 잔재 제거)
     var SESSION_KEYS = [
-      'fh_subscribed',
-      'fh_member_v1',
       'fh_sub_date',
       'fh_sub_oid',
       'fh_payer_name',
