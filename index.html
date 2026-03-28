@@ -2303,12 +2303,12 @@ body { color: #1a1a1a; }
 .c-send{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0;}
 
 /* ━━━ PAUSE 오버레이 ━━━ */
-.pause-ov{position:absolute;inset:0;background:rgba(8,20,40,.88);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:200;}
+.pause-ov{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(8,20,40,.88);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:99998;}
 .pause-ov.show{display:flex;}
 .resume-btn{margin-top:6px;padding:10px 26px;border-radius:20px;background:linear-gradient(135deg,var(--gold),var(--gold2));font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;border:none;font-family:var(--fn);}
 
 /* ━━━ 종료 모달 ━━━ */
-.end-modal{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:300;}
+.end-modal{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;}
 .end-modal.show{display:flex;}
 .end-box{background:#fff;border-radius:18px;padding:24px 20px;width:280px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;border:1px solid var(--border);}
 .end-box-icon{font-size:32px;margin-bottom:8px;}
@@ -2320,7 +2320,7 @@ body { color: #1a1a1a; }
 .end-confirm{background:var(--red);color:#fff;}
 
 /* ━━━ 업로드 모달 ━━━ */
-.upload-modal{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.upload-modal{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:99997;display:none;align-items:flex-end;justify-content:center;}
 .upload-modal.show{display:flex;}
 .upload-sheet{width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;box-shadow:0 -10px 40px rgba(0,0,0,.15);}
 .upload-sheet-title{font-size:13px;font-weight:900;color:var(--navy);text-align:center;margin-bottom:16px;}
