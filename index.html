@@ -8543,6 +8543,7 @@ function diagStartConsult() {
 
 /* ══ Vapi 음성 AI 시스템 ══ */
 const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2'; // ← 여기에 Vapi Public Key 입력
+const VAPI_ASSISTANT_ID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98'; // AI 머니야 Assistant ID
 let vapi = null;
 let diagWs = null; // 하위 호환성 유지 (훈련모드 등에서 사용)
 let diagAudioCtx = null, diagMicStream = null;
@@ -8648,48 +8649,15 @@ async function diagConnectVoice() {
       showToast('⚠️ 음성 연결 오류: ' + (err.message || '다시 시도해 주세요'));
     });
 
-    // ── Vapi 통화 시작 ──
+    // ── Vapi 통화 시작 (Assistant ID 방식) ──
     showToast('🎤 AI 머니야 접속 중...');
-    await vapi.start({
+    await vapi.start(VAPI_ASSISTANT_ID, {
       transcriber: {
         provider: 'deepgram',
         model: 'nova-2',
         language: 'ko',
       },
-      model: {
-        provider: 'anthropic',
-        model: 'claude-sonnet-4-5',
-        messages: [
-          {
-            role: 'system',
-            content: '당신은 오상열 CFP의 AI 재무설계사 머니야입니다. 금융집짓기® 방법론으로 종합 재무진단을 진행합니다. 한국어로 대화하며, 공감하는 따뜻한 말투를 사용합니다. 고객명: ' + (diagFinCtx.name || '고객') + '.'
-          }
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'update_note',
-              description: '상담 중 수집한 고객 정보를 노트에 자동으로 기입합니다.',
-              parameters: {
-                type: 'object',
-                properties: {
-                  tab:   { type: 'string', description: '노트 탭 번호 (0~10)' },
-                  field: { type: 'string', description: '필드 ID (예: f1_name, f3_income)' },
-                  value: { type: 'string', description: '입력할 값' },
-                  label: { type: 'string', description: '필드 한글 라벨 (예: 성함, 월수입)' }
-                },
-                required: ['tab', 'field', 'value', 'label']
-              }
-            }
-          }
-        ]
-      },
-      voice: {
-        provider: '11labs',
-        voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam (한국어 지원 음성)
-      },
-      name: 'AI 머니야',
+      backgroundDenoisingEnabled: true,
     });
 
   } catch(e) {
