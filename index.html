@@ -8640,9 +8640,11 @@ async function diagConnectVoice(isPaid) {
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1,
-        sampleRate: 16000
+        autoGainControl: false,
+        googEchoCancellation: true,
+        googNoiseSuppression: true,
+        googAutoGainControl: false,
+        googHighpassFilter: true
       },
       video: false
     });
@@ -8671,17 +8673,26 @@ async function diagConnectVoice(isPaid) {
         if(constraints && typeof constraints === 'object') {
           var audio = constraints.audio;
           if(audio) {
+            var aecFlags = {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: false,
+              googEchoCancellation: true,
+              googNoiseSuppression: true,
+              googAutoGainControl: false,
+              googHighpassFilter: true
+            };
             constraints = Object.assign({}, constraints, {
               audio: typeof audio === 'object'
-                ? Object.assign({}, audio, { echoCancellation: true, noiseSuppression: true, autoGainControl: true })
-                : { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                ? Object.assign({}, audio, aecFlags)
+                : aecFlags
             });
           }
         }
-        console.log('[에코방지] getUserMedia 호출 — AEC 강제 주입:', JSON.stringify(constraints.audio));
+        console.log('[에코방지] getUserMedia — AGC OFF + AEC ON:', JSON.stringify(constraints.audio));
         return origGUM(constraints);
       };
-      console.log('[에코방지] getUserMedia monkey-patch 적용 완료');
+      console.log('[에코방지] monkey-patch 적용 (AGC OFF 핵심)');
     }
 
     /* Vapi SDK 로드 대기 (최대 5초) */
@@ -8705,135 +8716,24 @@ async function diagConnectVoice(isPaid) {
       showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
       var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
       if(w) w.classList.remove('muted');
-
-      /* [에코 방지] AEC 학습 시간 확보 — 첫 5초간 마이크 음소거 */
-      try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
-      setTimeout(function() {
-        if(vapiCallActive && !diagPaused) {
-          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-          console.log('[에코방지] AEC 학습 완료 — 마이크 활성화');
-        }
-      }, 5000);
-
-      /* [안내문구] 텍스트 전환 안내 — 1회만 */
-      setTimeout(function() {
-        if(vapiCallActive) {
-          diagAddSTT('system', '💡 음성이 겹치는 경우 하단 텍스트 입력창으로 편하게 상담하실 수 있습니다.', null);
-        }
-      }, 8000);
     });
 
-    /* ── [디버그] 모바일 화면 로그 ── */
-    var _dbgEl = document.createElement('div');
-    _dbgEl.id = 'vapiDebugLog';
-    _dbgEl.style.cssText = 'position:fixed;bottom:60px;left:5px;right:5px;max-height:120px;overflow-y:auto;background:rgba(0,0,0,.85);color:#0f0;font-size:9px;font-family:monospace;padding:6px;border-radius:8px;z-index:99999;display:none;line-height:1.5;';
-    document.body.appendChild(_dbgEl);
-    /* 3번 연속 탭으로 디버그 패널 토글 */
-    var _dbgTapCount = 0;
-    var _dbgTapTimer = null;
-    document.addEventListener('click', function() {
-      _dbgTapCount++;
-      clearTimeout(_dbgTapTimer);
-      _dbgTapTimer = setTimeout(function() {
-        if(_dbgTapCount >= 3) {
-          _dbgEl.style.display = _dbgEl.style.display === 'none' ? 'block' : 'none';
-        }
-        _dbgTapCount = 0;
-      }, 400);
-    });
-    function _dbg(msg) {
-      console.log(msg);
-      var t = new Date().toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      _dbgEl.innerHTML += '<div>' + t + ' ' + msg + '</div>';
-      _dbgEl.scrollTop = _dbgEl.scrollHeight;
-      /* 최대 30줄 유지 */
-      while(_dbgEl.children.length > 30) _dbgEl.removeChild(_dbgEl.firstChild);
-    }
-
-    /* ── [에코 방지] 머니야 발화 중 마이크 자동 음소거 ── */
-    var _vapiSpeaking = false;
-    var _vapiLastSpeechEnd = 0;
+    /* ── [에코 방지] speech-start/speech-end — AGC OFF와 함께 보조 역할만 ── */
     vapi.on('speech-start', function() {
-      _vapiSpeaking = true;
-      _dbg('🔇 speech-start — 마이크 음소거');
-      try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
-      var w = document.getElementById('diagWave');
-      if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity='0.3'; });
+      console.log('[VAPI] speech-start');
     });
     vapi.on('speech-end', function() {
-      _vapiSpeaking = false;
-      _vapiLastSpeechEnd = Date.now();
-      _dbg('🔊 speech-end — 3.5s 후 복원');
-      /* 3.5초 딜레이 후 마이크 복원 (스피커 잔향 완전 소멸) */
-      setTimeout(function() {
-        if(!_vapiSpeaking && !diagPaused) {
-          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-          var w = document.getElementById('diagWave');
-          if(w) w.querySelectorAll('div').forEach(function(d){ d.style.opacity=''; });
-          _dbg('🎤 마이크 복원 완료');
-        }
-      }, 3500);
+      console.log('[VAPI] speech-end');
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
-    var _muteTimer = null;
     vapi.on('message', function(msg) {
-
-      /* [에코 방지] partial transcript에서도 AI 발화 즉시 감지 → 마이크 닫기 */
-      if(msg.type === 'transcript' && msg.transcriptType === 'partial') {
-        var partialRole = (msg.role || '').toLowerCase();
-        if(partialRole === 'assistant' || partialRole === 'bot' || partialRole === 'ai') {
-          if(!_vapiSpeaking) {
-            _vapiSpeaking = true;
-            try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
-          }
-          clearTimeout(_muteTimer);
-          _muteTimer = setTimeout(function() {
-            _vapiSpeaking = false;
-            _vapiLastSpeechEnd = Date.now();
-            if(!diagPaused) {
-              try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-              _dbg('🎤 마이크 복원 (partial 타이머 3.5s)');
-            }
-          }, 3500);
-        }
-      }
-
       /* 자막 표시 */
       if(msg.type === 'transcript' && msg.transcriptType === 'final') {
-        /* [DEV-003 FIX] role 판별 강화 — Vapi 버전별 호환 */
-        _dbg('📝 role=' + msg.role + ' | ' + (msg.transcript||'').slice(0,20));
         var rawRole = (msg.role || '').toLowerCase();
         var role = (rawRole === 'assistant' || rawRole === 'bot' || rawRole === 'ai') ? 'ai' : 'user';
         var displayText = msg.transcript;
         if(!displayText || !displayText.trim()) return;
-
-        /* [에코 방지 최종] assistant 발화 감지 시 마이크 닫기 */
-        if(role === 'ai') {
-          _vapiSpeaking = true;
-          try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(true); } catch(e) {}
-          _dbg('🔇 AI발화 감지 — 마이크 닫음');
-          /* 이전 복원 타이머 취소 */
-          clearTimeout(_muteTimer);
-          /* AI 발화 끝나면 3.5초 후 마이크 복원 — 스피커 잔향 완전 소멸 대기 */
-          _muteTimer = setTimeout(function() {
-            _vapiSpeaking = false;
-            _vapiLastSpeechEnd = Date.now();
-            if(!diagPaused) {
-              try { if(vapi && typeof vapi.setMuted === 'function') vapi.setMuted(false); } catch(e) {}
-              _dbg('🎤 AI발화 종료 추정 — 마이크 복원 (3.5s)');
-            }
-          }, 3500);
-        }
-
-        /* [에코 방지] 머니야 발화 중이거나 발화 직후 3.5초 이내의 user transcript는 에코일 가능성 높음 → 무시 */
-        if(role === 'user') {
-          var timeSinceSpeechEnd = Date.now() - (_vapiLastSpeechEnd || 0);
-          if(_vapiSpeaking || timeSinceSpeechEnd < 3500) {
-            _dbg('🚫 에코무시: ' + displayText.slice(0,15) + ' (' + timeSinceSpeechEnd + 'ms)');
-            return;
-          }
-        }
 
         /* STT 영역에 표시 */
         diagAddSTT(role, displayText, null);
@@ -8884,27 +8784,16 @@ async function diagConnectVoice(isPaid) {
     });
 
     await vapi.start(assistantId, {
-      /* [에코 방지] 배경 소음/음성 제거 — Vapi 서버 레벨 */
-      backgroundDenoisingEnabled: true,
-      backgroundVoiceDenoising: true,
-      /* [에코 방지] 중단 감지 — Dashboard 설정과 동기화 */
-      stopSpeakingPlan: {
-        numWords: 3,
-        voiceSeconds: 0.4,
-        backoffSeconds: 1.5
+      /* [에코 방지] transcriber 명시 — Deepgram Nova-2 한국어 */
+      transcriber: {
+        provider: 'deepgram',
+        model: 'nova-2',
+        language: 'ko',
+        smartFormat: true,
+        keywords: []
       },
-      /* [한국어] 엔드포인팅 — Dashboard 설정과 동기화 */
-      startSpeakingPlan: {
-        waitSeconds: 0.6,
-        smartEndpointingPlan: {
-          provider: 'vapi'
-        },
-        transcriptionEndpointingPlan: {
-          onPunctuationSeconds: 0.1,
-          onNoPunctuationSeconds: 1.5,
-          onNumberSeconds: 0.5
-        }
-      }
+      /* [에코 방지] 배경 소음/음성 제거 */
+      backgroundDenoisingEnabled: true
     });
 
   } catch(e) {
