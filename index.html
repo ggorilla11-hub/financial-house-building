@@ -6757,7 +6757,7 @@ function mvpVoiceTimeUp() {
   if(liveDot) liveDot.style.background = '#3b82f6';
 
   // STT 영역에 안내 메시지
-  diagAddSTT('ai', '⏰ 음성 크레딧 30분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
+  diagAddSTT('ai', '⏰ 음성 크레딧 50분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
 
   showToast('🔵 음성 종료 · 텍스트 무제한 상담 계속 가능');
 }
@@ -7421,7 +7421,7 @@ function mpStartVideoConsult() {
 // ── FAQ ──
 const MP_FAQ = [
   { q:'금융집짓기®란 무엇인가요?', a:'오원트금융연구소에서 개발한 재무설계 방법론으로, 집을 짓듯이 체계적으로 금융 계획을 세우는 프로그램입니다.' },
-  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 30분, 이후 매월 30분 크레딧이 제공됩니다.' },
+  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 50분, 이후 매월 50분 크레딧이 제공됩니다.' },
   { q:'구독 해지는 어떻게 하나요?', a:'계정 탭 > 구독 관리에서 해지 신청하실 수 있습니다. 해지 후에도 이번 달 말까지 이용 가능합니다.' },
   { q:'재무설계 리포트는 어디서 보나요?', a:'시뮬레이터에서 저장하기를 누르면 히스토리 탭에 자동 기록됩니다.' },
   { q:'오상열 CFP 직접 상담은?', a:'서비스 탭 > 강의·상담 신청에서 비대면/대면 상담을 신청하실 수 있습니다.' },
@@ -8399,7 +8399,7 @@ var FH_PART_NAMES = [
 ];
 
 var FH_NOTE_PARTS = [
-  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'30분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간','50분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
   { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
   { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
   { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
@@ -8954,9 +8954,9 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    if(diagSec===25*60) showToast('⏰ 25분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
-    if(diagSec===29*60) showToast('⚠️ 29분 경과 · 1분 남았습니다!');
-    if(diagSec===30*60) {
+    if(diagSec===45*60) showToast('⏰ 45분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
+    if(diagSec===49*60) showToast('⚠️ 49분 경과 · 1분 남았습니다!');
+    if(diagSec===50*60) {
       // ★ 음성만 종료, 텍스트 상담은 계속 가능
       mvpVoiceTimeUp();
     }
@@ -10669,7 +10669,7 @@ diagAddSTT = function(role, text, tag) {
             <div style="padding:10px 14px;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
-                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 30분</div></div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 50분</div></div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
@@ -10706,7 +10706,7 @@ diagAddSTT = function(role, text, tag) {
               </div>
               <div style="font-size:9px;color:var(--muted);margin-top:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
               <div style="margin-top:8px;padding:6px 10px;background:rgba(201,151,42,.08);border-radius:8px;font-size:9.5px;color:var(--navy);">
-                🌟 초회상담 30분 · 금융집짓기® 8단계 전체 진단
+                🌟 초회상담 50분 · 금융집짓기® 8단계 전체 진단
               </div>
             </div>
           </div>
@@ -11515,7 +11515,7 @@ diagAddSTT = function(role, text, tag) {
         <div class="mpc-bd">
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
-              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월30분 · 텍스트무제한</div></div>
+              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월50분 · 텍스트무제한</div></div>
               <span style="font-size:11px;font-weight:700;color:var(--gold)">₩9,900</span>
             </div>
             <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center" onclick="showToast('준비 중입니다')">
