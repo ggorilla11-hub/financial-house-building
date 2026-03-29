@@ -10041,10 +10041,11 @@ function diagTogglePause() {
     try { document.querySelectorAll('audio').forEach(function(a){ a.muted = true; a.volume = 0; }); } catch(e){}
     showToast('⏸ 일시정지');
   } else {
-    /* [DEV-001] Vapi 마이크 음소거 해제 */
-    if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
-    /* ── 스피커 음소거 해제 ── */
-    try { document.querySelectorAll('audio').forEach(function(a){ a.muted = false; a.volume = 1; }); } catch(e){}
+    /* ── 텍스트 전용 모드면 오디오 복원하지 않음 ── */
+    if(!mvpTextOnlyMode) {
+      if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
+      try { document.querySelectorAll('audio').forEach(function(a){ a.muted = false; a.volume = 1; }); } catch(e){}
+    }
     showToast('▶ 재개');
   }
 }
