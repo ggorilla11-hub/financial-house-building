@@ -6473,6 +6473,14 @@ function mvpSendMakeWebhook(name, phone, email) {
 
 // MVP: 검진안내 → AI진단 탭으로 이동 + 바로 상담 시작
 function mvpGoToDiag() {
+  /* ── 개인정보 동의 체크 ── */
+  var privacyChk = document.getElementById('mvp-privacy-guide');
+  if(privacyChk && !privacyChk.checked) {
+    showToast('❗ 개인정보 수집 동의에 체크해 주세요.');
+    privacyChk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   var tabs = document.querySelectorAll('.mp-tab-btn');
   for(var i=0; i<tabs.length; i++){
     if(tabs[i].textContent.indexOf('AI진단') >= 0){
@@ -10019,10 +10027,14 @@ function diagTogglePause() {
   if(diagPaused) {
     /* [DEV-001] Vapi 마이크 음소거 */
     if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
+    /* ── 스피커(오디오 출력)도 음소거 ── */
+    try { document.querySelectorAll('audio').forEach(function(a){ a.muted = true; a.volume = 0; }); } catch(e){}
     showToast('⏸ 일시정지');
   } else {
     /* [DEV-001] Vapi 마이크 음소거 해제 */
     if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
+    /* ── 스피커 음소거 해제 ── */
+    try { document.querySelectorAll('audio').forEach(function(a){ a.muted = false; a.volume = 1; }); } catch(e){}
     showToast('▶ 재개');
   }
 }
@@ -10050,12 +10062,26 @@ function diagEndConsult() {
   localStorage.setItem('mvp_last_session_min', String(usedMin));
   console.log('[크레딧] 사용: ' + usedMin + '분, 잔여: ' + remaining + '분');
 
-  /* [DEV-001] Vapi 통화 종료 */
-  if(vapi && vapiCallActive) {
-    try{ vapi.stop(); }catch(e){}
+  /* [DEV-001] Vapi 통화 강제 종료 */
+  if(vapi) {
+    try{ vapi.stop(); }catch(e){ console.log('[Vapi] stop 오류:', e); }
+    try{ vapi.removeAllListeners(); }catch(e){}
     vapi = null;
     vapiCallActive = false;
   }
+  /* ── 모든 오디오 강제 종료 (Vapi가 만든 audio 태그 포함) ── */
+  try {
+    document.querySelectorAll('audio').forEach(function(a) {
+      a.pause(); a.srcObject = null; a.src = ''; a.muted = true; a.volume = 0;
+      try{ a.remove(); }catch(e){}
+    });
+  } catch(e){}
+  /* ── DailyIframe 강제 제거 (Vapi 내부 iframe) ── */
+  try {
+    document.querySelectorAll('iframe[id*="daily"]').forEach(function(f) {
+      try{ f.remove(); }catch(e){}
+    });
+  } catch(e){}
 
   /* ── 마이크 스트림 해제 */
   try{ if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } }catch(e){}
