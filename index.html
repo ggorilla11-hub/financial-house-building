@@ -1224,13 +1224,13 @@ body { color: #1a1a1a; }
 .mp-grade-cur{font-size:8.5px;background:var(--gold);color:var(--navy);padding:2px 6px;border-radius:7px;font-weight:900;}
 
 /* 구독 모달 */
-.mp-sub-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;}
+.mp-sub-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;}
 .mp-sub-bg.mp-sub-open{display:block;}
 .mp-sub-modal{
   position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;
   background:var(--paper);border-radius:16px 16px 0 0;
   padding:14px 16px 32px;border-top:3px solid var(--gold);
-  z-index:601;transform:translateY(100%);
+  z-index:10001;transform:translateY(100%);
   transition:transform .35s cubic-bezier(.32,.72,0,1);
   max-height:92vh;overflow-y:auto;
 }
@@ -5696,6 +5696,8 @@ function onPaypleResult(data){
       try { closePayModal(); } catch(e) {}
     }
     try { mpCloseSubscribe(); } catch(e) {}
+    // ★ 결제 성공 시 원트큐브 즉시 숨기고 마이페이지 준비
+    try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
@@ -5742,8 +5744,8 @@ function onPaypleResult(data){
       payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
       payBtn.style.animation = 'none';
     }
-    // 마이페이지 자동 오픈
-    setTimeout(() => mpOpen(), 1500);
+    // 마이페이지 즉시 오픈 (시뮬레이터 노출 방지)
+    setTimeout(() => mpOpen(), 300);
   } else {
     showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
   }
