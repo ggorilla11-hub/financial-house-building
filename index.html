@@ -10294,11 +10294,7 @@ function diagBuildNotes() {
           <!-- 종료 안내 배너 (JS에서 삽입) -->
           <!-- 재무검진결과표 본문 -->
           <div id="diagReportBody"></div>
-          <!-- 다운로드 + 공유 버튼 -->
-          <div style="display:flex;gap:8px;margin:12px 0;">
-            <button onclick="downloadReportPDF()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ 다운로드</button>
-            <button onclick="shareReport()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">📤 공유하기</button>
-          </div>
+          <!-- 버튼은 renderHealthReport() 내부에서 생성 -->
         </div>
       </div>
     </div>
@@ -10774,10 +10770,10 @@ function renderHealthReport() {
   html += '오원트금융연구소 · 오상열 CFP · 금융집짓기® · AI머니야<br>문의: 010-5424-5332 · ggorilla11@gmail.com';
   html += '</div>';
 
-  // 버튼
+  // 버튼 (PDF 다운로드 + 공유 — 각 1개)
   html += '<div style="display:flex;gap:8px;margin-bottom:8px;">';
-  html += '<button onclick="downloadReportPDF()" style="flex:1;padding:11px;border-radius:8px;border:none;background:#1a3a5c;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fn);">⬇️ PDF 다운로드</button>';
-  html += '<button onclick="shareReport()" style="flex:1;padding:11px;border-radius:8px;background:#F0F4F8;color:#2c3e50;border:1px solid #b0b8c1;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fn);">📤 공유하기</button>';
+  html += '<button onclick="diagDownloadReport()" style="flex:1;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn);">⬇️ PDF 다운로드</button>';
+  html += '<button onclick="diagShareReport()" style="flex:1;padding:12px;border-radius:8px;background:#0B1D3A;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn);">📤 공유하기</button>';
   html += '</div>';
 
   body.innerHTML = html;
@@ -10950,7 +10946,96 @@ function calcHealthScore(d) {
     j_debtRatio: debtRatio<=20?'양호':debtRatio<=40?'주의':'위험'
   };
 }
-function diagSendText() {
+/* ━━━ 리포트 PDF 다운로드 ━━━ */
+function diagDownloadReport() {
+  var reportBody = document.getElementById('diagReportBody');
+  if(!reportBody || !reportBody.innerHTML.trim()) {
+    showToast('📄 리포트가 없습니다. 상담 종료 후 이용해 주세요.');
+    return;
+  }
+  var name = document.getElementById('f1_name') ? (document.getElementById('f1_name').textContent||'고객').trim() : '고객';
+  var today = new Date();
+  var dateStr = today.getFullYear() + String(today.getMonth()+1).padStart(2,'0') + String(today.getDate()).padStart(2,'0');
+  var printWin = window.open('', '_blank');
+  if(!printWin) {
+    showToast('⚠️ 팝업 차단을 해제하고 다시 시도해 주세요.');
+    return;
+  }
+  printWin.document.write(
+    '<!DOCTYPE html><html lang="ko"><head>'
+    + '<meta charset="UTF-8">'
+    + '<title>AI 재무검진결과 - ' + name + ' - ' + dateStr + '</title>'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<style>'
+    + 'body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;'
+    + 'max-width:600px;margin:0 auto;padding:20px 16px;color:#1a1a1a;font-size:12px;}'
+    + 'table{width:100%;border-collapse:collapse;}'
+    + 'td,th{padding:6px 8px;}'
+    + '@media print{'
+    + 'body{margin:0;padding:10px;}'
+    + 'button{display:none!important;}'
+    + '@page{margin:10mm;size:A4;}'
+    + '}'
+    + '</style>'
+    + '</head><body>'
+    + reportBody.innerHTML
+    + '<div style="text-align:center;margin-top:20px;">'
+    + '<button onclick="window.print()" '
+    + 'style="padding:12px 32px;background:#C9972A;color:#0B1D3A;border:none;'
+    + 'border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ 인쇄 / PDF 저장</button>'
+    + '</div>'
+    + '</body></html>'
+  );
+  printWin.document.close();
+  showToast('📄 PDF 저장 창이 열렸습니다. "인쇄 / PDF 저장" 버튼을 누르세요.');
+}
+
+/* ━━━ 리포트 공유하기 ━━━ */
+function diagShareReport() {
+  var sc = window._lastReportScore;
+  var name = document.getElementById('f1_name') ? (document.getElementById('f1_name').textContent||'').trim() : '';
+  var title = 'AI 재무검진결과 - 금융집짓기®';
+  var text = (name ? name + '님의 ' : '') + '재무건강점수: '
+    + (sc ? sc.total + '점 (' + sc.grade + ') · 부자지수 ' + sc.wealthIndex + '%' : '측정 완료')
+    + '\n\n유료 AI 재무검진 시작하기:\nhttps://financial-house-building.vercel.app';
+  var url = 'https://financial-house-building.vercel.app';
+
+  if(navigator.share) {
+    navigator.share({ title: title, text: text, url: url })
+      .then(function(){ showToast('✅ 공유 완료!'); })
+      .catch(function(e){ if(e.name !== 'AbortError') diagCopyReportLink(url, text); });
+  } else {
+    diagCopyReportLink(url, text);
+  }
+}
+
+function diagCopyReportLink(url, text) {
+  var full = (text || '') + '\n' + (url || 'https://financial-house-building.vercel.app');
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(full)
+      .then(function(){ showToast('📋 링크가 복사됐습니다! 카톡에 붙여넣기 하세요.'); })
+      .catch(function(){ diagFallbackCopy(full); });
+  } else {
+    diagFallbackCopy(full);
+  }
+}
+
+function diagFallbackCopy(text) {
+  var el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+  document.body.appendChild(el);
+  el.select();
+  try {
+    document.execCommand('copy');
+    showToast('📋 링크가 복사됐습니다! 카톡에 붙여넣기 하세요.');
+  } catch(e) {
+    showToast('공유 링크: https://financial-house-building.vercel.app');
+  }
+  document.body.removeChild(el);
+}
+
+
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
   const txt=inp.value.trim();
