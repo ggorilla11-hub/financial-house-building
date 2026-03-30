@@ -10467,7 +10467,7 @@ function diagEndConsult() {
 
   /* MVP: 크레딧 차감 (사용 시간 저장) */
   var usedMin = Math.ceil(diagSec / 60);
-  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '30');
+  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '50');
   var remaining = Math.max(0, totalCredit - usedMin);
   localStorage.setItem('mvp_credit_min', String(remaining));
   localStorage.setItem('mvp_last_session_min', String(usedMin));
