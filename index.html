@@ -11109,56 +11109,78 @@ function diagParseAiSpeech(aiText) {
 
   /* ── 복명복창 파싱 → 신 ID에 직접 기입 ── */
   var patterns = [
-    // 인적사항 (note_page=1) — 성함 패턴 최대한 넓게
+    // ── 성함 ──
     { pg:1, key:'name', regex:/([가-힣]{2,5})님이시군요/ },
-    { pg:1, key:'name', regex:/아,\s*([가-힣]{2,5})님/ },
+    { pg:1, key:'name', regex:/아,?\s*([가-힣]{2,5})님/ },
     { pg:1, key:'name', regex:/^([가-힣]{2,5})님\s*반갑/ },
     { pg:1, key:'name', regex:/([가-힣]{2,5})님이라고/ },
     { pg:1, key:'name', regex:/성함.*?([가-힣]{2,5})님/ },
-    // 나이
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님,?\s*반갑/ },
+    // ── 나이 ──
     { pg:1, key:'age', regex:/(\d+)세이시군요/ },
-    { pg:1, key:'age', regex:/아,\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/아,?\s*(\d+)세/ },
     { pg:1, key:'age', regex:/(\d+)살이시군요/ },
-    // 결혼여부
+    { pg:1, key:'age', regex:/(\d+)세.*?이시군요/ },
+    { pg:1, key:'age', regex:/올해\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/(\d+)세.*?시군요/ },
+    // ── 직업 ──
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부|대학생)이시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하시는군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하고\s*계시는군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하고\s*계시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?종사하시군요/ },
+    { pg:1, key:'job', regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+    // ── 결혼여부 ──
     { pg:1, key:'marry', regex:/(기혼|미혼)이시군요/ },
     { pg:1, key:'marry', regex:/(기혼|미혼)이라고/ },
-    // 가족수
+    { pg:1, key:'marry', regex:/결혼.*?하셨군요/ },
+    { pg:1, key:'marry', regex:/결혼.*?안\s*하셨군요/ },
+    { pg:1, key:'marry', regex:/기혼이신/ },
+    // ── 자녀 ──
+    { pg:1, key:'child', regex:/자녀.*?(\d+)명/ },
+    { pg:1, key:'child', regex:/(\d+)명.*?자녀/ },
+    { pg:1, key:'child', regex:/자녀가\s*(\d+)/ },
+    { pg:1, key:'child', regex:/아이.*?(\d+)명/ },
+    // ── 가족수 ──
     { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
     { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
-    { pg:1, key:'family', regex:/(\d+)명.*가족/ },
-    // 직업
-    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|프리랜서|의사|간호사|교사|교수)이시군요/ },
-    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서).*하시는군요/ },
-    // 맞벌이
+    { pg:1, key:'family', regex:/(\d+)명.*?가족/ },
+    { pg:1, key:'family', regex:/가족\s*(\d+)명/ },
+    { pg:1, key:'family', regex:/총\s*(\d+)명/ },
+    // ── 맞벌이 ──
     { pg:1, key:'dual', regex:/(맞벌이|외벌이)이시군요/ },
     { pg:1, key:'dual', regex:/(맞벌이|외벌이)로\s*가계/ },
-    // 고민 (note_page=2)
-    { pg:2, key:'w1', regex:/바로\s*그\s*문제.*해결하기.*([^.]{5,30})/ },
-    { pg:2, key:'goal', regex:/오늘\s*([^.]{5,30})\s*해결을 위해/ },
-    // 수입지출 (note_page=3)
-    { pg:3, key:'income', regex:/월\s*수입\s*([\d,]+)만/ },
-    { pg:3, key:'income', regex:/([\d,]+)만원.*실수령/ },
-    { pg:3, key:'income', regex:/수입.*?([\d,]+)만원에서/ },
-    { pg:3, key:'loan_cur', regex:/대출.*?([\d,]+)만원/ },
-    { pg:3, key:'ins_cur',  regex:/보험.*?([\d,]+)만원/ },
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이).*?군요/ },
+    // ── 은퇴예정 ──
+    { pg:1, key:'retire', regex:/(\d+)세.*?은퇴/ },
+    { pg:1, key:'retire', regex:/은퇴.*?(\d+)세/ },
+    // ── 예상수명 ──
+    { pg:1, key:'life', regex:/(\d+)세.*?(?:까지|수명)/ },
+    { pg:1, key:'life', regex:/예상\s*수명.*?(\d+)세/ },
+    // ── 수입지출 ──
+    { pg:3, key:'income',      regex:/월\s*수입\s*([\d,]+)만/ },
+    { pg:3, key:'income',      regex:/([\d,]+)만원.*실수령/ },
+    { pg:3, key:'income',      regex:/수입.*?([\d,]+)만원에서/ },
+    { pg:3, key:'income',      regex:/월\s*([\d,]+)만원.*?버/ },
+    { pg:3, key:'loan_cur',    regex:/대출.*?([\d,]+)만원/ },
+    { pg:3, key:'ins_cur',     regex:/보험.*?([\d,]+)만원/ },
     { pg:3, key:'pension_cur', regex:/연금.*?([\d,]+)만원/ },
     { pg:3, key:'save_cur',    regex:/저축.*?([\d,]+)만원/ },
     { pg:3, key:'living_cur',  regex:/생활비.*?([\d,]+)만원/ },
     { pg:3, key:'surplus',     regex:/잉여자금.*?([\d,]+)만원/ },
-    // 자산부채 (note_page=4)
-    { pg:4, key:'deposit',    regex:/예적금\s*([\d,억천만]+)/ },
-    { pg:4, key:'invest',     regex:/펀드.*?([\d,억천만]+)/ },
-    { pg:4, key:'realty',     regex:/부동산.*?([\d,억천만]+)/ },
-    { pg:4, key:'credit',     regex:/신용대출\s*([\d,억천만]+)/ },
-    { pg:4, key:'total_asset',regex:/총자산.*?([\d,억천만]+)/ },
-    { pg:4, key:'net',        regex:/순자산.*?([\d,억천만]+)/ },
+    // ── 자산부채 ──
+    { pg:4, key:'deposit',     regex:/예적금\s*([\d,억천만]+)/ },
+    { pg:4, key:'invest',      regex:/펀드.*?([\d,억천만]+)/ },
+    { pg:4, key:'realty',      regex:/부동산.*?([\d,억천만]+)/ },
+    { pg:4, key:'credit',      regex:/신용대출\s*([\d,억천만]+)/ },
+    { pg:4, key:'total_asset', regex:/총자산.*?([\d,억천만]+)/ },
+    { pg:4, key:'net',         regex:/순자산.*?([\d,억천만]+)/ },
     { pg:4, key:'wealth_index',regex:/부자지수.*?([0-9.]+)/ },
-    // 설계도 (note_page=5)
+    // ── 설계도 ──
     { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
     { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
     { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
-  ];
-
+  ]
   for(var j=0; j<patterns.length; j++) {
     var p = patterns[j];
     var m = t.match(p.regex);
@@ -11229,40 +11251,50 @@ function diagAutoFillNote(userText) {
   if (curStep <= 1) {
     // [1단계] 인적사항
     patterns = patterns.concat([
-      // 성함: "오상열입니다" / "저는 오상열이에요" / "오상열이라고 합니다"
-      { key:'f1_name',   regex:/^([가-힣]{2,5})입니다/ },
-      { key:'f1_name',   regex:/^([가-힣]{2,5})이에요/ },
-      { key:'f1_name',   regex:/^([가-힣]{2,5})예요/ },
-      { key:'f1_name',   regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)/ },
-      { key:'f1_name',   regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
-      { key:'f1_name',   regex:/^([가-힣]{2,5})(?:이요|요)\s*$/ },
-      // 나이: "50살이에요" / "50세요" / "올해 50살"
-      { key:'f1_age',    regex:/(\d+)\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
-      { key:'f1_age',    regex:/(\d+)\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
-      { key:'f1_age',    regex:/올해\s*(\d+)/ },
-      { key:'f1_age',    regex:/나이.*?(\d+)/ },
+      // 성함
+      { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
+      { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)/ },
+      { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})(?:이요|요)\s*$/ },
+      // 나이
+      { key:'f1_age', regex:/(\d+)\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
+      { key:'f1_age', regex:/(\d+)\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
+      { key:'f1_age', regex:/올해\s*(\d+)/ },
+      { key:'f1_age', regex:/나이.*?(\d+)/ },
       // 직업
-      { key:'f1_job',    regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)\s*(?:입니다|이에요|예요|이고|이요|요)/ },
-      { key:'f1_job',    regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)\s*(?:입니다|이에요|예요|이고|이요|요)/ },
+      { key:'f1_job', regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부).*?하고\s*있/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부).*?해요/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?다니/ },
       // 결혼
-      { key:'f1_marry',  regex:/(기혼|미혼|결혼|이혼|사별)\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
-      { key:'f1_marry',  regex:/결혼\s*(?:했어요|했습니다|했고|안 했|안했)/ },
+      { key:'f1_marry', regex:/(기혼|미혼|결혼|이혼|사별)\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
+      { key:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했는데)/ },
+      { key:'f1_marry', regex:/결혼\s*(?:안 했|안했|못했|안 했어요)/ },
+      // 자녀
+      { key:'f1_child', regex:/자녀.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/아이.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/아들|딸/ },
+      { key:'f1_child', regex:/(\d+)\s*명.*?(?:아이|자녀|아들|딸)/ },
       // 가족수
       { key:'f1_family', regex:/(\d+)\s*인?\s*가족/ },
       { key:'f1_family', regex:/가족.*?(\d+)\s*명/ },
       { key:'f1_family', regex:/식구.*?(\d+)/ },
-      // 자녀
-      { key:'f1_child',  regex:/자녀.*?(\d+)\s*명/ },
-      { key:'f1_child',  regex:/아이.*?(\d+)\s*명/ },
-      { key:'f1_child',  regex:/아들|딸/ },
+      { key:'f1_family', regex:/총\s*(\d+)\s*명/ },
       // 맞벌이
-      { key:'f1_dual',   regex:/(맞벌이|외벌이)\s*(?:예요|이에요|입니다|이고|요)?/ },
+      { key:'f1_dual', regex:/(맞벌이|외벌이)\s*(?:예요|이에요|입니다|이고|요)?/ },
+      { key:'f1_dual', regex:/둘\s*다\s*일/ },
+      { key:'f1_dual', regex:/아내.*?일\s*해/ },
+      { key:'f1_dual', regex:/남편.*?일\s*해/ },
       // 은퇴예정
       { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
       { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
       // 예상수명
-      { key:'f1_life',   regex:/(\d+)세.*?(?:살고|살 것|수명|예상)/ },
+      { key:'f1_life', regex:/(\d+)세.*?(?:살고\s*싶|수명|예상)/ },
     ]);
+  }    ]);
   }
 
   if (curStep <= 2) {
