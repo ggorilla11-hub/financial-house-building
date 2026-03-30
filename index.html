@@ -10981,53 +10981,143 @@ function downloadReportPDF() {
 function shareReport() {
   var sc = window._lastReportScore;
   if(!sc) {
-    showToast('⚠️ 리포트가 없습니다. 상담을 먼저 완료해주세요.');
+    showToast('리포트가 없습니다. 상담을 먼저 완료해주세요.');
     return;
   }
   var nd = collectNoteData();
-  var nameStr = nd.name ? nd.name+'님의 ' : '';
-  var scoreStr = sc.total+'점 ('+sc.grade+')';
-  var wStr = sc.wealthIndex+'% '+sc.wealthGrade+' 등급';
-  var shareText = '📊 '+nameStr+'AI 재무검진결과\n'
-    +'✅ 종합 재무건강점수: '+scoreStr+'\n'
-    +'🏠 부자지수: '+wStr+'\n\n'
-    +'💰 지출관리 '+sc.expense+'/20  📈 자산형성 '+sc.asset+'/20\n'
-    +'🏖️ 노후준비 '+sc.retirement+'/20\n\n'
-    +'▶ 유료 AI 재무검진 시작하기\nhttps://financial-house-building.vercel.app';
+  var nameStr  = nd.name ? nd.name + '님의 ' : '';
 
-  if(navigator.share) {
-    navigator.share({
-      title: 'AI 재무검진결과표 — 금융집짓기®',
-      text: shareText,
-      url: 'https://financial-house-building.vercel.app'
-    }).catch(function(e){ if(e.name!=='AbortError') showToast('공유 중 오류가 발생했습니다.'); });
-  } else {
-    // PC: 클립보드 복사 + 토스트
-    if(navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(shareText).then(function(){
-        showToast('📋 결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요 😊');
-      }).catch(function(){
-        _shareFallback(shareText);
-      });
-    } else {
-      _shareFallback(shareText);
+  // 이모지 없는 순수 텍스트 — 브라우저 호환성 최대화
+  var shareText =
+    '[AI 재무검진결과표 - 금융집짓기]\n\n'
+    + nameStr + '재무건강점수: ' + sc.total + '점 (' + (sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험') + ')\n'
+    + '부자지수: ' + sc.wealthIndex + '% ' + sc.wealthGrade + ' 등급\n\n'
+    + '지출관리 ' + sc.expense  + '/20점\n'
+    + '자산형성 ' + sc.asset    + '/20점\n'
+    + '노후준비 ' + sc.retirement + '/20점\n\n'
+    + '유료 AI 재무검진 시작하기:\n'
+    + 'https://financial-house-building.vercel.app';
+
+  var shareUrl = 'https://financial-house-building.vercel.app';
+
+  // ── 모바일 Web Share API ──
+  if (navigator.share) {
+    // canShare 지원 시 먼저 체크
+    var shareData = { title: 'AI 재무검진결과표', text: shareText, url: shareUrl };
+    var canShareIt = true;
+    if (navigator.canShare) {
+      canShareIt = navigator.canShare(shareData);
     }
+    if (canShareIt) {
+      navigator.share(shareData)
+        .then(function() {
+          showToast('공유 완료!');
+        })
+        .catch(function(e) {
+          // AbortError = 사용자가 직접 닫은 것 → 토스트 불필요
+          if (e.name !== 'AbortError') {
+            // share 실패 시 클립보드로 폴백
+            _shareClipboard(shareText);
+          }
+        });
+    } else {
+      // canShare false → 클립보드
+      _shareClipboard(shareText);
+    }
+  } else {
+    // PC 환경 — 공유 모달 띄우기
+    _showShareModal(shareText, shareUrl);
   }
 }
 
-function _shareFallback(text) {
+function _shareClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(function() {
+        showToast('결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요');
+      })
+      .catch(function() { _shareExecCopy(text); });
+  } else {
+    _shareExecCopy(text);
+  }
+}
+
+function _shareExecCopy(text) {
   var ta = document.createElement('textarea');
   ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
-  try { document.execCommand('copy'); showToast('📋 결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요 😊'); }
-  catch(e) { showToast('공유 링크: https://financial-house-building.vercel.app'); }
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
   document.body.removeChild(ta);
+  if(ok) {
+    showToast('결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요');
+  } else {
+    showToast('공유 주소: financial-house-building.vercel.app');
+  }
 }
 
+function _showShareModal(text, url) {
+  // PC용 공유 모달 (링크복사 + 카톡링크)
+  var existing = document.getElementById('_shareModalOverlay');
+  if(existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_shareModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:flex-end;justify-content:center;';
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px 20px 32px;font-family:"Noto Sans KR",sans-serif;';
+
+  modal.innerHTML =
+    '<div style="text-align:center;margin-bottom:16px;">'
+    + '<div style="width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-size:14px;font-weight:900;color:#0B1D3A;">재무검진결과 공유하기</div>'
+    + '</div>'
+
+    // 카카오링크 버튼
+    + '<button id="_shareKakao" style="width:100%;padding:13px;background:#FEE500;border:none;border-radius:10px;font-size:13px;font-weight:900;color:#391B1B;cursor:pointer;margin-bottom:10px;">'
+    + '카카오톡으로 공유'
+    + '</button>'
+
+    // 링크복사 버튼
+    + '<button id="_shareCopy" style="width:100%;padding:13px;background:#0B1D3A;border:none;border-radius:10px;font-size:13px;font-weight:900;color:#E8B84B;cursor:pointer;margin-bottom:10px;">'
+    + '링크 + 결과 복사하기'
+    + '</button>'
+
+    // 닫기
+    + '<button id="_shareClose" style="width:100%;padding:11px;background:#f5f5f5;border:none;border-radius:10px;font-size:12px;color:#888;cursor:pointer;">'
+    + '닫기'
+    + '</button>';
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // 카카오링크 (카카오 SDK 없으면 카카오링크 URL scheme)
+  document.getElementById('_shareKakao').onclick = function() {
+    var kakaoUrl = 'https://sharer.kakao.com/talk/friends/picker/link?app_key=&url=' + encodeURIComponent(url);
+    // SDK 없으면 링크복사로 폴백
+    _shareClipboard(text);
+    overlay.remove();
+    showToast('카톡에 붙여넣기 하세요!');
+  };
+
+  document.getElementById('_shareCopy').onclick = function() {
+    _shareClipboard(text);
+    overlay.remove();
+  };
+
+  document.getElementById('_shareClose').onclick = function() {
+    overlay.remove();
+  };
+
+  // 오버레이 클릭 닫기
+  overlay.onclick = function(e) {
+    if(e.target === overlay) overlay.remove();
+  };
+}
 
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
