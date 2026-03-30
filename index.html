@@ -11232,14 +11232,182 @@ function diagFillField(partIdx, labelKey, value) {
 
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
-  var t = (userText||'').trim();
-  if(t.length < 2) return;
-  var correctionKeys = ['아니','틀렸','다시','수정','잘못','아니요','아니오'];
-  if(correctionKeys.some(function(k){ return t.includes(k); })) {
-    if(diagLastFilledPartIdx >= 0) {
-      var fixId = 'f'+diagLastFilledPartIdx+'_'+diagLastFilledLabel;
+  var t = (userText || '').trim();
+  if (t.length < 2) return;
+
+  // ── 수정 요청 감지 ──
+  var correctionKeys = ['아니', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
+  if (correctionKeys.some(function(k){ return t.includes(k); })) {
+    if (diagLastFilledPartIdx >= 0) {
+      var fixId = 'f' + diagLastFilledPartIdx + '_' + diagLastFilledLabel;
       var el = document.getElementById(fixId);
-      if(el) { el.textContent='⚠ 수정 중...'; el.style.color='#C62828'; }
+      if (el) { el.textContent = '⚠ 수정 중...'; el.style.color = '#C62828'; }
+    }
+    return;
+  }
+
+  // ── 현재 활성 단계 확인 ──
+  var curStep = diagCurPart || 0;
+
+  // ── 고객 직접 발화 패턴 ──
+  // 단계별로만 적용 (엉뚱한 탭에 채워지는 것 방지)
+  var patterns = [];
+
+  if (curStep <= 1) {
+    // [1단계] 인적사항
+    patterns = patterns.concat([
+      // 성함: "오상열입니다" / "저는 오상열이에요" / "오상열이라고 합니다"
+      { key:'f1_name',   regex:/^([가-힣]{2,5})입니다/ },
+      { key:'f1_name',   regex:/^([가-힣]{2,5})이에요/ },
+      { key:'f1_name',   regex:/^([가-힣]{2,5})예요/ },
+      { key:'f1_name',   regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)/ },
+      { key:'f1_name',   regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
+      { key:'f1_name',   regex:/^([가-힣]{2,5})(?:이요|요)\s*$/ },
+      // 나이: "50살이에요" / "50세요" / "올해 50살"
+      { key:'f1_age',    regex:/(\d+)\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
+      { key:'f1_age',    regex:/(\d+)\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
+      { key:'f1_age',    regex:/올해\s*(\d+)/ },
+      { key:'f1_age',    regex:/나이.*?(\d+)/ },
+      // 직업
+      { key:'f1_job',    regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)\s*(?:입니다|이에요|예요|이고|이요|요)/ },
+      { key:'f1_job',    regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+      // 결혼
+      { key:'f1_marry',  regex:/(기혼|미혼|결혼|이혼|사별)\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
+      { key:'f1_marry',  regex:/결혼\s*(?:했어요|했습니다|했고|안 했|안했)/ },
+      // 가족수
+      { key:'f1_family', regex:/(\d+)\s*인?\s*가족/ },
+      { key:'f1_family', regex:/가족.*?(\d+)\s*명/ },
+      { key:'f1_family', regex:/식구.*?(\d+)/ },
+      // 자녀
+      { key:'f1_child',  regex:/자녀.*?(\d+)\s*명/ },
+      { key:'f1_child',  regex:/아이.*?(\d+)\s*명/ },
+      { key:'f1_child',  regex:/아들|딸/ },
+      // 맞벌이
+      { key:'f1_dual',   regex:/(맞벌이|외벌이)\s*(?:예요|이에요|입니다|이고|요)?/ },
+      // 은퇴예정
+      { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
+      { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
+      // 예상수명
+      { key:'f1_life',   regex:/(\d+)세.*?(?:살고|살 것|수명|예상)/ },
+    ]);
+  }
+
+  if (curStep <= 2) {
+    // [2단계] 경제적 고민
+    patterns = patterns.concat([
+      { key:'f2_w1', regex:/가장\s*(?:큰|많이)\s*고민.*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데|이고)/ },
+      { key:'f2_w1', regex:/걱정.*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데)/ },
+      { key:'f2_goal', regex:/(?:목표|원하는\s*것|바라는\s*것).*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데)/ },
+    ]);
+  }
+
+  if (curStep <= 3) {
+    // [3단계] 수입지출
+    patterns = patterns.concat([
+      // 월수입: "700만원이에요" / "월급이 500만원"
+      { key:'f3_income',      regex:/월\s*(?:급여|급|수입|소득|실수령).*?([\d,]+)\s*만/ },
+      { key:'f3_income',      regex:/([\d,]+)\s*만원.*?(?:벌|수입|월급|실수령)/ },
+      { key:'f3_income',      regex:/^([\d,]+)\s*만원?\s*(?:이에요|입니다|이고|요|예요)/ },
+      // 생활비
+      { key:'f3_living_cur',  regex:/생활비.*?([\d,]+)\s*만/ },
+      { key:'f3_living_cur',  regex:/([\d,]+)\s*만.*?생활비/ },
+      // 저축투자
+      { key:'f3_save_cur',    regex:/저축.*?([\d,]+)\s*만/ },
+      { key:'f3_save_cur',    regex:/투자.*?([\d,]+)\s*만/ },
+      // 노후연금
+      { key:'f3_pension_cur', regex:/(?:연금|연금저축|IRP|irp).*?([\d,]+)\s*만/ },
+      { key:'f3_pension_cur', regex:/([\d,]+)\s*만.*?연금/ },
+      // 보험료
+      { key:'f3_ins_cur',     regex:/보험.*?([\d,]+)\s*만/ },
+      { key:'f3_ins_cur',     regex:/([\d,]+)\s*만.*?보험/ },
+      // 대출원리금
+      { key:'f3_loan_cur',    regex:/대출.*?([\d,]+)\s*만/ },
+      { key:'f3_loan_cur',    regex:/([\d,]+)\s*만.*?대출/ },
+    ]);
+  }
+
+  if (curStep <= 4) {
+    // [4단계] 자산부채
+    patterns = patterns.concat([
+      // 예적금
+      { key:'f4_deposit',     regex:/(?:예금|적금|예적금|통장).*?([\d,억천만]+)/ },
+      { key:'f4_deposit',     regex:/([\d,억천만]+).*?(?:예금|적금|통장)/ },
+      // 펀드ETF
+      { key:'f4_invest',      regex:/(?:펀드|ETF|주식|etf).*?([\d,억천만]+)/ },
+      // 연금적립
+      { key:'f4_pension',     regex:/(?:연금적립|IRP|연금저축펀드).*?([\d,억천만]+)/ },
+      // 부동산
+      { key:'f4_realty',      regex:/(?:부동산|아파트|집|주택).*?([\d,억천만]+)/ },
+      { key:'f4_realty',      regex:/([\d,억천만]+).*?(?:짜리|아파트|집)/ },
+      // 신용대출
+      { key:'f4_credit',      regex:/신용\s*대출.*?([\d,억천만]+)/ },
+      { key:'f4_credit',      regex:/신용\s*대출\s*(?:없어요|없습니다|없고|없음)/ },
+      // 담보대출
+      { key:'f4_mortgage',    regex:/담보\s*대출.*?([\d,억천만]+)/ },
+      { key:'f4_mortgage',    regex:/주택\s*(?:담보|담보대출).*?([\d,억천만]+)/ },
+      { key:'f4_mortgage',    regex:/담보\s*대출\s*(?:없어요|없습니다|없고|없음)/ },
+    ]);
+  }
+
+  if (curStep <= 7) {
+    // [7단계] 보험설계
+    patterns = patterns.concat([
+      { key:'ins_col_death',  regex:/사망\s*보험.*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_cancer', regex:/암\s*(?:보험|진단).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_brain',  regex:/(?:뇌|뇌혈관).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_heart',  regex:/(?:심장|심혈관).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_actual', regex:/실비\s*(?:보험)?.*?(?:있어요|있습니다|가입)/ },
+      { key:'f87_premium',    regex:/보험료.*?([\d,]+)\s*만/ },
+    ]);
+  }
+
+  // ── 패턴 매칭 & 필드 채우기 ──
+  var filled = false;
+  for (var i = 0; i < patterns.length; i++) {
+    var p = patterns[i];
+    var m = t.match(p.regex);
+    if (m) {
+      var val = '';
+
+      // "없어요/없습니다" 패턴 → "없음"으로 처리
+      if (/없어요|없습니다|없고|없음/.test(t) &&
+          (p.key === 'f4_credit' || p.key === 'f4_mortgage')) {
+        val = '없음';
+      } else {
+        val = (m[1] || m[0] || '').replace(/,/g, '').trim();
+      }
+
+      // 결혼 정규화
+      if (p.key === 'f1_marry') {
+        if (/결혼\s*했/.test(t))      val = '기혼';
+        else if (/결혼\s*안/.test(t)) val = '미혼';
+        else                          val = m[1] || m[0];
+      }
+
+      // 자녀 정규화
+      if (p.key === 'f1_child' && /아들|딸/.test(t)) {
+        var childCount = (t.match(/아들|딸/g)||[]).length;
+        val = childCount + '명';
+      }
+
+      if (val && val.length >= 1) {
+        dnFillById(p.key, val);
+        diagLastFilledPartIdx = curStep;
+        diagLastFilledLabel   = p.key;
+        filled = true;
+        // 같은 발화에서 여러 필드 채울 수 있으므로 break 안 함
+      }
+    }
+  }
+
+  // ── 수입 입력 시 f3_income도 자동으로 수입지출표 헤더 업데이트 ──
+  if (filled) {
+    var incEl = document.getElementById('f3_income');
+    if (incEl && incEl.textContent && incEl.textContent !== '—') {
+      var incVal = parseFloat(incEl.textContent.replace(/[^0-9.]/g, ''));
+      if (incVal > 0 && typeof diagUpdateIncomeTable === 'function') {
+        diagUpdateIncomeTable(incVal);
+      }
     }
   }
 }
