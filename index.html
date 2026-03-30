@@ -2353,6 +2353,7 @@ html{visibility:visible !important;}
 
 /* ━━━ MVP: 시뮬레이터 완전 숨김 (음성 코드에 영향 없음) ━━━ */
 #sim-wrap, .sim-wrap { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
+#sim-sticky-inner, .sim-sticky-inner, .sim-sticky { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
 
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
@@ -2393,10 +2394,10 @@ html{visibility:visible !important;}
   <div style="font-size:13px;background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.25);color:#D4A853;padding:7px 16px;border-radius:20px;font-weight:600;margin-bottom:18px;">⏱️ 딱 6번 클릭 · 30초 완성</div>
 
   <h1 style="font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1.4;margin-bottom:14px;color:#fff;">
-    은퇴 전<br>당신이 가장 먼저 해야 할<br><span style="color:#D4A853;">재무목표</span>는?
+    은퇴 전<br>당신이 알아야 할<br>당신의 <span style="color:#D4A853;">재무건강점수</span>는?
   </h1>
   <p style="font-size:15px;opacity:.8;line-height:1.7;margin-bottom:24px;color:#fff;max-width:320px;">
-    729가지 조합 중 당신에게 딱 맞는<br>최우선 재무목표를 찾아드립니다
+    729가지 조합을 분석하여<br>당신의 재무건강점수를 알려드립니다
   </p>
 
   <!-- 신뢰 지표 -->
@@ -2416,7 +2417,7 @@ html{visibility:visible !important;}
   </div>
 
   <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
-    내 재무목표 찾기 →
+    내 재무건강점수 확인 →
   </button>
 
   <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
@@ -2493,7 +2494,7 @@ html{visibility:visible !important;}
     <!-- 최우선 재무목표 -->
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;">
       <div id="fn-r-emoji" style="font-size:56px;margin-bottom:10px;"></div>
-      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 최우선 재무목표</div>
+      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무건강점수</div>
       <div id="fn-r-title" style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:#fff;margin-bottom:8px;"></div>
       <div id="fn-r-sub" style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;"></div>
     </div>
@@ -2508,6 +2509,12 @@ html{visibility:visible !important;}
       <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
         🏥 유료 AI 재무검진 시작하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
+      </button>
+
+      <!-- ★ 무료 리드마그넷 버튼 -->
+      <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:10px;">
+        🆓 무료 재무건강점수 확인하기
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">이메일 · 카톡으로 결과 즉시 발송</span>
       </button>
 
       <!-- 개발자 메뉴 트리거 -->
@@ -2541,6 +2548,37 @@ html{visibility:visible !important;}
   </div>
 </div>
 
+<!-- ★ 무료 재무건강점수 신청 모달 -->
+<div id="freeScoreModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;padding:24px 20px;width:90%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:32px;margin-bottom:6px;">🆓</div>
+      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무건강점수 확인</div>
+      <div style="font-size:11px;color:#8896B0;margin-top:4px;">입력하신 정보로 결과를 이메일/카톡으로 보내드립니다</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="free-name" type="text" placeholder="이름 (필수)"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <input id="free-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <input id="free-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
+        <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
+        <span style="font-size:10px;color:#666;line-height:1.5;">
+          [필수] 개인정보 수집 및 이용에 동의합니다.<br>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무건강점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+        </span>
+      </label>
+    </div>
+    <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-top:14px;box-shadow:0 4px 16px rgba(59,130,246,.35);">
+      무료 재무건강점수 받기
+    </button>
+    <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:6px;">닫기</button>
+  </div>
 </div>
 
 
@@ -6362,6 +6400,73 @@ function mpCompletePurchase() {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 // MVP: CTA 버튼 클릭 → develop은 결제 건너뛰고 바로 진입
+/* ━━━ 무료 재무건강점수 신청 모달 ━━━ */
+function freeScoreModalOpen() {
+  var m = document.getElementById('freeScoreModal');
+  if(m) m.style.display = 'flex';
+}
+function freeScoreModalClose() {
+  var m = document.getElementById('freeScoreModal');
+  if(m) m.style.display = 'none';
+}
+function freeScoreSubmit() {
+  var name = (document.getElementById('free-name') || {}).value || '';
+  var phone = (document.getElementById('free-phone') || {}).value || '';
+  var email = (document.getElementById('free-email') || {}).value || '';
+  var privacy = (document.getElementById('free-privacy') || {}).checked || false;
+
+  if(!name.trim()) { showToast('이름을 입력해 주세요.'); return; }
+  if(!phone.trim()) { showToast('전화번호를 입력해 주세요.'); return; }
+  if(!email.trim() || email.indexOf('@') < 0) { showToast('올바른 이메일을 입력해 주세요.'); return; }
+  if(!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
+
+  // 원트큐브 결과 데이터 수집
+  var resultTitle = (document.getElementById('fn-r-title') || {}).textContent || '';
+  var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
+  var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
+
+  // ★ 구글시트 DB 저장
+  fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      plan: 'free-score',
+      source: 'free-health-score',
+      result_title: resultTitle,
+      result_sub: resultSub,
+      result_d: resultD,
+      timestamp: new Date().toISOString()
+    })
+  }).then(function(r) { console.log('[무료점수] 구글시트 저장:', r.status); })
+    .catch(function(e) { console.log('[무료점수] 구글시트 오류:', e); });
+
+  // ★ make.com 웹훅 → 카톡 + 이메일 발송
+  fetch('https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'free_score',
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      plan: '무료 재무건강점수',
+      result_title: resultTitle,
+      result_sub: resultSub,
+      result_d: resultD,
+      checkup_url: 'https://financial-house-building.vercel.app',
+      timestamp: new Date().toISOString()
+    })
+  }).then(function(r) { console.log('[무료점수] make.com 웹훅:', r.status); })
+    .catch(function(e) { console.log('[무료점수] make.com 오류:', e); });
+
+  // 모달 닫기 + 감사 메시지
+  freeScoreModalClose();
+  showToast('✅ 신청 완료! 이메일과 카톡으로 결과를 보내드립니다.');
+}
+
 function mvpStartCheckup() {
   // ★ 시뮬레이터 즉시 숨기기
   var simWrap = document.getElementById('sim-wrap');
