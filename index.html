@@ -9739,9 +9739,8 @@ function diagBuildNotes() {
   container.innerHTML = `
 <style>
 #dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
-#dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
-#dnTabs::-webkit-scrollbar{display:none;}
-.dnt{flex-shrink:0;padding:7px 11px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;cursor:pointer;
+#dnTabs{display:flex;flex-wrap:wrap;gap:2px;padding:6px 8px 0;background:#0B1D3A;flex-shrink:0;}
+.dnt{flex-shrink:0;padding:5px 8px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;cursor:pointer;
   color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
 .dnt.active{background:#F4F6FA;color:#0B1D3A;}
 .dnt.done{color:#E8B84B;}
