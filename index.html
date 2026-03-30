@@ -6676,8 +6676,26 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ main용: 원트큐브 위에 결제 모달만 바로 띄우기 (배경 유지)
-  mpOpenSubscribe();
+  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
+  var trialStart = localStorage.getItem('fh_trial_start');
+  if(!trialStart) {
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    localStorage.setItem('fh_subscribed', '1');
+    localStorage.setItem('fh_member_v1', '1');
+    trialStart = new Date().toISOString();
+  }
+  // 7일 체험 만료 체크
+  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
+  if(daysPassed > 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  // 결제 없이 바로 AI진단 진입
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  mvpGoToDiag();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
