@@ -6744,22 +6744,11 @@ function mvpStartCheckup() {
   }
   var remaining = 7 - daysPassed;
   showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  // 결제 없이 바로 AI진단 진입
+  // ★ 개인정보 동의 자동 체크 후 바로 상담 시작
+  var privacyChk = document.getElementById('mvp-privacy-guide');
+  if(privacyChk) privacyChk.checked = true;
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  // ★ 마이페이지 열기 → AI진단 탭 → 개인정보 동의 자동 체크
-  mpOpen();
-  setTimeout(function() {
-    var tabs = document.querySelectorAll('.mp-tab-btn');
-    for(var i=0; i<tabs.length; i++){
-      if(tabs[i].textContent.indexOf('검진') >= 0 || tabs[i].textContent.indexOf('AI') >= 0){
-        mpTab(1, tabs[i]);
-        break;
-      }
-    }
-    // 개인정보 동의 자동 체크
-    var privacyChk = document.getElementById('mvp-privacy-guide');
-    if(privacyChk) privacyChk.checked = true;
-  }, 300);
+  mvpGoToDiag();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
