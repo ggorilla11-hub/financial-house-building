@@ -6731,8 +6731,6 @@ function mvpStartCheckup() {
   var trialStart = localStorage.getItem('fh_trial_start');
   if(!trialStart) {
     localStorage.setItem('fh_trial_start', new Date().toISOString());
-    localStorage.setItem('fh_subscribed', '1');
-    localStorage.setItem('fh_member_v1', '1');
     trialStart = new Date().toISOString();
   }
   // 7일 체험 만료 체크
@@ -6743,12 +6741,32 @@ function mvpStartCheckup() {
     return;
   }
   var remaining = 7 - daysPassed;
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  // ★ 개인정보 동의 자동 체크 후 바로 상담 시작
-  var privacyChk = document.getElementById('mvp-privacy-guide');
-  if(privacyChk) privacyChk.checked = true;
+
+  // 시뮬레이터 숨기기
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
+
+  // 원트큐브 숨기기
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  mvpGoToDiag();
+
+  // 구독 완료 처리
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  mpIsSubscribed = true;
+
+  // 헤더 버튼 업데이트
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  // 마이페이지 오픈 → 사용자가 검진안내 탭에서 시작 버튼 클릭
+  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
