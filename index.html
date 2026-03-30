@@ -10421,14 +10421,15 @@ function diagTogglePause() {
   if(diagPaused) {
     /* [DEV-001] Vapi 마이크 음소거 */
     if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
-    /* ── 스피커(오디오 출력)도 음소거 ── */
-    try { document.querySelectorAll('audio').forEach(function(a){ a.muted = true; a.volume = 0; }); } catch(e){}
+    /* ── 스피커 음소거: Vapi audio만 볼륨 0 (태그 제거하지 않음) ── */
+    try { document.querySelectorAll('audio').forEach(function(a){ a.volume = 0; }); } catch(e){}
     showToast('⏸ 일시정지');
   } else {
     /* ── 텍스트 전용 모드면 오디오 복원하지 않음 ── */
     if(!mvpTextOnlyMode) {
       if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
-      try { document.querySelectorAll('audio').forEach(function(a){ a.muted = false; a.volume = 1; }); } catch(e){}
+      /* ── 스피커 볼륨 복원 (muted 건드리지 않음) ── */
+      try { document.querySelectorAll('audio').forEach(function(a){ a.volume = 1; }); } catch(e){}
       /* ★ Vapi에 재개 신호 — 침묵 상태에서 깨우기 */
       if(vapi && vapiCallActive) {
         try { vapi.send({ type: 'add-message', message: { role: 'system', content: '고객이 일시정지를 해제했습니다. 방금 하던 이야기를 이어서 해주세요.' } }); } catch(e) { console.log('[Vapi] 재개 신호 오류:', e); }
