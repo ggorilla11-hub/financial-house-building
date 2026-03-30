@@ -10267,7 +10267,11 @@ function diagBuildNotes() {
           <!-- 종료 안내 배너 (JS에서 삽입) -->
           <!-- 재무검진결과표 본문 -->
           <div id="diagReportBody"></div>
-          <!-- 버튼은 renderHealthReport() 내부에서 생성 -->
+          <!-- 다운로드 + 공유 버튼 -->
+          <div style="display:flex;gap:8px;margin:12px 0;">
+            <button onclick="downloadReportPDF()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ 다운로드</button>
+            <button onclick="shareReport()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">📤 공유하기</button>
+          </div>
         </div>
       </div>
     </div>
@@ -10556,457 +10560,474 @@ function renderHealthReport() {
   var body = document.getElementById('diagReportBody');
   if(!body) return;
 
-  var d = collectNoteData();
-  var sc = calcHealthScore(d);
-  var isPaid = window._isPaidUser || !!localStorage.getItem('fh_subscribed');
+  var nd = collectNoteData();
+  var sc = calcHealthScore(nd);
 
   var today = new Date();
   var dateStr = today.getFullYear() + '년 ' + (today.getMonth()+1) + '월 ' + today.getDate() + '일';
+  var isPaid = window.mpIsSubscribed || localStorage.getItem('fh_subscribed') === '1';
+  var freeLabel = isPaid ? '유료 AI 재무검진' : '🆓 무료 검진 (통계 기반)';
 
-  function V(val, unit) {
-    unit = unit || '';
-    if(!isPaid) return '<span style="color:#bbb;font-style:italic;font-size:10px;">유료검진 필요</span>';
-    if(val === null || val === undefined || val === '') return '—';
-    return val + unit;
+  // 판정 색상
+  function gradeColor(g) {
+    return g==='양호'||g==='정상' ? '#16A34A' : g==='주의' ? '#F97316' : g==='위험' ? '#DC2626' : '#999';
   }
-  function J(judgment) {
-    if(!judgment || judgment === '—') return '<span style="color:#999;">—</span>';
-    var map = {'정상':'#16A34A','우수':'#16A34A','양호':'#16A34A','주의':'#F97316','위험':'#DC2626','매우위험':'#DC2626'};
-    var bgMap = {'정상':'#F0FDF4','우수':'#F0FDF4','양호':'#F0FDF4','주의':'#FFF7ED','위험':'#FEE2E2','매우위험':'#FEE2E2'};
-    var c = map[judgment] || '#F97316';
-    var bg = bgMap[judgment] || '#FFF7ED';
-    return '<span style="background:'+bg+';color:'+c+';border:1px solid '+c+';font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">'+judgment+'</span>';
+  function gradeBg(g) {
+    return g==='양호'||g==='정상' ? '#F0FDF4' : g==='주의' ? '#FFF7ED' : g==='위험' ? '#FEE2E2' : '#F9FAFB';
   }
-  function areaScore(s, max) {
-    if(s === null || s === undefined) return '<span style="color:#bbb;">—</span> / '+max;
-    return '<strong style="font-size:16px;color:#0B1D3A;">'+s+'</strong> / '+max;
+  var totalGrade = sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험';
+  var totalColor = gradeColor(totalGrade);
+
+  // 부자지수 등급 이모지
+  var wEmoji = sc.wealthGrade==='궁전'?'🏰':sc.wealthGrade==='아파트'?'🏢':sc.wealthGrade==='빌라'?'🏘️':sc.wealthGrade==='오두막'?'🛖':'⛺';
+
+  // DESIRE 단계
+  var desireStep = (document.getElementById('desire_cur_step') || {}).textContent || '—';
+  if(desireStep.includes('계산')) desireStep = '—';
+
+  // 은퇴준비율
+  var retireRate = (document.getElementById('f81_rate') || {}).textContent || nd.retireRate || '—';
+
+  // ── 헬퍼 함수 ──
+  function hdr(ico, title, score, max) {
+    var pct = max>0 ? Math.round(score/max*100) : 0;
+    var gc = gradeColor(pct>=70?'양호':pct>=50?'주의':'위험');
+    return '<tr style="background:#0B1D3A;"><td colspan="4" style="padding:8px 10px;">'
+      +'<span style="color:#E8B84B;font-size:11px;font-weight:900;">'+ico+' '+title+'</span>'
+      +(max>0?'<span style="float:right;font-size:11px;font-weight:900;color:'+gc+';">'+score+' / '+max+'점</span>':'')
+      +'</td></tr>';
   }
-  function detRow(label, cur, std, judge) {
-    return '<tr style="border-bottom:1px solid #f0f0f0;">'
-      +'<td style="padding:6px 8px;font-size:11px;color:#333;">'+label+'</td>'
-      +'<td style="padding:6px 8px;text-align:center;font-size:11px;font-weight:700;">'+cur+'</td>'
-      +'<td style="padding:6px 8px;text-align:center;font-size:10px;color:#666;">'+std+'</td>'
-      +'<td style="padding:6px 8px;text-align:center;">'+judge+'</td>'
+  function row(label, val, std, grade) {
+    var isPaidItem = (val === '—' && !isPaid);
+    var displayVal = isPaidItem ? '<span style="color:#bbb;font-size:9px;">유료검진 필요</span>' : val;
+    var displayGrade = isPaidItem ? '<span style="color:#ccc;font-size:9px;font-style:italic;">*유료검진 필요</span>' : ('<span style="font-weight:700;color:'+gradeColor(grade)+';background:'+gradeBg(grade)+';padding:2px 6px;border-radius:4px;font-size:9px;">'+grade+'</span>');
+    return '<tr style="border-bottom:1px solid #eee;">'
+      +'<td style="padding:6px 8px;font-size:10px;">'+label+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;font-weight:700;font-size:10px;">'+displayVal+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;color:#888;font-size:9px;">'+std+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;">'+displayGrade+'</td>'
       +'</tr>';
   }
-  function lockedRow(label) {
-    var locked = '<span style="color:#bbb;font-style:italic;font-size:10px;">유료검진 필요</span>';
-    return detRow(label, locked, locked, locked);
+  function rowPaid(label, std) {
+    return row(label, '—', std, '—');
   }
 
-  var wealthEmoji = sc.wealthGrade === '궁전' ? '🏰' : sc.wealthGrade === '아파트' ? '🏢' :
-    sc.wealthGrade === '빌라' ? '🏘️' : sc.wealthGrade === '오두막' ? '🛖' : '⛺';
-  var gradeColor = sc.grade === '우수' ? '#16A34A' : sc.grade === '주의' ? '#F97316' : sc.grade === '위험' ? '#DC2626' : '#DC2626';
+  // ── 5대영역 점수 셀 ──
+  function domainCell(ico, label, score, max) {
+    var pct = max>0?Math.round(score/max*100):0;
+    var gc = gradeColor(pct>=70?'양호':pct>=50?'주의':'위험');
+    var displayScore = (score === null || score === undefined) ? '—' : score;
+    return '<td style="text-align:center;padding:8px 4px;border-right:1px solid #ddd;">'
+      +'<div style="font-size:14px;">'+ico+'</div>'
+      +'<div style="font-size:9px;color:#8896B0;margin:2px 0;">'+label+'</div>'
+      +'<div style="font-size:15px;font-weight:900;color:'+gc+';">'+displayScore+'</div>'
+      +'<div style="font-size:8px;color:#ccc;">/'+max+'</div>'
+      +'</td>';
+  }
 
   var html = '';
 
-  // ① 상단 헤더
-  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;">';
-  html += '<tr>';
-  html += '<td style="background:#0B1D3A;color:#fff;padding:12px 14px;width:55%;border:1px solid #0B1D3A;">';
-  html += '<div style="font-size:15px;font-weight:900;">🏠 재무검진결과표</div>';
-  html += '<div style="font-size:10px;color:#C9972A;margin-top:2px;">금융집짓기® AI 재무진단 시뮬레이터</div>';
-  html += '</td>';
-  html += '<td style="background:#EAF0F7;padding:10px 14px;text-align:right;border:1px solid #b0c8e0;font-size:11px;line-height:1.8;">';
-  html += '검진일: <strong>' + dateStr + '</strong><br>';
-  html += '<span style="background:' + (isPaid?'#fff3cd':'#e8f4fd') + ';color:' + (isPaid?'#7a5800':'#1558a0') + ';border:1px solid ' + (isPaid?'#ffc107':'#90c6f0') + ';padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;">' + (isPaid?'💎 유료 AI 재무검진':'🆓 무료 검진 (통계 기반)') + '</span><br>';
-  html += '담당: <strong>오상열 CFP · AI머니야</strong>';
-  html += '</td>';
-  html += '</tr>';
-  html += '</table>';
+  // ━━━ 최상단 헤더 바 ━━━
+  html += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px 12px 0 0;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<div><div style="font-size:13px;font-weight:900;color:#E8B84B;">🏠 재무검진결과표</div><div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">금융집짓기® AI 재무진단 시뮬레이터</div></div>'
+    +'<div style="text-align:right;"><div style="font-size:9px;color:rgba(255,255,255,.6);">검진일: <strong style="color:#fff;">'+dateStr+'</strong></div>'
+    +'<div style="font-size:9px;color:#E8B84B;margin-top:2px;">'+freeLabel+'</div>'
+    +'<div style="font-size:8px;color:rgba(255,255,255,.4);margin-top:1px;">담당: 오상열 CFP · AI머니야</div></div>'
+    +'</div>';
 
-  // ② 수검자 정보 6컬럼
-  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;">';
-  html += '<tr style="background:#2C5F8A;">';
-  ['성명','나이','직업','가족수','월소득','순자산'].forEach(function(h){
-    html += '<th style="color:#fff;padding:6px 4px;font-size:11px;text-align:center;border:1px solid #1a4a70;">'+h+'</th>';
-  });
-  html += '</tr><tr style="background:#F7FAFD;">';
-  var info = [
-    d.name || '—',
-    d.age ? d.age+'세' : '—',
-    d.job || '—',
-    d.family ? d.family+'인' : '—',
-    d.income ? d.income+'만원' : '—',
-    d.netAsset ? d.netAsset+'억원' : '—'
-  ];
-  info.forEach(function(v){
-    html += '<td style="text-align:center;padding:7px 4px;font-size:12px;font-weight:700;border:1px solid #c8d8e8;">'+v+'</td>';
-  });
-  html += '</tr></table>';
+  // ━━━ 수검자 정보 6컬럼 ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr style="background:#F8F5EE;">'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">성명</div><div style="font-size:11px;font-weight:900;color:#0B1D3A;">'+( nd.name||'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">나이</div><div style="font-size:11px;font-weight:900;color:#0B1D3A;">'+(nd.age?nd.age+'세':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">직업</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.job||'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">가족수</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.familyCount?nd.familyCount+'인':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">월소득</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.income?nd.income+'만원':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;width:16.6%"><div style="font-size:8px;color:#8896B0;">순자산</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.netAsset?nd.netAsset+'만원':'—')+'</div></td>'
+    +'</tr></table>';
 
-  // ③ 종합점수 3칸
-  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;">';
-  html += '<tr>';
-  html += '<td style="border:2px solid #2C5F8A;padding:12px 6px;width:33%;text-align:center;background:#F0F7FF;">';
-  html += '<div style="font-size:10px;color:#555;font-weight:700;margin-bottom:3px;">종합 재무건강점수</div>';
-  html += '<div style="font-size:30px;font-weight:900;color:'+gradeColor+';line-height:1;">'+sc.total+'</div>';
-  html += '<div style="font-size:11px;color:#888;">/ 100점</div>';
-  html += '<div style="margin-top:4px;">판정: '+J(sc.grade)+'</div>';
-  html += '</td>';
-  html += '<td style="border:2px solid #2C5F8A;padding:12px 6px;width:33%;text-align:center;background:#F0F7FF;">';
-  html += '<div style="font-size:10px;color:#555;font-weight:700;margin-bottom:3px;">부자지수</div>';
-  html += '<div style="font-size:28px;font-weight:900;color:#1a3a5c;line-height:1;">'+(typeof sc.wealthIndex==='number'?sc.wealthIndex+'%':'—')+'</div>';
-  html += '<div style="font-size:12px;margin-top:4px;">'+wealthEmoji+' '+(sc.wealthGrade||'—')+' 등급</div>';
-  html += '</td>';
-  html += '<td style="border:2px solid #2C5F8A;padding:12px 6px;width:33%;text-align:center;background:#F5F5F5;">';
-  html += '<div style="font-size:10px;color:#555;font-weight:700;margin-bottom:3px;">DESIRE 단계</div>';
-  html += '<div style="font-size:22px;font-weight:900;color:#999;line-height:1;">—</div>';
-  html += '<div style="margin-top:4px;"><span style="color:#bbb;font-style:italic;font-size:10px;">유료검진 필요</span></div>';
-  html += '</td>';
-  html += '</tr></table>';
+  // ━━━ 종합 재무건강점수 3칸 ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr>'
+    +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">종합 재무건강점수</div>'
+    +'<div style="font-size:34px;font-weight:900;color:'+totalColor+';line-height:1.1;">'+sc.total+'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:'+totalColor+';">/ 100점 &nbsp; 판정: <strong>'+totalGrade+'</strong></div>'
+    +'</td>'
+    +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">부자지수</div>'
+    +'<div style="font-size:28px;font-weight:900;color:#C9972A;line-height:1.1;">'+sc.wealthIndex+'%</div>'
+    +'<div style="font-size:11px;font-weight:700;">'+wEmoji+' '+sc.wealthGrade+' 등급</div>'
+    +'</td>'
+    +'<td style="padding:12px;text-align:center;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">DESIRE 단계</div>'
+    +'<div style="font-size:13px;font-weight:900;color:#0B1D3A;margin:6px 0;">'+(isPaid?desireStep:'—')+'</div>'
+    +'<div style="font-size:8px;color:#bbb;font-style:italic;">'+(isPaid?'':'유료검진 필요')+'</div>'
+    +'</td>'
+    +'</tr></table>';
 
-  // ④ 5대 영역 요약
-  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;">';
-  html += '<tr style="background:#34495E;">';
-  ['💰 지출관리','📈 자산형성','🛡️ 보험보장','🏖️ 노후준비','💳 부채관리'].forEach(function(h){
-    html += '<th style="color:#fff;padding:7px 3px;font-size:11px;text-align:center;border:1px solid #2c3e50;">'+h+'</th>';
-  });
-  html += '</tr><tr style="background:#F8F9FA;">';
-  [
-    areaScore(sc.expense, 20),
-    areaScore(sc.asset, 20),
-    areaScore(isPaid ? sc.insurance : null, 20),
-    areaScore(sc.retirement, 20),
-    areaScore(isPaid ? sc.debt : null, 20)
-  ].forEach(function(v){
-    html += '<td style="text-align:center;padding:9px 3px;border:1px solid #dee2e6;">'+v+'</td>';
-  });
-  html += '</tr></table>';
+  // ━━━ 5대 영역 점수표 (가로 5칸) ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr style="background:#f8f8f8;">'
+    +domainCell('💰','지출관리',sc.expense,20)
+    +domainCell('📈','자산형성',sc.asset,20)
+    +domainCell('🛡️','보험보장',isPaid?sc.insurance:'—',20)
+    +domainCell('🏖️','노후준비',sc.retirement,20)
+    +domainCell('💳','부채관리',isPaid?sc.debt:'—',20)
+    +'</tr></table>';
 
-  var tableStyle = 'width:100%;border-collapse:collapse;margin-bottom:6px;';
-  var thStyle = 'background:#DCE8F0;color:#2c3e50;font-size:10.5px;font-weight:700;padding:5px 8px;text-align:center;border:1px solid #c0d0e0;';
-  var areaHd = function(icon, label, score, max) {
-    return '<tr><th colspan="4" style="background:#1a3a5c;color:#fff;text-align:left;font-size:12px;padding:8px 12px;border:1px solid #0d2a45;">'
-      +icon+' '+label
-      +'<span style="float:right;font-weight:400;font-size:11px;color:#a8c4e0;">'+areaScore(score,max)+'점</span>'
-      +'</th></tr>'
-      +'<tr><th style="'+thStyle+'">검사항목</th><th style="'+thStyle+'">현재값</th><th style="'+thStyle+'">기준값</th><th style="'+thStyle+'">판정</th></tr>';
-  };
+  // ━━━ 각 영역 상세 테이블 ━━━
+  html += '<div style="margin-top:10px;">';
 
-  var family = parseInt(d.family) || 4;
+  // [지출관리]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('💰','지출관리',sc.expense,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('생활비 비중', nd.livingPct?nd.livingPct+'%':'—', '50% (4인 기준)', nd.livingPct?(parseInt(nd.livingPct)<=50?'정상':'주의'):'—')
+    +row('저축투자 비중', nd.savePct?nd.savePct+'%':'—', '20% 이상', nd.savePct?(parseInt(nd.savePct)>=20?'정상':'주의'):'—')
+    +(isPaid?row('노후연금 비중', nd.pensionPct?nd.pensionPct+'%':'—', '10% 이상', nd.pensionPct?(parseInt(nd.pensionPct)>=10?'정상':'주의'):'—'):rowPaid('노후연금 비중','10% 이상'))
+    +(isPaid?row('보장성보험 비중', nd.insPct?nd.insPct+'%':'—', '10% 이상', nd.insPct?(parseInt(nd.insPct)>=10?'정상':'주의'):'—'):rowPaid('보장성보험 비중','10% 이상'))
+    +(isPaid?row('대출원리금 비중', nd.loanPct?nd.loanPct+'%':'—', '10% 이하', nd.loanPct?(parseInt(nd.loanPct)<=10?'정상':'주의'):'—'):rowPaid('대출원리금 비중','10% 이하'))
+    +'</table>';
 
-  // ⑤-A 지출관리
-  html += '<table style="'+tableStyle+'">';
-  html += areaHd('💰', '지출관리', sc.expense, 20);
-  html += detRow('생활비 비중', d.livingRatio!=null?d.livingRatio+'%':'—', getLivingBudget(family)+'% ('+family+'인)', J(sc.j_living));
-  html += detRow('저축투자 비중', d.savingsRatio!=null?d.savingsRatio+'%':'—', getSavingsBudget(family)+'% ('+family+'인)', J(sc.j_savings));
-  html += isPaid ? detRow('노후연금 비중', d.pensionRatio!=null?d.pensionRatio+'%':'—', '10% 이상', J(sc.j_pension)) : lockedRow('노후연금 비중');
-  html += isPaid ? detRow('보장성보험 비중', d.insuranceRatio!=null?d.insuranceRatio+'%':'—', '8~10%', J(sc.j_insuranceRatio)) : lockedRow('보장성보험 비중');
-  html += isPaid ? detRow('대출원리금 비중', d.loanRatio!=null?d.loanRatio+'%':'—', '30% 이하', J(sc.j_loanRatio)) : lockedRow('대출원리금 비중');
-  html += '</table>';
+  // [자산형성]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('📈','자산형성',sc.asset,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('부자지수', sc.wealthIndex+'%', '100% 이상', sc.wealthIndex>=100?'양호':sc.wealthIndex>=50?'주의':'위험')
+    +(isPaid?row('부채비율', nd.debtRatio?nd.debtRatio+'%':'—', '20% 이하', nd.debtRatio?(parseInt(nd.debtRatio)<=20?'양호':parseInt(nd.debtRatio)<=40?'주의':'위험'):'—'):rowPaid('부채비율','20% 이하'))
+    +(isPaid?row('비상예비자금', nd.emergency||'—', '월생활비×6', nd.hasEmergency?'양호':nd.emergency?'주의':'위험'):rowPaid('비상예비자금','월생활비×6'))
+    +(isPaid?row('가중평균수익률', nd.returnRate?nd.returnRate+'%':'—', '5% 초과', nd.returnRate?(parseFloat(nd.returnRate)>5?'양호':parseFloat(nd.returnRate)>3?'주의':'위험'):'—'):rowPaid('가중평균수익률','5% 초과'))
+    +'</table>';
 
-  // ⑤-B 자산형성
-  html += '<table style="'+tableStyle+'">';
-  html += areaHd('📈', '자산형성', sc.asset, 20);
-  html += detRow('부자지수', typeof sc.wealthIndex==='number'?sc.wealthIndex+'%':'—', '100% 이상', J(sc.j_wealthIndex));
-  html += isPaid ? detRow('부채비율', d.debtRatio!=null?d.debtRatio+'%':'—', '40% 이하', J(sc.j_debtRatio)) : lockedRow('부채비율');
-  html += isPaid ? detRow('비상예비자금', d.emergencyFund?d.emergencyFund+'개월분':'—', '3개월분 이상', J(sc.j_emergency)) : lockedRow('비상예비자금');
-  html += isPaid ? detRow('가중평균수익률', d.avgReturn!=null?d.avgReturn+'%':'—', '3% 초과', J(sc.j_avgReturn)) : lockedRow('가중평균수익률');
-  html += '</table>';
+  // [보험보장]
+  var insScore = isPaid ? sc.insurance : null;
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('🛡️','보험보장',isPaid?sc.insurance:'—',20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +(isPaid?row('사망·장해 보험금', nd.insDeath||'—', '연소득×7배', nd.insDeath?'확인필요':'—'):rowPaid('사망·장해 보험금','연소득×7배'))
+    +(isPaid?row('암 진단금', nd.insCancer||'—', '3,000만원↑', nd.insCancer?'확인필요':'—'):rowPaid('암 진단금','3,000만원↑'))
+    +(isPaid?row('뇌혈관·심혈관', nd.insBrain||'—', '각 2,000만원↑', nd.insBrain?'확인필요':'—'):rowPaid('뇌혈관·심혈관','각 2,000만원↑'))
+    +(isPaid?row('실손의료비', nd.insActual||'—', '가입여부', nd.insActual?'양호':'위험'):rowPaid('실손의료비','가입여부'))
+    +(isPaid?row('입원·수술·치매·간병', nd.insHosp||'—', '가입여부', nd.insHosp?'양호':'주의'):rowPaid('입원·수술·치매·간병','가입여부'))
+    +(isPaid?row('보장성보험료', nd.insPremium?nd.insPremium+'만원':'—', '월수입 10%', nd.insPct?(parseInt(nd.insPct)>=10?'양호':'주의'):'—'):rowPaid('보장성보험료','월수입 10%'))
+    +'</table>';
 
-  // ⑤-C 보험보장
-  html += '<table style="'+tableStyle+'">';
-  html += areaHd('🛡️', '보험보장', isPaid?sc.insurance:null, 20);
-  ['사망·장해 보험금','암 진단금','뇌혈관·심혈관','실손의료비','입원·수술·치매·간병','보장성보험료'].forEach(function(label){ html += lockedRow(label); });
-  html += '</table>';
+  // [노후준비]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('🏖️','노후준비',sc.retirement,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('은퇴준비율', retireRate!=='—'?retireRate:'—', '100%', retireRate!=='—'?(parseInt(retireRate)>=100?'양호':parseInt(retireRate)>=50?'주의':'위험'):'—')
+    +(isPaid?row('노후연금저축', nd.pensionSave?nd.pensionSave+'만원':'—', '월수입 10%↑', nd.pensionPct?(parseInt(nd.pensionPct)>=10?'양호':'주의'):'—'):rowPaid('노후연금저축','월수입 10%↑'))
+    +(isPaid?row('은퇴일시금', (document.getElementById('f81_net')||{}).textContent||'—', '목표 달성', '확인필요'):rowPaid('은퇴일시금','목표 달성'))
+    +(isPaid?row('월 추가 저축 필요', (document.getElementById('f81_monthly')||{}).textContent||'—', '0원', '확인필요'):rowPaid('월 추가 저축 필요','0원'))
+    +'</table>';
 
-  // ⑤-D 노후준비
-  html += '<table style="'+tableStyle+'">';
-  html += areaHd('🏖️', '노후준비', sc.retirement, 20);
-  html += detRow('은퇴준비율', d.retirementRate!=null?d.retirementRate+'%':'—', '100%', J(sc.j_retirementRate));
-  html += isPaid ? detRow('노후연금저축', d.pensionSavings?d.pensionSavings+'만원':'—', '월수입 10% 이상', J(sc.j_pension2)) : lockedRow('노후연금저축');
-  html += isPaid ? detRow('은퇴일시금', d.retirementLumpsum?d.retirementLumpsum+'억원':'—', '목표 금액', J(sc.j_lumpsum)) : lockedRow('은퇴일시금');
-  html += isPaid ? detRow('월 추가 저축 필요', d.additionalSavings?d.additionalSavings+'만원':'—', '부족분', J(sc.j_addSavings)) : lockedRow('월 추가 저축 필요');
-  html += '</table>';
+  // [부채관리]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd;">'
+    +hdr('💳','부채관리',isPaid?sc.debt:'—',20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +(isPaid?row('신용대출', nd.creditLoan||'—', '없음', nd.creditLoan==='없음'||nd.creditLoan==='0'||!nd.creditLoan?'양호':'위험'):rowPaid('신용대출','없음'))
+    +(isPaid?row('담보대출', nd.mortgage||'—', '은퇴 전 완납', nd.mortgage?'확인필요':'양호'):rowPaid('담보대출','은퇴 전 완납'))
+    +(isPaid?row('대출원리금 비중', nd.loanPct?nd.loanPct+'%':'—', '10% 이하', nd.loanPct?(parseInt(nd.loanPct)<=10?'양호':parseInt(nd.loanPct)<=20?'주의':'위험'):'—'):rowPaid('대출원리금 비중','10% 이하'))
+    +(isPaid?row('부채비율', nd.debtRatio?nd.debtRatio+'%':'—', '20% 이하', nd.debtRatio?(parseInt(nd.debtRatio)<=20?'양호':parseInt(nd.debtRatio)<=40?'주의':'위험'):'—'):rowPaid('부채비율','20% 이하'))
+    +'</table>';
 
-  // ⑤-E 부채관리
-  html += '<table style="'+tableStyle+'">';
-  html += areaHd('💳', '부채관리', isPaid?sc.debt:null, 20);
-  ['신용대출','담보대출','대출원리금 비중','부채비율'].forEach(function(label){ html += lockedRow(label); });
-  html += '</table>';
+  html += '</div>';
 
-  // ⑥ 하단 안내
-  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">';
-  html += '<tr><td style="background:#F0F7FF;border:1px solid #b0cce0;padding:12px 14px;font-size:11px;line-height:1.9;">';
-  if(isPaid) {
-    html += '<strong>📋 본 검진결과는 AI 음성 상담을 기반으로 산출된 개인 맞춤형 결과입니다.</strong><br>상담 내용에 따라 수치는 달라질 수 있으며, 전문가 상담을 병행하시기 권장합니다.';
-  } else {
-    html += '<strong>📋 본 검진결과는 통계 기반 추정치입니다</strong><br>';
-    html += '"—" 표시 항목은 유료 AI 재무검진에서 정확한 수치와 맞춤형 솔루션을 받으실 수 있습니다.<br>';
-    html += '<a href="https://financial-house-building.vercel.app" style="display:inline-block;margin-top:7px;padding:8px 18px;background:#1a3a5c;color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;">🏥 유료 AI 재무검진 시작하기 →</a>';
+  // ━━━ 안내 문구 (무료용 CTA) ━━━
+  if(!isPaid) {
+    html += '<div style="background:#FFF8E1;border:1px solid #E8B84B;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:10px;color:#555;line-height:1.8;">'
+      +'<strong style="color:#C9972A;">📋 본 검진결과는 통계 기반 추정치입니다</strong><br>'
+      +'"—" 표시된 항목은 유료 AI 재무검진을 통해 정확한 수치와 맞춤형 솔루션을 제공받으실 수 있습니다.<br>'
+      +'<div style="text-align:center;margin-top:10px;">'
+      +'<button onclick="mpOpenSubscribe()" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border:none;padding:10px 24px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;">🏥 유료 AI 재무검진 시작하기 →</button>'
+      +'</div></div>';
   }
-  html += '</td></tr></table>';
 
-  // 서명
-  html += '<div style="text-align:center;font-size:10px;color:#888;padding:6px 0;border-top:1px solid #ddd;margin-bottom:10px;">';
-  html += '오원트금융연구소 · 오상열 CFP · 금융집짓기® · AI머니야<br>문의: 010-5424-5332 · ggorilla11@gmail.com';
-  html += '</div>';
-
-  // 버튼 (PDF 다운로드 + 공유 — 각 1개)
-  html += '<div style="display:flex;gap:8px;margin-bottom:8px;">';
-  html += '<button onclick="diagDownloadReport()" style="flex:1;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn);">⬇️ PDF 다운로드</button>';
-  html += '<button onclick="diagShareReport()" style="flex:1;padding:12px;border-radius:8px;background:#0B1D3A;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn);">📤 공유하기</button>';
-  html += '</div>';
+  // ━━━ 하단 서명 ━━━
+  html += '<div style="text-align:center;font-size:8px;color:#aaa;padding:8px 0;border-top:1px solid #eee;">'
+    +'오원트금융연구소 · 오상열 CFP · 금융집짓기® · AI머니야<br>'
+    +'문의: 010-5424-5332 · ggorilla11@gmail.com'
+    +'</div>';
 
   body.innerHTML = html;
   window._lastReportScore = sc;
-  window._lastReportHTML = html;
+  window._lastReportHTML  = html;
 }
 
-function getLivingBudget(f) {
-  var m = {1:40,2:45,3:48,4:50,5:52};
-  return m[parseInt(f)] || 50;
-}
-
-function getSavingsBudget(f) {
-  var m = {1:30,2:25,3:22,4:20,5:18};
-  return m[parseInt(f)] || 20;
-}
-
-function scoreCell(icon, label, score, max) {
-  var pct = Math.round(score / max * 100);
-  var color = pct >= 70 ? '#16A34A' : pct >= 50 ? '#F97316' : '#DC2626';
-  return '<div style="background:#f5f5f0;border-radius:8px;padding:6px 2px;text-align:center;">'
-    + '<div style="font-size:12px;">' + icon + '</div>'
-    + '<div style="font-size:7px;color:#8896B0;margin:1px 0;">' + label + '</div>'
-    + '<div style="font-size:13px;font-weight:900;color:' + color + ';">' + score + '</div>'
-    + '<div style="font-size:6px;color:#ccc;">/' + max + '</div></div>';
-}
-
-function reportRow(label, value, standard, grade) {
-  var gc = grade === '양호' ? '#16A34A' : grade === '주의' ? '#F97316' : grade === '위험' ? '#DC2626' : '#999';
-  var bg = grade === '양호' ? '#F0FDF4' : grade === '주의' ? '#FFF7ED' : grade === '위험' ? '#FEE2E2' : '#F9FAFB';
-  return '<tr style="border-bottom:1px solid #eee;">'
-    + '<td style="padding:5px;">' + label + '</td>'
-    + '<td style="padding:5px;text-align:center;font-weight:700;">' + value + '</td>'
-    + '<td style="padding:5px;text-align:center;color:#666;">' + standard + '</td>'
-    + '<td style="padding:5px;text-align:center;font-weight:700;color:' + gc + ';background:' + bg + ';">' + grade + '</td></tr>';
-}
-
-/* ━━━ 상담노트에서 데이터 수집 (개선) ━━━ */
+/* ━━━ 데이터 수집 (상담노트 전 필드) ━━━ */
 function collectNoteData() {
-  var data = {};
+  var d = {};
 
-  // 신 노트 ID 기반 수집
-  var ids = {name:'f1_name',age:'f1_age',job:'f1_job',marry:'f1_marry',family:'f1_family',
-    dual:'f1_dual',income:'f3_income',totalAsset:'f4_total_asset',
-    totalDebt:'f4_total_debt',netAsset:'f4_net',retirementRate:'f81_rate'};
-  Object.keys(ids).forEach(function(key) {
-    var el = document.getElementById(ids[key]);
-    if(el) {
-      var v = (el.value || el.textContent || '').trim();
-      if(v && v !== '—') data[key] = v.replace(/만원|억원|세|%|명/g,'').trim();
-    }
-  });
+  // [패널1] 인적사항
+  d.name       = (document.getElementById('f1_name')   ||{}).textContent||'';
+  d.age        = parseInt((document.getElementById('f1_age')    ||{}).textContent||'0')||0;
+  d.job        = (document.getElementById('f1_job')    ||{}).textContent||'';
+  d.familyCount= parseInt((document.getElementById('f1_family') ||{}).textContent||'0')||0;
+  d.marry      = (document.getElementById('f1_marry')  ||{}).textContent||'';
+  d.retireAge  = parseInt((document.getElementById('f1_retire') ||{}).textContent||'0')||0;
+  d.lifeExp    = parseInt((document.getElementById('f1_life')   ||{}).textContent||'0')||0;
 
-  // data-field 속성 기반
-  document.querySelectorAll('[data-field]').forEach(function(el) {
-    var key = el.getAttribute('data-field');
-    var val = (el.value || el.textContent || '').trim();
-    if(val) data[key] = val;
-  });
+  // [패널3] 수입지출
+  d.income       = parseFloat(((document.getElementById('f3_income')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.livingCur    = parseFloat(((document.getElementById('f3_living_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.saveCur      = parseFloat(((document.getElementById('f3_save_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.pensionCur   = parseFloat(((document.getElementById('f3_pension_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.insPremium   = parseFloat(((document.getElementById('f3_ins_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.loanPayment  = parseFloat(((document.getElementById('f3_loan_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
 
-  // 구 노트 ID 폴백
-  ['name','age'].forEach(function(key) {
-    if(data[key]) return;
-    var el = document.getElementById('dn_'+key);
-    if(el) { var v=(el.value||el.textContent||'').trim(); if(v) data[key]=v; }
-  });
-
-  // 시뮬레이터 D 객체에서 보완
-  if(typeof D !== 'undefined') {
-    if(!data.age && D.ageNum) data.age = String(D.ageNum);
-    if(!data.income && D.income) data.income = String(D.income);
-    if(!data.family && D.familyNum) data.family = String(D.familyNum);
-    if(!data.job && D.job) data.job = D.job;
-    if(D.income > 0) {
-      if(D.savings > 0) data.savingsRatio = Math.round(D.savings/D.income*100);
-      if(D.insPay > 0) data.insuranceRatio = Math.round(D.insPay/D.income*100);
-      if(D.loanPay > 0) data.loanRatio = Math.round(D.loanPay/D.income*100);
-      if(D.natPen > 0) data.pensionRatio = Math.round(D.natPen/D.income*100);
-      var living = Math.max(0, D.income-(D.savings||0)-(D.natPen||0)-(D.insPay||0)-(D.loanPay||0));
-      data.livingRatio = Math.round(living/D.income*100);
-    }
-    var ta = (D.safeAsset||0)+(D.riskAsset||0)+((D.reHome||0)+(D.reInv||0))*10000;
-    var td = (D.debtCredit||0)+(D.debtCollat||0);
-    if(ta > 0 && !data.totalAsset) data.totalAsset = String(ta);
-    if(td > 0 && !data.totalDebt) data.totalDebt = String(td);
-    if(ta > 0) {
-      data.netAsset = ((ta-td)/10000).toFixed(1);
-      if(td > 0) data.debtRatio = Math.round(td/ta*100);
-    }
-    if(D.retExp > 0 && (D.natPenAmt||0)+(D.perPen||0) > 0)
-      data.retirementRate = Math.round(((D.natPenAmt||0)+(D.perPen||0))/D.retExp*100);
+  if(d.income>0) {
+    d.livingPct  = Math.round(d.livingCur/d.income*100);
+    d.savePct    = Math.round(d.saveCur/d.income*100);
+    d.pensionPct = Math.round(d.pensionCur/d.income*100);
+    d.insPct     = Math.round(d.insPremium/d.income*100);
+    d.loanPct    = Math.round(d.loanPayment/d.income*100);
   }
-  return data;
+
+  // [패널4] 자산부채
+  d.totalAsset   = parseFloat(((document.getElementById('f4_total_asset')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.totalDebt    = parseFloat(((document.getElementById('f4_total_debt') ||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.netAsset     = parseFloat(((document.getElementById('f4_net')        ||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.creditLoan   = (document.getElementById('f4_credit')  ||{}).textContent||'';
+  d.mortgage     = (document.getElementById('f4_mortgage') ||{}).textContent||'';
+
+  if(d.totalAsset>0) {
+    d.debtRatio = Math.round(d.totalDebt/d.totalAsset*100);
+  }
+
+  // 비상예비자금 (월생활비 × 6)
+  var emergNeed = (document.getElementById('f4_emerg_need')||{}).textContent||'';
+  var emergDiag = (document.getElementById('f4_emerg_diag')||{}).textContent||'';
+  if(emergDiag && !emergDiag.includes('—')) {
+    d.emergency    = emergNeed;
+    d.hasEmergency = emergDiag.includes('충분') || emergDiag.includes('양호');
+  }
+
+  // [패널5] 금융집짓기 - DESIRE 단계
+  d.desireStep = (document.getElementById('f5_desire')||{}).textContent||'';
+
+  // [패널7-1] 은퇴설계
+  d.retireRate = (document.getElementById('f81_rate')||{}).textContent||'';
+
+  // [패널7-4] 투자설계 - 수익률
+  var retextRaw = (document.getElementById('f84_rebal')||{}).textContent||'';
+  d.returnRate = '';
+
+  // [패널7-7] 보험설계
+  d.insDeath  = (document.getElementById('ins_col_death') ||{}).classList.contains('ok')?'가입':'미가입';
+  d.insCancer = (document.getElementById('ins_col_cancer')||{}).classList.contains('ok')?'가입':'미가입';
+  d.insBrain  = (document.getElementById('ins_col_brain') ||{}).classList.contains('ok')?'가입':'미가입';
+  d.insActual = (document.getElementById('ins_col_actual')||{}).classList.contains('ok')?'가입':'미가입';
+  d.insHosp   = (document.getElementById('ins_col_hosp') ||{}).classList.contains('ok')?'가입':'미가입';
+
+  // 보험 OK 수 계산
+  var insOkCount = ['ins_col_death','ins_col_inj','ins_col_cancer','ins_col_brain','ins_col_heart','ins_col_actual','ins_col_hosp','ins_col_dem']
+    .filter(function(id){ var el=document.getElementById(id); return el&&el.classList.contains('ok'); }).length;
+  d.insOkCount = insOkCount;
+
+  // 연금저축
+  d.pensionSave = d.pensionCur > 0 ? Math.round(d.pensionCur) : 0;
+
+  return d;
 }
 
-/* ━━━ 재무건강점수 계산 — §13 공식 적용 ━━━ */
-function calcHealthScore(d) {
-  var age = parseInt(d.age) || 50;
-  var income = parseInt(d.income) || 500;
-  var totalAsset = parseInt(d.totalAsset) || 50000;
-  var totalDebt = parseInt(d.totalDebt) || 5000;
-  var netAsset = totalAsset - totalDebt;
-  var family = parseInt(d.family) || 4;
+/* ━━━ 재무건강점수 계산 (100점 공식) ━━━ */
+function calcHealthScore(nd) {
+  var income      = nd.income      || 700;
+  var age         = nd.age         || 50;
+  var totalAsset  = nd.totalAsset  || 35000;
+  var totalDebt   = nd.totalDebt   || 0;
+  var netAsset    = nd.netAsset    || (totalAsset - totalDebt);
+  var familyCount = nd.familyCount || 4;
 
-  var annIncome = income * 12;
-  var wealthIndex = (annIncome > 0 && age > 0) ? Math.round((netAsset * 10) / (age * annIncome) * 100) : 0;
-  var wealthGrade = wealthIndex >= 200 ? '궁전' : wealthIndex >= 100 ? '아파트' :
-    wealthIndex >= 50 ? '빌라' : wealthIndex >= 25 ? '오두막' : '텐트';
+  // ── 부자지수 ──
+  var wealthIndex = income>0 ? Math.round((netAsset*10)/(age*income*12)*100) : 0;
+  var wealthGrade = wealthIndex>=200?'궁전':wealthIndex>=100?'아파트':wealthIndex>=50?'빌라':wealthIndex>=25?'오두막':'텐트';
 
-  var livingBudget = getLivingBudget(family);
-  var savingsBudget = getSavingsBudget(family);
-  var lr = parseInt(d.livingRatio) || livingBudget;
-  var sr = parseInt(d.savingsRatio) || 0;
-  var pr = parseInt(d.pensionRatio) || 0;
-  var ir = parseInt(d.insuranceRatio) || 0;
-  var loan_r = parseInt(d.loanRatio) || 0;
-
-  // [지출관리 20점]
+  // ── 지출관리 20점 ──
   var exp = 0;
-  exp += lr <= livingBudget ? 4 : lr <= livingBudget*1.1 ? 3 : 2;
-  exp += sr >= savingsBudget ? 4 : sr >= savingsBudget*0.9 ? 3 : 2;
-  exp += pr >= 10 ? 4 : pr >= 9 ? 3 : 2;
-  exp += ir >= 8 ? 4 : ir >= 7 ? 3 : 2;
-  exp += loan_r <= 30 ? 4 : loan_r <= 31 ? 3 : 2;
+  // 생활비 기준: 가족수별 50% (4인 기준)
+  var livBudget = familyCount<=2?40:familyCount<=3?45:50;
+  if(nd.livingPct!==undefined) {
+    exp += nd.livingPct<=livBudget?4:nd.livingPct===livBudget?3:2;
+  } else { exp += 3; }
+  // 저축투자 기준: 20%
+  if(nd.savePct!==undefined) {
+    exp += nd.savePct>20?4:nd.savePct===20?3:2;
+  } else { exp += 3; }
+  // 노후연금 기준: 10%
+  if(nd.pensionPct!==undefined) {
+    exp += nd.pensionPct>10?4:nd.pensionPct===10?3:2;
+  } else { exp += 2; }
+  // 보장성보험 기준: 10%
+  if(nd.insPct!==undefined) {
+    exp += nd.insPct>10?4:nd.insPct===10?3:2;
+  } else { exp += 2; }
+  // 대출원리금 기준: 10%이하
+  if(nd.loanPct!==undefined) {
+    exp += nd.loanPct<=10?4:nd.loanPct<=15?3:2;
+  } else { exp += 2; }
+  exp = Math.min(20, exp);
 
-  // [자산형성 20점]
-  var debtRatio = parseInt(d.debtRatio) || (totalAsset>0?Math.round(totalDebt/totalAsset*100):0);
+  // ── 자산형성 20점 ──
   var ast = 0;
-  ast += wealthIndex > 200 ? 5 : wealthIndex >= 100 ? 4 : wealthIndex >= 50 ? 3 : 2;
-  ast += debtRatio === 0 ? 5 : debtRatio <= 20 ? 4 : debtRatio <= 40 ? 3 : 2;
-  ast += 3; ast += 3;
+  // 부자지수
+  ast += wealthIndex>200?5:wealthIndex>=100?4:wealthIndex>=50?3:2;
+  // 부채비율 (유료만 정확)
+  if(nd.debtRatio!==undefined) {
+    ast += nd.debtRatio===0?5:nd.debtRatio<=20?4:nd.debtRatio<=40?3:2;
+  } else { ast += 2; }
+  // 비상예비자금
+  if(nd.hasEmergency!==undefined) {
+    ast += nd.hasEmergency?5:3;
+  } else { ast += 2; }
+  // 가중평균수익률 (유료만)
+  if(nd.returnRate) {
+    var rr = parseFloat(nd.returnRate)||0;
+    ast += rr>5?5:rr>3?4:2;
+  } else { ast += 2; }
+  ast = Math.min(20, ast);
 
-  // [보험보장 20점] 기본값
-  var ins = 8;
+  // ── 보험보장 20점 ──
+  var ins = 0;
+  // 8대항목 충족수 (8점)
+  ins += Math.min(8, nd.insOkCount||0);
+  // 보장성보험료 (12점)
+  if(nd.insPct!==undefined) {
+    ins += nd.insPct>=10?12:nd.insPct>0?6:0;
+  } else { ins += 4; }
+  ins = Math.min(20, ins);
 
-  // [노후준비 20점]
-  var retRate = parseInt(d.retirementRate) || 0;
+  // ── 노후준비 20점 ──
   var ret = 0;
-  ret += retRate >= 100 ? 10 : retRate >= 50 ? 8 : retRate > 0 ? 6 : 0;
-  var ps = parseInt(d.pensionSavings) || (income>0?Math.round((pr/100)*income):0);
-  ret += (income>0 && ps>=income*0.1) ? 10 : ps>0 ? 5 : 0;
-  ret = Math.min(20, ret || 8);
+  // 은퇴준비율
+  var rateStr = (document.getElementById('f81_rate')||{}).textContent||nd.retireRate||'';
+  var rateNum = parseInt(rateStr)||0;
+  ret += rateNum>=100?10:rateNum>=50?8:rateNum>0?6:0;
+  // 노후연금저축
+  if(nd.pensionPct!==undefined) {
+    ret += nd.pensionPct>=10?10:nd.pensionPct>0?5:0;
+  } else { ret += 3; }
+  ret = Math.min(20, ret);
 
-  // [부채관리 20점]
+  // ── 부채관리 20점 ──
   var dbt = 0;
-  dbt += (!d.creditLoan || parseInt(d.creditLoan)===0) ? 5 : 0;
-  dbt += (!d.mortgageLoan || parseInt(d.mortgageLoan)===0) ? 5 : 0;
-  dbt += loan_r < 10 ? 5 : loan_r <= 10 ? 4 : 3;
-  dbt += debtRatio === 0 ? 5 : debtRatio < 20 ? 4 : debtRatio < 40 ? 3 : 2;
+  // 신용대출
+  var hasCreditLoan = nd.creditLoan && nd.creditLoan!=='없음' && nd.creditLoan!=='0' && nd.creditLoan!=='—' && nd.creditLoan!=='';
+  dbt += hasCreditLoan?0:5;
+  // 담보대출
+  var hasMortgage = nd.mortgage && nd.mortgage!=='없음' && nd.mortgage!=='0' && nd.mortgage!=='—' && nd.mortgage!=='';
+  dbt += hasMortgage?0:5;
+  // 대출원리금 비중
+  if(nd.loanPct!==undefined) {
+    dbt += nd.loanPct<10?5:nd.loanPct===10?4:3;
+  } else { dbt += 3; }
+  // 부채비율
+  if(nd.debtRatio!==undefined) {
+    dbt += nd.debtRatio===0?5:nd.debtRatio<20?4:nd.debtRatio<40?3:2;
+  } else { dbt += 2; }
+  dbt = Math.min(20, dbt);
 
-  var total = Math.min(100, Math.max(0, exp + ast + ins + ret + dbt));
-  var grade = total >= 80 ? '우수' : total >= 60 ? '주의' : total >= 40 ? '위험' : '매우위험';
-
-  var strengths = [], improvements = [];
-  if(exp >= 16) strengths.push('지출관리가 양호합니다'); else improvements.push('지출관리 개선이 필요합니다');
-  if(ast >= 14) strengths.push('자산형성이 잘 되고 있습니다'); else improvements.push('자산형성 속도를 높여야 합니다');
-  if(ins >= 12) strengths.push('보험 보장이 충분합니다'); else improvements.push('보험 보장 점검이 필요합니다');
-  if(ret >= 14) strengths.push('노후준비가 진행 중입니다'); else improvements.push('노후준비를 서둘러야 합니다');
-  if(dbt >= 16) strengths.push('부채관리가 양호합니다'); else improvements.push('부채 상환 계획이 필요합니다');
+  var total = exp + ast + ins + ret + dbt;
+  total = Math.min(100, Math.max(0, total));
 
   return {
-    total:total, grade:grade,
+    total:total, grade:total>=80?'양호':total>=60?'보통':total>=40?'주의':'위험',
     expense:exp, asset:ast, insurance:ins, retirement:ret, debt:dbt,
-    wealthIndex:wealthIndex, wealthGrade:wealthGrade,
-    strengths:strengths.slice(0,3), improvements:improvements.slice(0,3),
-    j_living: lr<=livingBudget?'정상':'주의',
-    j_savings: sr>=savingsBudget?'정상':'주의',
-    j_wealthIndex: wealthIndex>=100?'양호':wealthIndex>=50?'주의':'위험',
-    j_retirementRate: retRate>=100?'양호':retRate>=50?'주의':'위험',
-    j_debtRatio: debtRatio<=20?'양호':debtRatio<=40?'주의':'위험'
+    wealthIndex:wealthIndex, wealthGrade:wealthGrade
   };
 }
-/* ━━━ 리포트 PDF 다운로드 ━━━ */
-function diagDownloadReport() {
-  var reportBody = document.getElementById('diagReportBody');
-  if(!reportBody || !reportBody.innerHTML.trim()) {
-    showToast('📄 리포트가 없습니다. 상담 종료 후 이용해 주세요.');
-    return;
-  }
-  var name = document.getElementById('f1_name') ? (document.getElementById('f1_name').textContent||'고객').trim() : '고객';
+
+/* ━━━ PDF 다운로드 ━━━ */
+function downloadReportPDF() {
+  var body = document.getElementById('diagReportBody');
+  if(!body || !body.innerHTML.trim()) { showToast('⚠️ 리포트가 없습니다. 상담을 먼저 완료해주세요.'); return; }
+  var nd = collectNoteData();
+  var sc = window._lastReportScore || calcHealthScore(nd);
   var today = new Date();
-  var dateStr = today.getFullYear() + String(today.getMonth()+1).padStart(2,'0') + String(today.getDate()).padStart(2,'0');
-  var printWin = window.open('', '_blank');
-  if(!printWin) {
-    showToast('⚠️ 팝업 차단을 해제하고 다시 시도해 주세요.');
-    return;
-  }
+  var dateStr = today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일';
+  var printWin = window.open('','_blank','width=600,height=900');
   printWin.document.write(
     '<!DOCTYPE html><html lang="ko"><head>'
-    + '<meta charset="UTF-8">'
-    + '<title>AI 재무검진결과 - ' + name + ' - ' + dateStr + '</title>'
-    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<style>'
-    + 'body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;'
-    + 'max-width:600px;margin:0 auto;padding:20px 16px;color:#1a1a1a;font-size:12px;}'
-    + 'table{width:100%;border-collapse:collapse;}'
-    + 'td,th{padding:6px 8px;}'
-    + '@media print{'
-    + 'body{margin:0;padding:10px;}'
-    + 'button{display:none!important;}'
-    + '@page{margin:10mm;size:A4;}'
-    + '}'
-    + '</style>'
-    + '</head><body>'
-    + reportBody.innerHTML
-    + '<div style="text-align:center;margin-top:20px;">'
-    + '<button onclick="window.print()" '
-    + 'style="padding:12px 32px;background:#C9972A;color:#0B1D3A;border:none;'
-    + 'border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ 인쇄 / PDF 저장</button>'
-    + '</div>'
-    + '</body></html>'
+    +'<meta charset="UTF-8">'
+    +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>AI 재무검진결과표 — '+(nd.name||'고객')+'님 · '+dateStr+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;}'
+    +'body{font-family:"Noto Sans KR",Arial,sans-serif;max-width:540px;margin:0 auto;padding:16px;background:#fff;color:#222;}'
+    +'table{width:100%;border-collapse:collapse;}'
+    +'td,th{border:1px solid #ddd;padding:5px 7px;font-size:9.5px;}'
+    +'@media print{'
+    +'  body{padding:0;}'
+    +'  button{display:none!important;}'
+    +'  .no-print{display:none!important;}'
+    +'  @page{margin:10mm;size:A4;}'
+    +'}'
+    +'</style>'
+    +'</head><body>'
+    +body.innerHTML
+    +'<div class="no-print" style="text-align:center;margin-top:20px;">'
+    +'<button onclick="window.print()" style="background:#0B1D3A;color:#E8B84B;border:none;padding:12px 32px;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;margin-right:8px;">🖨️ 인쇄 / PDF 저장</button>'
+    +'<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:12px 20px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 닫기</button>'
+    +'</div>'
+    +'</body></html>'
   );
   printWin.document.close();
-  showToast('📄 PDF 저장 창이 열렸습니다. "인쇄 / PDF 저장" 버튼을 누르세요.');
+  setTimeout(function(){ printWin.focus(); }, 300);
 }
 
-/* ━━━ 리포트 공유하기 ━━━ */
-function diagShareReport() {
+/* ━━━ 공유하기 ━━━ */
+function shareReport() {
   var sc = window._lastReportScore;
-  var name = document.getElementById('f1_name') ? (document.getElementById('f1_name').textContent||'').trim() : '';
-  var title = 'AI 재무검진결과 - 금융집짓기®';
-  var text = (name ? name + '님의 ' : '') + '재무건강점수: '
-    + (sc ? sc.total + '점 (' + sc.grade + ') · 부자지수 ' + sc.wealthIndex + '%' : '측정 완료')
-    + '\n\n유료 AI 재무검진 시작하기:\nhttps://financial-house-building.vercel.app';
-  var url = 'https://financial-house-building.vercel.app';
+  if(!sc) {
+    showToast('⚠️ 리포트가 없습니다. 상담을 먼저 완료해주세요.');
+    return;
+  }
+  var nd = collectNoteData();
+  var nameStr = nd.name ? nd.name+'님의 ' : '';
+  var scoreStr = sc.total+'점 ('+sc.grade+')';
+  var wStr = sc.wealthIndex+'% '+sc.wealthGrade+' 등급';
+  var shareText = '📊 '+nameStr+'AI 재무검진결과\n'
+    +'✅ 종합 재무건강점수: '+scoreStr+'\n'
+    +'🏠 부자지수: '+wStr+'\n\n'
+    +'💰 지출관리 '+sc.expense+'/20  📈 자산형성 '+sc.asset+'/20\n'
+    +'🏖️ 노후준비 '+sc.retirement+'/20\n\n'
+    +'▶ 유료 AI 재무검진 시작하기\nhttps://financial-house-building.vercel.app';
 
   if(navigator.share) {
-    navigator.share({ title: title, text: text, url: url })
-      .then(function(){ showToast('✅ 공유 완료!'); })
-      .catch(function(e){ if(e.name !== 'AbortError') diagCopyReportLink(url, text); });
+    navigator.share({
+      title: 'AI 재무검진결과표 — 금융집짓기®',
+      text: shareText,
+      url: 'https://financial-house-building.vercel.app'
+    }).catch(function(e){ if(e.name!=='AbortError') showToast('공유 중 오류가 발생했습니다.'); });
   } else {
-    diagCopyReportLink(url, text);
+    // PC: 클립보드 복사 + 토스트
+    if(navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareText).then(function(){
+        showToast('📋 결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요 😊');
+      }).catch(function(){
+        _shareFallback(shareText);
+      });
+    } else {
+      _shareFallback(shareText);
+    }
   }
 }
 
-function diagCopyReportLink(url, text) {
-  var full = (text || '') + '\n' + (url || 'https://financial-house-building.vercel.app');
-  if(navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(full)
-      .then(function(){ showToast('📋 링크가 복사됐습니다! 카톡에 붙여넣기 하세요.'); })
-      .catch(function(){ diagFallbackCopy(full); });
-  } else {
-    diagFallbackCopy(full);
-  }
+function _shareFallback(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); showToast('📋 결과가 복사되었습니다! 카톡·문자에 붙여넣기 하세요 😊'); }
+  catch(e) { showToast('공유 링크: https://financial-house-building.vercel.app'); }
+  document.body.removeChild(ta);
 }
 
-function diagFallbackCopy(text) {
-  var el = document.createElement('textarea');
-  el.value = text;
-  el.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
-  document.body.appendChild(el);
-  el.select();
-  try {
-    document.execCommand('copy');
-    showToast('📋 링크가 복사됐습니다! 카톡에 붙여넣기 하세요.');
-  } catch(e) {
-    showToast('공유 링크: https://financial-house-building.vercel.app');
-  }
-  document.body.removeChild(el);
-}
 
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
