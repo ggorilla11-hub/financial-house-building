@@ -10537,21 +10537,29 @@ function diagEndConsult() {
   }
   showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
 
-  /* ★ 종료 안내 배너 — 채팅 로그 상단에 표시 */
+  /* ★ 종료 안내 배너 — 리포트 탭 상단에 삽입 */
   var usedMinDisplay = Math.floor(diagSec / 60);
   var remainingCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
+  var endBannerHTML = '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:2px solid #C9972A;border-radius:14px;padding:18px;margin:0 0 12px;text-align:center;">'
+    + '<div style="font-size:24px;margin-bottom:6px;">✅</div>'
+    + '<div style="font-size:15px;font-weight:900;color:#E8B84B;margin-bottom:8px;">상담이 종료되었습니다</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;">'
+    + '📊 진행 시간: <strong>' + usedMinDisplay + '분</strong><br>'
+    + '🎙️ 남은 크레딧: <strong>' + remainingCredit + '분</strong><br>'
+    + '📋 회차: ' + DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST ? '초회진단' : '정기상담') + '</div></div>';
+
+  // 리포트 탭 상단에 삽입
+  var reportReady = document.getElementById('diagReportReady');
+  if(reportReady) {
+    reportReady.insertAdjacentHTML('afterbegin', endBannerHTML);
+  }
+
+  // 채팅 로그에도 표시
   var chatLog = document.getElementById('dn_chat_log');
   if(chatLog) {
-    var endBanner = document.createElement('div');
-    endBanner.style.cssText = 'background:linear-gradient(135deg,#0B1D3A,#1a3260);border:2px solid #C9972A;border-radius:14px;padding:18px;margin:12px 0;text-align:center;';
-    endBanner.innerHTML = '<div style="font-size:24px;margin-bottom:6px;">✅</div>'
-      + '<div style="font-size:15px;font-weight:900;color:#E8B84B;margin-bottom:8px;">상담이 종료되었습니다</div>'
-      + '<div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;">'
-      + '📊 진행 시간: <strong>' + usedMinDisplay + '분</strong><br>'
-      + '🎙️ 남은 크레딧: <strong>' + remainingCredit + '분</strong><br>'
-      + '📋 회차: ' + DIAG_SESSION_NUM + '회차 '+ (DIAG_IS_FIRST ? '초회진단' : '정기상담') + '</div>'
-      + '<div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.4);">리포트 탭에서 종합재무설계 리포트를 확인하세요</div>';
-    chatLog.appendChild(endBanner);
+    var endDiv = document.createElement('div');
+    endDiv.innerHTML = endBannerHTML;
+    chatLog.appendChild(endDiv);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 }
