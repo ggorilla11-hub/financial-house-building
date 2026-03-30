@@ -97,7 +97,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 /* ── DESIGN SYSTEM UPDATE: 배경·폰트 통일 ── */
 html,body{width:100%;height:100%;overflow:hidden;-webkit-text-size-adjust:100%;background:var(--cream);font-family:var(--fn);color:#1a1a1a;}
-.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;}
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;position:relative;z-index:1;}
 /* 시뮬 sticky 영역 */
 .sim-sticky{flex-shrink:0;background:var(--navy);border-top:2px solid var(--gold);}
 
@@ -6767,6 +6767,7 @@ function mvpStartCheckup() {
   var simWrap = document.getElementById('sim-wrap');
   if(simWrap) simWrap.style.display = 'none';
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  fhEnableApp();
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
@@ -7477,6 +7478,7 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  fhEnableApp();
 }
 
 // ── 큐브 초기화 ──
@@ -7512,6 +7514,17 @@ function fnRotateCube(face) {
 }
 
 // ── 퍼널 시작 ──
+function fhDisableAppForFunnel() {
+  /* funnel 활성 상태: app div가 터치 가로채지 않도록 */
+  var app = document.querySelector('.app');
+  if(app) app.style.pointerEvents = 'none';
+}
+function fhEnableApp() {
+  /* funnel 종료 후: app 터치 복원 */
+  var app = document.querySelector('.app');
+  if(app) app.style.pointerEvents = '';
+}
+
 function fnStartCube() {
   fnStep = 0;
   fnAnswers = [];
@@ -9225,6 +9238,11 @@ let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diag
 
 /* ── DOMContentLoaded 초기화 ── */
 document.addEventListener('DOMContentLoaded', function() {
+  /* funnel 활성 상태면 app div 터치 비활성 */
+  var funnelWrap = document.getElementById('funnel-wrap');
+  if(funnelWrap && !funnelWrap.classList.contains('fn-hidden')) {
+    fhDisableAppForFunnel();
+  }
   const bi = document.getElementById('diagBannerImg');
   const ai = document.getElementById('diagAiImg');
   if (bi) bi.src = DIAG_IMG;
