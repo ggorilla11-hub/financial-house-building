@@ -1902,7 +1902,7 @@ body { color: #1a1a1a; }
 
 /* ── 퍼널 z-index 강제 ── */
 #funnel-wrap { position: fixed !important; inset: 0; z-index: 998 !important; max-width: 430px; margin: 0 auto; }
-.fn-screen { z-index: 999 !important; }
+.fn-screen { z-index: 99999 !important; }
 .app { position: relative; z-index: 1; }
 #funnel-wrap.fn-hidden { display: none !important; pointer-events: none !important; }
 
@@ -2456,7 +2456,7 @@ html{visibility:visible !important;}
 <!-- ═══════════════════════════════════════
      S0: 랜딩
 ═══════════════════════════════════════ -->
-<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
+<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:99999;">
 
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
@@ -6767,7 +6767,6 @@ function mvpStartCheckup() {
   var simWrap = document.getElementById('sim-wrap');
   if(simWrap) simWrap.style.display = 'none';
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  fhEnableApp();
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
@@ -7478,7 +7477,6 @@ function fnGoTo(id) {
 
 function fnSkipToSim() {
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  fhEnableApp();
 }
 
 // ── 큐브 초기화 ──
@@ -7514,17 +7512,6 @@ function fnRotateCube(face) {
 }
 
 // ── 퍼널 시작 ──
-function fhDisableAppForFunnel() {
-  /* funnel 활성 상태: app div가 터치 가로채지 않도록 */
-  var app = document.querySelector('.app');
-  if(app) app.style.pointerEvents = 'none';
-}
-function fhEnableApp() {
-  /* funnel 종료 후: app 터치 복원 */
-  var app = document.querySelector('.app');
-  if(app) app.style.pointerEvents = '';
-}
-
 function fnStartCube() {
   fnStep = 0;
   fnAnswers = [];
@@ -9238,11 +9225,6 @@ let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diag
 
 /* ── DOMContentLoaded 초기화 ── */
 document.addEventListener('DOMContentLoaded', function() {
-  /* funnel 활성 상태면 app div 터치 비활성 */
-  var funnelWrap = document.getElementById('funnel-wrap');
-  if(funnelWrap && !funnelWrap.classList.contains('fn-hidden')) {
-    fhDisableAppForFunnel();
-  }
   const bi = document.getElementById('diagBannerImg');
   const ai = document.getElementById('diagAiImg');
   if (bi) bi.src = DIAG_IMG;
@@ -11228,6 +11210,31 @@ diagAddSTT = function(role, text, tag) {
   if(role === 'ai') diagLastQuestion = text;
 };
 
+
+/* ── fn-s0 버튼 터치 직접 처리 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  var startBtn = document.querySelector('#fn-s0 button');
+  var allBtns  = document.querySelectorAll('#fn-s0 button');
+  var skipBtn  = allBtns.length > 1 ? allBtns[1] : null;
+
+  function bindTouch(el, fn) {
+    if(!el) return;
+    var t = false;
+    el.addEventListener('touchstart', function(){ t = true; }, {passive: true});
+    el.addEventListener('touchend', function(e){
+      if(!t) return; t = false;
+      e.preventDefault(); e.stopPropagation();
+      fn();
+    }, {passive: false});
+    // PC 클릭 보조
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+    });
+  }
+
+  bindTouch(startBtn, function(){ fnStartCube(); });
+  bindTouch(skipBtn,  function(){ fnSkipToSim(); });
+});
 </script>
 
 
