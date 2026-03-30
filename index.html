@@ -5637,15 +5637,15 @@ function confirmPay(plan){
     // 상품별 금액/이름/주문ID 설정
     var payAmount, planName, order_id;
     if(isSingle) {
-      payAmount = 19000;
+      payAmount = 19900;
       planName = '단일상담 1회';
       order_id = 'FH_SINGLE_' + Date.now();
     } else if(isYearly) {
-      payAmount = 99000;
+      payAmount = 199000;
       planName = '연회비 구독';
       order_id = 'FH_YEAR_' + Date.now();
     } else {
-      payAmount = 9900;
+      payAmount = 19900;
       planName = '월정기 구독';
       order_id = 'FH_MONTH_' + Date.now();
     }
@@ -6396,16 +6396,16 @@ function mpSelectPlan(p) {
 
   const cta = document.getElementById('mp-sub-cta');
   if(cta) {
-    if(p==='single') cta.textContent = '지금 ₩19,000 단일상담 결제하기 →';
-    else if(p==='year') cta.textContent = '지금 ₩99,000/년 구독 시작하기 →';
-    else cta.textContent = '지금 ₩9,900/월 구독 시작하기 →';
+    if(p==='single') cta.textContent = '지금 ₩19,900 단일상담 결제하기 →';
+    else if(p==='year') cta.textContent = '지금 ₩199,000/년 구독 시작하기 →';
+    else cta.textContent = '지금 ₩19,900/월 구독 시작하기 →';
   }
 
   // 안내 문구: 월간만 표시 (정기결제), 나머지는 숨김
   const notice = document.getElementById('mp-cert-notice');
   const amountEl = document.getElementById('mp-cert-amount');
   if(notice) notice.style.display = p==='month' ? 'flex' : 'none';
-  if(amountEl) amountEl.textContent = '₩9,900';
+  if(amountEl) amountEl.textContent = '₩19,900';
 }
 function mpCompletePurchase() {
   // MVP: mvpCompletePurchase로 대체됨 (간단 입력폼 방식)
@@ -6735,7 +6735,7 @@ function mvpSaveToSheet(name, phone, email) {
       name:  name,
       email: email,
       phone: phone,
-      plan:  mpSelectedPlan === 'single' ? 'single-19000' : (mpSelectedPlan === 'year' ? 'annual-99000' : 'monthly-9900'),
+      plan:  mpSelectedPlan === 'single' ? 'single-19900' : (mpSelectedPlan === 'year' ? 'annual-199000' : 'monthly-19900'),
       source: 'main-payment-form',
       timestamp: new Date().toISOString()
     })
@@ -6749,7 +6749,7 @@ function mvpSaveToSheet(name, phone, email) {
 // ★ make.com 웹훅 → 땡큐 카톡 + 땡큐 이메일 자동발송
 function mvpSendMakeWebhook(name, phone, email) {
   var planName = mpSelectedPlan === 'single' ? '단일상담 1회' : (mpSelectedPlan === 'year' ? '연회비 구독' : '월정기 구독');
-  var planAmount = mpSelectedPlan === 'single' ? 19000 : (mpSelectedPlan === 'year' ? 99000 : 9900);
+  var planAmount = mpSelectedPlan === 'single' ? 19900 : (mpSelectedPlan === 'year' ? 199000 : 19900);
 
   // make.com 웹훅 URL (상열님의 make.com 시나리오에서 발급받은 URL로 교체 필요)
   var MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9';
@@ -7866,8 +7866,8 @@ function mpInitHistory() { mpRefreshHistory(); }
 
 // 가격 정책
 const FH_PRICE_TIERS = [
-  { limit: 1000,  monthly: 9900,   annual: 99000,   name: '실버', annualUrl: 'https://link.payple.kr/NzcxOjc3MzkxNjA3NzQwMzI5' },
-  { limit: 10000, monthly: 19000,  annual: 190000,  name: '실버', annualUrl: '' },
+  { limit: 1000,  monthly: 19900,   annual: 199000,   name: '실버', annualUrl: 'https://link.payple.kr/NzcxOjc3MzkxNjA3NzQwMzI5' },
+  { limit: 10000, monthly: 29000,  annual: 290000,  name: '실버', annualUrl: '' },
   { limit: Infinity, monthly: 29000, annual: 290000, name: '실버', annualUrl: '' },
 ];
 
@@ -7917,7 +7917,7 @@ function checkMilestone(newCount) {
     showMilestoneModal('🎊 1만명 돌파!', '₩29,000으로 가격이 변경됩니다');
   } else if(newCount >= 1000 && prev < 1000) {
     launchFireworks('mega'); // 1천명 대형 폭죽
-    showMilestoneModal('🎉 1,000명 돌파!', '지금부터 ₩19,000으로 가격이 변경됩니다');
+    showMilestoneModal('🎉 1,000명 돌파!', '지금부터 ₩29,000으로 가격이 변경됩니다');
   } else if(newHundred > prevHundred) {
     launchFireworks('mini'); // 100명 단위 미니 폭죽
   }
@@ -10610,14 +10610,14 @@ diagAddSTT = function(role, text, tag) {
     <div class="pay-plans">
       <div class="pay-plan selected" id="plan-month" onclick="selectPlan('month')">
         <div class="pay-plan-type">월간 구독</div>
-        <div class="pay-plan-price">₩9,900</div>
+        <div class="pay-plan-price">₩19,900</div>
         <div class="pay-plan-unit">/ 월</div>
         <div class="pay-plan-save">커피 두 잔 값</div>
       </div>
       <div class="pay-plan" id="plan-year" onclick="selectPlan('year')">
         <div class="pay-plan-badge">2개월 무료</div>
         <div class="pay-plan-type">연간 구독</div>
-        <div class="pay-plan-price">₩99,000</div>
+        <div class="pay-plan-price">₩199,000</div>
         <div class="pay-plan-unit">/ 년 (₩8,250/월)</div>
         <div class="pay-plan-save">₩19,800 절약</div>
       </div>
@@ -10632,7 +10632,7 @@ diagAddSTT = function(role, text, tag) {
 
     
     <button class="pay-confirm-btn" id="pay-confirm-btn" onclick="confirmPay()">
-      지금 ₩9,900/월 구독 시작하기 →
+      지금 ₩19,900/월 구독 시작하기 →
     </button>
     <div class="pay-secure">🔒 토스페이먼츠 보안결제 · SSL 암호화 · 개인정보 안전</div>
     <button class="pay-cancel" onclick="closePayModal()">취소</button>
@@ -10748,18 +10748,18 @@ diagAddSTT = function(role, text, tag) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
       <div>
         <div style="font-size:8px;color:rgba(11,29,58,.5);margin-bottom:1px">🔥 얼리버드 특가 · 지금 가입하면 평생 고정!</div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy)"><span id="fh-current-price">₩9,900</span><span style="font-size:9px;color:var(--muted)">/월</span></div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy)"><span id="fh-current-price">₩19,900</span><span style="font-size:9px;color:var(--muted)">/월</span></div>
       </div>
       <div style="text-align:right">
         <div style="font-size:8px;color:rgba(11,29,58,.5)">현재 가입자</div>
         <div style="font-size:18px;font-weight:900;color:var(--navy)"><span id="fh-subscriber-count">247</span>명</div>
-        <div style="font-size:8px;color:var(--gold);font-weight:700"><span id="fh-remaining-slots">753명</span> 후 ₩19,000</div>
+        <div style="font-size:8px;color:var(--gold);font-weight:700"><span id="fh-remaining-slots">753명</span> 후 ₩29,000</div>
       </div>
     </div>
     <div style="background:rgba(11,29,58,.1);border-radius:4px;height:4px;overflow:hidden">
       <div id="fh-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;width:24.7%;transition:width .8s ease"></div>
     </div>
-    <div style="text-align:center;font-size:7px;color:rgba(11,29,58,.4);margin-top:3px">1,000명 초과 시 ₩19,000 · 10,000명 초과 시 ₩29,000으로 자동 변경</div>
+    <div style="text-align:center;font-size:7px;color:rgba(11,29,58,.4);margin-top:3px">1,000명 초과 시 ₩29,000 · 10,000명 초과 시 ₩39,000으로 자동 변경</div>
   </div>
 
   <div class="mp-sub-title">🏥 AI 재무검진 구독하기</div>
@@ -10773,7 +10773,7 @@ diagAddSTT = function(role, text, tag) {
         <div style="font-size:9px;color:var(--muted);margin-top:2px;">1회 AI 음성 재무검진 50분</div>
       </div>
       <div style="text-align:right;">
-        <div class="mp-plan-price" style="font-size:18px;">₩19,000</div>
+        <div class="mp-plan-price" style="font-size:18px;">₩19,900</div>
         <div class="mp-plan-unit" style="font-size:9px;">1회</div>
       </div>
     </div>
@@ -10786,7 +10786,7 @@ diagAddSTT = function(role, text, tag) {
         <div style="font-size:9px;color:var(--muted);margin-top:2px;">매월 AI 음성 50분 + 텍스트 무제한</div>
       </div>
       <div style="text-align:right;">
-        <div class="mp-plan-price" style="font-size:18px;">₩9,900</div>
+        <div class="mp-plan-price" style="font-size:18px;">₩19,900</div>
         <div class="mp-plan-unit" style="font-size:9px;">/ 월</div>
         <div class="mp-plan-save" style="font-size:8px;">언제든 해지 가능</div>
       </div>
@@ -10800,7 +10800,7 @@ diagAddSTT = function(role, text, tag) {
         <div style="font-size:9px;color:var(--muted);margin-top:2px;">12개월 음성 50분/월 + 텍스트 무제한</div>
       </div>
       <div style="text-align:right;">
-        <div class="mp-plan-price" id="mp-year-price" style="font-size:18px;">₩99,000</div>
+        <div class="mp-plan-price" id="mp-year-price" style="font-size:18px;">₩199,000</div>
         <div class="mp-plan-unit" id="mp-year-unit" style="font-size:9px;">/ 년 (₩8,250/월)</div>
         <div class="mp-plan-save" style="font-size:8px;">₩19,800 절약</div>
       </div>
@@ -10912,7 +10912,7 @@ diagAddSTT = function(role, text, tag) {
 
   </div>
   <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
-    지금 ₩9,900/월 구독 시작하기 →
+    지금 ₩19,900/월 구독 시작하기 →
   </button>
 
 </div><!-- /mp-sub-modal -->
@@ -11819,7 +11819,7 @@ diagAddSTT = function(role, text, tag) {
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
               <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월50분 · 텍스트무제한</div></div>
-              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩9,900</span>
+              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩19,900</span>
             </div>
             <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center" onclick="showToast('준비 중입니다')">
               <div><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5)">🥇 골드 (준비중)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 무제한</div></div>
