@@ -6431,6 +6431,9 @@ function freeScoreSubmit() {
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
 
+  // ★ 재무건강점수 계산 (통계 중간값 기반)
+  var scoreData = calcFreeHealthScore(fnAnswers);
+
   // ★ 구글시트 DB 저장
   fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
@@ -6444,12 +6447,13 @@ function freeScoreSubmit() {
       result_title: resultTitle,
       result_sub: resultSub,
       result_d: resultD,
+      health_score: scoreData.totalScore,
       timestamp: new Date().toISOString()
     })
   }).then(function(r) { console.log('[무료점수] 구글시트 저장:', r.status); })
     .catch(function(e) { console.log('[무료점수] 구글시트 오류:', e); });
 
-  // ★ make.com 웹훅 → 카톡 + 이메일 발송
+  // ★ make.com 웹훅 → 카톡 + 이메일 발송 (재무검진결과표 포함)
   fetch('https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -6462,6 +6466,21 @@ function freeScoreSubmit() {
       result_title: resultTitle,
       result_sub: resultSub,
       result_d: resultD,
+      // ★ 재무검진결과표 데이터
+      health_score: scoreData.totalScore,
+      score_grade: scoreData.grade,
+      score_expense: scoreData.expense,
+      score_asset: scoreData.asset,
+      score_insurance: scoreData.insurance,
+      score_retirement: scoreData.retirement,
+      score_debt: scoreData.debt,
+      wealth_index: scoreData.wealthIndex,
+      wealth_grade: scoreData.wealthGrade,
+      age_label: scoreData.ageLabel,
+      income_label: scoreData.incomeLabel,
+      estimated_age: scoreData.estimatedAge,
+      estimated_income: scoreData.estimatedIncome,
+      estimated_asset: scoreData.estimatedAsset,
       checkup_url: 'https://financial-house-building.vercel.app',
       timestamp: new Date().toISOString()
     })
@@ -6470,7 +6489,120 @@ function freeScoreSubmit() {
 
   // 모달 닫기 + 감사 메시지
   freeScoreModalClose();
-  showToast('✅ 신청 완료! 이메일과 카톡으로 결과를 보내드립니다.');
+  showToast('✅ 신청 완료! 이메일과 카톡으로 재무검진결과표를 보내드립니다.');
+}
+
+/* ━━━ 무료 재무건강점수 계산 (통계 중간값 기반) ━━━ */
+function calcFreeHealthScore(answers) {
+  if(!answers || answers.length < 6) {
+    return { totalScore: 0, grade: '측정불가', expense: 0, asset: 0, insurance: 0, retirement: 0, debt: 0,
+      wealthIndex: 0, wealthGrade: '—', ageLabel: '—', incomeLabel: '—',
+      estimatedAge: 0, estimatedIncome: 0, estimatedAsset: 0 };
+  }
+
+  var age = answers[0];    // young/mid/senior
+  var job = answers[1];    // worker/business/retired
+  var child = answers[2];  // none/one/multi
+  var income = answers[3]; // low/mid/high
+  var asset = answers[4];  // low/mid/high
+  var house = answers[5];  // none/one/multi
+
+  // 중간값 매핑
+  var ageMap = { young: 30, mid: 50, senior: 65 };
+  var incomeMap = { low: 350, mid: 700, high: 1400 }; // 만원
+  var assetMap = { low: 35000, mid: 75000, high: 140000 }; // 만원 (3.5억, 7.5억, 14억)
+  var familyMap = { none: 1, one: 3, multi: 4 };
+  var ageLabelMap = { young: '20~30대', mid: '40~50대', senior: '60~70대' };
+  var incomeLabelMap = { low: '500만원 이하', mid: '500~1,000만원', high: '1,000만원 초과' };
+
+  var estAge = ageMap[age] || 50;
+  var estIncome = incomeMap[income] || 700;
+  var estAsset = assetMap[asset] || 75000;
+  var familySize = familyMap[child] || 3;
+
+  // ── [지출관리 20점] 가족수 기준 예산표 대비 ──
+  var budgetPct = { 1: { living: 20, save: 50 }, 2: { living: 30, save: 40 },
+    3: { living: 40, save: 30 }, 4: { living: 50, save: 20 }, 5: { living: 60, save: 10 } };
+  var budget = budgetPct[Math.min(familySize, 5)] || budgetPct[4];
+  // 통계 기반 추정: 평균적으로 생활비 기준치 수준, 저축 기준치 미만으로 가정
+  var expenseScore = 0;
+  expenseScore += 3; // 생활비: 기준 동일 가정 (3점)
+  expenseScore += (income === 'high') ? 4 : (income === 'mid') ? 3 : 2; // 저축투자
+  expenseScore += (age === 'senior') ? 3 : 2; // 노후연금
+  expenseScore += 2; // 보장성보험 (모름 → 기본 2점)
+  expenseScore += (house === 'none') ? 4 : 3; // 대출원리금
+
+  // ── [자산형성 20점] ──
+  var annualIncome = estIncome * 12;
+  var wealthIndex = Math.round((estAsset * 10) / (estAge * annualIncome) * 100);
+  var wealthGrade = wealthIndex >= 200 ? '궁전' : wealthIndex >= 100 ? '아파트' :
+    wealthIndex >= 50 ? '빌라' : wealthIndex >= 25 ? '오두막' : '텐트';
+
+  var assetScore = 0;
+  assetScore += (wealthIndex >= 200) ? 5 : (wealthIndex >= 100) ? 4 : (wealthIndex >= 50) ? 3 : 2; // 부자지수
+  assetScore += (house === 'none') ? 4 : 3; // 부채비율 (무주택=부채 적음 추정)
+  assetScore += 3; // 비상예비자금 (모름 → 중간)
+  assetScore += (income === 'high') ? 4 : (income === 'mid') ? 3 : 2; // 가중평균수익률
+
+  // ── [보험보장 20점] 통계 기반 추정 ──
+  var insuranceScore = 0;
+  insuranceScore += (age === 'mid' || age === 'senior') ? 4 : 2; // 8대항목 (중년 이상 가입률 높음)
+  insuranceScore += (income === 'high') ? 8 : (income === 'mid') ? 6 : 4; // 보장성보험료
+
+  // ── [노후준비 20점] ──
+  var retirementScore = 0;
+  if(age === 'senior') {
+    retirementScore += 6; // 은퇴준비율 (이미 준비 중)
+    retirementScore += 5; // 연금저축
+  } else if(age === 'mid') {
+    retirementScore += 4;
+    retirementScore += (income === 'high') ? 5 : 3;
+  } else {
+    retirementScore += 2;
+    retirementScore += 2;
+  }
+
+  // ── [부채관리 20점] ──
+  var debtScore = 0;
+  if(house === 'none') {
+    debtScore += 5; // 신용대출 없음 추정
+    debtScore += 5; // 담보대출 없음
+    debtScore += 5; // 원리금 부담 없음
+    debtScore += 5; // 부채비율 0%
+  } else if(house === 'one') {
+    debtScore += 3;
+    debtScore += 2; // 담보대출 있음 추정
+    debtScore += 3;
+    debtScore += 3;
+  } else {
+    debtScore += 3;
+    debtScore += 0; // 다주택 담보대출
+    debtScore += 2;
+    debtScore += 2;
+  }
+
+  var totalScore = expenseScore + assetScore + insuranceScore + retirementScore + debtScore;
+  // 최대 100점 보정
+  totalScore = Math.min(100, Math.max(0, totalScore));
+
+  var grade = totalScore >= 80 ? '양호' : totalScore >= 60 ? '보통' : totalScore >= 40 ? '주의' : '위험';
+
+  return {
+    totalScore: totalScore,
+    grade: grade,
+    expense: Math.min(20, expenseScore),
+    asset: Math.min(20, assetScore),
+    insurance: Math.min(20, insuranceScore),
+    retirement: Math.min(20, retirementScore),
+    debt: Math.min(20, debtScore),
+    wealthIndex: wealthIndex,
+    wealthGrade: wealthGrade,
+    ageLabel: ageLabelMap[age] || '40~50대',
+    incomeLabel: incomeLabelMap[income] || '500~1,000만원',
+    estimatedAge: estAge,
+    estimatedIncome: estIncome,
+    estimatedAsset: estAsset
+  };
 }
 
 function mvpStartCheckup() {
