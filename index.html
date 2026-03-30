@@ -6472,14 +6472,7 @@ function freeScoreSubmit() {
 }
 
 function mvpStartCheckup() {
-  // ★ 시뮬레이터 즉시 숨기기
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-
-  // 원트큐브 결과화면 숨기기
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-
-  // ★ main용: 구독결제 모달 열기 (결제 필수)
+  // ★ main용: 원트큐브 위에 결제 모달만 바로 띄우기 (배경 유지)
   mpOpenSubscribe();
 }
 
