@@ -5920,6 +5920,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
   enhanceSliders();
   // Chart.js 렌더링을 위한 약간의 지연
   if(isKakao) setTimeout(()=>{ if(typeof updateMacro==='function') updateMacro(); }, 500);
+
+  // ★ URL 파라미터로 바로 결제 화면 진입
+  var urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('action') === 'subscribe') {
+    setTimeout(function() {
+      // 원트큐브 숨기고 바로 결제 모달
+      try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+      mpOpenSubscribe();
+    }, 800);
+  }
 });
 
 /* ━━━ 카톡 인앱 탭 클릭 보강 ━━━ */
