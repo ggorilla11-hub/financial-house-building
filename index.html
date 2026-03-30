@@ -2351,9 +2351,60 @@ body { color: #1a1a1a; }
 /* CSS 파싱 완료 후 즉시 표시 — 깜빡임 방지 */
 html{visibility:visible !important;}
 
+/* ━━━ 개인정보 동의 체크박스 강조 애니메이션 ━━━ */
+@keyframes privacyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,151,42,.4); }
+  50% { box-shadow: 0 0 0 8px rgba(201,151,42,0); }
+}
+#mvp-privacy-guide {
+  width: 24px !important; height: 24px !important;
+  accent-color: #C9972A !important;
+  animation: privacyPulse 2s infinite;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#mvp-privacy-guide:checked { animation: none; }
+.privacy-shake { animation: privacyShake 0.6s ease-in-out !important; }
+.privacy-highlight {
+  border: 3px solid #DC2626 !important;
+  background: rgba(220,38,38,.05) !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
 /* ━━━ MVP: 시뮬레이터 완전 숨김 (음성 코드에 영향 없음) ━━━ */
 #sim-wrap, .sim-wrap { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
 #sim-sticky-inner, .sim-sticky-inner, .sim-sticky { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
+
+/* ━━━ 체크박스 반짝임 + 시작버튼 펄스 애니메이션 ━━━ */
+@keyframes privacyShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+@keyframes privacyGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); }
+  50% { box-shadow: 0 0 16px 6px rgba(220,38,38,.7); }
+}
+.privacy-glow {
+  animation: privacyGlow 0.8s ease-in-out 4 !important;
+  border: 3px solid #DC2626 !important;
+  border-radius: 6px;
+  padding: 8px 12px !important;
+  background: rgba(220,38,38,.05) !important;
+}
+@keyframes startPulse {
+  0%, 100% { box-shadow: 0 6px 18px rgba(201,151,42,.3); }
+  50% { box-shadow: 0 6px 30px rgba(201,151,42,.7), 0 0 30px rgba(201,151,42,.3); transform: scale(1.03); }
+}
+.start-btn-pulse {
+  animation: startPulse 2s ease-in-out infinite !important;
+  background: linear-gradient(135deg, #C9972A, #E8B84B, #C9972A) !important;
+  color: #0B1D3A !important;
+  font-size: 16px !important;
+  padding: 18px !important;
+  border: 2px solid rgba(201,151,42,.5) !important;
+}
 
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
@@ -6814,6 +6865,16 @@ function mvpGoToDiag() {
   var privacyChk = document.getElementById('mvp-privacy-guide');
   if(privacyChk && !privacyChk.checked) {
     showToast('❗ 개인정보 수집 동의에 체크해 주세요.');
+    var privacyLabel = privacyChk.closest('label') || privacyChk.parentElement;
+    var privacySection = privacyChk.closest('.mpc') || privacyLabel;
+    if(privacyLabel) {
+      privacyChk.classList.add('privacy-shake');
+      setTimeout(function() { privacyChk.classList.remove('privacy-shake'); }, 600);
+    }
+    if(privacySection) {
+      privacySection.classList.add('privacy-highlight');
+      setTimeout(function() { privacySection.classList.remove('privacy-highlight'); }, 3000);
+    }
     privacyChk.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
@@ -11134,7 +11195,7 @@ diagAddSTT = function(role, text, tag) {
 
         <!-- AI 재무검진 시작 버튼 -->
         <div class="start-area" style="padding:12px;">
-          <button class="start-btn" onclick="mvpGoToDiag()">
+          <button class="start-btn start-btn-pulse" onclick="mvpGoToDiag()">
             🎙️ 유료 AI 재무검진 시작하기
           </button>
           <div class="start-note">AI진단 탭으로 이동하여 상담이 시작됩니다</div>
