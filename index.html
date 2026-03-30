@@ -6435,26 +6435,7 @@ function freeScoreSubmit() {
   // ★ 재무건강점수 계산 (통계 중간값 기반)
   var scoreData = calcFreeHealthScore(fnAnswers);
 
-  // ★ 구글시트 DB 저장
-  fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      plan: 'free-score',
-      source: 'free-health-score',
-      result_title: resultTitle,
-      result_sub: resultSub,
-      result_d: resultD,
-      health_score: scoreData.totalScore,
-      timestamp: new Date().toISOString()
-    })
-  }).then(function(r) { console.log('[무료점수] 구글시트 저장:', r.status); })
-    .catch(function(e) { console.log('[무료점수] 구글시트 오류:', e); });
-
-  // ★ make.com 웹훅 → 카톡 + 이메일 발송 (재무검진결과표 포함)
+  // ★ make.com 웹훅으로만 전송 (구글시트 기록 + 카톡 + 이메일 발송 모두 make.com에서 처리)
   fetch('https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
