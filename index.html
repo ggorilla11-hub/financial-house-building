@@ -9852,6 +9852,28 @@ function diagBuildNotes() {
         <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
         <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app"></span></div>
         <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
+
+        <!-- ★ 오상열 CFP 프로필 카드 -->
+        <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:16px;border:1.5px solid rgba(201,151,42,.3);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👨‍💼</div>
+            <div>
+              <div style="font-size:14px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">오원트금융연구소 · 금융집짓기® 창시자</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;color:rgba(255,255,255,.7);line-height:1.7;">
+            <div>🏆 국제공인 재무설계사(CFP)</div>
+            <div>📺 SBS biz 100분 머니쇼</div>
+            <div>🎓 한국금융연수원 외래교수</div>
+            <div>🏛️ 금융감독원 머니콘서트</div>
+            <div>📚 저서 「소원을 말해봐」</div>
+            <div>📚 저서 「빚부터 갚아라」</div>
+            <div>🎬 유튜브 구독자 4.5만</div>
+            <div>📋 상담 경력 20년 · 2,000건+</div>
+          </div>
+          <div style="margin-top:10px;text-align:center;font-size:8px;color:rgba(201,151,42,.6);">본 AI 재무검진은 오상열 CFP의 금융집짓기® 방법론을 기반으로 합니다</div>
+        </div>
       </div>
     </div>
   </div>
@@ -11227,8 +11249,8 @@ function diagFillField(partIdx, labelKey, value) {
 
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
-  var t = (userText || '').trim();
-  if (t.length < 2) return;
+  // ★ v2.1: 자동입력 임시 비활성화 (오입력 방지 — 정교한 매칭 개발 후 활성화)
+  return;
 
   // ── 수정 요청 감지 ──
   var correctionKeys = ['아니', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
