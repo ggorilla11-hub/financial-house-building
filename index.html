@@ -7718,11 +7718,13 @@ function mpTab(idx, btn) {
     if(mpContent) mpContent.classList.add('diag-mode');
     if(panel2) panel2.classList.add('diag-active');
     // MVP: AI진단 탭 진입 시 바로 상담 화면으로 전환 (준비화면 건너뛰기)
+    // ★ diagStartConsult는 mvpGoToDiag에서 호출하므로 여기서는 화면 전환만
     setTimeout(function(){
       var sa = document.getElementById('diagScreenA');
       var sb = document.getElementById('diagScreenB');
       if(sa && sb && sb.style.display !== 'flex') {
-        diagStartConsult();
+        if(sa) sa.style.display='none';
+        if(sb) { sb.style.display='flex'; sb.style.flexDirection='column'; sb.style.height='100%'; sb.style.overflow='hidden'; }
       }
     }, 300);
   } else {
@@ -9389,7 +9391,7 @@ function diagStartConsult() {
   },1000);
 
   // 실제 음성 연결 시작
-  diagConnectVoice();
+  if(!_vapiConnecting) diagConnectVoice();
 }
 
 /* ══════════════════════════════════════════════════════════
