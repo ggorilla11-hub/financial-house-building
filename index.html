@@ -9413,8 +9413,12 @@ async function diagConnectVoice(isPaid) {
     console.log('[DEBUG] Vapi SDK 새 버전 초기화');
     console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
     console.log('[DEBUG] assistantId:', assistantId);
-    // ★ 새 SDK: Vapi 생성자로 초기화
-    vapi = new Vapi(VAPI_PUBLIC_KEY);
+    // ★ 새 SDK: Vapi 생성자로 초기화 (전역 변수 자동 감지)
+    var VapiClass = window.Vapi || window.VapiWeb || (window.VapiSDK && window.VapiSDK.default) || window.default;
+    if(!VapiClass && typeof require !== 'undefined') { try { VapiClass = require('@vapi-ai/web').default; } catch(e){} }
+    console.log('[DEBUG] VapiClass:', VapiClass, 'window.Vapi:', window.Vapi);
+    if(!VapiClass) { showToast('❌ Vapi SDK 로드 실패 · 페이지를 새로고침해주세요'); return; }
+    vapi = new VapiClass(VAPI_PUBLIC_KEY);
     console.log('[DEBUG] Vapi instance:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
