@@ -9415,15 +9415,22 @@ const diagFinCtx = {
 };
 
 /* [DEV-001] Vapi.ai 음성 연결 */
+var _vapiConnecting = false;
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
 
+  /* ── 중복 호출 방지 ── */
+  if(_vapiConnecting) { console.log('[Vapi] 이미 연결 중 — 중복 호출 차단'); return; }
+  _vapiConnecting = true;
+
   /* ── 기존 Vapi 인스턴스 정리 (중복 방지) ── */
   if(vapi) {
     try { vapi.stop(); } catch(e) { console.log('[Vapi] 기존 인스턴스 정리:', e.message); }
+    try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null;
     vapiCallActive = false;
+    await new Promise(function(r){ setTimeout(r, 1000); }); // 1초 대기
   }
 
   try {
@@ -9518,8 +9525,10 @@ async function diagConnectVoice(isPaid) {
 
     /* ── 통화 시작 (이벤트 등록 후 마지막에 호출) ── */
     vapi.start(assistantId);
+    _vapiConnecting = false;
 
   } catch(e) {
+    _vapiConnecting = false;
     console.error('[Vapi 연결 오류]', e);
     showToast('❌ 연결 오류: ' + e.message);
   }
