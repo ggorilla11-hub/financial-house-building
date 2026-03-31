@@ -9455,7 +9455,7 @@ async function diagConnectVoice(isPaid) {
     console.log('[DEBUG] assistantId:', assistantId);
     if(!window.VapiClass) { showToast('❌ Vapi SDK 로드 중... 잠시 후 다시 시도해주세요'); return; }
     var VapiConstructor = window.VapiClass.default || window.VapiClass;
-    vapi = new VapiConstructor(VAPI_PUBLIC_KEY, { allowMultipleCallInstances: true });
+    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
     console.log('[DEBUG] vapi instance:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     console.log('[DEBUG] Vapi instance:', vapi);
