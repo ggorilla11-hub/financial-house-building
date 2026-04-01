@@ -2617,15 +2617,17 @@ html{visibility:visible !important;}
     <!-- 고민 연동 메시지 + CTA -->
     <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.4);border-radius:14px;padding:16px;margin-bottom:12px;">
       <div id="fn-r-worry-msg" style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:14px;text-align:center;"></div>
-      <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
-        🏥 유료 AI 재무검진 시작하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
-      </button>
 
-      <!-- ★ 무료 리드마그넷 버튼 -->
-      <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:10px;">
+      <!-- ★ 무료 리드마그넷 버튼 (위) -->
+      <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🆓 무료 재무건강점수 확인하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">이메일 · 카톡으로 결과 즉시 발송</span>
+      </button>
+
+      <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
+      <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
+        🏥 유료 AI 재무진단 시작하기
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
       </button>
 
       <!-- 개발자 메뉴 트리거 -->
@@ -6814,68 +6816,45 @@ function mvpStartCheckup() {
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
 function mvpCompletePurchase() {
-  var isGoogleLogin = window._fhCurrentUser && window._fhCurrentUser.email &&
-                      !window._fhCurrentUser.uid.startsWith('mvp_');
+  // ★ 구글 로그인 단일 체계
+  if (!window._fhCurrentUser || !window._fhCurrentUser.email) {
+    showToast('Google 계정으로 먼저 로그인해 주세요.');
+    return;
+  }
 
-  var nameVal, phoneVal, emailVal, privacyChecked;
+  var nameVal  = window._fhCurrentUser.displayName || '';
+  var emailVal = window._fhCurrentUser.email || '';
+  var phoneVal = (document.getElementById('mvp-phone-google') || {}).value || '';
+  var privacyChecked = (document.getElementById('mvp-privacy-google') || {}).checked || false;
 
-  if (isGoogleLogin) {
-    // 구글 로그인 경로
-    nameVal  = window._fhCurrentUser.displayName || '';
-    emailVal = window._fhCurrentUser.email || '';
-    phoneVal = (document.getElementById('mvp-phone-google') || {}).value || '';
-    privacyChecked = (document.getElementById('mvp-privacy-google') || {}).checked || false;
-    if (!phoneVal.trim()) {
-      showToast('전화번호를 입력해 주세요.');
-      var ph = document.getElementById('mvp-phone-google');
-      if (ph) ph.focus();
-      return;
-    }
-    if (!privacyChecked) {
-      showToast('개인정보 수집 동의에 체크해 주세요.');
-      return;
-    }
-  } else {
-    // 직접 입력 경로
-    nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
-    phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
-    emailVal = (document.getElementById('mvp-email') || {}).value || '';
-    privacyChecked = (document.getElementById('mvp-privacy') || {}).checked || false;
-
-    if (!nameVal.trim()) {
-      showToast('이름을 입력해 주세요.');
-      var n = document.getElementById('mvp-name'); if (n) n.focus();
-      return;
-    }
-    if (!phoneVal.trim()) {
-      showToast('전화번호를 입력해 주세요.');
-      var p = document.getElementById('mvp-phone'); if (p) p.focus();
-      return;
-    }
-    if (!emailVal.trim() || emailVal.indexOf('@') < 0) {
-      showToast('올바른 이메일을 입력해 주세요.');
-      var e = document.getElementById('mvp-email'); if (e) e.focus();
-      return;
-    }
-    if (!privacyChecked) {
-      showToast('개인정보 수집 동의에 체크해 주세요.');
-      return;
-    }
+  // 유효성 검사
+  if (!phoneVal.trim()) {
+    showToast('전화번호를 입력해 주세요.');
+    var ph = document.getElementById('mvp-phone-google');
+    if (ph) ph.focus();
+    return;
+  }
+  // 전화번호 형식 간단 검증 (숫자 10~11자리)
+  var phoneClean = phoneVal.replace(/[^0-9]/g, '');
+  if (phoneClean.length < 10 || phoneClean.length > 11) {
+    showToast('올바른 전화번호를 입력해 주세요. (예: 010-1234-5678)');
+    return;
+  }
+  if (!privacyChecked) {
+    showToast('개인정보 수집 및 이용에 동의해 주세요.');
+    var cb = document.getElementById('mvp-privacy-google');
+    if (cb) cb.parentElement.style.border = '1.5px solid #ef4444';
+    setTimeout(function() {
+      var cb2 = document.getElementById('mvp-privacy-google');
+      if (cb2) cb2.parentElement.style.border = '1px solid rgba(201,151,42,.25)';
+    }, 2000);
+    return;
   }
 
   // 결제자 정보 전역 저장
   window._fhPayerName  = nameVal.trim();
   window._fhPayerEmail = emailVal.trim();
   window._fhPayerPhone = phoneVal.trim();
-
-  if (!isGoogleLogin) {
-    window._fhCurrentUser = {
-      displayName: nameVal.trim(),
-      email: emailVal.trim(),
-      phoneNumber: phoneVal.trim(),
-      uid: 'mvp_' + Date.now()
-    };
-  }
 
   // ★ 선택된 플랜으로 결제 실행
   confirmPay(selectedPlan);
@@ -11984,83 +11963,74 @@ document.addEventListener('visibilitychange', function() {
       </div>
     </div>
 
-    <!-- 구글 로그인 전 -->
+    <!-- ★ 구글 로그인 전 (로그인 버튼만) -->
     <div id="fh-before-login">
       <button onclick="fhSignInGoogle()"
-        style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #ddd;
-        background:#fff;color:#3c4043;font-size:13px;font-weight:700;
+        style="width:100%;padding:14px;border-radius:10px;border:1.5px solid #ddd;
+        background:#fff;color:#3c4043;font-size:14px;font-weight:700;
         font-family:var(--fn);cursor:pointer;display:flex;align-items:center;
-        justify-content:center;gap:8px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);
-        transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.15)'"
+        justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);
+        transition:box-shadow .2s;"
+        onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.18)'"
         onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.1)'">
-        <svg width="18" height="18" viewBox="0 0 48 48">
+        <svg width="20" height="20" viewBox="0 0 48 48">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        Google 계정으로 간편 로그인
+        Google 계정으로 로그인
       </button>
-      <div style="text-align:center;font-size:10px;color:var(--muted);margin-bottom:8px;">또는 직접 입력</div>
-
-      <!-- 직접 입력 폼 -->
-      <div id="mvp-simple-login">
-        <div style="background:#fff;border-radius:10px;padding:12px;border:1.5px solid #eee;">
-          <div style="display:flex;flex-direction:column;gap:7px;">
-            <input id="mvp-name" type="text" placeholder="이름 (필수)" required
-              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
-              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-            <input id="mvp-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
-              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
-              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-            <input id="mvp-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
-              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
-              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;">
-              <input id="mvp-privacy" type="checkbox"
-                style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
-              <span style="font-size:10px;color:#666;line-height:1.5;">
-                [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-                <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무진단 상담 및 안내</span>
-              </span>
-            </label>
-          </div>
-        </div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">
+        🔒 Google 계정으로 본인 인증 후 결제가 진행됩니다
       </div>
     </div>
 
-    <!-- 구글 로그인 후 -->
+    <!-- ★ 구글 로그인 후: 계정 확인 + 전화번호 + 개인정보동의 -->
     <div id="fh-after-login" style="display:none;">
-      <div style="background:#f8f9fa;border-radius:10px;padding:12px;border:1.5px solid #e8eaed;
-        display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <img id="fh-login-photo" src="" style="width:36px;height:36px;border-radius:50%;display:none;border:2px solid var(--gold);">
-        <div style="flex:1;">
-          <div id="fh-login-name" style="font-size:13px;font-weight:700;color:var(--navy);"></div>
-          <div id="fh-login-email" style="font-size:10px;color:var(--muted);"></div>
+      <!-- 로그인된 계정 표시 -->
+      <div style="background:#f0f9f0;border-radius:10px;padding:12px;
+        border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <img id="fh-login-photo" src="" style="width:38px;height:38px;border-radius:50%;
+          display:none;border:2px solid var(--gold);flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:#166534;font-weight:700;margin-bottom:1px;">✅ 로그인 완료</div>
+          <div id="fh-login-name" style="font-size:13px;font-weight:900;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="fh-login-email" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
         <button onclick="fhSignOut()"
-          style="padding:5px 10px;border-radius:6px;border:1px solid #ddd;
+          style="padding:6px 10px;border-radius:6px;border:1px solid #ddd;flex-shrink:0;
           background:#fff;color:#666;font-size:10px;font-family:var(--fn);cursor:pointer;">
           변경
         </button>
       </div>
-      <input id="mvp-phone-google" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
-        style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
-        font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;margin-bottom:7px;"
-        onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-bottom:7px;">
-        <input id="mvp-privacy-google" type="checkbox"
-          style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
-        <span style="font-size:10px;color:#666;line-height:1.5;">
-          [필수] 개인정보 수집 및 이용에 동의합니다.
-        </span>
-      </label>
+
+      <!-- 전화번호 입력 (Google 계정에 없으므로 직접 입력) -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="mvp-phone-google" type="tel"
+          placeholder="전화번호 (필수) 예: 010-1234-5678"
+          style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid #ddd;
+          font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+
+        <!-- 개인정보 동의 -->
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;
+          background:#fff8e6;border-radius:8px;padding:10px;border:1px solid rgba(201,151,42,.25);">
+          <input id="mvp-privacy-google" type="checkbox"
+            style="width:17px;height:17px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;">
+          <span style="font-size:10px;color:#555;line-height:1.6;">
+            <strong style="color:var(--navy);">[필수]</strong> 개인정보 수집 및 이용에 동의합니다.<br>
+            <span style="color:#999;font-size:9px;">
+              수집항목: 이름, 전화번호, 이메일<br>
+              목적: AI 재무진단 서비스 제공 및 안내<br>
+              보유기간: 서비스 이용 종료 시까지
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
 
-    <div style="font-size:9px;color:#999;text-align:center;">
+    <div style="font-size:9px;color:#bbb;text-align:center;margin-top:8px;">
       🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
     </div>
   </div>
