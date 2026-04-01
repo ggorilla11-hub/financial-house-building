@@ -2444,13 +2444,18 @@ html{visibility:visible !important;}
 
 
 
-<!-- Vapi SDK [DEV-001] — 새 SDK v2.5.2 + 전역 변수 래퍼 -->
-  <script type="module">
-    import VapiDefault from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/+esm';
-    window.VapiClass = VapiDefault;
-    window.VapiReady = true;
-    console.log('[Vapi] ESM 로드 완료:', typeof VapiDefault);
-    window.dispatchEvent(new Event('vapi-ready'));
+<!-- Vapi SDK [DEV-001] — html-script-tag (daily-js 최신) -->
+  <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
+  <script>
+    window.VapiReady = false;
+    (function checkVapi() {
+      if (typeof vapiSDK !== 'undefined') {
+        window.VapiReady = true;
+        console.log('[Vapi] html-script-tag 로드 완료');
+      } else {
+        setTimeout(checkVapi, 100);
+      }
+    })();
   </script>
 
 </head>
@@ -9399,14 +9404,15 @@ async function diagConnectVoice(isPaid) {
 
   /* ── Vapi SDK 로드 대기 ── */
   if(!window.VapiReady) {
-    showToast('⏳ AI 엔진 로딩 중... 잠시만 기다려주세요');
+    showToast('⏳ AI 엔진 로딩 중...');
     await new Promise(function(resolve) {
-      if(window.VapiReady) return resolve();
-      window.addEventListener('vapi-ready', resolve, { once: true });
-      setTimeout(resolve, 5000); // 최대 5초 대기
+      var check = setInterval(function() {
+        if(window.VapiReady) { clearInterval(check); resolve(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); resolve(); }, 5000);
     });
   }
-  if(!window.VapiClass) {
+  if(typeof vapiSDK === 'undefined') {
     showToast('❌ AI 엔진 로드 실패. 페이지를 새로고침해주세요.');
     _vapiConnecting = false;
     return;
@@ -9440,14 +9446,13 @@ async function diagConnectVoice(isPaid) {
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    console.log('[DEBUG] VapiClass:', typeof window.VapiClass, window.VapiClass);
+    console.log('[DEBUG] vapiSDK:', typeof vapiSDK, vapiSDK);
     console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
     console.log('[DEBUG] assistantId:', assistantId);
-    if(!window.VapiClass) { showToast('❌ Vapi SDK 로드 중... 잠시 후 다시 시도해주세요'); return; }
-    var VapiConstructor = window.VapiClass.default || window.VapiClass;
-    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
-    console.log('[DEBUG] vapi instance:', vapi);
-    if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
+    if(typeof vapiSDK === 'undefined') { showToast('❌ Vapi SDK 로드 실패. 페이지를 새로고침해주세요.'); _vapiConnecting = false; return; }
+    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
+    console.log('[DEBUG] run result:', vapi);
+    if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); _vapiConnecting = false; return; }
     console.log('[DEBUG] Vapi instance:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
