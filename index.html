@@ -5815,22 +5815,33 @@ function confirmPay(plan){
   // ── 페이플 SDK 로드 확인 ──
   if(typeof PaypleCpayAuthCheck !== 'function'){
     showToast('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-    console.error('[오류] 페이플 SDK 미로드 - PaypleCpayAuthCheck 없음');
+    console.error('[오류] 페이플 SDK 미로드');
     return;
   }
 
-  // 플랜 정보 임시 저장 (콜백에서 사용)
+  // ── 중복 클릭 방지 ──
+  if(window._fhPayProcessing) {
+    console.log('[결제] 처리 중 — 중복 클릭 무시');
+    return;
+  }
+  window._fhPayProcessing = true;
+  var ctaBtn = document.getElementById('mp-sub-cta');
+  if(ctaBtn) { ctaBtn.disabled = true; ctaBtn.style.opacity = '0.6'; }
+
+  // 플랜 정보 저장
   window._fhCurrentPlan     = plan;
   window._fhCurrentPlanName = cfg.name;
 
   try {
     var order_id = 'FH_' + cfg.prefix + '_' + Date.now();
-    var isMonthly = (cfg.regular === 'Y'); // 월정기구독 여부
 
-    // ── 페이플 공통 파라미터 ──
+    // ── 페이플 파라미터 ──
+    // 월정기: PCD_PAY_WORK='PAY' + PCD_REGULER_FLAG='Y'
+    // 단일/연회비: PCD_PAY_WORK='PAY' + PCD_REGULER_FLAG='N'
     var obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
+    obj.PCD_PAY_WORK     = 'PAY';
     obj.PCD_CARD_VER     = '01';
     obj.PCD_PAY_GOODS    = 'AI 재무진단 ' + cfg.name;
     obj.PCD_PAY_TOTAL    = cfg.amount;
@@ -5838,19 +5849,10 @@ function confirmPay(plan){
     obj.PCD_REGULER_FLAG = cfg.regular;
     obj.PCD_SIMPLE_FLAG  = 'Y';
 
-    // 고객 정보 (정기결제 필수)
+    // 고객 정보
     obj.PCD_PAYER_NAME   = window._fhPayerName  || '';
     obj.PCD_PAYER_HP     = (window._fhPayerPhone || '').replace(/[^0-9]/g, '');
     obj.PCD_PAYER_EMAIL  = window._fhPayerEmail || '';
-
-    if (isMonthly) {
-      // ━━ 월정기구독: CERT 방식 (카드 인증 + 빌링키 발급) ━━
-      // 최초 1회만 카드 인증 → 이후 서버에서 매월 자동 청구
-      obj.PCD_PAY_WORK = 'CERT';
-    } else {
-      // ━━ 단일결제 / 연회비: PAY 방식 (즉시결제) ━━
-      obj.PCD_PAY_WORK = 'PAY';
-    }
 
     var _nameParam  = encodeURIComponent(window._fhPayerName  || '');
     var _emailParam = encodeURIComponent(window._fhPayerEmail || '');
@@ -5859,20 +5861,21 @@ function confirmPay(plan){
       + '?payer_name='  + _nameParam
       + '&payer_email=' + _emailParam
       + '&payer_phone=' + _phoneParam
-      + '&plan='  + plan
-      + '&work='  + obj.PCD_PAY_WORK
-      + '&uid='   + encodeURIComponent((window._fhCurrentUser && window._fhCurrentUser.uid) || '');
+      + '&plan=' + plan
+      + '&uid='  + encodeURIComponent((window._fhCurrentUser && window._fhCurrentUser.uid) || '');
     obj.callbackFunction = onPaypleResult;
 
     console.log('[페이플 결제 요청]', {
-      plan: plan, work: obj.PCD_PAY_WORK,
-      amount: cfg.amount, orderId: order_id, regular: cfg.regular
+      plan: plan, work: 'PAY', regular: cfg.regular,
+      amount: cfg.amount, orderId: order_id
     });
     PaypleCpayAuthCheck(obj);
 
   } catch(e) {
     showToast('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
     console.error('[결제 오류]', e);
+    window._fhPayProcessing = false;
+    if(ctaBtn) { ctaBtn.disabled = false; ctaBtn.style.opacity = '1'; }
   }
 }
 
@@ -5880,20 +5883,12 @@ function confirmPay(plan){
 function onPaypleResult(data){
   console.log('[페이플 결과]', data);
 
-  // ── CERT 방식(월정기): 빌링키 발급 성공 ──
-  // PCD_PAY_WORK='CERT' 완료 후 PCD_PAY_RST='success' + PCD_PAYER_ID(빌링키) 수신
-  var isCert = (data.PCD_PAY_WORK === 'CERT');
-  var isSuccess = (data.PCD_PAY_RST === 'success');
+  // 중복클릭 방지 플래그 해제 + 버튼 복구
+  window._fhPayProcessing = false;
+  var ctaBtn = document.getElementById('mp-sub-cta');
+  if(ctaBtn) { ctaBtn.disabled = false; ctaBtn.style.opacity = '1'; }
 
-  if (isCert && isSuccess) {
-    // 빌링키 저장 (서버에서 매월 자동 청구에 사용)
-    var payerId = data.PCD_PAYER_ID || '';
-    localStorage.setItem('fh_payer_id', payerId); // 빌링키
-    console.log('[빌링키 발급 완료]', payerId);
-    // 이후 동일하게 구독 처리
-  }
-
-  if(isSuccess){
+  if(data.PCD_PAY_RST === 'success'){
     if(typeof closePayModal === 'function') { try { closePayModal(); } catch(e) {} }
     try { mpCloseSubscribe(); } catch(e) {}
     try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
