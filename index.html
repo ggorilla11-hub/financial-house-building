@@ -5780,9 +5780,16 @@ function mpSelectPlan(plan) {
   };
   var cta = document.getElementById('mp-sub-cta');
   if (cta) cta.textContent = ctaMap[plan] || '결제 시작하기 →';
-  // 정기결제 안내 (월정기만 표시)
+
+  // 월정기 안내 배너 (월정기만 표시 + 금액 업데이트)
   var notice = document.getElementById('mp-cert-notice');
-  if (notice) notice.style.display = (plan.endsWith('-month')) ? 'flex' : 'none';
+  var amountEl = document.getElementById('mp-cert-amount');
+  var isMonthly = plan.endsWith('-month');
+  if (notice) notice.style.display = isMonthly ? 'block' : 'none';
+  if (amountEl && isMonthly) {
+    var amtMap = { 'silver-month':'₩9,900', 'gold-month':'₩19,900', 'expert-month':'₩29,900' };
+    amountEl.textContent = amtMap[plan] || '';
+  }
 }
 
 function selPayMethod(el){
@@ -5812,20 +5819,39 @@ function confirmPay(plan){
     return;
   }
 
+  // 플랜 정보 임시 저장 (콜백에서 사용)
+  window._fhCurrentPlan     = plan;
+  window._fhCurrentPlanName = cfg.name;
+
   try {
     var order_id = 'FH_' + cfg.prefix + '_' + Date.now();
+    var isMonthly = (cfg.regular === 'Y'); // 월정기구독 여부
 
-    // ── 페이플 공식 파라미터 ──
+    // ── 페이플 공통 파라미터 ──
     var obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
-    obj.PCD_PAY_WORK     = 'PAY';
     obj.PCD_CARD_VER     = '01';
     obj.PCD_PAY_GOODS    = 'AI 재무진단 ' + cfg.name;
     obj.PCD_PAY_TOTAL    = cfg.amount;
     obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = cfg.regular;
     obj.PCD_SIMPLE_FLAG  = 'Y';
+
+    // 고객 정보 (정기결제 필수)
+    obj.PCD_PAYER_NAME   = window._fhPayerName  || '';
+    obj.PCD_PAYER_HP     = (window._fhPayerPhone || '').replace(/[^0-9]/g, '');
+    obj.PCD_PAYER_EMAIL  = window._fhPayerEmail || '';
+
+    if (isMonthly) {
+      // ━━ 월정기구독: CERT 방식 (카드 인증 + 빌링키 발급) ━━
+      // 최초 1회만 카드 인증 → 이후 서버에서 매월 자동 청구
+      obj.PCD_PAY_WORK = 'CERT';
+    } else {
+      // ━━ 단일결제 / 연회비: PAY 방식 (즉시결제) ━━
+      obj.PCD_PAY_WORK = 'PAY';
+    }
+
     var _nameParam  = encodeURIComponent(window._fhPayerName  || '');
     var _emailParam = encodeURIComponent(window._fhPayerEmail || '');
     var _phoneParam = encodeURIComponent(window._fhPayerPhone || '');
@@ -5833,14 +5859,15 @@ function confirmPay(plan){
       + '?payer_name='  + _nameParam
       + '&payer_email=' + _emailParam
       + '&payer_phone=' + _phoneParam
-      + '&plan=' + plan;
+      + '&plan='  + plan
+      + '&work='  + obj.PCD_PAY_WORK
+      + '&uid='   + encodeURIComponent((window._fhCurrentUser && window._fhCurrentUser.uid) || '');
     obj.callbackFunction = onPaypleResult;
 
-    // 플랜 정보 임시 저장 (콜백에서 사용)
-    window._fhCurrentPlan = plan;
-    window._fhCurrentPlanName = cfg.name;
-
-    console.log('[페이플 결제 요청]', { plan: plan, amount: cfg.amount, orderId: order_id, regular: cfg.regular });
+    console.log('[페이플 결제 요청]', {
+      plan: plan, work: obj.PCD_PAY_WORK,
+      amount: cfg.amount, orderId: order_id, regular: cfg.regular
+    });
     PaypleCpayAuthCheck(obj);
 
   } catch(e) {
@@ -5851,7 +5878,22 @@ function confirmPay(plan){
 
 // 페이플 결제 결과 콜백
 function onPaypleResult(data){
-  if(data.PCD_PAY_RST === 'success'){
+  console.log('[페이플 결과]', data);
+
+  // ── CERT 방식(월정기): 빌링키 발급 성공 ──
+  // PCD_PAY_WORK='CERT' 완료 후 PCD_PAY_RST='success' + PCD_PAYER_ID(빌링키) 수신
+  var isCert = (data.PCD_PAY_WORK === 'CERT');
+  var isSuccess = (data.PCD_PAY_RST === 'success');
+
+  if (isCert && isSuccess) {
+    // 빌링키 저장 (서버에서 매월 자동 청구에 사용)
+    var payerId = data.PCD_PAYER_ID || '';
+    localStorage.setItem('fh_payer_id', payerId); // 빌링키
+    console.log('[빌링키 발급 완료]', payerId);
+    // 이후 동일하게 구독 처리
+  }
+
+  if(isSuccess){
     if(typeof closePayModal === 'function') { try { closePayModal(); } catch(e) {} }
     try { mpCloseSubscribe(); } catch(e) {}
     try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
@@ -12032,6 +12074,19 @@ document.addEventListener('visibilitychange', function() {
 
     <div style="font-size:9px;color:#bbb;text-align:center;margin-top:8px;">
       🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
+    </div>
+  </div>
+
+  <!-- 월정기구독 안내 (월정기 플랜 선택 시만 표시) -->
+  <div id="mp-cert-notice" style="display:none;background:rgba(59,130,246,.08);
+    border:1px solid rgba(59,130,246,.25);border-radius:8px;
+    padding:8px 12px;margin-bottom:8px;">
+    <div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-bottom:3px;">
+      📋 월정기구독 결제 안내
+    </div>
+    <div style="font-size:9px;color:#3b5fc0;line-height:1.6;">
+      카드 인증 1회 → 매월 <span id="mp-cert-amount">₩9,900</span> 자동 청구<br>
+      언제든지 마이페이지에서 해지 가능합니다
     </div>
   </div>
 
