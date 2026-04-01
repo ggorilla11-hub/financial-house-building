@@ -11470,6 +11470,29 @@ diagAddSTT = function(role, text, tag) {
   if(role === 'ai') diagLastQuestion = text;
 };
 
+/* ★ 페이지 종료/새로고침/탭 닫기 시 Vapi 완전 정리 */
+function forceCleanupVapi() {
+  if(vapi) {
+    try { vapi.stop(); } catch(e) {}
+    try { vapi.removeAllListeners(); } catch(e) {}
+    vapi = null;
+    vapiCallActive = false;
+  }
+  _vapiConnecting = false;
+  try { document.querySelectorAll('iframe[id*="daily"]').forEach(function(f){ f.remove(); }); } catch(e) {}
+  try { document.querySelectorAll('audio').forEach(function(a){ a.pause(); a.srcObject=null; a.src=''; try{a.remove();}catch(e){} }); } catch(e) {}
+  try { if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } } catch(e) {}
+  console.log('[Vapi] 페이지 종료 — 완전 정리 완료');
+}
+window.addEventListener('beforeunload', forceCleanupVapi);
+window.addEventListener('pagehide', forceCleanupVapi);
+document.addEventListener('visibilitychange', function() {
+  if(document.visibilityState === 'hidden' && vapi && vapiCallActive) {
+    console.log('[Vapi] 페이지 비활성화 감지 — 세션 정리');
+    forceCleanupVapi();
+  }
+});
+
 </script>
 
 
