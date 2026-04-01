@@ -1224,13 +1224,13 @@ body { color: #1a1a1a; }
 .mp-grade-cur{font-size:8.5px;background:var(--gold);color:var(--navy);padding:2px 6px;border-radius:7px;font-weight:900;}
 
 /* 구독 모달 */
-.mp-sub-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;}
+.mp-sub-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;}
 .mp-sub-bg.mp-sub-open{display:block;}
 .mp-sub-modal{
   position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;
   background:var(--paper);border-radius:16px 16px 0 0;
   padding:14px 16px 32px;border-top:3px solid var(--gold);
-  z-index:601;transform:translateY(100%);
+  z-index:10001;transform:translateY(100%);
   transition:transform .35s cubic-bezier(.32,.72,0,1);
   max-height:92vh;overflow-y:auto;
 }
@@ -2351,9 +2351,84 @@ body { color: #1a1a1a; }
 /* CSS 파싱 완료 후 즉시 표시 — 깜빡임 방지 */
 html{visibility:visible !important;}
 
+/* ━━━ 개인정보 동의 체크박스 강조 애니메이션 ━━━ */
+@keyframes privacyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,151,42,.4); }
+  50% { box-shadow: 0 0 0 8px rgba(201,151,42,0); }
+}
+@keyframes privacyShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+#mvp-privacy-guide {
+  width: 22px !important; height: 22px !important;
+  accent-color: #C9972A !important;
+  animation: privacyPulse 2s infinite;
+  border-radius: 4px;
+}
+#mvp-privacy-guide:checked { animation: none; }
+.privacy-shake { animation: privacyShake 0.5s ease-in-out !important; }
+.privacy-highlight {
+  border: 2px solid #C9972A !important;
+  background: rgba(201,151,42,.08) !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
 /* ━━━ MVP: 시뮬레이터 완전 숨김 (음성 코드에 영향 없음) ━━━ */
 #sim-wrap, .sim-wrap { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
 #sim-sticky-inner, .sim-sticky-inner, .sim-sticky { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; pointer-events:none !important; }
+
+/* ━━━ 체크박스 반짝임 + 시작버튼 펄스 애니메이션 ━━━ */
+@keyframes privacyShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+@keyframes privacyGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); }
+  50% { box-shadow: 0 0 16px 6px rgba(220,38,38,.7); }
+}
+.privacy-shake {
+  animation: privacyShake 0.6s ease-in-out !important;
+}
+.privacy-glow {
+  animation: privacyGlow 0.8s ease-in-out 4 !important;
+  border: 3px solid #DC2626 !important;
+  border-radius: 6px;
+  padding: 8px 12px !important;
+  background: rgba(220,38,38,.05) !important;
+}
+@keyframes startPulse {
+  0%, 100% { box-shadow: 0 6px 18px rgba(201,151,42,.3); }
+  50% { box-shadow: 0 6px 30px rgba(201,151,42,.7), 0 0 30px rgba(201,151,42,.3); transform: scale(1.03); }
+}
+.start-btn-pulse {
+  animation: startPulse 2s ease-in-out infinite !important;
+  background: linear-gradient(135deg, #C9972A, #E8B84B, #C9972A) !important;
+  color: #0B1D3A !important;
+  font-size: 16px !important;
+  padding: 18px !important;
+  border: 2px solid rgba(201,151,42,.5) !important;
+}
+
+/* ★ 개인정보 체크박스 크게 + 골드 */
+#mvp-privacy-guide {
+  width: 24px !important;
+  height: 24px !important;
+  accent-color: #C9972A !important;
+  cursor: pointer;
+}
+
+/* ★ 체크박스 반짝임 CSS */
+.privacy-blink {
+  animation: privacyGlow 0.8s ease-in-out 3 !important;
+  outline: 3px solid #DC2626 !important;
+  border-radius: 4px;
+}
 
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
 </style>
@@ -2369,8 +2444,12 @@ html{visibility:visible !important;}
 
 
 
-<!-- Vapi SDK [DEV-001] -->
-  <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
+<!-- Vapi SDK [DEV-001] — 새 SDK v2.5.2 + 전역 변수 래퍼 -->
+  <script type="module">
+    import VapiDefault from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/+esm';
+    window.VapiClass = VapiDefault;
+    console.log('[Vapi SDK] 로드 완료:', typeof VapiDefault);
+  </script>
 
 </head>
 <body>
@@ -2394,10 +2473,10 @@ html{visibility:visible !important;}
   <div style="font-size:13px;background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.25);color:#D4A853;padding:7px 16px;border-radius:20px;font-weight:600;margin-bottom:18px;">⏱️ 딱 6번 클릭 · 30초 완성</div>
 
   <h1 style="font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1.4;margin-bottom:14px;color:#fff;">
-    은퇴 전<br>당신이 가장 먼저 해야 할<br><span style="color:#D4A853;">재무목표</span>는?
+    은퇴 전<br>당신이 알아야 할<br>당신의 <span style="color:#D4A853;">재무건강점수</span>는?
   </h1>
   <p style="font-size:15px;opacity:.8;line-height:1.7;margin-bottom:24px;color:#fff;max-width:320px;">
-    729가지 조합 중 당신에게 딱 맞는<br>최우선 재무목표를 찾아드립니다
+    729가지 조합을 분석하여<br>당신의 재무건강점수를 알려드립니다
   </p>
 
   <!-- 신뢰 지표 -->
@@ -2417,7 +2496,7 @@ html{visibility:visible !important;}
   </div>
 
   <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
-    내 재무목표 찾기 →
+    내 재무건강점수 확인 →
   </button>
 
   <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
@@ -2494,7 +2573,7 @@ html{visibility:visible !important;}
     <!-- 최우선 재무목표 -->
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;">
       <div id="fn-r-emoji" style="font-size:56px;margin-bottom:10px;"></div>
-      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 최우선 재무목표</div>
+      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무건강점수</div>
       <div id="fn-r-title" style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:#fff;margin-bottom:8px;"></div>
       <div id="fn-r-sub" style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;"></div>
     </div>
@@ -2509,6 +2588,12 @@ html{visibility:visible !important;}
       <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
         🏥 유료 AI 재무검진 시작하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
+      </button>
+
+      <!-- ★ 무료 리드마그넷 버튼 -->
+      <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:10px;">
+        🆓 무료 재무건강점수 확인하기
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">이메일 · 카톡으로 결과 즉시 발송</span>
       </button>
 
       <!-- 개발자 메뉴 트리거 -->
@@ -2542,9 +2627,45 @@ html{visibility:visible !important;}
   </div>
 </div>
 
+</div><!-- /fn-s8 -->
+
+</div><!-- /funnel-wrap -->
+
+<!-- ★ 무료 재무건강점수 신청 모달 -->
+<div id="freeScoreModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;padding:24px 20px;width:90%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:32px;margin-bottom:6px;">🆓</div>
+      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무건강점수 확인</div>
+      <div style="font-size:11px;color:#8896B0;margin-top:4px;">입력하신 정보로 결과를 이메일/카톡으로 보내드립니다</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="free-name" type="text" placeholder="이름 (필수)"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <input id="free-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <input id="free-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
+        <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
+        <span style="font-size:10px;color:#666;line-height:1.5;">
+          [필수] 개인정보 수집 및 이용에 동의합니다.<br>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무건강점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+        </span>
+      </label>
+    </div>
+    <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-top:14px;box-shadow:0 4px 16px rgba(59,130,246,.35);">
+      무료 재무건강점수 받기
+    </button>
+    <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:6px;">닫기</button>
+  </div>
 </div>
 
-
+<!-- ★ 무료 신청 감사 화면 (Thank You Screen) -->
+<div id="freeThankYou" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;"></div>
 
 
 <div class="app">
@@ -5581,8 +5702,6 @@ function selPayMethod(el){
   el.classList.add('on');
 }
 function confirmPay(plan){
-  const isYearly = (plan === 'year');
-
   // ── 페이플 SDK 로드 확인 ──
   if(typeof PaypleCpayAuthCheck !== 'function'){
     showToast('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
@@ -5591,42 +5710,48 @@ function confirmPay(plan){
   }
 
   try {
-    const earlyPlan  = getEarlyBirdPlan();
-    const payAmount  = isYearly ? earlyPlan.annual : earlyPlan.monthly;
-    const planName   = isYearly ? '연간' : '월간';
-    const order_id   = 'FH_' + (isYearly ? 'YEAR' : 'MONTH') + '_' + Date.now();
-    // ── 페이플 공식 파라미터 (문서 기준) ──
+    // ── 플랜별 금액/이름/주문ID ──
+    var planInfo = FH_PLANS[plan];
+    if(!planInfo) { showToast('올바른 플랜을 선택해 주세요.'); return; }
+    var payAmount = planInfo.price;
+    var planName  = planInfo.label;
+    var planKey   = plan.toUpperCase().replace('-','_');
+    var order_id  = 'FH_' + planKey + '_' + Date.now();
+
+    // ── 페이플 공식 파라미터 ──
     const obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
-    obj.PCD_PAY_WORK     = isYearly ? 'PAY' : 'CERT';  // 월간=CERT(정기결제등록), 연간=PAY(즉시결제)
+    obj.PCD_PAY_WORK     = 'PAY';
     obj.PCD_CARD_VER     = '01';
-    obj.PCD_PAY_GOODS    = '금융집짓기 실버 ' + planName + ' 구독';
+    obj.PCD_PAY_GOODS    = 'AI 재무검진 ' + planName;
     obj.PCD_PAY_TOTAL    = payAmount;
     obj.PCD_PAY_OID      = order_id;
-    obj.PCD_REGULER_FLAG = isYearly ? 'N' : 'Y';
+    // 정기구독(실버월/골드월)은 빌링키 방식, 나머지는 즉시결제
+    obj.PCD_REGULER_FLAG = (planInfo.type === 'subscription') ? 'Y' : 'N';
     obj.PCD_SIMPLE_FLAG  = 'Y';
-    // CERT 방식: 이번 달 중복결제 방지
-    if (!isYearly) {
-      const _now = new Date();
-      obj.PCD_PAY_YEAR  = String(_now.getFullYear());
-      obj.PCD_PAY_MONTH = String(_now.getMonth() + 1).padStart(2, '0');
-    }
-    // PCD_RST_URL: 웹훅 서버로 결제 데이터 전송 후 callbackFunction으로 앱에 결과 반환
-    // 고객 이름/이메일을 RST_URL 파라미터로 전달 (웹훅 서버에서 수신)
     const _nameParam  = encodeURIComponent(window._fhPayerName  || '');
     const _emailParam = encodeURIComponent(window._fhPayerEmail || '');
+    const _phoneParam = encodeURIComponent(window._fhPayerPhone || '');
     obj.PCD_RST_URL = 'https://ohwant-webhook.vercel.app/api/payple'
       + '?payer_name='  + _nameParam
-      + '&payer_email=' + _emailParam;
+      + '&payer_email=' + _emailParam
+      + '&payer_phone=' + _phoneParam
+      + '&plan=' + plan;
     obj.callbackFunction = onPaypleResult;
 
     console.log('[페이플 결제 요청]', {
+      plan: plan,
       work: obj.PCD_PAY_WORK,
+      reguler: obj.PCD_REGULER_FLAG,
       amount: obj.PCD_PAY_TOTAL,
       orderId: obj.PCD_PAY_OID,
-      rstUrl: obj.PCD_RST_URL
+      voiceMin: planInfo.voiceMin
     });
+
+    // ── 선택한 플랜 정보 저장 (결제 콜백에서 사용) ──
+    window._fhSelectedPlan = plan;
+    window._fhSelectedPlanInfo = planInfo;
 
     // ── 결제창 호출 ──
     PaypleCpayAuthCheck(obj);
@@ -5645,6 +5770,21 @@ function onPaypleResult(data){
       try { closePayModal(); } catch(e) {}
     }
     try { mpCloseSubscribe(); } catch(e) {}
+    // ★ 결제 성공 시 원트큐브 즉시 숨기고 마이페이지 준비
+    try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+
+    // ── 플랜별 크레딧 저장 ──
+    var selectedPlanKey = window._fhSelectedPlan || 'silver-month';
+    var planInfo = FH_PLANS[selectedPlanKey] || { voiceMin: 20, type: 'single' };
+    localStorage.setItem('fh_current_plan', selectedPlanKey);
+    localStorage.setItem('mvp_credit_min', String(planInfo.voiceMin));
+    localStorage.setItem('fh_voice_limit', String(planInfo.voiceMin));
+
+    // 브론즈 24시간 만료 설정
+    if(selectedPlanKey === 'bronze') {
+      localStorage.setItem('fh_bronze_expire', new Date(Date.now() + 24*60*60*1000).toISOString());
+    }
+
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
@@ -5658,6 +5798,11 @@ function onPaypleResult(data){
     localStorage.setItem('fh_payer_name',  _payerName);
     localStorage.setItem('fh_payer_email', _payerEmail);
 
+    // ★ 결제 성공 후에만: 구글시트 DB 저장 + make.com 웹훅 (땡큐 카톡/이메일)
+    var _payerPhone = window._fhPayerPhone || '';
+    mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
+    mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
+
     // 감사 이메일 발송 (웹훅 서버)
     if(_payerEmail) {
       fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
@@ -5666,17 +5811,18 @@ function onPaypleResult(data){
         body: JSON.stringify({
           name:    _payerName,
           email:   _payerEmail,
-          plan:    (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
-          amount:  parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
+          plan:    selectedPlanKey,
+          amount:  parseInt(data.PCD_PAY_TOTAL || planInfo.price),
           orderId: data.PCD_PAY_OID || ''
         })
       }).then(function(r){ console.log('[감사이메일]', r.status); })
         .catch(function(e){ console.log('[감사이메일 오류]', e); });
     }
 
+    var planLabel = planInfo.label || 'AI 재무검진';
     var _greeting = _payerName
-      ? ('🎉 ' + _payerName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑')
-      : '🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑';
+      ? ('🎉 ' + _payerName + '님, ' + planLabel + ' 결제 완료! 환영합니다 👑')
+      : '🎉 결제 완료! 금융집짓기® 회원이 되셨습니다 👑';
     showToast(_greeting);
     // 헤더 버튼 업데이트
     const payBtn = document.querySelector('.hbtn-pay');
@@ -5686,8 +5832,8 @@ function onPaypleResult(data){
       payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
       payBtn.style.animation = 'none';
     }
-    // 마이페이지 자동 오픈
-    setTimeout(() => mpOpen(), 1500);
+    // 마이페이지 즉시 오픈 (시뮬레이터 노출 방지)
+    setTimeout(() => mpOpen(), 300);
   } else {
     showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
   }
@@ -5861,6 +6007,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
   enhanceSliders();
   // Chart.js 렌더링을 위한 약간의 지연
   if(isKakao) setTimeout(()=>{ if(typeof updateMacro==='function') updateMacro(); }, 500);
+
+  // ★ URL 파라미터로 바로 결제 화면 진입
+  var urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('action') === 'subscribe') {
+    setTimeout(function() {
+      // 원트큐브 숨기고 바로 결제 모달
+      try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+      mpOpenSubscribe();
+    }, 800);
+  }
 });
 
 /* ━━━ 카톡 인앱 탭 클릭 보강 ━━━ */
@@ -6243,7 +6399,7 @@ document.addEventListener('DOMContentLoaded', function(){
    금융집짓기® 마이페이지 JS
 ════════════════════════════════════════ */
 let mpIsSubscribed = false;
-let mpSelectedPlan = 'month';
+let mpSelectedPlan = 'silver-month';
 const MP_MEMBER_KEY = 'fh_member_v1';
 
 // ─────────────────────────────────────────
@@ -6296,17 +6452,11 @@ function headerMainAction() {
 
 /* ── 구독 모달 ── */
 function mpOpenSubscribe() {
-  // 얼리버드 가격 업데이트
-  const _plan = getEarlyBirdPlan();
-  const _yEl = document.getElementById('mp-year-price');
-  const _yUEl = document.getElementById('mp-year-unit');
-  const _mPrice = document.querySelector('#mp-plan-month .mp-plan-price');
-  if(_yEl) _yEl.textContent = '₩' + _plan.annual.toLocaleString();
-  if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
-  if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
   updateEarlyBirdCounter();
   // 이름/이메일 입력 필드 초기화 (직접입력 방식)
   mpResetLoginUI();
+  // 기본 선택: 실버 월정기
+  mpSelectPlan('silver-month');
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
 }
@@ -6316,46 +6466,36 @@ function mpCloseSubscribe() {
 }
 function mpSelectPlan(p) {
   mpSelectedPlan = p;
-  document.getElementById('mp-plan-month').classList.toggle('mp-selected', p==='month');
-  document.getElementById('mp-plan-year').classList.toggle('mp-selected', p==='year');
-  const cta = document.getElementById('mp-sub-cta');
-  const plan = getEarlyBirdPlan();
-  if(cta) cta.textContent = p==='month'
-    ? '지금 ₩' + plan.monthly.toLocaleString() + '/월 구독 시작하기 →'
-    : '지금 ₩' + plan.annual.toLocaleString() + '/년 구독 시작하기 →';
+  // 모든 카드 선택 해제
+  var allCards = ['mp-plan-bronze','mp-plan-silver-month','mp-plan-silver-year','mp-plan-gold-month','mp-plan-gold-year'];
+  allCards.forEach(function(id) {
+    var el = document.getElementById(id);
+    if(el) { el.classList.remove('mp-selected'); el.style.borderColor = ''; }
+  });
+  // 선택된 카드 강조
+  var selectedEl = document.getElementById('mp-plan-' + p);
+  if(selectedEl) { selectedEl.classList.add('mp-selected'); selectedEl.style.borderColor = 'var(--gold)'; }
 
-  // 안내 문구: 월간만 표시 (정기결제), 연간은 숨김 (단건결제)
-  const notice = document.getElementById('mp-cert-notice');
-  const amountEl = document.getElementById('mp-cert-amount');
-  if(notice) notice.style.display = p==='month' ? 'flex' : 'none';
-  if(amountEl) amountEl.textContent = '₩' + plan.monthly.toLocaleString();
+  // CTA 버튼 텍스트 업데이트
+  var planInfo = FH_PLANS[p];
+  var cta = document.getElementById('mp-sub-cta');
+  if(cta && planInfo) {
+    if(p === 'bronze') cta.textContent = '지금 ₩9,900 브론즈 1회 결제하기 →';
+    else if(p === 'silver-month') cta.textContent = '지금 ₩9,900/월 실버 구독 시작하기 →';
+    else if(p === 'silver-year') cta.textContent = '지금 ₩99,000/년 실버 연회비 결제하기 →';
+    else if(p === 'gold-month') cta.textContent = '지금 ₩19,900/월 골드 구독 시작하기 →';
+    else if(p === 'gold-year') cta.textContent = '지금 ₩199,000/년 골드 연회비 결제하기 →';
+  }
+
+  // 정기결제 안내 (월정기만 표시)
+  var notice = document.getElementById('mp-cert-notice');
+  var amountEl = document.getElementById('mp-cert-amount');
+  if(notice) notice.style.display = (p === 'silver-month' || p === 'gold-month') ? 'flex' : 'none';
+  if(amountEl) amountEl.textContent = planInfo ? ('₩' + planInfo.price.toLocaleString()) : '';
 }
 function mpCompletePurchase() {
-  // Google 로그인 확인
-  var user = window._fhCurrentUser || null;
-  if (!user) {
-    showToast('Google 계정으로 먼저 로그인해 주세요.');
-    // 로그인 버튼 강조
-    var beforeEl = document.getElementById('fh-before-login');
-    if (beforeEl) {
-      beforeEl.style.animation = 'none';
-      beforeEl.offsetHeight; // reflow
-      beforeEl.style.transition = 'box-shadow .2s';
-      beforeEl.style.boxShadow = '0 0 0 2px #C9972A';
-      setTimeout(function() { beforeEl.style.boxShadow = 'none'; }, 1500);
-    }
-    return;
-  }
-
-  // 결제자 정보 확인 (onAuthStateChanged에서 이미 설정됨)
-  if (!window._fhPayerEmail) {
-    showToast('로그인 정보를 확인할 수 없습니다. 다시 로그인해 주세요.');
-    fhGoogleLogout();
-    return;
-  }
-
-  // 결제 실행
-  confirmPay(mpSelectedPlan);
+  // MVP: mvpCompletePurchase로 대체됨 (간단 입력폼 방식)
+  mvpCompletePurchase();
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -6363,21 +6503,285 @@ function mpCompletePurchase() {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 // MVP: CTA 버튼 클릭 → develop은 결제 건너뛰고 바로 진입
+/* ━━━ 무료 재무건강점수 신청 모달 ━━━ */
+function freeScoreModalOpen() {
+  var m = document.getElementById('freeScoreModal');
+  if(m) m.style.display = 'flex';
+}
+function freeScoreModalClose() {
+  var m = document.getElementById('freeScoreModal');
+  if(m) m.style.display = 'none';
+}
+function freeScoreSubmit() {
+  var name = (document.getElementById('free-name') || {}).value || '';
+  var phone = (document.getElementById('free-phone') || {}).value || '';
+  var email = (document.getElementById('free-email') || {}).value || '';
+  var privacy = (document.getElementById('free-privacy') || {}).checked || false;
+
+  if(!name.trim()) { showToast('이름을 입력해 주세요.'); return; }
+  if(!phone.trim()) { showToast('전화번호를 입력해 주세요.'); return; }
+  if(!email.trim() || email.indexOf('@') < 0) { showToast('올바른 이메일을 입력해 주세요.'); return; }
+  if(!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
+
+  // 원트큐브 결과 데이터 수집
+  var resultTitle = (document.getElementById('fn-r-title') || {}).textContent || '';
+  var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
+  var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
+
+  // ★ 재무건강점수 계산 (통계 중간값 기반)
+  var scoreData = calcFreeHealthScore(fnAnswers);
+
+  // ★ make.com 웹훅으로만 전송 (구글시트 기록 + 카톡 + 이메일 발송 모두 make.com에서 처리)
+  fetch('https://hook.eu1.make.com/slpo33bjiux7xs821r1deb5f67c1va28', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'free_score',
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      plan: '무료 재무건강점수',
+      result_title: resultTitle,
+      result_sub: resultSub,
+      result_d: resultD,
+      // ★ 재무검진결과표 데이터
+      health_score: scoreData.totalScore,
+      score_grade: scoreData.grade,
+      score_expense: scoreData.expense,
+      score_asset: scoreData.asset,
+      score_insurance: scoreData.insurance,
+      score_retirement: scoreData.retirement,
+      score_debt: scoreData.debt,
+      wealth_index: scoreData.wealthIndex,
+      wealth_grade: scoreData.wealthGrade,
+      age_label: scoreData.ageLabel,
+      income_label: scoreData.incomeLabel,
+      estimated_age: scoreData.estimatedAge,
+      estimated_income: scoreData.estimatedIncome,
+      estimated_asset: scoreData.estimatedAsset,
+      checkup_url: 'https://financial-house-building.vercel.app',
+      timestamp: new Date().toISOString()
+    })
+  }).then(function(r) { console.log('[무료점수] make.com 웹훅:', r.status); })
+    .catch(function(e) { console.log('[무료점수] make.com 오류:', e); });
+
+  // 모달 → 감사 화면(Thank You Screen)으로 전환
+  freeScoreModalClose();
+  showFreeThankYou(name.trim(), scoreData);
+}
+
+/* ━━━ 무료 신청 감사 화면 (Thank You Screen) ━━━ */
+function showFreeThankYou(name, scoreData) {
+  var gradeColor = scoreData.grade === '양호' ? '#16A34A' : scoreData.grade === '보통' ? '#F97316' : '#DC2626';
+  var gradeEmoji = scoreData.grade === '양호' ? '😊' : scoreData.grade === '보통' ? '🤔' : '😰';
+  var wealthEmoji = scoreData.wealthGrade === '궁전' ? '🏰' : scoreData.wealthGrade === '아파트' ? '🏢' :
+    scoreData.wealthGrade === '빌라' ? '🏘️' : scoreData.wealthGrade === '오두막' ? '🛖' : '⛺';
+
+  var thankDiv = document.getElementById('freeThankYou');
+  if(!thankDiv) return;
+
+  thankDiv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 22px;width:92%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;">'
+    + '<div style="font-size:42px;margin-bottom:8px;">🎉</div>'
+    + '<div style="font-size:20px;font-weight:900;color:#0B1D3A;margin-bottom:4px;">' + name + '님, 신청 완료!</div>'
+    + '<div style="font-size:12px;color:#8896B0;margin-bottom:20px;">이메일과 카톡으로 재무건강검진결과를 보내드립니다</div>'
+
+    // 점수 카드
+    + '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:20px;margin-bottom:16px;">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">나의 재무건강점수</div>'
+    + '<div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">'
+    + '<span style="font-size:48px;font-weight:900;color:' + gradeColor + ';">' + scoreData.totalScore + '</span>'
+    + '<span style="font-size:18px;color:rgba(255,255,255,.4);">/ 100점</span>'
+    + '</div>'
+    + '<div style="font-size:14px;font-weight:700;color:' + gradeColor + ';margin-top:4px;">' + gradeEmoji + ' ' + scoreData.grade + '</div>'
+    + '</div>'
+
+    // 5대 영역
+    + '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:16px;">'
+    + buildScoreCell('💰', '지출', scoreData.expense, 20)
+    + buildScoreCell('📈', '자산', scoreData.asset, 20)
+    + buildScoreCell('🛡️', '보험', scoreData.insurance, 20)
+    + buildScoreCell('🏖️', '노후', scoreData.retirement, 20)
+    + buildScoreCell('💳', '부채', scoreData.debt, 20)
+    + '</div>'
+
+    // 부자지수
+    + '<div style="background:#F8F5EE;border-radius:10px;padding:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">'
+    + '<div style="text-align:left;"><div style="font-size:10px;color:#8896B0;">부자지수</div><div style="font-size:18px;font-weight:900;color:#0B1D3A;">' + scoreData.wealthIndex + '%</div></div>'
+    + '<div style="text-align:right;"><div style="font-size:10px;color:#8896B0;">등급</div><div style="font-size:16px;font-weight:700;">' + wealthEmoji + ' ' + scoreData.wealthGrade + '</div></div>'
+    + '</div>'
+
+    // 안내 문구
+    + '<div style="background:#FFF8E6;border:1px solid rgba(201,151,42,.3);border-radius:10px;padding:12px;margin-bottom:16px;">'
+    + '<div style="font-size:11px;color:#92400E;line-height:1.7;">📋 본 결과는 <strong>통계 기반 추정치</strong>입니다.<br>정확한 진단은 <strong>유료 AI 재무검진</strong>에서 확인하세요.</div>'
+    + '</div>'
+
+    // 유료 CTA
+    + '<button onclick="thankYouToCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);margin-bottom:10px;">'
+    + '🏥 유료 AI 재무검진 시작하기 →'
+    + '<span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">5대 영역 전체 정밀 진단 · 맞춤형 재무설계</span>'
+    + '</button>'
+
+    // 홈으로
+    + '<button onclick="closeThankYou()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;">홈으로 돌아가기</button>'
+    + '</div>';
+
+  thankDiv.style.display = 'flex';
+}
+
+function buildScoreCell(icon, label, score, max) {
+  var pct = Math.round(score / max * 100);
+  var color = pct >= 70 ? '#16A34A' : pct >= 50 ? '#F97316' : '#DC2626';
+  return '<div style="background:#f5f5f0;border-radius:8px;padding:8px 4px;text-align:center;">'
+    + '<div style="font-size:14px;">' + icon + '</div>'
+    + '<div style="font-size:8px;color:#8896B0;margin:2px 0;">' + label + '</div>'
+    + '<div style="font-size:14px;font-weight:900;color:' + color + ';">' + score + '</div>'
+    + '<div style="font-size:7px;color:#ccc;">/' + max + '</div>'
+    + '</div>';
+}
+
+function thankYouToCheckup() {
+  document.getElementById('freeThankYou').style.display = 'none';
+  mvpStartCheckup();
+}
+
+function closeThankYou() {
+  document.getElementById('freeThankYou').style.display = 'none';
+}
+
+/* ━━━ 무료 재무건강점수 계산 (통계 중간값 기반) ━━━ */
+function calcFreeHealthScore(answers) {
+  if(!answers || answers.length < 6) {
+    return { totalScore: 0, grade: '측정불가', expense: 0, asset: 0, insurance: 0, retirement: 0, debt: 0,
+      wealthIndex: 0, wealthGrade: '—', ageLabel: '—', incomeLabel: '—',
+      estimatedAge: 0, estimatedIncome: 0, estimatedAsset: 0 };
+  }
+
+  var age = answers[0];    // young/mid/senior
+  var job = answers[1];    // worker/business/retired
+  var child = answers[2];  // none/one/multi
+  var income = answers[3]; // low/mid/high
+  var asset = answers[4];  // low/mid/high
+  var house = answers[5];  // none/one/multi
+
+  // 중간값 매핑
+  var ageMap = { young: 30, mid: 50, senior: 65 };
+  var incomeMap = { low: 350, mid: 700, high: 1400 }; // 만원
+  var assetMap = { low: 35000, mid: 75000, high: 140000 }; // 만원 (3.5억, 7.5억, 14억)
+  var familyMap = { none: 1, one: 3, multi: 4 };
+  var ageLabelMap = { young: '20~30대', mid: '40~50대', senior: '60~70대' };
+  var incomeLabelMap = { low: '500만원 이하', mid: '500~1,000만원', high: '1,000만원 초과' };
+
+  var estAge = ageMap[age] || 50;
+  var estIncome = incomeMap[income] || 700;
+  var estAsset = assetMap[asset] || 75000;
+  var familySize = familyMap[child] || 3;
+
+  // ── [지출관리 20점] 가족수 기준 예산표 대비 ──
+  var budgetPct = { 1: { living: 20, save: 50 }, 2: { living: 30, save: 40 },
+    3: { living: 40, save: 30 }, 4: { living: 50, save: 20 }, 5: { living: 60, save: 10 } };
+  var budget = budgetPct[Math.min(familySize, 5)] || budgetPct[4];
+  // 통계 기반 추정: 평균적으로 생활비 기준치 수준, 저축 기준치 미만으로 가정
+  var expenseScore = 0;
+  expenseScore += 3; // 생활비: 기준 동일 가정 (3점)
+  expenseScore += (income === 'high') ? 4 : (income === 'mid') ? 3 : 2; // 저축투자
+  expenseScore += (age === 'senior') ? 3 : 2; // 노후연금
+  expenseScore += 2; // 보장성보험 (모름 → 기본 2점)
+  expenseScore += (house === 'none') ? 4 : 3; // 대출원리금
+
+  // ── [자산형성 20점] ──
+  var annualIncome = estIncome * 12;
+  var wealthIndex = Math.round((estAsset * 10) / (estAge * annualIncome) * 100);
+  var wealthGrade = wealthIndex >= 200 ? '궁전' : wealthIndex >= 100 ? '아파트' :
+    wealthIndex >= 50 ? '빌라' : wealthIndex >= 25 ? '오두막' : '텐트';
+
+  var assetScore = 0;
+  assetScore += (wealthIndex >= 200) ? 5 : (wealthIndex >= 100) ? 4 : (wealthIndex >= 50) ? 3 : 2; // 부자지수
+  assetScore += (house === 'none') ? 4 : 3; // 부채비율 (무주택=부채 적음 추정)
+  assetScore += 3; // 비상예비자금 (모름 → 중간)
+  assetScore += (income === 'high') ? 4 : (income === 'mid') ? 3 : 2; // 가중평균수익률
+
+  // ── [보험보장 20점] 통계 기반 추정 ──
+  var insuranceScore = 0;
+  insuranceScore += (age === 'mid' || age === 'senior') ? 4 : 2; // 8대항목 (중년 이상 가입률 높음)
+  insuranceScore += (income === 'high') ? 8 : (income === 'mid') ? 6 : 4; // 보장성보험료
+
+  // ── [노후준비 20점] ──
+  var retirementScore = 0;
+  if(age === 'senior') {
+    retirementScore += 6; // 은퇴준비율 (이미 준비 중)
+    retirementScore += 5; // 연금저축
+  } else if(age === 'mid') {
+    retirementScore += 4;
+    retirementScore += (income === 'high') ? 5 : 3;
+  } else {
+    retirementScore += 2;
+    retirementScore += 2;
+  }
+
+  // ── [부채관리 20점] ──
+  var debtScore = 0;
+  if(house === 'none') {
+    debtScore += 5; // 신용대출 없음 추정
+    debtScore += 5; // 담보대출 없음
+    debtScore += 5; // 원리금 부담 없음
+    debtScore += 5; // 부채비율 0%
+  } else if(house === 'one') {
+    debtScore += 3;
+    debtScore += 2; // 담보대출 있음 추정
+    debtScore += 3;
+    debtScore += 3;
+  } else {
+    debtScore += 3;
+    debtScore += 0; // 다주택 담보대출
+    debtScore += 2;
+    debtScore += 2;
+  }
+
+  var totalScore = expenseScore + assetScore + insuranceScore + retirementScore + debtScore;
+  // 최대 100점 보정
+  totalScore = Math.min(100, Math.max(0, totalScore));
+
+  var grade = totalScore >= 80 ? '양호' : totalScore >= 60 ? '보통' : totalScore >= 40 ? '주의' : '위험';
+
+  return {
+    totalScore: totalScore,
+    grade: grade,
+    expense: Math.min(20, expenseScore),
+    asset: Math.min(20, assetScore),
+    insurance: Math.min(20, insuranceScore),
+    retirement: Math.min(20, retirementScore),
+    debt: Math.min(20, debtScore),
+    wealthIndex: wealthIndex,
+    wealthGrade: wealthGrade,
+    ageLabel: ageLabelMap[age] || '40~50대',
+    incomeLabel: incomeLabelMap[income] || '500~1,000만원',
+    estimatedAge: estAge,
+    estimatedIncome: estIncome,
+    estimatedAsset: estAsset
+  };
+}
+
 function mvpStartCheckup() {
-  // ★ 시뮬레이터 즉시 숨기기 (보였다가 가리는 문제 해결)
+  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
+  var trialStart = localStorage.getItem('fh_trial_start');
+  if(!trialStart) {
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    trialStart = new Date().toISOString();
+  }
+  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
+  if(daysPassed > 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
   var simWrap = document.getElementById('sim-wrap');
   if(simWrap) simWrap.style.display = 'none';
-
-  // 원트큐브 결과화면 숨기기
   document.getElementById('funnel-wrap').classList.add('fn-hidden');
-
-  // ★ develop 테스트용: 결제 없이 바로 구독 완료 처리
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
   mpIsSubscribed = true;
-
-  // 헤더 버튼 업데이트
   var btn = document.getElementById('btn-header-main');
   if(btn){
     btn.textContent = '🏥 AI 재무검진';
@@ -6385,23 +6789,34 @@ function mvpStartCheckup() {
     btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
     btn.style.animation = 'none';
   }
-
-  showToast('🎉 테스트 모드: AI 재무검진에 바로 진입합니다');
-  // 마이페이지(AI 재무검진) 즉시 오픈 (딜레이 제거)
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
   mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
 function mvpCompletePurchase() {
-  var nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
-  var phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
-  var emailVal = (document.getElementById('mvp-email') || {}).value || '';
+  // 구글 로그인된 사용자가 있으면 정보 자동 사용
+  var nameVal  = '';
+  var phoneVal = '';
+  var emailVal = '';
+
+  if(window._fhCurrentUser && window._fhCurrentUser.email) {
+    nameVal  = window._fhCurrentUser.displayName || '';
+    emailVal = window._fhCurrentUser.email || '';
+    phoneVal = (document.getElementById('mvp-phone') || {}).value || window._fhCurrentUser.phoneNumber || '';
+  } else {
+    nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
+    phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
+    emailVal = (document.getElementById('mvp-email') || {}).value || '';
+  }
+
   var privacyChecked = (document.getElementById('mvp-privacy') || {}).checked || false;
 
   // 유효성 검사
   if (!nameVal.trim()) {
     showToast('이름을 입력해 주세요.');
-    document.getElementById('mvp-name').focus();
+    var nameInput = document.getElementById('mvp-name');
+    if(nameInput) nameInput.focus();
     return;
   }
   if (!phoneVal.trim()) {
@@ -6411,7 +6826,8 @@ function mvpCompletePurchase() {
   }
   if (!emailVal.trim() || emailVal.indexOf('@') < 0) {
     showToast('올바른 이메일을 입력해 주세요.');
-    document.getElementById('mvp-email').focus();
+    var emailInput = document.getElementById('mvp-email');
+    if(emailInput) emailInput.focus();
     return;
   }
   if (!privacyChecked) {
@@ -6419,12 +6835,12 @@ function mvpCompletePurchase() {
     return;
   }
 
-  // 결제자 정보 저장 (기존 페이플 결제 흐름과 연동)
+  // 결제자 정보 저장
   window._fhPayerName  = nameVal.trim();
   window._fhPayerEmail = emailVal.trim();
   window._fhPayerPhone = phoneVal.trim();
 
-  // 가짜 user 객체 생성 (기존 Google user 의존 코드 호환)
+  // user 객체 생성 (기존 Google user 의존 코드 호환)
   window._fhCurrentUser = {
     displayName: nameVal.trim(),
     email: emailVal.trim(),
@@ -6432,36 +6848,13 @@ function mvpCompletePurchase() {
     uid: 'mvp_' + Date.now()
   };
 
-  // 구글시트 저장 (기존 웹훅 서버 활용)
-  mvpSaveToSheet(nameVal.trim(), phoneVal.trim(), emailVal.trim());
-
-  // ★ develop 테스트용: 결제 건너뛰고 바로 구독 완료
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  mpIsSubscribed = true;
-
-  try { mpCloseSubscribe(); } catch(e) {}
-
-  var _greeting = nameVal.trim() + '님, AI 재무검진 회원이 되셨습니다! 🏥';
-  showToast(_greeting);
-
-  // 헤더 버튼 업데이트
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-
-  // 마이페이지 자동 오픈
-  setTimeout(function(){ mpOpen(); }, 1500);
+  // ★ 결제 먼저 실행 (구글시트/make.com은 결제 성공 후에만 호출)
+  confirmPay(mpSelectedPlan);
 }
 
 // MVP: 구글시트 DB 저장 + 안내 발송
 function mvpSaveToSheet(name, phone, email) {
-  // 웹훅 서버로 고객 정보 전송
+  // 웹훅 서버로 고객 정보 전송 (구글시트 DB 저장)
   fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -6469,14 +6862,46 @@ function mvpSaveToSheet(name, phone, email) {
       name:  name,
       email: email,
       phone: phone,
-      plan:  'ai-checkup-mvp',
-      source: 'mvp-simple-form',
+      plan:  mpSelectedPlan,
+      source: 'main-payment-form',
       timestamp: new Date().toISOString()
     })
   }).then(function(r) {
-    console.log('[MVP 구글시트] 저장 완료:', r.status);
+    console.log('[구글시트] 저장 완료:', r.status);
   }).catch(function(e) {
-    console.log('[MVP 구글시트] 저장 오류:', e);
+    console.log('[구글시트] 저장 오류:', e);
+  });
+}
+
+// ★ make.com 웹훅 → 땡큐 카톡 + 땡큐 이메일 자동발송
+function mvpSendMakeWebhook(name, phone, email) {
+  var _planInfo = FH_PLANS[mpSelectedPlan] || { label: 'AI 재무검진', price: 9900 };
+  var planName = _planInfo.label;
+  var planAmount = _planInfo.price;
+
+  // make.com 웹훅 URL (상열님의 make.com 시나리오에서 발급받은 URL로 교체 필요)
+  var MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9';
+
+  fetch(MAKE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'signup',
+      name: name,
+      phone: phone,
+      email: email,
+      plan: planName,
+      amount: planAmount,
+      timestamp: new Date().toISOString(),
+      source: 'ai-checkup-mvp',
+      // 땡큐 메시지 발송 트리거
+      sendThankYouKakao: true,
+      sendThankYouEmail: true
+    })
+  }).then(function(r) {
+    console.log('[make.com] 웹훅 전송 완료:', r.status);
+  }).catch(function(e) {
+    console.log('[make.com] 웹훅 전송 오류 (URL 확인 필요):', e);
   });
 }
 
@@ -6486,6 +6911,17 @@ function mvpGoToDiag() {
   var privacyChk = document.getElementById('mvp-privacy-guide');
   if(privacyChk && !privacyChk.checked) {
     showToast('❗ 개인정보 수집 동의에 체크해 주세요.');
+    // ★ 체크박스 반짝임 + 섹션 하이라이트 효과
+    var privacyLabel = privacyChk.closest('label') || privacyChk.parentElement;
+    var privacySection = privacyChk.closest('.mpc') || privacyLabel;
+    if(privacyLabel) {
+      privacyChk.classList.add('privacy-shake');
+      setTimeout(function() { privacyChk.classList.remove('privacy-shake'); }, 600);
+    }
+    if(privacySection) {
+      privacySection.classList.add('privacy-highlight');
+      setTimeout(function() { privacySection.classList.remove('privacy-highlight'); }, 3000);
+    }
     privacyChk.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
@@ -6718,6 +7154,206 @@ function mvpPlayRec(idx) {
   }
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   음성 에러 대응 + 텍스트 전환 시스템
+   ★ 핵심 원칙: diagConnectVoice / vapi.start 등 음성 코드 수정 없음
+   ★ 에러 감지 → 배너 표시 → 텍스트 전환 or 음성 재시도
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// ── 에러 배너 표시 + 크레딧 중지 ──
+function handleVoiceError(err) {
+  console.warn('[음성 에러 대응]', err);
+
+  // 크레딧 타이머 즉시 중지
+  if(diagInt) {
+    clearInterval(diagInt);
+    diagInt = null;
+  }
+
+  // 사용한 크레딧만 기록 (남은 분 보존)
+  var usedMin = Math.ceil(diagSec / 60);
+  var totalCredit = parseInt(localStorage.getItem('fh_voice_limit') || '20');
+  var remaining = Math.max(0, totalCredit - usedMin);
+  localStorage.setItem('mvp_credit_min', String(remaining));
+  console.log('[크레딧] 에러로 중지 — 사용: ' + usedMin + '분, 잔여: ' + remaining + '분');
+
+  // 에러 배너 표시
+  showVoiceErrorBanner();
+
+  // 채팅 로그에도 안내
+  diagAddSTT('ai', '⚠️ 음성 연결이 일시 중단되었습니다. 텍스트로 전환하시거나 음성을 다시 시도할 수 있습니다.', null);
+}
+
+// ── 에러 배너 UI ──
+function showVoiceErrorBanner() {
+  // 기존 배너 제거
+  var old = document.getElementById('voiceErrorBanner');
+  if(old) old.remove();
+
+  var banner = document.createElement('div');
+  banner.id = 'voiceErrorBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;';
+  banner.innerHTML = '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:2px solid #C9972A;border-radius:14px;padding:24px;max-width:320px;width:100%;text-align:center;">'
+    + '<div style="font-size:32px;margin-bottom:10px;">⚠️</div>'
+    + '<div style="font-size:15px;font-weight:900;color:#E8B84B;margin-bottom:8px;">음성 연결이 일시 중단되었습니다</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.8;margin-bottom:16px;">'
+    + '기술적 사유로 음성이 전환됩니다.<br>'
+    + '텍스트로 상담을 이어가겠습니다.<br>'
+    + '<span style="color:#E8B84B;font-weight:700;">크레딧은 중지되었으니 안심하세요.</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="switchToTextMode()" style="flex:1;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:14px;font-weight:900;cursor:pointer;font-family:var(--fn);">💬 텍스트 상담 전환</button>'
+    + '<button onclick="retryVoice()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:14px;font-weight:900;cursor:pointer;font-family:var(--fn);">🔄 다시 시도</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(banner);
+}
+
+// ── 텍스트 모드 전환 ──
+function switchToTextMode() {
+  // 에러 배너 숨기기
+  var banner = document.getElementById('voiceErrorBanner');
+  if(banner) banner.remove();
+
+  // 텍스트 모드 활성화
+  mvpTextOnlyMode = true;
+
+  // 음성 UI 요소 숨기기
+  var wave = document.getElementById('diagWave');
+  if(wave) wave.style.display = 'none';
+
+  // 입력창 강조
+  var inp = document.getElementById('diagTextInp');
+  if(inp) {
+    inp.placeholder = '메시지를 입력하세요... (텍스트 상담 중)';
+    inp.style.fontSize = '14px';
+    inp.style.borderColor = '#C9972A';
+  }
+
+  // 상태 표시 변경
+  var timerEl = document.getElementById('diagTimer');
+  if(timerEl) timerEl.style.color = '#E8B84B';
+  showToast('💬 텍스트 상담으로 전환되었습니다');
+
+  // 대화 내역 수집 → 텍스트 상담 시작
+  var conversationHistory = collectConversationHistory();
+  startTextConsultWithHistory(conversationHistory);
+}
+
+// ── 음성 다시 시도 ──
+function retryVoice() {
+  var banner = document.getElementById('voiceErrorBanner');
+  if(banner) banner.remove();
+
+  showToast('🔄 음성 재연결 중...');
+  // 크레딧 타이머 재개
+  setTimeout(function() {
+    _vapiConnecting = false;
+    // ★ diagConnectVoice() 자체를 호출 (음성 코드 내부 수정 없음)
+    diagConnectVoice();
+  }, 3000);
+}
+
+// ── 대화 내역 수집 (채팅 로그에서) ──
+function collectConversationHistory() {
+  var history = [];
+  var chatLog = document.getElementById('dn_chat_log');
+  if(chatLog) {
+    var bubbles = chatLog.querySelectorAll('[data-role]');
+    bubbles.forEach(function(b) {
+      var role = b.getAttribute('data-role');
+      var text = b.textContent.trim();
+      if(text && role) {
+        history.push({ role: role === 'user' ? 'user' : 'assistant', content: text });
+      }
+    });
+    // data-role 없으면 스타일 기반 추출
+    if(history.length === 0) {
+      chatLog.querySelectorAll('div').forEach(function(div) {
+        var txt = div.textContent.trim();
+        if(!txt || txt.length < 2) return;
+        // AI 메시지: 왼쪽 정렬, 사용자: 오른쪽 정렬
+        var isRight = div.style.textAlign === 'right' || div.style.marginLeft === 'auto';
+        if(txt.length > 3 && !txt.startsWith('⚠️')) {
+          history.push({ role: isRight ? 'user' : 'assistant', content: txt });
+        }
+      });
+    }
+  }
+  return history;
+}
+
+// ── 대화 맥락 이어서 텍스트 상담 시작 ──
+function startTextConsultWithHistory(history) {
+  window._textConsultHistory = history;
+
+  // 마지막 AI 질문 찾기
+  var lastAiMessage = '';
+  for(var i = history.length - 1; i >= 0; i--) {
+    if(history[i].role === 'assistant') {
+      lastAiMessage = history[i].content;
+      break;
+    }
+  }
+
+  // 전환 안내 메시지
+  diagAddSTT('ai', '음성 연결이 전환되었습니다. 걱정 마세요, 지금까지 말씀하신 내용은 모두 기억하고 있습니다. 텍스트로 이어서 진행하겠습니다.', null);
+
+  // 마지막 질문 다시 표시
+  if(lastAiMessage && lastAiMessage.length > 10) {
+    setTimeout(function() {
+      diagAddSTT('ai', '아까 질문을 다시 드립니다: ' + lastAiMessage, null);
+    }, 1500);
+  }
+}
+
+// ── 텍스트 상담 메시지 전송 (Render 서버 Claude API) ──
+async function sendTextConsultMessage(userText) {
+  diagAddSTT('user', userText, null);
+
+  // 로딩 표시
+  var loadingId = 'loading_' + Date.now();
+  diagAddSTT('ai', '💭 생각 중...', loadingId);
+
+  try {
+    // 대화 이력 구성
+    var history = window._textConsultHistory || [];
+    history.push({ role: 'user', content: userText });
+
+    // 최근 20개만 전송 (토큰 절약)
+    var recentHistory = history.slice(-20);
+
+    var resp = await fetch('https://moneya-server.onrender.com/api/consult-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userText,
+        userName: window._fhPayerName || '',
+        conversationHistory: recentHistory
+      })
+    });
+
+    var data = await resp.json();
+
+    // 로딩 메시지 제거
+    var loadEl = document.getElementById(loadingId);
+    if(loadEl) loadEl.remove();
+
+    if(data.success && data.message) {
+      diagAddSTT('ai', data.message, null);
+      history.push({ role: 'assistant', content: data.message });
+      window._textConsultHistory = history;
+    } else {
+      diagAddSTT('ai', '죄송합니다. 잠시 후 다시 시도해 주세요.', null);
+    }
+  } catch(e) {
+    var loadEl2 = document.getElementById(loadingId);
+    if(loadEl2) loadEl2.remove();
+    console.error('[텍스트 상담 오류]', e);
+    diagAddSTT('ai', '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', null);
+  }
+}
+
 /* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
 var mvpTextOnlyMode = false;
 
@@ -6766,9 +7402,20 @@ function mvpVoiceTimeUp() {
   if(liveDot) liveDot.style.background = '#3b82f6';
 
   // STT 영역에 안내 메시지
-  diagAddSTT('ai', '⏰ 음성 크레딧 50분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
+  diagAddSTT('ai', '⏰ 음성 크레딧이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
 
   showToast('🔵 음성 종료 · 텍스트 무제한 상담 계속 가능');
+
+  // ★ 자동 텍스트 모드 전환 (에러 배너 없이 자연스럽게)
+  mvpTextOnlyMode = true;
+  var conversationHistory = collectConversationHistory();
+  window._textConsultHistory = conversationHistory;
+  var inp = document.getElementById('diagTextInp');
+  if(inp) {
+    inp.placeholder = '메시지를 입력하세요... (텍스트 상담 중)';
+    inp.style.fontSize = '14px';
+    inp.style.borderColor = '#C9972A';
+  }
 }
 
 function mpOpen() {
@@ -7304,11 +7951,13 @@ function mpTab(idx, btn) {
     if(mpContent) mpContent.classList.add('diag-mode');
     if(panel2) panel2.classList.add('diag-active');
     // MVP: AI진단 탭 진입 시 바로 상담 화면으로 전환 (준비화면 건너뛰기)
+    // ★ diagStartConsult는 mvpGoToDiag에서 호출하므로 여기서는 화면 전환만
     setTimeout(function(){
       var sa = document.getElementById('diagScreenA');
       var sb = document.getElementById('diagScreenB');
       if(sa && sb && sb.style.display !== 'flex') {
-        diagStartConsult();
+        if(sa) sa.style.display='none';
+        if(sb) { sb.style.display='flex'; sb.style.flexDirection='column'; sb.style.height='100%'; sb.style.overflow='hidden'; }
       }
     }, 300);
   } else {
@@ -7430,7 +8079,7 @@ function mpStartVideoConsult() {
 // ── FAQ ──
 const MP_FAQ = [
   { q:'금융집짓기®란 무엇인가요?', a:'오원트금융연구소에서 개발한 재무설계 방법론으로, 집을 짓듯이 체계적으로 금융 계획을 세우는 프로그램입니다.' },
-  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 첫 달 50분, 이후 매월 50분 크레딧이 제공됩니다.' },
+  { q:'AI진단상담 이용 방법은?', a:'AI진단상담 탭에서 화상진단 시작하기 버튼을 클릭하세요. 플랜별 음성 크레딧(브론즈 10분·실버 20분·골드 40분)이 제공됩니다.' },
   { q:'구독 해지는 어떻게 하나요?', a:'계정 탭 > 구독 관리에서 해지 신청하실 수 있습니다. 해지 후에도 이번 달 말까지 이용 가능합니다.' },
   { q:'재무설계 리포트는 어디서 보나요?', a:'시뮬레이터에서 저장하기를 누르면 히스토리 탭에 자동 기록됩니다.' },
   { q:'오상열 CFP 직접 상담은?', a:'서비스 탭 > 강의·상담 신청에서 비대면/대면 상담을 신청하실 수 있습니다.' },
@@ -7568,10 +8217,19 @@ function mpInitHistory() { mpRefreshHistory(); }
 /* ── A-7: 얼리버드 카운터 + 폭죽 + 가격 자동 전환 ── */
 
 // 가격 정책
+/* ━━━ 플랜 가격 구조 (브론즈/실버/골드) ━━━ */
+const FH_PLANS = {
+  bronze:       { price: 9900,   label: '브론즈 1회',      voiceMin: 10, type: 'single', expireHours: 24 },
+  'silver-month': { price: 9900,   label: '실버 월정기',     voiceMin: 20, type: 'subscription' },
+  'silver-year':  { price: 99000,  label: '실버 연회비',     voiceMin: 20, type: 'single' },
+  'gold-month':   { price: 19900,  label: '골드 월정기',     voiceMin: 40, type: 'subscription' },
+  'gold-year':    { price: 199000, label: '골드 연회비',     voiceMin: 40, type: 'single' },
+};
+/* 얼리버드 호환 래퍼 — 기존 getEarlyBirdPlan() 호출 코드 유지 */
 const FH_PRICE_TIERS = [
-  { limit: 1000,  monthly: 9900,   annual: 99000,   name: '실버', annualUrl: 'https://link.payple.kr/NzcxOjc3MzkxNjA3NzQwMzI5' },
-  { limit: 10000, monthly: 19000,  annual: 190000,  name: '실버', annualUrl: '' },
-  { limit: Infinity, monthly: 29000, annual: 290000, name: '실버', annualUrl: '' },
+  { limit: 1000,    monthly: 9900,  annual: 99000,  name: '실버', annualUrl: '' },
+  { limit: 10000,   monthly: 9900,  annual: 99000,  name: '실버', annualUrl: '' },
+  { limit: Infinity, monthly: 9900, annual: 99000,  name: '실버', annualUrl: '' },
 ];
 
 function getEarlyBirdPlan() {
@@ -7620,7 +8278,7 @@ function checkMilestone(newCount) {
     showMilestoneModal('🎊 1만명 돌파!', '₩29,000으로 가격이 변경됩니다');
   } else if(newCount >= 1000 && prev < 1000) {
     launchFireworks('mega'); // 1천명 대형 폭죽
-    showMilestoneModal('🎉 1,000명 돌파!', '지금부터 ₩19,000으로 가격이 변경됩니다');
+    showMilestoneModal('🎉 1,000명 돌파!', '지금부터 ₩29,000으로 가격이 변경됩니다');
   } else if(newHundred > prevHundred) {
     launchFireworks('mini'); // 100명 단위 미니 폭죽
   }
@@ -7981,6 +8639,11 @@ function mpDoWithdraw() {
           photoEl.src = user.photoURL;
           photoEl.style.display = 'block';
         }
+        // ★ 입력 필드 자동 채우기
+        var nameInp = document.getElementById('mvp-name');
+        var emailInp = document.getElementById('mvp-email');
+        if(nameInp && !nameInp.value) nameInp.value = user.displayName || '';
+        if(emailInp && !emailInp.value) emailInp.value = user.email || '';
       } else {
         beforeEl.style.display = 'block';
         afterEl.style.display  = 'none';
@@ -8555,7 +9218,7 @@ function fhEndConsult() {
 }
 
 function fhDownloadReport() {
-  showToast('📄 종합재무설계 리포트 PDF 다운로드 중...');
+  showToast('📄 AI 재무검진결과 리포트 PDF 다운로드 중...');
 }
 
 function fhSwitchTab(id, btn) {
@@ -8965,9 +9628,13 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    if(diagSec===45*60) showToast('⏰ 45분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
-    if(diagSec===49*60) showToast('⚠️ 49분 경과 · 1분 남았습니다!');
-    if(diagSec===50*60) {
+    var _voiceLimit = parseInt(localStorage.getItem('fh_voice_limit') || '20');
+    var _warnMin5 = (_voiceLimit - 5) * 60;
+    var _warnMin1 = (_voiceLimit - 1) * 60;
+    var _limitSec = _voiceLimit * 60;
+    if(diagSec === _warnMin5 && _warnMin5 > 0) showToast('⏰ ' + (_voiceLimit-5) + '분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
+    if(diagSec === _warnMin1 && _warnMin1 > 0) showToast('⚠️ ' + (_voiceLimit-1) + '분 경과 · 1분 남았습니다!');
+    if(diagSec === _limitSec) {
       // ★ 음성만 종료, 텍스트 상담은 계속 가능
       mvpVoiceTimeUp();
     }
@@ -8975,7 +9642,7 @@ function diagStartConsult() {
   },1000);
 
   // 실제 음성 연결 시작
-  diagConnectVoice();
+  if(!_vapiConnecting) diagConnectVoice();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -9001,15 +9668,22 @@ const diagFinCtx = {
 };
 
 /* [DEV-001] Vapi.ai 음성 연결 */
+var _vapiConnecting = false;
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
 
+  /* ── 중복 호출 방지 ── */
+  if(_vapiConnecting) { console.log('[Vapi] 이미 연결 중 — 중복 호출 차단'); return; }
+  _vapiConnecting = true;
+
   /* ── 기존 Vapi 인스턴스 정리 (중복 방지) ── */
   if(vapi) {
     try { vapi.stop(); } catch(e) { console.log('[Vapi] 기존 인스턴스 정리:', e.message); }
+    try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null;
     vapiCallActive = false;
+    await new Promise(function(r){ setTimeout(r, 1000); }); // 1초 대기
   }
 
   try {
@@ -9027,11 +9701,15 @@ async function diagConnectVoice(isPaid) {
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    console.log('[DEBUG] vapiSDK:', typeof vapiSDK, vapiSDK);
+    console.log('[DEBUG] VapiClass:', typeof window.VapiClass, window.VapiClass);
     console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
     console.log('[DEBUG] assistantId:', assistantId);
-    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
-    console.log('[DEBUG] run result:', vapi);
+    if(!window.VapiClass) { showToast('❌ Vapi SDK 로드 중... 잠시 후 다시 시도해주세요'); return; }
+    var VapiConstructor = window.VapiClass.default || window.VapiClass;
+    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
+    console.log('[DEBUG] vapi instance:', vapi);
+    if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
+    console.log('[DEBUG] Vapi instance:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); return; }
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
@@ -9087,7 +9765,15 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      showToast('📞 상담이 종료됐습니다');
+      // ★ 비정상 종료 감지: 크레딧이 남아있는데 통화가 끝남 = 에러
+      var _remainCredit = parseInt(localStorage.getItem('fh_voice_limit') || '20');
+      var _usedMin = Math.ceil(diagSec / 60);
+      if(_usedMin < _remainCredit && !mvpTextOnlyMode) {
+        console.warn('[Vapi] 비정상 종료 감지 — 사용:' + _usedMin + '분, 한도:' + _remainCredit + '분');
+        handleVoiceError({ type: 'call-end-unexpected' });
+      } else {
+        showToast('📞 상담이 종료됐습니다');
+      }
       /* DEV-003: 리포트 생성 — 추후 활성화 */
       // generateFinalReport();
     });
@@ -9095,13 +9781,15 @@ async function diagConnectVoice(isPaid) {
     /* ── 오류 ── */
     vapi.on('error', function(e) {
       console.error('[Vapi 오류]', e);
-      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
+      handleVoiceError(e);
     });
 
     /* ── 통화 시작 (이벤트 등록 후 마지막에 호출) ── */
     vapi.start(assistantId);
+    _vapiConnecting = false;
 
   } catch(e) {
+    _vapiConnecting = false;
     console.error('[Vapi 연결 오류]', e);
     showToast('❌ 연결 오류: ' + e.message);
   }
@@ -9329,9 +10017,8 @@ function diagBuildNotes() {
   container.innerHTML = `
 <style>
 #dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
-#dnTabs{display:flex;overflow-x:auto;gap:2px;padding:6px 8px 0;background:#0B1D3A;scrollbar-width:none;flex-shrink:0;}
-#dnTabs::-webkit-scrollbar{display:none;}
-.dnt{flex-shrink:0;padding:7px 11px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;cursor:pointer;
+#dnTabs{display:flex;flex-wrap:wrap;gap:2px;padding:6px 8px 0;background:#0B1D3A;flex-shrink:0;}
+.dnt{flex-shrink:0;padding:5px 8px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;cursor:pointer;
   color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
 .dnt.active{background:#F4F6FA;color:#0B1D3A;}
 .dnt.done{color:#E8B84B;}
@@ -9470,6 +10157,28 @@ function diagBuildNotes() {
         <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
         <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app"></span></div>
         <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
+
+        <!-- ★ 오상열 CFP 프로필 카드 -->
+        <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:16px;border:1.5px solid rgba(201,151,42,.3);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #C9972A;flex-shrink:0;">
+            <div>
+              <div style="font-size:14px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">오원트금융연구소 · 금융집짓기® 창시자</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;color:rgba(255,255,255,.7);line-height:1.7;">
+            <div>🏆 국제공인 재무설계사(CFP)</div>
+            <div>📺 SBS biz 100분 머니쇼</div>
+            <div>🎓 한국금융연수원 외래교수</div>
+            <div>🏛️ 금융감독원 머니콘서트</div>
+            <div>📚 저서 「소원을 말해봐」</div>
+            <div>📚 저서 「빚부터 갚아라」</div>
+            <div>🎬 유튜브 구독자 4.5만</div>
+            <div>📋 상담 경력 20년 · 2,000건+</div>
+          </div>
+          <div style="margin-top:10px;text-align:center;font-size:8px;color:rgba(201,151,42,.6);">본 AI 재무검진은 오상열 CFP의 금융집짓기® 방법론을 기반으로 합니다</div>
+        </div>
       </div>
     </div>
   </div>
@@ -9866,28 +10575,29 @@ function diagBuildNotes() {
   <!-- 패널10: 리포트 -->
   <div class="dnp" id="dnp10">
     <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">종합재무설계 리포트</div><div class="dncsub">상담 완료 후 자동 발급</div></div></div>
+      <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">AI 재무검진결과 리포트</div><div class="dncsub">상담 완료 후 자동 발급</div></div></div>
       <div class="dncbody" id="diagReportContent">
-        <div style="text-align:center;padding:16px">
+        <!-- 상담 전: 안내 -->
+        <div id="diagReportPlaceholder" style="text-align:center;padding:16px">
           <div style="font-size:26px;margin-bottom:7px">📄</div>
-          <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">종합재무설계 리포트</div>
-          <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 PDF 자동 발급</div>
+          <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">AI 재무검진결과 리포트</div>
+          <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 자동 발급</div>
           <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
-            <span style="color:#C9972A">✦</span> 금융집짓기® 설계도면<br>
-            <span style="color:#C9972A">✦</span> 7대영역 실행 계획<br>
-            <span style="color:#C9972A">✦</span> DESIRE 로드맵<br>
-            <span style="color:#C9972A">✦</span> 재무점수 및 등급 · 월별 액션플랜
+            <span style="color:#C9972A">✦</span> 5대 영역 재무건강점수<br>
+            <span style="color:#C9972A">✦</span> 부자지수 & 등급<br>
+            <span style="color:#C9972A">✦</span> 항목별 판정 (양호/주의/위험)<br>
+            <span style="color:#C9972A">✦</span> 강점 & 개선점 & 액션플랜
           </div>
         </div>
+        <!-- 상담 후: 재무검진결과표 (JS로 채움) -->
         <div id="diagReportReady" style="display:none">
-          <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3)">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-              <div style="font-size:28px">🏆</div>
-              <div><div style="font-size:12px;font-weight:900;color:#fff">종합재무설계 리포트</div>
-              <div style="font-size:8.5px;color:rgba(255,255,255,.5);margin-top:2px" id="diagReportDate">생성 중...</div></div>
-              <div style="margin-left:auto;text-align:center"><div style="font-size:28px;font-weight:900;color:#E8B84B" id="diagReportScore">—</div><div style="font-size:8px;color:rgba(255,255,255,.4)">재무점수</div></div>
-            </div>
-            <button onclick="showToast('📄 PDF 생성 중... 다운로드가 시작됩니다!')" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ PDF 리포트 다운로드</button>
+          <!-- 종료 안내 배너 (JS에서 삽입) -->
+          <!-- 재무검진결과표 본문 -->
+          <div id="diagReportBody"></div>
+          <!-- 다운로드 + 공유 버튼 -->
+          <div style="display:flex;gap:8px;margin:12px 0;">
+            <button onclick="downloadReportPDF()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ 다운로드</button>
+            <button onclick="shareReport()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">📤 공유하기</button>
           </div>
         </div>
       </div>
@@ -9904,6 +10614,9 @@ function diagBuildNotes() {
     document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
     document.getElementById('dnPanels').scrollTop = 0;
     if(i===8) dnLoadBA();
+    // ★ 탭 자동 스크롤 — 선택된 탭이 보이도록
+    var activeTab = document.querySelectorAll('.dnt')[i];
+    if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
   };
 
   // ── 히스토리 BA 연동
@@ -9936,14 +10649,11 @@ function diagActivatePart(idx) {
   diagCurPart = idx;
 
   // 새 탭형 노트 전환
-  var tabIdx = idx <= 4 ? idx :
-               idx === 5 ? 5 :
-               idx === 6 ? 6 :
-               idx === 7 ? 6 :
+  var tabIdx = idx <= 6 ? idx :
+               idx === 7 ? 7 :
                idx === 8 ? 7 :
                idx === 9 ? 8 :
-               idx === 10 ? 9 :
-               idx === 11 ? 10 : idx;
+               idx === 10 ? 10 : idx;
   if(typeof dnGo === 'function') dnGo(tabIdx);
 
   // 프로세스 바 업데이트
@@ -10038,16 +10748,21 @@ function diagTogglePause() {
   if(diagPaused) {
     /* [DEV-001] Vapi 마이크 음소거 */
     if(vapi && vapiCallActive) { try{ vapi.setMuted(true); }catch(e){} }
-    /* ── 스피커(오디오 출력)도 음소거 ── */
-    try { document.querySelectorAll('audio').forEach(function(a){ a.muted = true; a.volume = 0; }); } catch(e){}
+    /* ── 스피커 음소거: Vapi audio만 볼륨 0 (태그 제거하지 않음) ── */
+    try { document.querySelectorAll('audio').forEach(function(a){ a.volume = 0; }); } catch(e){}
     showToast('⏸ 일시정지');
   } else {
     /* ── 텍스트 전용 모드면 오디오 복원하지 않음 ── */
     if(!mvpTextOnlyMode) {
       if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
-      try { document.querySelectorAll('audio').forEach(function(a){ a.muted = false; a.volume = 1; }); } catch(e){}
+      /* ── 스피커 볼륨 복원 (muted 건드리지 않음) ── */
+      try { document.querySelectorAll('audio').forEach(function(a){ a.volume = 1; }); } catch(e){}
+      /* ★ Vapi에 재개 신호 — 침묵 상태에서 깨우기 */
+      if(vapi && vapiCallActive) {
+        try { vapi.send({ type: 'add-message', message: { role: 'system', content: '고객이 일시정지를 해제했습니다. 방금 하던 이야기를 이어서 해주세요.' } }); } catch(e) { console.log('[Vapi] 재개 신호 오류:', e); }
+      }
     }
-    showToast('▶ 재개');
+    showToast('▶ 재개 — 상담을 이어갑니다');
   }
 }
 function diagShowEndModal() {
@@ -10055,7 +10770,18 @@ function diagShowEndModal() {
   if(_trainMode) { endTrainSession(); return; }
   const m=document.getElementById('diagEndModal'); if(m) m.style.display='flex';
 }
-function diagHideEndModal() { const m=document.getElementById('diagEndModal'); if(m) m.style.display='none'; }
+function diagHideEndModal() {
+  const m=document.getElementById('diagEndModal'); if(m) m.style.display='none';
+  /* ★ 계속하기: Vapi 음소거 해제 + 재개 신호 */
+  if(!mvpTextOnlyMode) {
+    if(vapi && vapiCallActive) { try{ vapi.setMuted(false); }catch(e){} }
+    try { document.querySelectorAll('audio').forEach(function(a){ a.volume = 1; }); } catch(e){}
+    if(vapi && vapiCallActive) {
+      try { vapi.send({ type: 'add-message', message: { role: 'system', content: '고객이 상담을 계속하기로 했습니다. 방금 하던 이야기를 이어서 해주세요.' } }); } catch(e) {}
+    }
+  }
+  showToast('▶ 상담을 계속합니다');
+}
 function diagEndConsult() {
   diagHideEndModal();
   clearInterval(diagInt);
@@ -10068,7 +10794,7 @@ function diagEndConsult() {
 
   /* MVP: 크레딧 차감 (사용 시간 저장) */
   var usedMin = Math.ceil(diagSec / 60);
-  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '30');
+  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '50');
   var remaining = Math.max(0, totalCredit - usedMin);
   localStorage.setItem('mvp_credit_min', String(remaining));
   localStorage.setItem('mvp_last_session_min', String(usedMin));
@@ -10105,11 +10831,12 @@ function diagEndConsult() {
   // try{ if(diagWorkletNode){ diagWorkletNode.disconnect(); diagWorkletNode=null; } }catch(e){}
   // if(diagWs) { try{ diagWs.close(1000, 'user_ended'); }catch(e){} diagWs = null; }
 
-  // 리포트 활성화
-  const nr=document.getElementById('diagReportReady');
+  // 리포트 활성화 + 재무검진결과표 렌더링
+  var nr=document.getElementById('diagReportReady');
   if(nr) nr.style.display='block';
-  const rd=document.getElementById('diagReportDate');
-  if(rd) rd.textContent=DIAG_TODAY_STR+' · '+DIAG_SESSION_NUM+'회차 · '+Math.floor(diagSec/60)+'분 진단';
+  var ph=document.getElementById('diagReportPlaceholder');
+  if(ph) ph.style.display='none';
+  renderHealthReport(); // ★ 재무검진결과표 렌더링
   if(typeof dnGo==='function') dnGo(10); // 리포트 탭으로
   // 히스토리에 리포트 추가
   const list=document.getElementById('reportHistList');
@@ -10125,20 +10852,544 @@ function diagEndConsult() {
     list.insertBefore(div, list.firstChild);
   }
   showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
+
+  /* ★ 종료 안내 배너 — 리포트 탭 상단에 삽입 */
+  var usedMinDisplay = Math.floor(diagSec / 60);
+  var remainingCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
+  var endBannerHTML = '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:2px solid #C9972A;border-radius:14px;padding:18px;margin:0 0 12px;text-align:center;">'
+    + '<div style="font-size:24px;margin-bottom:6px;">✅</div>'
+    + '<div style="font-size:15px;font-weight:900;color:#E8B84B;margin-bottom:8px;">상담이 종료되었습니다</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;">'
+    + '📊 진행 시간: <strong>' + usedMinDisplay + '분</strong><br>'
+    + '🎙️ 남은 크레딧: <strong>' + remainingCredit + '분</strong><br>'
+    + '📋 회차: ' + DIAG_SESSION_NUM + '회차 ' + (DIAG_IS_FIRST ? '초회진단' : '정기상담') + '</div></div>';
+
+  // 리포트 탭 상단에 삽입
+  var reportReady = document.getElementById('diagReportReady');
+  if(reportReady) {
+    reportReady.insertAdjacentHTML('afterbegin', endBannerHTML);
+  }
+
+  // 채팅 로그에도 표시
+  var chatLog = document.getElementById('dn_chat_log');
+  if(chatLog) {
+    var endDiv = document.createElement('div');
+    endDiv.innerHTML = endBannerHTML;
+    chatLog.appendChild(endDiv);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
 }
+/* ━━━ 재무검진결과표 렌더링 (건강검진표 스타일) ━━━ */
+function renderHealthReport() {
+  var body = document.getElementById('diagReportBody');
+  if(!body) return;
+
+  var nd = collectNoteData();
+  var sc = calcHealthScore(nd);
+
+  var today = new Date();
+  var dateStr = today.getFullYear() + '년 ' + (today.getMonth()+1) + '월 ' + today.getDate() + '일';
+  var isPaid = window.mpIsSubscribed || localStorage.getItem('fh_subscribed') === '1';
+  var freeLabel = isPaid ? '유료 AI 재무검진' : '🆓 무료 검진 (통계 기반)';
+
+  // 판정 색상
+  function gradeColor(g) {
+    return g==='양호'||g==='정상' ? '#16A34A' : g==='주의' ? '#F97316' : g==='위험' ? '#DC2626' : '#999';
+  }
+  function gradeBg(g) {
+    return g==='양호'||g==='정상' ? '#F0FDF4' : g==='주의' ? '#FFF7ED' : g==='위험' ? '#FEE2E2' : '#F9FAFB';
+  }
+  var totalGrade = sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험';
+  var totalColor = gradeColor(totalGrade);
+
+  // 부자지수 등급 이모지
+  var wEmoji = sc.wealthGrade==='궁전'?'🏰':sc.wealthGrade==='아파트'?'🏢':sc.wealthGrade==='빌라'?'🏘️':sc.wealthGrade==='오두막'?'🛖':'⛺';
+
+  // DESIRE 단계
+  var desireStep = (document.getElementById('desire_cur_step') || {}).textContent || '—';
+  if(desireStep.includes('계산')) desireStep = '—';
+
+  // 은퇴준비율
+  var retireRate = (document.getElementById('f81_rate') || {}).textContent || nd.retireRate || '—';
+
+  // ── 헬퍼 함수 ──
+  function hdr(ico, title, score, max) {
+    var pct = max>0 ? Math.round(score/max*100) : 0;
+    var gc = gradeColor(pct>=70?'양호':pct>=50?'주의':'위험');
+    return '<tr style="background:#0B1D3A;"><td colspan="4" style="padding:8px 10px;">'
+      +'<span style="color:#E8B84B;font-size:11px;font-weight:900;">'+ico+' '+title+'</span>'
+      +(max>0?'<span style="float:right;font-size:11px;font-weight:900;color:'+gc+';">'+score+' / '+max+'점</span>':'')
+      +'</td></tr>';
+  }
+  function row(label, val, std, grade) {
+    var isPaidItem = (val === '—' && !isPaid);
+    var displayVal = isPaidItem ? '<span style="color:#bbb;font-size:9px;">유료검진 필요</span>' : val;
+    var displayGrade = isPaidItem ? '<span style="color:#ccc;font-size:9px;font-style:italic;">*유료검진 필요</span>' : ('<span style="font-weight:700;color:'+gradeColor(grade)+';background:'+gradeBg(grade)+';padding:2px 6px;border-radius:4px;font-size:9px;">'+grade+'</span>');
+    return '<tr style="border-bottom:1px solid #eee;">'
+      +'<td style="padding:6px 8px;font-size:10px;">'+label+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;font-weight:700;font-size:10px;">'+displayVal+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;color:#888;font-size:9px;">'+std+'</td>'
+      +'<td style="padding:6px 8px;text-align:center;">'+displayGrade+'</td>'
+      +'</tr>';
+  }
+  function rowPaid(label, std) {
+    return row(label, '—', std, '—');
+  }
+
+  // ── 5대영역 점수 셀 ──
+  function domainCell(ico, label, score, max) {
+    var pct = max>0?Math.round(score/max*100):0;
+    var gc = gradeColor(pct>=70?'양호':pct>=50?'주의':'위험');
+    var displayScore = (score === null || score === undefined) ? '—' : score;
+    return '<td style="text-align:center;padding:8px 4px;border-right:1px solid #ddd;">'
+      +'<div style="font-size:14px;">'+ico+'</div>'
+      +'<div style="font-size:9px;color:#8896B0;margin:2px 0;">'+label+'</div>'
+      +'<div style="font-size:15px;font-weight:900;color:'+gc+';">'+displayScore+'</div>'
+      +'<div style="font-size:8px;color:#ccc;">/'+max+'</div>'
+      +'</td>';
+  }
+
+  var html = '';
+
+  // ━━━ 최상단 헤더 바 ━━━
+  html += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px 12px 0 0;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<div><div style="font-size:13px;font-weight:900;color:#E8B84B;">🏠 재무검진결과표</div><div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">금융집짓기® AI 재무진단 시뮬레이터</div></div>'
+    +'<div style="text-align:right;"><div style="font-size:9px;color:rgba(255,255,255,.6);">검진일: <strong style="color:#fff;">'+dateStr+'</strong></div>'
+    +'<div style="font-size:9px;color:#E8B84B;margin-top:2px;">'+freeLabel+'</div>'
+    +'<div style="font-size:8px;color:rgba(255,255,255,.4);margin-top:1px;">담당: 오상열 CFP · AI머니야</div></div>'
+    +'</div>';
+
+  // ━━━ 수검자 정보 6컬럼 ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr style="background:#F8F5EE;">'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">성명</div><div style="font-size:11px;font-weight:900;color:#0B1D3A;">'+( nd.name||'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">나이</div><div style="font-size:11px;font-weight:900;color:#0B1D3A;">'+(nd.age?nd.age+'세':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">직업</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.job||'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">가족수</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.familyCount?nd.familyCount+'인':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;border-right:1px solid #ddd;width:16.6%"><div style="font-size:8px;color:#8896B0;">월소득</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.income?nd.income+'만원':'—')+'</div></td>'
+    +'<td style="padding:6px 8px;text-align:center;width:16.6%"><div style="font-size:8px;color:#8896B0;">순자산</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.netAsset?nd.netAsset+'만원':'—')+'</div></td>'
+    +'</tr></table>';
+
+  // ━━━ 종합 재무건강점수 3칸 ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr>'
+    +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">종합 재무건강점수</div>'
+    +'<div style="font-size:34px;font-weight:900;color:'+totalColor+';line-height:1.1;">'+sc.total+'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:'+totalColor+';">/ 100점 &nbsp; 판정: <strong>'+totalGrade+'</strong></div>'
+    +'</td>'
+    +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">부자지수</div>'
+    +'<div style="font-size:28px;font-weight:900;color:#C9972A;line-height:1.1;">'+sc.wealthIndex+'%</div>'
+    +'<div style="font-size:11px;font-weight:700;">'+wEmoji+' '+sc.wealthGrade+' 등급</div>'
+    +'</td>'
+    +'<td style="padding:12px;text-align:center;width:33.3%">'
+    +'<div style="font-size:9px;color:#8896B0;">DESIRE 단계</div>'
+    +'<div style="font-size:13px;font-weight:900;color:#0B1D3A;margin:6px 0;">'+(isPaid?desireStep:'—')+'</div>'
+    +'<div style="font-size:8px;color:#bbb;font-style:italic;">'+(isPaid?'':'유료검진 필요')+'</div>'
+    +'</td>'
+    +'</tr></table>';
+
+  // ━━━ 5대 영역 점수표 (가로 5칸) ━━━
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
+    +'<tr style="background:#f8f8f8;">'
+    +domainCell('💰','지출관리',sc.expense,20)
+    +domainCell('📈','자산형성',sc.asset,20)
+    +domainCell('🛡️','보험보장',isPaid?sc.insurance:'—',20)
+    +domainCell('🏖️','노후준비',sc.retirement,20)
+    +domainCell('💳','부채관리',isPaid?sc.debt:'—',20)
+    +'</tr></table>';
+
+  // ━━━ 각 영역 상세 테이블 ━━━
+  html += '<div style="margin-top:10px;">';
+
+  // [지출관리]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('💰','지출관리',sc.expense,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('생활비 비중', nd.livingPct?nd.livingPct+'%':'—', '50% (4인 기준)', nd.livingPct?(parseInt(nd.livingPct)<=50?'정상':'주의'):'—')
+    +row('저축투자 비중', nd.savePct?nd.savePct+'%':'—', '20% 이상', nd.savePct?(parseInt(nd.savePct)>=20?'정상':'주의'):'—')
+    +(isPaid?row('노후연금 비중', nd.pensionPct?nd.pensionPct+'%':'—', '10% 이상', nd.pensionPct?(parseInt(nd.pensionPct)>=10?'정상':'주의'):'—'):rowPaid('노후연금 비중','10% 이상'))
+    +(isPaid?row('보장성보험 비중', nd.insPct?nd.insPct+'%':'—', '10% 이상', nd.insPct?(parseInt(nd.insPct)>=10?'정상':'주의'):'—'):rowPaid('보장성보험 비중','10% 이상'))
+    +(isPaid?row('대출원리금 비중', nd.loanPct?nd.loanPct+'%':'—', '10% 이하', nd.loanPct?(parseInt(nd.loanPct)<=10?'정상':'주의'):'—'):rowPaid('대출원리금 비중','10% 이하'))
+    +'</table>';
+
+  // [자산형성]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('📈','자산형성',sc.asset,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('부자지수', sc.wealthIndex+'%', '100% 이상', sc.wealthIndex>=100?'양호':sc.wealthIndex>=50?'주의':'위험')
+    +(isPaid?row('부채비율', nd.debtRatio?nd.debtRatio+'%':'—', '20% 이하', nd.debtRatio?(parseInt(nd.debtRatio)<=20?'양호':parseInt(nd.debtRatio)<=40?'주의':'위험'):'—'):rowPaid('부채비율','20% 이하'))
+    +(isPaid?row('비상예비자금', nd.emergency||'—', '월생활비×6', nd.hasEmergency?'양호':nd.emergency?'주의':'위험'):rowPaid('비상예비자금','월생활비×6'))
+    +(isPaid?row('가중평균수익률', nd.returnRate?nd.returnRate+'%':'—', '5% 초과', nd.returnRate?(parseFloat(nd.returnRate)>5?'양호':parseFloat(nd.returnRate)>3?'주의':'위험'):'—'):rowPaid('가중평균수익률','5% 초과'))
+    +'</table>';
+
+  // [보험보장]
+  var insScore = isPaid ? sc.insurance : null;
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('🛡️','보험보장',isPaid?sc.insurance:'—',20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +(isPaid?row('사망·장해 보험금', nd.insDeath||'—', '연소득×7배', nd.insDeath?'확인필요':'—'):rowPaid('사망·장해 보험금','연소득×7배'))
+    +(isPaid?row('암 진단금', nd.insCancer||'—', '3,000만원↑', nd.insCancer?'확인필요':'—'):rowPaid('암 진단금','3,000만원↑'))
+    +(isPaid?row('뇌혈관·심혈관', nd.insBrain||'—', '각 2,000만원↑', nd.insBrain?'확인필요':'—'):rowPaid('뇌혈관·심혈관','각 2,000만원↑'))
+    +(isPaid?row('실손의료비', nd.insActual||'—', '가입여부', nd.insActual?'양호':'위험'):rowPaid('실손의료비','가입여부'))
+    +(isPaid?row('입원·수술·치매·간병', nd.insHosp||'—', '가입여부', nd.insHosp?'양호':'주의'):rowPaid('입원·수술·치매·간병','가입여부'))
+    +(isPaid?row('보장성보험료', nd.insPremium?nd.insPremium+'만원':'—', '월수입 10%', nd.insPct?(parseInt(nd.insPct)>=10?'양호':'주의'):'—'):rowPaid('보장성보험료','월수입 10%'))
+    +'</table>';
+
+  // [노후준비]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border:1px solid #ddd;">'
+    +hdr('🏖️','노후준비',sc.retirement,20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +row('은퇴준비율', retireRate!=='—'?retireRate:'—', '100%', retireRate!=='—'?(parseInt(retireRate)>=100?'양호':parseInt(retireRate)>=50?'주의':'위험'):'—')
+    +(isPaid?row('노후연금저축', nd.pensionSave?nd.pensionSave+'만원':'—', '월수입 10%↑', nd.pensionPct?(parseInt(nd.pensionPct)>=10?'양호':'주의'):'—'):rowPaid('노후연금저축','월수입 10%↑'))
+    +(isPaid?row('은퇴일시금', (document.getElementById('f81_net')||{}).textContent||'—', '목표 달성', '확인필요'):rowPaid('은퇴일시금','목표 달성'))
+    +(isPaid?row('월 추가 저축 필요', (document.getElementById('f81_monthly')||{}).textContent||'—', '0원', '확인필요'):rowPaid('월 추가 저축 필요','0원'))
+    +'</table>';
+
+  // [부채관리]
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd;">'
+    +hdr('💳','부채관리',isPaid?sc.debt:'—',20)
+    +'<tr style="background:#f0f0f0;"><td style="padding:5px 8px;font-size:9px;font-weight:700;">검사항목</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">현재값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">기준값</td><td style="padding:5px 8px;text-align:center;font-size:9px;font-weight:700;">판정</td></tr>'
+    +(isPaid?row('신용대출', nd.creditLoan||'—', '없음', nd.creditLoan==='없음'||nd.creditLoan==='0'||!nd.creditLoan?'양호':'위험'):rowPaid('신용대출','없음'))
+    +(isPaid?row('담보대출', nd.mortgage||'—', '은퇴 전 완납', nd.mortgage?'확인필요':'양호'):rowPaid('담보대출','은퇴 전 완납'))
+    +(isPaid?row('대출원리금 비중', nd.loanPct?nd.loanPct+'%':'—', '10% 이하', nd.loanPct?(parseInt(nd.loanPct)<=10?'양호':parseInt(nd.loanPct)<=20?'주의':'위험'):'—'):rowPaid('대출원리금 비중','10% 이하'))
+    +(isPaid?row('부채비율', nd.debtRatio?nd.debtRatio+'%':'—', '20% 이하', nd.debtRatio?(parseInt(nd.debtRatio)<=20?'양호':parseInt(nd.debtRatio)<=40?'주의':'위험'):'—'):rowPaid('부채비율','20% 이하'))
+    +'</table>';
+
+  html += '</div>';
+
+  // ━━━ 안내 문구 (무료용 CTA) ━━━
+  if(!isPaid) {
+    html += '<div style="background:#FFF8E1;border:1px solid #E8B84B;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:10px;color:#555;line-height:1.8;">'
+      +'<strong style="color:#C9972A;">📋 본 검진결과는 통계 기반 추정치입니다</strong><br>'
+      +'"—" 표시된 항목은 유료 AI 재무검진을 통해 정확한 수치와 맞춤형 솔루션을 제공받으실 수 있습니다.<br>'
+      +'<div style="text-align:center;margin-top:10px;">'
+      +'<button onclick="mpOpenSubscribe()" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border:none;padding:10px 24px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;">🏥 유료 AI 재무검진 시작하기 →</button>'
+      +'</div></div>';
+  }
+
+  // ━━━ 하단 서명 ━━━
+  html += '<div style="text-align:center;font-size:8px;color:#aaa;padding:8px 0;border-top:1px solid #eee;">'
+    +'오원트금융연구소 · 오상열 CFP · 금융집짓기® · AI머니야<br>'
+    +'문의: 010-5424-5332 · ggorilla11@gmail.com'
+    +'</div>';
+
+  body.innerHTML = html;
+  window._lastReportScore = sc;
+  window._lastReportHTML  = html;
+}
+
+/* ━━━ 데이터 수집 (상담노트 전 필드) ━━━ */
+function collectNoteData() {
+  var d = {};
+
+  // [패널1] 인적사항
+  d.name       = (document.getElementById('f1_name')   ||{}).textContent||'';
+  d.age        = parseInt((document.getElementById('f1_age')    ||{}).textContent||'0')||0;
+  d.job        = (document.getElementById('f1_job')    ||{}).textContent||'';
+  d.familyCount= parseInt((document.getElementById('f1_family') ||{}).textContent||'0')||0;
+  d.marry      = (document.getElementById('f1_marry')  ||{}).textContent||'';
+  d.retireAge  = parseInt((document.getElementById('f1_retire') ||{}).textContent||'0')||0;
+  d.lifeExp    = parseInt((document.getElementById('f1_life')   ||{}).textContent||'0')||0;
+
+  // [패널3] 수입지출
+  d.income       = parseFloat(((document.getElementById('f3_income')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.livingCur    = parseFloat(((document.getElementById('f3_living_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.saveCur      = parseFloat(((document.getElementById('f3_save_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.pensionCur   = parseFloat(((document.getElementById('f3_pension_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.insPremium   = parseFloat(((document.getElementById('f3_ins_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.loanPayment  = parseFloat(((document.getElementById('f3_loan_cur')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+
+  if(d.income>0) {
+    d.livingPct  = Math.round(d.livingCur/d.income*100);
+    d.savePct    = Math.round(d.saveCur/d.income*100);
+    d.pensionPct = Math.round(d.pensionCur/d.income*100);
+    d.insPct     = Math.round(d.insPremium/d.income*100);
+    d.loanPct    = Math.round(d.loanPayment/d.income*100);
+  }
+
+  // [패널4] 자산부채
+  d.totalAsset   = parseFloat(((document.getElementById('f4_total_asset')||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.totalDebt    = parseFloat(((document.getElementById('f4_total_debt') ||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.netAsset     = parseFloat(((document.getElementById('f4_net')        ||{}).textContent||'').replace(/[^0-9.]/g,''))||0;
+  d.creditLoan   = (document.getElementById('f4_credit')  ||{}).textContent||'';
+  d.mortgage     = (document.getElementById('f4_mortgage') ||{}).textContent||'';
+
+  if(d.totalAsset>0) {
+    d.debtRatio = Math.round(d.totalDebt/d.totalAsset*100);
+  }
+
+  // 비상예비자금 (월생활비 × 6)
+  var emergNeed = (document.getElementById('f4_emerg_need')||{}).textContent||'';
+  var emergDiag = (document.getElementById('f4_emerg_diag')||{}).textContent||'';
+  if(emergDiag && !emergDiag.includes('—')) {
+    d.emergency    = emergNeed;
+    d.hasEmergency = emergDiag.includes('충분') || emergDiag.includes('양호');
+  }
+
+  // [패널5] 금융집짓기 - DESIRE 단계
+  d.desireStep = (document.getElementById('f5_desire')||{}).textContent||'';
+
+  // [패널7-1] 은퇴설계
+  d.retireRate = (document.getElementById('f81_rate')||{}).textContent||'';
+
+  // [패널7-4] 투자설계 - 수익률
+  var retextRaw = (document.getElementById('f84_rebal')||{}).textContent||'';
+  d.returnRate = '';
+
+  // [패널7-7] 보험설계
+  d.insDeath  = (document.getElementById('ins_col_death') ||{}).classList.contains('ok')?'가입':'미가입';
+  d.insCancer = (document.getElementById('ins_col_cancer')||{}).classList.contains('ok')?'가입':'미가입';
+  d.insBrain  = (document.getElementById('ins_col_brain') ||{}).classList.contains('ok')?'가입':'미가입';
+  d.insActual = (document.getElementById('ins_col_actual')||{}).classList.contains('ok')?'가입':'미가입';
+  d.insHosp   = (document.getElementById('ins_col_hosp') ||{}).classList.contains('ok')?'가입':'미가입';
+
+  // 보험 OK 수 계산
+  var insOkCount = ['ins_col_death','ins_col_inj','ins_col_cancer','ins_col_brain','ins_col_heart','ins_col_actual','ins_col_hosp','ins_col_dem']
+    .filter(function(id){ var el=document.getElementById(id); return el&&el.classList.contains('ok'); }).length;
+  d.insOkCount = insOkCount;
+
+  // 연금저축
+  d.pensionSave = d.pensionCur > 0 ? Math.round(d.pensionCur) : 0;
+
+  return d;
+}
+
+/* ━━━ 재무건강점수 계산 (100점 공식) ━━━ */
+function calcHealthScore(nd) {
+  var income      = nd.income      || 700;
+  var age         = nd.age         || 50;
+  var totalAsset  = nd.totalAsset  || 35000;
+  var totalDebt   = nd.totalDebt   || 0;
+  var netAsset    = nd.netAsset    || (totalAsset - totalDebt);
+  var familyCount = nd.familyCount || 4;
+
+  // ── 부자지수 ──
+  var wealthIndex = income>0 ? Math.round((netAsset*10)/(age*income*12)*100) : 0;
+  var wealthGrade = wealthIndex>=200?'궁전':wealthIndex>=100?'아파트':wealthIndex>=50?'빌라':wealthIndex>=25?'오두막':'텐트';
+
+  // ── 지출관리 20점 ──
+  var exp = 0;
+  // 생활비 기준: 가족수별 50% (4인 기준)
+  var livBudget = familyCount<=2?40:familyCount<=3?45:50;
+  if(nd.livingPct!==undefined) {
+    exp += nd.livingPct<=livBudget?4:nd.livingPct===livBudget?3:2;
+  } else { exp += 3; }
+  // 저축투자 기준: 20%
+  if(nd.savePct!==undefined) {
+    exp += nd.savePct>20?4:nd.savePct===20?3:2;
+  } else { exp += 3; }
+  // 노후연금 기준: 10%
+  if(nd.pensionPct!==undefined) {
+    exp += nd.pensionPct>10?4:nd.pensionPct===10?3:2;
+  } else { exp += 2; }
+  // 보장성보험 기준: 10%
+  if(nd.insPct!==undefined) {
+    exp += nd.insPct>10?4:nd.insPct===10?3:2;
+  } else { exp += 2; }
+  // 대출원리금 기준: 10%이하
+  if(nd.loanPct!==undefined) {
+    exp += nd.loanPct<=10?4:nd.loanPct<=15?3:2;
+  } else { exp += 2; }
+  exp = Math.min(20, exp);
+
+  // ── 자산형성 20점 ──
+  var ast = 0;
+  // 부자지수
+  ast += wealthIndex>200?5:wealthIndex>=100?4:wealthIndex>=50?3:2;
+  // 부채비율 (유료만 정확)
+  if(nd.debtRatio!==undefined) {
+    ast += nd.debtRatio===0?5:nd.debtRatio<=20?4:nd.debtRatio<=40?3:2;
+  } else { ast += 2; }
+  // 비상예비자금
+  if(nd.hasEmergency!==undefined) {
+    ast += nd.hasEmergency?5:3;
+  } else { ast += 2; }
+  // 가중평균수익률 (유료만)
+  if(nd.returnRate) {
+    var rr = parseFloat(nd.returnRate)||0;
+    ast += rr>5?5:rr>3?4:2;
+  } else { ast += 2; }
+  ast = Math.min(20, ast);
+
+  // ── 보험보장 20점 ──
+  var ins = 0;
+  // 8대항목 충족수 (8점)
+  ins += Math.min(8, nd.insOkCount||0);
+  // 보장성보험료 (12점)
+  if(nd.insPct!==undefined) {
+    ins += nd.insPct>=10?12:nd.insPct>0?6:0;
+  } else { ins += 4; }
+  ins = Math.min(20, ins);
+
+  // ── 노후준비 20점 ──
+  var ret = 0;
+  // 은퇴준비율
+  var rateStr = (document.getElementById('f81_rate')||{}).textContent||nd.retireRate||'';
+  var rateNum = parseInt(rateStr)||0;
+  ret += rateNum>=100?10:rateNum>=50?8:rateNum>0?6:0;
+  // 노후연금저축
+  if(nd.pensionPct!==undefined) {
+    ret += nd.pensionPct>=10?10:nd.pensionPct>0?5:0;
+  } else { ret += 3; }
+  ret = Math.min(20, ret);
+
+  // ── 부채관리 20점 ──
+  var dbt = 0;
+  // 신용대출
+  var hasCreditLoan = nd.creditLoan && nd.creditLoan!=='없음' && nd.creditLoan!=='0' && nd.creditLoan!=='—' && nd.creditLoan!=='';
+  dbt += hasCreditLoan?0:5;
+  // 담보대출
+  var hasMortgage = nd.mortgage && nd.mortgage!=='없음' && nd.mortgage!=='0' && nd.mortgage!=='—' && nd.mortgage!=='';
+  dbt += hasMortgage?0:5;
+  // 대출원리금 비중
+  if(nd.loanPct!==undefined) {
+    dbt += nd.loanPct<10?5:nd.loanPct===10?4:3;
+  } else { dbt += 3; }
+  // 부채비율
+  if(nd.debtRatio!==undefined) {
+    dbt += nd.debtRatio===0?5:nd.debtRatio<20?4:nd.debtRatio<40?3:2;
+  } else { dbt += 2; }
+  dbt = Math.min(20, dbt);
+
+  var total = exp + ast + ins + ret + dbt;
+  total = Math.min(100, Math.max(0, total));
+
+  return {
+    total:total, grade:total>=80?'양호':total>=60?'보통':total>=40?'주의':'위험',
+    expense:exp, asset:ast, insurance:ins, retirement:ret, debt:dbt,
+    wealthIndex:wealthIndex, wealthGrade:wealthGrade
+  };
+}
+
+/* ━━━ PDF 다운로드 ━━━ */
+function downloadReportPDF() {
+  var body = document.getElementById('diagReportBody');
+  if(!body || !body.innerHTML.trim()) { showToast('⚠️ 리포트가 없습니다. 상담을 먼저 완료해주세요.'); return; }
+  var nd = collectNoteData();
+  var sc = window._lastReportScore || calcHealthScore(nd);
+  var today = new Date();
+  var dateStr = today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일';
+  var printWin = window.open('','_blank','width=600,height=900');
+  printWin.document.write(
+    '<!DOCTYPE html><html lang="ko"><head>'
+    +'<meta charset="UTF-8">'
+    +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>AI 재무검진결과표 — '+(nd.name||'고객')+'님 · '+dateStr+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;}'
+    +'body{font-family:"Noto Sans KR",Arial,sans-serif;max-width:540px;margin:0 auto;padding:16px;background:#fff;color:#222;}'
+    +'table{width:100%;border-collapse:collapse;}'
+    +'td,th{border:1px solid #ddd;padding:5px 7px;font-size:9.5px;}'
+    +'@media print{'
+    +'  body{padding:0;}'
+    +'  button{display:none!important;}'
+    +'  .no-print{display:none!important;}'
+    +'  @page{margin:10mm;size:A4;}'
+    +'}'
+    +'</style>'
+    +'</head><body>'
+    +body.innerHTML
+    +'<div class="no-print" style="text-align:center;margin-top:20px;">'
+    +'<button onclick="window.print()" style="background:#0B1D3A;color:#E8B84B;border:none;padding:12px 32px;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;margin-right:8px;">🖨️ 인쇄 / PDF 저장</button>'
+    +'<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:12px 20px;border-radius:8px;font-size:13px;cursor:pointer;">✕ 닫기</button>'
+    +'</div>'
+    +'</body></html>'
+  );
+  printWin.document.close();
+  setTimeout(function(){ printWin.focus(); }, 300);
+}
+
+/* ━━━ 공유하기 ━━━ */
+function shareReport() {
+  var sc = window._lastReportScore;
+  if(!sc) { showToast('리포트가 없습니다. 상담을 먼저 완료해주세요.'); return; }
+  var nd = collectNoteData();
+  var nameStr = nd.name ? nd.name + '님의 ' : '';
+
+  var shareText =
+    '[AI 재무검진결과표 - 금융집짓기]\n\n'
+    + nameStr + '재무건강점수: ' + sc.total + '점 ('
+    + (sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험') + ')\n'
+    + '부자지수: ' + sc.wealthIndex + '% ' + sc.wealthGrade + ' 등급\n\n'
+    + '지출관리 ' + sc.expense   + '/20점\n'
+    + '자산형성 ' + sc.asset     + '/20점\n'
+    + '노후준비 ' + sc.retirement+ '/20점\n\n'
+    + '유료 AI 재무검진:\nhttps://financial-house-building.vercel.app';
+
+  // ── 모달 생성 ──
+  var old = document.getElementById('_shareModal');
+  if(old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_shareModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center;';
+
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;font-family:\'Noto Sans KR\',sans-serif;">'
+    // 핸들
+    + '<div style="width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px;"></div>'
+    + '<div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:12px;">📤 결과 공유하기</div>'
+    // 텍스트 박스 (선택·복붙 가능)
+    + '<textarea id="_shareText" readonly style="width:100%;height:160px;border:1.5px solid #E8B84B;border-radius:10px;padding:12px;font-size:12px;line-height:1.8;color:#333;background:#fffdf8;resize:none;box-sizing:border-box;font-family:\'Noto Sans KR\',sans-serif;">'
+    + shareText
+    + '</textarea>'
+    // 복사 버튼
+    + '<button id="_shareCopyBtn" style="width:100%;margin-top:10px;padding:14px;background:linear-gradient(135deg,#C9972A,#E8B84B);border:none;border-radius:12px;font-size:14px;font-weight:900;color:#0B1D3A;cursor:pointer;">📋 전체 복사</button>'
+    // 닫기
+    + '<button id="_shareCloseBtn" style="width:100%;margin-top:8px;padding:11px;background:#f0f0f0;border:none;border-radius:12px;font-size:12px;color:#888;cursor:pointer;">닫기</button>'
+    + '</div>';
+
+  document.body.appendChild(overlay);
+
+  // 텍스트 박스 터치 시 자동 전체 선택
+  var ta = document.getElementById('_shareText');
+  ta.addEventListener('focus', function(){ this.select(); });
+  ta.addEventListener('click', function(){ this.select(); });
+
+  // 복사 버튼
+  document.getElementById('_shareCopyBtn').onclick = function() {
+    ta.select();
+    var ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch(e) {}
+    if(!ok && navigator.clipboard) {
+      navigator.clipboard.writeText(shareText).then(function(){
+        document.getElementById('_shareCopyBtn').textContent = '✅ 복사 완료!';
+        setTimeout(function(){ overlay.remove(); }, 800);
+      });
+      return;
+    }
+    if(ok) {
+      document.getElementById('_shareCopyBtn').textContent = '✅ 복사 완료!';
+      setTimeout(function(){ overlay.remove(); }, 800);
+    }
+  };
+
+  // 닫기
+  document.getElementById('_shareCloseBtn').onclick = function(){ overlay.remove(); };
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+}
+
 function diagSendText() {
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
   const txt=inp.value.trim();
-  diagAddSTT('user',txt,null);
   inp.value='';
-  /* [DEV-001] Vapi로 텍스트 전송 */
-  if(vapi && vapiCallActive) {
-    try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
+
+  if(mvpTextOnlyMode) {
+    // ★ 텍스트 모드: Render 서버 Claude API로 전송
+    sendTextConsultMessage(txt);
+  } else {
+    // 기존 음성 모드: Vapi로 전송 (수정 없음!)
+    diagAddSTT('user',txt,null);
+    /* [DEV-001] Vapi로 텍스트 전송 */
+    if(vapi && vapiCallActive) {
+      try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
+    }
   }
-  // [비활성화 by DEV-001] 기존 WebSocket
-  // if(diagWs&&diagWs.readyState===1)
-  //   diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
 
@@ -10186,56 +11437,87 @@ function diagParseAiSpeech(aiText) {
 
   /* ── 복명복창 파싱 → 신 ID에 직접 기입 ── */
   var patterns = [
-    // 인적사항 (note_page=1) — 성함 패턴 최대한 넓게
+    // ── 성함 ──
     { pg:1, key:'name', regex:/([가-힣]{2,5})님이시군요/ },
-    { pg:1, key:'name', regex:/아,\s*([가-힣]{2,5})님/ },
+    { pg:1, key:'name', regex:/아,?\s*([가-힣]{2,5})님/ },
     { pg:1, key:'name', regex:/^([가-힣]{2,5})님\s*반갑/ },
     { pg:1, key:'name', regex:/([가-힣]{2,5})님이라고/ },
     { pg:1, key:'name', regex:/성함.*?([가-힣]{2,5})님/ },
-    // 나이
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님,?\s*반갑/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?맞으시/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?맞죠/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?확인/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?네/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?알겠/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?좋습니다/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?감사/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})님.*?안녕/ },
+    { pg:1, key:'name', regex:/([가-힣]{2,5})\s*고객님/ },
+    // ── 나이 ──
     { pg:1, key:'age', regex:/(\d+)세이시군요/ },
-    { pg:1, key:'age', regex:/아,\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/아,?\s*(\d+)세/ },
     { pg:1, key:'age', regex:/(\d+)살이시군요/ },
-    // 결혼여부
+    { pg:1, key:'age', regex:/(\d+)세.*?이시군요/ },
+    { pg:1, key:'age', regex:/올해\s*(\d+)세/ },
+    { pg:1, key:'age', regex:/(\d+)세.*?시군요/ },
+    // ── 직업 ──
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부|대학생)이시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하시는군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하고\s*계시는군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?하고\s*계시군요/ },
+    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?종사하시군요/ },
+    { pg:1, key:'job', regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+    // ── 결혼여부 ──
     { pg:1, key:'marry', regex:/(기혼|미혼)이시군요/ },
     { pg:1, key:'marry', regex:/(기혼|미혼)이라고/ },
-    // 가족수
+    { pg:1, key:'marry', regex:/결혼.*?하셨군요/ },
+    { pg:1, key:'marry', regex:/결혼.*?안\s*하셨군요/ },
+    { pg:1, key:'marry', regex:/기혼이신/ },
+    // ── 자녀 ──
+    { pg:1, key:'child', regex:/자녀.*?(\d+)명/ },
+    { pg:1, key:'child', regex:/(\d+)명.*?자녀/ },
+    { pg:1, key:'child', regex:/자녀가\s*(\d+)/ },
+    { pg:1, key:'child', regex:/아이.*?(\d+)명/ },
+    // ── 가족수 ──
     { pg:1, key:'family', regex:/(\d+)인\s*가족/ },
     { pg:1, key:'family', regex:/가족이\s*(\d+)/ },
-    { pg:1, key:'family', regex:/(\d+)명.*가족/ },
-    // 직업
-    { pg:1, key:'job', regex:/(공무원|직장인|자영업자|프리랜서|의사|간호사|교사|교수)이시군요/ },
-    { pg:1, key:'job', regex:/(공무원|직장인|자영업|프리랜서).*하시는군요/ },
-    // 맞벌이
+    { pg:1, key:'family', regex:/(\d+)명.*?가족/ },
+    { pg:1, key:'family', regex:/가족\s*(\d+)명/ },
+    { pg:1, key:'family', regex:/총\s*(\d+)명/ },
+    // ── 맞벌이 ──
     { pg:1, key:'dual', regex:/(맞벌이|외벌이)이시군요/ },
     { pg:1, key:'dual', regex:/(맞벌이|외벌이)로\s*가계/ },
-    // 고민 (note_page=2)
-    { pg:2, key:'w1', regex:/바로\s*그\s*문제.*해결하기.*([^.]{5,30})/ },
-    { pg:2, key:'goal', regex:/오늘\s*([^.]{5,30})\s*해결을 위해/ },
-    // 수입지출 (note_page=3)
-    { pg:3, key:'income', regex:/월\s*수입\s*([\d,]+)만/ },
-    { pg:3, key:'income', regex:/([\d,]+)만원.*실수령/ },
-    { pg:3, key:'income', regex:/수입.*?([\d,]+)만원에서/ },
-    { pg:3, key:'loan_cur', regex:/대출.*?([\d,]+)만원/ },
-    { pg:3, key:'ins_cur',  regex:/보험.*?([\d,]+)만원/ },
+    { pg:1, key:'dual', regex:/(맞벌이|외벌이).*?군요/ },
+    // ── 은퇴예정 ──
+    { pg:1, key:'retire', regex:/(\d+)세.*?은퇴/ },
+    { pg:1, key:'retire', regex:/은퇴.*?(\d+)세/ },
+    // ── 예상수명 ──
+    { pg:1, key:'life', regex:/(\d+)세.*?(?:까지|수명)/ },
+    { pg:1, key:'life', regex:/예상\s*수명.*?(\d+)세/ },
+    // ── 수입지출 ──
+    { pg:3, key:'income',      regex:/월\s*수입\s*([\d,]+)만/ },
+    { pg:3, key:'income',      regex:/([\d,]+)만원.*실수령/ },
+    { pg:3, key:'income',      regex:/수입.*?([\d,]+)만원에서/ },
+    { pg:3, key:'income',      regex:/월\s*([\d,]+)만원.*?버/ },
+    { pg:3, key:'loan_cur',    regex:/대출.*?([\d,]+)만원/ },
+    { pg:3, key:'ins_cur',     regex:/보험.*?([\d,]+)만원/ },
     { pg:3, key:'pension_cur', regex:/연금.*?([\d,]+)만원/ },
     { pg:3, key:'save_cur',    regex:/저축.*?([\d,]+)만원/ },
     { pg:3, key:'living_cur',  regex:/생활비.*?([\d,]+)만원/ },
     { pg:3, key:'surplus',     regex:/잉여자금.*?([\d,]+)만원/ },
-    // 자산부채 (note_page=4)
-    { pg:4, key:'deposit',    regex:/예적금\s*([\d,억천만]+)/ },
-    { pg:4, key:'invest',     regex:/펀드.*?([\d,억천만]+)/ },
-    { pg:4, key:'realty',     regex:/부동산.*?([\d,억천만]+)/ },
-    { pg:4, key:'credit',     regex:/신용대출\s*([\d,억천만]+)/ },
-    { pg:4, key:'total_asset',regex:/총자산.*?([\d,억천만]+)/ },
-    { pg:4, key:'net',        regex:/순자산.*?([\d,억천만]+)/ },
+    // ── 자산부채 ──
+    { pg:4, key:'deposit',     regex:/예적금\s*([\d,억천만]+)/ },
+    { pg:4, key:'invest',      regex:/펀드.*?([\d,억천만]+)/ },
+    { pg:4, key:'realty',      regex:/부동산.*?([\d,억천만]+)/ },
+    { pg:4, key:'credit',      regex:/신용대출\s*([\d,억천만]+)/ },
+    { pg:4, key:'total_asset', regex:/총자산.*?([\d,억천만]+)/ },
+    { pg:4, key:'net',         regex:/순자산.*?([\d,억천만]+)/ },
     { pg:4, key:'wealth_index',regex:/부자지수.*?([0-9.]+)/ },
-    // 설계도 (note_page=5)
+    // ── 설계도 ──
     { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
     { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
     { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
-  ];
-
+  ]
   for(var j=0; j<patterns.length; j++) {
     var p = patterns[j];
     var m = t.match(p.regex);
@@ -10282,14 +11564,193 @@ function diagFillField(partIdx, labelKey, value) {
 
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
-  var t = (userText||'').trim();
-  if(t.length < 2) return;
-  var correctionKeys = ['아니','틀렸','다시','수정','잘못','아니요','아니오'];
-  if(correctionKeys.some(function(k){ return t.includes(k); })) {
-    if(diagLastFilledPartIdx >= 0) {
-      var fixId = 'f'+diagLastFilledPartIdx+'_'+diagLastFilledLabel;
+  // ★ v2.1: 자동입력 임시 비활성화 (오입력 방지 — 정교한 매칭 개발 후 활성화)
+  // 현재 패턴 매칭이 부정확하여 엉뚱한 필드에 값이 들어가는 문제 발생
+  // TODO: Claude API로 고객 발화를 분석하여 정확한 필드에 입력하도록 개선
+  return;
+
+  // ── 수정 요청 감지 ──
+  var correctionKeys = ['아니', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
+  if (correctionKeys.some(function(k){ return t.includes(k); })) {
+    if (diagLastFilledPartIdx >= 0) {
+      var fixId = 'f' + diagLastFilledPartIdx + '_' + diagLastFilledLabel;
       var el = document.getElementById(fixId);
-      if(el) { el.textContent='⚠ 수정 중...'; el.style.color='#C62828'; }
+      if (el) { el.textContent = '⚠ 수정 중...'; el.style.color = '#C62828'; }
+    }
+    return;
+  }
+
+  // ── 현재 활성 단계 확인 ──
+  var curStep = diagCurPart || 0;
+
+  // ── 고객 직접 발화 패턴 ──
+  // 단계별로만 적용 (엉뚱한 탭에 채워지는 것 방지)
+  var patterns = [];
+
+  if (curStep <= 1) {
+    // [1단계] 인적사항
+    patterns = patterns.concat([
+      // 성함
+      { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
+      { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)/ },
+      { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})(?:이요|요)\s*$/ },
+      // 나이
+      { key:'f1_age', regex:/(\d+)\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
+      { key:'f1_age', regex:/(\d+)\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
+      { key:'f1_age', regex:/올해\s*(\d+)/ },
+      { key:'f1_age', regex:/나이.*?(\d+)/ },
+      // 직업
+      { key:'f1_job', regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)\s*(?:입니다|이에요|예요|이고|이요|요)/ },
+      { key:'f1_job', regex:/직업.*?(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부)/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부).*?하고\s*있/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부).*?해요/ },
+      { key:'f1_job', regex:/(공무원|직장인|자영업|프리랜서|사업가).*?다니/ },
+      // 결혼
+      { key:'f1_marry', regex:/(기혼|미혼|결혼|이혼|사별)\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
+      { key:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했는데)/ },
+      { key:'f1_marry', regex:/결혼\s*(?:안 했|안했|못했|안 했어요)/ },
+      // 자녀
+      { key:'f1_child', regex:/자녀.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/아이.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/아들|딸/ },
+      { key:'f1_child', regex:/(\d+)\s*명.*?(?:아이|자녀|아들|딸)/ },
+      // 가족수
+      { key:'f1_family', regex:/(\d+)\s*인?\s*가족/ },
+      { key:'f1_family', regex:/가족.*?(\d+)\s*명/ },
+      { key:'f1_family', regex:/식구.*?(\d+)/ },
+      { key:'f1_family', regex:/총\s*(\d+)\s*명/ },
+      // 맞벌이
+      { key:'f1_dual', regex:/(맞벌이|외벌이)\s*(?:예요|이에요|입니다|이고|요)?/ },
+      { key:'f1_dual', regex:/둘\s*다\s*일/ },
+      { key:'f1_dual', regex:/아내.*?일\s*해/ },
+      { key:'f1_dual', regex:/남편.*?일\s*해/ },
+      // 은퇴예정
+      { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
+      { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
+      // 예상수명
+      { key:'f1_life', regex:/(\d+)세.*?(?:살고\s*싶|수명|예상)/ },
+    ]);
+  }
+
+  if (curStep <= 2) {
+    // [2단계] 경제적 고민
+    patterns = patterns.concat([
+      { key:'f2_w1', regex:/가장\s*(?:큰|많이)\s*고민.*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데|이고)/ },
+      { key:'f2_w1', regex:/걱정.*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데)/ },
+      { key:'f2_goal', regex:/(?:목표|원하는\s*것|바라는\s*것).*?[은는이가]\s*(.{5,30}?)(?:이에요|입니다|예요|인데)/ },
+    ]);
+  }
+
+  if (curStep <= 3) {
+    // [3단계] 수입지출
+    patterns = patterns.concat([
+      // 월수입: "700만원이에요" / "월급이 500만원"
+      { key:'f3_income',      regex:/월\s*(?:급여|급|수입|소득|실수령).*?([\d,]+)\s*만/ },
+      { key:'f3_income',      regex:/([\d,]+)\s*만원.*?(?:벌|수입|월급|실수령)/ },
+      { key:'f3_income',      regex:/^([\d,]+)\s*만원?\s*(?:이에요|입니다|이고|요|예요)/ },
+      // 생활비
+      { key:'f3_living_cur',  regex:/생활비.*?([\d,]+)\s*만/ },
+      { key:'f3_living_cur',  regex:/([\d,]+)\s*만.*?생활비/ },
+      // 저축투자
+      { key:'f3_save_cur',    regex:/저축.*?([\d,]+)\s*만/ },
+      { key:'f3_save_cur',    regex:/투자.*?([\d,]+)\s*만/ },
+      // 노후연금
+      { key:'f3_pension_cur', regex:/(?:연금|연금저축|IRP|irp).*?([\d,]+)\s*만/ },
+      { key:'f3_pension_cur', regex:/([\d,]+)\s*만.*?연금/ },
+      // 보험료
+      { key:'f3_ins_cur',     regex:/보험.*?([\d,]+)\s*만/ },
+      { key:'f3_ins_cur',     regex:/([\d,]+)\s*만.*?보험/ },
+      // 대출원리금
+      { key:'f3_loan_cur',    regex:/대출.*?([\d,]+)\s*만/ },
+      { key:'f3_loan_cur',    regex:/([\d,]+)\s*만.*?대출/ },
+    ]);
+  }
+
+  if (curStep <= 4) {
+    // [4단계] 자산부채
+    patterns = patterns.concat([
+      // 예적금
+      { key:'f4_deposit',     regex:/(?:예금|적금|예적금|통장).*?([\d,억천만]+)/ },
+      { key:'f4_deposit',     regex:/([\d,억천만]+).*?(?:예금|적금|통장)/ },
+      // 펀드ETF
+      { key:'f4_invest',      regex:/(?:펀드|ETF|주식|etf).*?([\d,억천만]+)/ },
+      // 연금적립
+      { key:'f4_pension',     regex:/(?:연금적립|IRP|연금저축펀드).*?([\d,억천만]+)/ },
+      // 부동산
+      { key:'f4_realty',      regex:/(?:부동산|아파트|집|주택).*?([\d,억천만]+)/ },
+      { key:'f4_realty',      regex:/([\d,억천만]+).*?(?:짜리|아파트|집)/ },
+      // 신용대출
+      { key:'f4_credit',      regex:/신용\s*대출.*?([\d,억천만]+)/ },
+      { key:'f4_credit',      regex:/신용\s*대출\s*(?:없어요|없습니다|없고|없음)/ },
+      // 담보대출
+      { key:'f4_mortgage',    regex:/담보\s*대출.*?([\d,억천만]+)/ },
+      { key:'f4_mortgage',    regex:/주택\s*(?:담보|담보대출).*?([\d,억천만]+)/ },
+      { key:'f4_mortgage',    regex:/담보\s*대출\s*(?:없어요|없습니다|없고|없음)/ },
+    ]);
+  }
+
+  if (curStep <= 7) {
+    // [7단계] 보험설계
+    patterns = patterns.concat([
+      { key:'ins_col_death',  regex:/사망\s*보험.*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_cancer', regex:/암\s*(?:보험|진단).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_brain',  regex:/(?:뇌|뇌혈관).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_heart',  regex:/(?:심장|심혈관).*?(?:있어요|있습니다|가입)/ },
+      { key:'ins_col_actual', regex:/실비\s*(?:보험)?.*?(?:있어요|있습니다|가입)/ },
+      { key:'f87_premium',    regex:/보험료.*?([\d,]+)\s*만/ },
+    ]);
+  }
+
+  // ── 패턴 매칭 & 필드 채우기 ──
+  var filled = false;
+  for (var i = 0; i < patterns.length; i++) {
+    var p = patterns[i];
+    var m = t.match(p.regex);
+    if (m) {
+      var val = '';
+
+      // "없어요/없습니다" 패턴 → "없음"으로 처리
+      if (/없어요|없습니다|없고|없음/.test(t) &&
+          (p.key === 'f4_credit' || p.key === 'f4_mortgage')) {
+        val = '없음';
+      } else {
+        val = (m[1] || m[0] || '').replace(/,/g, '').trim();
+      }
+
+      // 결혼 정규화
+      if (p.key === 'f1_marry') {
+        if (/결혼\s*했/.test(t))      val = '기혼';
+        else if (/결혼\s*안/.test(t)) val = '미혼';
+        else                          val = m[1] || m[0];
+      }
+
+      // 자녀 정규화
+      if (p.key === 'f1_child' && /아들|딸/.test(t)) {
+        var childCount = (t.match(/아들|딸/g)||[]).length;
+        val = childCount + '명';
+      }
+
+      if (val && val.length >= 1) {
+        dnFillById(p.key, val);
+        diagLastFilledPartIdx = curStep;
+        diagLastFilledLabel   = p.key;
+        filled = true;
+        // 같은 발화에서 여러 필드 채울 수 있으므로 break 안 함
+      }
+    }
+  }
+
+  // ── 수입 입력 시 f3_income도 자동으로 수입지출표 헤더 업데이트 ──
+  if (filled) {
+    var incEl = document.getElementById('f3_income');
+    if (incEl && incEl.textContent && incEl.textContent !== '—') {
+      var incVal = parseFloat(incEl.textContent.replace(/[^0-9.]/g, ''));
+      if (incVal > 0 && typeof diagUpdateIncomeTable === 'function') {
+        diagUpdateIncomeTable(incVal);
+      }
     }
   }
 }
@@ -10313,14 +11774,14 @@ diagAddSTT = function(role, text, tag) {
     <div class="pay-plans">
       <div class="pay-plan selected" id="plan-month" onclick="selectPlan('month')">
         <div class="pay-plan-type">월간 구독</div>
-        <div class="pay-plan-price">₩9,900</div>
+        <div class="pay-plan-price">₩19,900</div>
         <div class="pay-plan-unit">/ 월</div>
         <div class="pay-plan-save">커피 두 잔 값</div>
       </div>
       <div class="pay-plan" id="plan-year" onclick="selectPlan('year')">
         <div class="pay-plan-badge">2개월 무료</div>
         <div class="pay-plan-type">연간 구독</div>
-        <div class="pay-plan-price">₩99,000</div>
+        <div class="pay-plan-price">₩199,000</div>
         <div class="pay-plan-unit">/ 년 (₩8,250/월)</div>
         <div class="pay-plan-save">₩19,800 절약</div>
       </div>
@@ -10335,7 +11796,7 @@ diagAddSTT = function(role, text, tag) {
 
     
     <button class="pay-confirm-btn" id="pay-confirm-btn" onclick="confirmPay()">
-      지금 ₩9,900/월 구독 시작하기 →
+      지금 ₩19,900/월 구독 시작하기 →
     </button>
     <div class="pay-secure">🔒 토스페이먼츠 보안결제 · SSL 암호화 · 개인정보 안전</div>
     <button class="pay-cancel" onclick="closePayModal()">취소</button>
@@ -10451,36 +11912,92 @@ diagAddSTT = function(role, text, tag) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
       <div>
         <div style="font-size:8px;color:rgba(11,29,58,.5);margin-bottom:1px">🔥 얼리버드 특가 · 지금 가입하면 평생 고정!</div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy)"><span id="fh-current-price">₩9,900</span><span style="font-size:9px;color:var(--muted)">/월</span></div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy)"><span id="fh-current-price">₩19,900</span><span style="font-size:9px;color:var(--muted)">/월</span></div>
       </div>
       <div style="text-align:right">
         <div style="font-size:8px;color:rgba(11,29,58,.5)">현재 가입자</div>
         <div style="font-size:18px;font-weight:900;color:var(--navy)"><span id="fh-subscriber-count">247</span>명</div>
-        <div style="font-size:8px;color:var(--gold);font-weight:700"><span id="fh-remaining-slots">753명</span> 후 ₩19,000</div>
+        <div style="font-size:8px;color:var(--gold);font-weight:700"><span id="fh-remaining-slots">753명</span> 후 ₩29,000</div>
       </div>
     </div>
     <div style="background:rgba(11,29,58,.1);border-radius:4px;height:4px;overflow:hidden">
       <div id="fh-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;width:24.7%;transition:width .8s ease"></div>
     </div>
-    <div style="text-align:center;font-size:7px;color:rgba(11,29,58,.4);margin-top:3px">1,000명 초과 시 ₩19,000 · 10,000명 초과 시 ₩29,000으로 자동 변경</div>
+    <div style="text-align:center;font-size:7px;color:rgba(11,29,58,.4);margin-top:3px">1,000명 초과 시 ₩29,000 · 10,000명 초과 시 ₩39,000으로 자동 변경</div>
   </div>
 
-  <div class="mp-sub-title">🏠 금융집짓기® 구독하기</div>
-  <div class="mp-sub-desc">20년 CFP 노하우 · AI 재무진단 · 종합 재무설계</div>
-  <div class="mp-plan-cards">
-    <div class="mp-plan-card mp-selected" id="mp-plan-month" onclick="mpSelectPlan('month')">
-      <div class="mp-plan-type">월간 구독</div>
-      <div class="mp-plan-price">₩9,900</div>
-      <div class="mp-plan-unit">/ 월</div>
-      <div class="mp-plan-save">언제든 해지 가능</div>
+  <div class="mp-sub-title">🏥 AI 재무검진 플랜 선택</div>
+  <div class="mp-sub-desc">오상열 CFP(20년) × AI 머니야 · 금융집짓기® 8대 영역 종합 진단</div>
+  <div class="mp-plan-cards" style="flex-direction:column;gap:8px;">
+
+    <!-- 🥉 브론즈 1회 -->
+    <div class="mp-plan-card" id="mp-plan-bronze" onclick="mpSelectPlan('bronze')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
+      <div>
+        <div class="mp-plan-type" style="font-size:11px;">🥉 브론즈</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1회 AI 음성 10분 + 당일 텍스트 무제한</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mp-plan-price" style="font-size:18px;">₩9,900</div>
+        <div class="mp-plan-unit" style="font-size:9px;">1회</div>
+      </div>
     </div>
-    <div class="mp-plan-card" id="mp-plan-year" onclick="mpSelectPlan('year')">
-      <div class="mp-plan-badge">2개월 무료</div>
-      <div class="mp-plan-type">연간 구독</div>
-      <div class="mp-plan-price" id="mp-year-price">₩99,000</div>
-      <div class="mp-plan-unit" id="mp-year-unit">/ 년 (₩8,250/월)</div>
-      <div class="mp-plan-save">₩19,800 절약</div>
+
+    <!-- 🥈 실버 월정기 -->
+    <div class="mp-plan-card mp-selected" id="mp-plan-silver-month" onclick="mpSelectPlan('silver-month')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:2px solid var(--gold);">
+      <div>
+        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;">추천</div>
+        <div class="mp-plan-type" style="font-size:11px;">🥈 실버</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">매월 AI 음성 20분 + 텍스트 무제한</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mp-plan-price" style="font-size:18px;">₩9,900</div>
+        <div class="mp-plan-unit" style="font-size:9px;">/ 월</div>
+        <div class="mp-plan-save" style="font-size:8px;">언제든 해지 가능</div>
+      </div>
     </div>
+
+    <!-- 🥈 실버 연회비 -->
+    <div class="mp-plan-card" id="mp-plan-silver-year" onclick="mpSelectPlan('silver-year')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
+      <div>
+        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;">2개월 무료</div>
+        <div class="mp-plan-type" style="font-size:11px;">🥈 실버 연회비</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">12개월 음성 20분/월 + 텍스트 무제한</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mp-plan-price" style="font-size:18px;">₩99,000</div>
+        <div class="mp-plan-unit" style="font-size:9px;">/ 년 (₩8,250/월)</div>
+        <div class="mp-plan-save" style="font-size:8px;">₩19,800 절약</div>
+      </div>
+    </div>
+
+    <!-- 🥇 골드 월정기 -->
+    <div class="mp-plan-card" id="mp-plan-gold-month" onclick="mpSelectPlan('gold-month')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
+      <div>
+        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;">프리미엄</div>
+        <div class="mp-plan-type" style="font-size:11px;">🥇 골드</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">매월 AI 음성 40분 + 텍스트 무제한</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mp-plan-price" style="font-size:18px;">₩19,900</div>
+        <div class="mp-plan-unit" style="font-size:9px;">/ 월</div>
+        <div class="mp-plan-save" style="font-size:8px;">언제든 해지 가능</div>
+      </div>
+    </div>
+
+    <!-- 🥇 골드 연회비 -->
+    <div class="mp-plan-card" id="mp-plan-gold-year" onclick="mpSelectPlan('gold-year')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
+      <div>
+        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;">최대 혜택</div>
+        <div class="mp-plan-type" style="font-size:11px;">🥇 골드 연회비</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">12개월 음성 40분/월 + 텍스트 무제한</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mp-plan-price" style="font-size:18px;">₩199,000</div>
+        <div class="mp-plan-unit" style="font-size:9px;">/ 년 (₩16,583/월)</div>
+        <div class="mp-plan-save" style="font-size:8px;">₩39,800 절약</div>
+      </div>
+    </div>
+
   </div>
   <div class="mp-sub-features">
 
@@ -10547,30 +12064,31 @@ diagAddSTT = function(role, text, tag) {
     </div>
 
   </div>
-  <!-- Google 로그인 (MVP: 숨김 - 간단 입력폼으로 대체) -->
+  <!-- 고객 정보 입력 -->
   <div style="margin-bottom:10px">
 
-    <!-- 기존 Google 로그인 (숨김) -->
-    <div id="fh-before-login" style="display:none">
-      <button onclick="fhGoogleLogin()"
-        style="width:100%;padding:11px 12px;border-radius:10px;
-        border:1.5px solid #ddd;background:#fff;
-        display:flex;align-items:center;justify-content:center;gap:8px;
-        font-size:13px;font-weight:700;color:#3c4043;
-        font-family:var(--fn);cursor:pointer;transition:all .15s;"
-        onmouseover="this.style.background='#f8f8f8';this.style.borderColor='#C9972A'"
-        onmouseout="this.style.background='#fff';this.style.borderColor='#ddd'">
-        <svg width="18" height="18" viewBox="0 0 48 48">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          <path fill="none" d="M0 0h48v48H0z"/>
-        </svg>
-        Google 계정으로 로그인
+    <!-- 구글 로그인 버튼 -->
+    <div id="fh-before-login" style="margin-bottom:10px;">
+      <button onclick="fhGoogleLogin()" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--fn);font-size:13px;font-weight:600;color:#333;transition:all .2s;" onmouseover="this.style.borderColor='#C9972A'" onmouseout="this.style.borderColor='#ddd'">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;">
+        Google 계정으로 간편 로그인
       </button>
-      <div style="font-size:9px;color:#999;margin-top:5px;text-align:center">
-        🔒 로그인 정보는 구독 관리 및 안내에만 사용됩니다
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <div style="flex:1;height:1px;background:#ddd;"></div>
+        <span style="font-size:10px;color:#999;">또는 직접 입력</span>
+        <div style="flex:1;height:1px;background:#ddd;"></div>
+      </div>
+    </div>
+
+    <!-- 구글 로그인 완료 후 표시 -->
+    <div id="fh-after-login" style="display:none;margin-bottom:10px;">
+      <div style="background:#f8f9fa;border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;border:1.5px solid #e8e8e8;">
+        <img id="fh-login-photo" src="" style="width:36px;height:36px;border-radius:50%;display:none;">
+        <div style="flex:1;">
+          <div id="fh-login-name" style="font-size:12px;font-weight:700;color:var(--navy);"></div>
+          <div id="fh-login-email" style="font-size:10px;color:var(--muted);"></div>
+        </div>
+        <button onclick="fhGoogleLogout()" style="padding:4px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;font-size:9px;color:#999;cursor:pointer;font-family:var(--fn);">로그아웃</button>
       </div>
     </div>
 
@@ -10609,37 +12127,9 @@ diagAddSTT = function(role, text, tag) {
       </div>
     </div>
 
-    <!-- 로그인 후 (기존 유지 - 숨김) -->
-    <div id="fh-after-login" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;
-        padding:10px 12px;border-radius:10px;
-        background:rgba(11,29,58,0.04);border:1.5px solid rgba(201,151,42,0.4);">
-        <img id="fh-login-photo" src="" alt=""
-          style="width:32px;height:32px;border-radius:50%;display:none;object-fit:cover;">
-        <div style="flex:1;min-width:0;">
-          <div id="fh-login-name"
-            style="font-size:13px;font-weight:700;color:var(--navy);
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-          <div id="fh-login-email"
-            style="font-size:10px;color:#888;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-        </div>
-        <button onclick="fhGoogleLogout()"
-          style="font-size:10px;color:#888;background:none;border:none;
-          cursor:pointer;padding:2px 6px;border-radius:4px;white-space:nowrap"
-          onmouseover="this.style.color='#e53e3e'"
-          onmouseout="this.style.color='#888'">
-          로그아웃
-        </button>
-      </div>
-      <div style="font-size:9px;color:var(--gold);font-weight:700;margin-top:5px;text-align:center">
-        ✓ 이 계정으로 구독이 진행됩니다
-      </div>
-    </div>
-
   </div>
   <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
-    지금 ₩9,900/월 구독 시작하기 →
+    지금 ₩9,900/월 실버 구독 시작하기 →
   </button>
 
 </div><!-- /mp-sub-modal -->
@@ -10830,7 +12320,7 @@ diagAddSTT = function(role, text, tag) {
 
         <!-- AI 재무검진 시작 버튼 -->
         <div class="start-area" style="padding:12px;">
-          <button class="start-btn" onclick="mvpGoToDiag()">
+          <button class="start-btn start-btn-pulse" onclick="mvpGoToDiag()">
             🎙️ 유료 AI 재무검진 시작하기
           </button>
           <div class="start-note">AI진단 탭으로 이동하여 상담이 시작됩니다</div>
@@ -11545,8 +13035,8 @@ diagAddSTT = function(role, text, tag) {
         <div class="mpc-bd">
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
-              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월50분 · 텍스트무제한</div></div>
-              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩9,900</span>
+              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">👑 구독 중</div><div style="font-size:9px;color:var(--muted)" id="mp-current-plan-label">AI진단상담 · 텍스트무제한</div></div>
+              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩19,900</span>
             </div>
             <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center" onclick="showToast('준비 중입니다')">
               <div><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5)">🥇 골드 (준비중)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 무제한</div></div>
