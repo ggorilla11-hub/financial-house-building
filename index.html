@@ -2444,18 +2444,16 @@ html{visibility:visible !important;}
 
 
 
-<!-- Vapi SDK [DEV-001] — html-script-tag (캐시 퍼지 후 최신) -->
-  <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js?v=20260401"></script>
+<!-- Vapi SDK [DEV-001] — 동적 import (Chrome 호환) -->
   <script>
-    window.VapiReady = false;
-    (function checkVapi() {
-      if (typeof vapiSDK !== 'undefined') {
-        window.VapiReady = true;
-        console.log('[Vapi] html-script-tag 로드 완료 (purged)');
-      } else {
-        setTimeout(checkVapi, 100);
-      }
-    })();
+  (async function() {
+    const module = await import('https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/+esm');
+    const VapiDefault = module.default;
+    window.VapiClass = VapiDefault;
+    window.VapiReady = true;
+    console.log('[Vapi] 동적 import 완료');
+    window.dispatchEvent(new Event('vapi-ready'));
+  })();
   </script>
 
 </head>
@@ -9433,13 +9431,12 @@ async function diagConnectVoice(isPaid) {
   if(!window.VapiReady) {
     showToast('⏳ AI 엔진 로딩 중...');
     await new Promise(function(resolve) {
-      var check = setInterval(function() {
-        if(window.VapiReady) { clearInterval(check); resolve(); }
-      }, 100);
-      setTimeout(function() { clearInterval(check); resolve(); }, 5000);
+      if(window.VapiReady) return resolve();
+      window.addEventListener('vapi-ready', resolve, { once: true });
+      setTimeout(resolve, 5000);
     });
   }
-  if(typeof vapiSDK === 'undefined') {
+  if(!window.VapiClass) {
     showToast('❌ AI 엔진 로드 실패. 페이지를 새로고침해주세요.');
     _vapiConnecting = false;
     return;
@@ -9458,8 +9455,10 @@ async function diagConnectVoice(isPaid) {
     await new Promise(function(r){ setTimeout(r, 1000); });
   }
 
+  /* ★ 마이크 선점 — Chrome 호환성 핵심 */
   try {
-    diagMicStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    var tempStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    tempStream.getTracks().forEach(function(t){ t.stop(); });
     showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
   } catch(e) {
     if(e.name === 'NotAllowedError') {
@@ -9472,15 +9471,16 @@ async function diagConnectVoice(isPaid) {
     return;
   }
 
-  /* ★ 마이크 스트림 해제 (Vapi가 직접 마이크를 잡도록) */
-  try { if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } } catch(e) {}
+  /* ★ 500ms 딜레이 — Chrome 마이크 해제 시간 확보 (핵심!) */
+  await new Promise(function(r){ setTimeout(r, 500); });
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    console.log('[DEBUG] vapiSDK:', typeof vapiSDK);
+    var VapiConstructor = window.VapiClass.default || window.VapiClass;
+    console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
     console.log('[DEBUG] assistantId:', assistantId);
-    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
-    console.log('[DEBUG] run result:', vapi);
+    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
+    console.log('[DEBUG] vapi instance:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); _vapiConnecting = false; return; }
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
@@ -9549,7 +9549,7 @@ async function diagConnectVoice(isPaid) {
 
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
-    vapi.start(assistantId);
+    await vapi.start(assistantId);
     _vapiConnecting = false;
 
   } catch(e) {
