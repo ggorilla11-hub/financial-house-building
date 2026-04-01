@@ -2587,6 +2587,33 @@ html{visibility:visible !important;}
     <div id="fn-r-stat" style="display:flex;justify-content:center;gap:16px;background:rgba(212,168,83,.08);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
     <div id="fn-r-insights" style="display:none;"></div>
 
+    <!-- ★ AI재무진단 샘플영상 — Firebase URL 수령 후 교체 -->
+    <div id="sample-video-wrap" style="margin-bottom:16px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(201,151,42,.35);background:#000;">
+      <div style="padding:10px 14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">🎬</span>
+        <span style="font-size:11px;font-weight:700;color:#E8B84B;">AI 재무진단 샘플 영상</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:auto;">실제 상담 미리보기</span>
+      </div>
+      <!-- ★★★ Firebase 영상 URL 수령 후 교체 방법 ★★★
+           1. 아래 placeholder div 삭제
+           2. video 태그 주석 해제
+           3. src="FIREBASE_VIDEO_URL_HERE" 에 URL 입력
+      -->
+      <div id="sample-video-placeholder" style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0d1b2a,#1a2940);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+        <div style="width:60px;height:60px;border-radius:50%;background:rgba(201,151,42,.2);border:2px solid rgba(201,151,42,.5);display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:24px;margin-left:5px;">▶</span>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7);">샘플 영상 준비 중</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);">Firebase URL 연결 예정</div>
+      </div>
+      <!-- 영상 수령 후 위 placeholder div 삭제하고 아래 주석 해제
+      <video id="sample-video" controls playsinline preload="metadata"
+        style="width:100%;display:block;max-height:240px;object-fit:contain;"
+        src="FIREBASE_VIDEO_URL_HERE">
+      </video>
+      -->
+    </div>
+
     <!-- 고민 연동 메시지 + CTA -->
     <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.4);border-radius:14px;padding:16px;margin-bottom:12px;">
       <div id="fn-r-worry-msg" style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:14px;text-align:center;"></div>
@@ -5688,27 +5715,93 @@ function initSimV2(){
 ══════════════════════════════════════ */
 
 /* ─ 결제 모달 ─ */
-let selectedPlan = 'month';
+let selectedPlan = 'single';   // 현재 선택된 결제 방식 (single/silver-month/silver-year/gold-month/gold-year/expert-month/expert-year)
+let selectedTier = 'bronze';   // 현재 선택된 티어 (bronze/silver/gold/expert)
 
-
-function selectPlan(plan){
-  selectedPlan = plan;
-  document.getElementById('plan-month').classList.toggle('selected', plan==='month');
-  document.getElementById('plan-year').classList.toggle('selected', plan==='year');
-  const btn = document.getElementById('pay-confirm-btn');
-  if(plan==='month'){
-    const _plan = getEarlyBirdPlan(); btn.textContent = '지금 ₩' + _plan.monthly.toLocaleString() + '/월 구독 시작하기 →';
-  } else {
-    const _planA = getEarlyBirdPlan(); btn.textContent = '지금 ₩' + _planA.annual.toLocaleString() + '/년 구독 시작하기 (2개월 무료) →';
+// ── 티어 탭 전환 ──
+function mpSelectTier(tier) {
+  selectedTier = tier;
+  // 탭 스타일 초기화
+  ['bronze','silver','gold','expert'].forEach(function(t) {
+    var tab = document.getElementById('mp-tab-' + t);
+    if (!tab) return;
+    tab.style.background = 'rgba(11,29,58,.08)';
+    tab.style.color = 'var(--muted)';
+  });
+  // 선택 탭 활성화
+  var colors = { bronze:'#CD7F32', silver:'#64748b', gold:'#C9972A', expert:'#6366f1' };
+  var activeTab = document.getElementById('mp-tab-' + tier);
+  if (activeTab) {
+    activeTab.style.background = colors[tier];
+    activeTab.style.color = '#fff';
   }
+  // 패널 전환
+  document.querySelectorAll('.mp-tier-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('mp-tier-' + tier);
+  if (panel) panel.style.display = 'block';
+  // 기본 선택 및 CTA 업데이트
+  var defaults = { bronze:'single', silver:'silver-month', gold:'gold-month', expert:'expert-month' };
+  mpSelectPlan(defaults[tier]);
 }
+
+function selectPlan(plan){ mpSelectPlan(plan); } // 하위호환
+
+function mpSelectPlan(plan) {
+  selectedPlan = plan;
+  // 모든 플랜 카드 border 초기화
+  var allCards = ['mp-plan-single','mp-plan-silver-month','mp-plan-silver-year',
+                  'mp-plan-gold-month','mp-plan-gold-year','mp-plan-expert-month','mp-plan-expert-year',
+                  'mp-plan-month','mp-plan-year'];
+  allCards.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('mp-selected'); el.style.borderColor = ''; }
+  });
+  // 선택 카드 강조
+  var selEl = document.getElementById('mp-plan-' + plan.replace('-','') === 'mp-plan-silvermonth' ? 'mp-plan-silver-month' : 'mp-plan-' + plan);
+  // id 매핑
+  var idMap = {
+    'single':'mp-plan-single', 'silver-month':'mp-plan-silver-month', 'silver-year':'mp-plan-silver-year',
+    'gold-month':'mp-plan-gold-month', 'gold-year':'mp-plan-gold-year',
+    'expert-month':'mp-plan-expert-month', 'expert-year':'mp-plan-expert-year'
+  };
+  var cardEl = document.getElementById(idMap[plan]);
+  if (cardEl) { cardEl.classList.add('mp-selected'); }
+  // CTA 버튼 업데이트
+  var ctaMap = {
+    'single':        '지금 ₩9,900 브론즈 단일결제 →',
+    'silver-month':  '지금 ₩9,900/월 실버 구독 시작 →',
+    'silver-year':   '지금 ₩99,000/년 실버 연회비 결제 →',
+    'gold-month':    '지금 ₩19,900/월 골드 구독 시작 →',
+    'gold-year':     '지금 ₩199,000/년 골드 연회비 결제 →',
+    'expert-month':  '지금 ₩29,900/월 전문가 구독 시작 →',
+    'expert-year':   '지금 ₩299,000/년 전문가 연회비 결제 →'
+  };
+  var cta = document.getElementById('mp-sub-cta');
+  if (cta) cta.textContent = ctaMap[plan] || '결제 시작하기 →';
+  // 정기결제 안내 (월정기만 표시)
+  var notice = document.getElementById('mp-cert-notice');
+  if (notice) notice.style.display = (plan.endsWith('-month')) ? 'flex' : 'none';
+}
+
 function selPayMethod(el){
-  document.querySelectorAll('.pay-method-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.pay-method-btn').forEach(function(b){ b.classList.remove('on'); });
   el.classList.add('on');
 }
+
 function confirmPay(plan){
-  const isYearly = (plan === 'year');
-  const isSingle = (plan === 'single');
+  // ── 금액/플랜명/주문ID 매핑 ──
+  var planConfig = {
+    'single':       { amount:9900,   name:'브론즈 단일진단 1회',  prefix:'BRONZE_SINGLE', regular:'N' },
+    'silver-month': { amount:9900,   name:'실버 월정기구독',       prefix:'SILVER_MONTH',  regular:'Y' },
+    'silver-year':  { amount:99000,  name:'실버 연회비',           prefix:'SILVER_YEAR',   regular:'N' },
+    'gold-month':   { amount:19900,  name:'골드 월정기구독',       prefix:'GOLD_MONTH',    regular:'Y' },
+    'gold-year':    { amount:199000, name:'골드 연회비',           prefix:'GOLD_YEAR',     regular:'N' },
+    'expert-month': { amount:29900,  name:'전문가 월정기구독',     prefix:'EXPERT_MONTH',  regular:'Y' },
+    'expert-year':  { amount:299000, name:'전문가 연회비',         prefix:'EXPERT_YEAR',   regular:'N' }
+  };
+
+  var cfg = planConfig[plan];
+  if (!cfg) { showToast('플랜을 선택해 주세요.'); return; }
 
   // ── 페이플 SDK 로드 확인 ──
   if(typeof PaypleCpayAuthCheck !== 'function'){
@@ -5718,38 +5811,22 @@ function confirmPay(plan){
   }
 
   try {
-    // 상품별 금액/이름/주문ID 설정
-    var payAmount, planName, order_id;
-    if(isSingle) {
-      payAmount = 19900;
-      planName = '단일상담 1회';
-      order_id = 'FH_SINGLE_' + Date.now();
-    } else if(isYearly) {
-      payAmount = 199000;
-      planName = '연회비 구독';
-      order_id = 'FH_YEAR_' + Date.now();
-    } else {
-      payAmount = 19900;
-      planName = '월정기 구독';
-      order_id = 'FH_MONTH_' + Date.now();
-    }
+    var order_id = 'FH_' + cfg.prefix + '_' + Date.now();
 
     // ── 페이플 공식 파라미터 ──
-    const obj = {};
+    var obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
-    obj.PCD_PAY_WORK     = 'PAY';  // 모든 플랜 즉시결제 (정기결제는 서버에서 별도 구현)
+    obj.PCD_PAY_WORK     = 'PAY';
     obj.PCD_CARD_VER     = '01';
-    obj.PCD_PAY_GOODS    = 'AI 재무검진 ' + planName;
-    obj.PCD_PAY_TOTAL    = payAmount;
+    obj.PCD_PAY_GOODS    = 'AI 재무진단 ' + cfg.name;
+    obj.PCD_PAY_TOTAL    = cfg.amount;
     obj.PCD_PAY_OID      = order_id;
-    obj.PCD_REGULER_FLAG = 'N';  // 즉시결제 (정기결제는 추후 서버 구현)
+    obj.PCD_REGULER_FLAG = cfg.regular;
     obj.PCD_SIMPLE_FLAG  = 'Y';
-    // PCD_RST_URL: 웹훅 서버로 결제 데이터 전송 후 callbackFunction으로 앱에 결과 반환
-    // 고객 이름/이메일을 RST_URL 파라미터로 전달 (웹훅 서버에서 수신)
-    const _nameParam  = encodeURIComponent(window._fhPayerName  || '');
-    const _emailParam = encodeURIComponent(window._fhPayerEmail || '');
-    const _phoneParam = encodeURIComponent(window._fhPayerPhone || '');
+    var _nameParam  = encodeURIComponent(window._fhPayerName  || '');
+    var _emailParam = encodeURIComponent(window._fhPayerEmail || '');
+    var _phoneParam = encodeURIComponent(window._fhPayerPhone || '');
     obj.PCD_RST_URL = 'https://ohwant-webhook.vercel.app/api/payple'
       + '?payer_name='  + _nameParam
       + '&payer_email=' + _emailParam
@@ -5757,14 +5834,11 @@ function confirmPay(plan){
       + '&plan=' + plan;
     obj.callbackFunction = onPaypleResult;
 
-    console.log('[페이플 결제 요청]', {
-      work: obj.PCD_PAY_WORK,
-      amount: obj.PCD_PAY_TOTAL,
-      orderId: obj.PCD_PAY_OID,
-      rstUrl: obj.PCD_RST_URL
-    });
+    // 플랜 정보 임시 저장 (콜백에서 사용)
+    window._fhCurrentPlan = plan;
+    window._fhCurrentPlanName = cfg.name;
 
-    // ── 결제창 호출 ──
+    console.log('[페이플 결제 요청]', { plan: plan, amount: cfg.amount, orderId: order_id, regular: cfg.regular });
     PaypleCpayAuthCheck(obj);
 
   } catch(e) {
@@ -5776,32 +5850,32 @@ function confirmPay(plan){
 // 페이플 결제 결과 콜백
 function onPaypleResult(data){
   if(data.PCD_PAY_RST === 'success'){
-    // 모달 닫기 (있으면 닫고 없으면 무시)
-    if(typeof closePayModal === 'function') {
-      try { closePayModal(); } catch(e) {}
-    }
+    if(typeof closePayModal === 'function') { try { closePayModal(); } catch(e) {} }
     try { mpCloseSubscribe(); } catch(e) {}
-    // ★ 결제 성공 시 원트큐브 즉시 숨기고 마이페이지 준비
     try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
-    // 구독 상태 저장
+
+    // 플랜별 크레딧 설정
+    var creditMap = { 'single':10, 'silver-month':20, 'silver-year':20, 'gold-month':40, 'gold-year':40, 'expert-month':40, 'expert-year':40 };
+    var currentPlan = window._fhCurrentPlan || 'single';
+    var credit = creditMap[currentPlan] || 20;
+
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
     localStorage.setItem('fh_sub_oid', data.PCD_PAY_OID || '');
-    // 결제자 정보 (mpCompletePurchase에서 저장한 값)
+    localStorage.setItem('fh_plan', currentPlan);
+    localStorage.setItem('mvp_credit_min', String(credit));
+
     var _payerName  = window._fhPayerName  || '';
     var _payerEmail = window._fhPayerEmail || '';
+    var _payerPhone = window._fhPayerPhone || '';
 
-    // 구독자 정보 localStorage 추가 저장
     localStorage.setItem('fh_payer_name',  _payerName);
     localStorage.setItem('fh_payer_email', _payerEmail);
 
-    // ★ 결제 성공 후에만: 구글시트 DB 저장 + make.com 웹훅 (땡큐 카톡/이메일)
-    var _payerPhone = window._fhPayerPhone || '';
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
 
-    // 감사 이메일 발송 (웹훅 서버)
     if(_payerEmail) {
       fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
         method: 'POST',
@@ -5809,8 +5883,8 @@ function onPaypleResult(data){
         body: JSON.stringify({
           name:    _payerName,
           email:   _payerEmail,
-          plan:    (data.PCD_PAY_OID||'').includes('YEAR') ? 'silver-annual' : 'silver-monthly',
-          amount:  parseInt(data.PCD_PAY_TOTAL || getEarlyBirdPlan().monthly),
+          plan:    currentPlan,
+          amount:  parseInt(data.PCD_PAY_TOTAL || 0),
           orderId: data.PCD_PAY_OID || ''
         })
       }).then(function(r){ console.log('[감사이메일]', r.status); })
@@ -5818,10 +5892,10 @@ function onPaypleResult(data){
     }
 
     var _greeting = _payerName
-      ? ('🎉 ' + _payerName + '님, 금융집짓기® 회원이 되셨습니다! 환영합니다 👑')
-      : '🎉 구독 완료! 금융집짓기® 회원이 되셨습니다 👑';
+      ? ('🎉 ' + _payerName + '님, AI머니야 회원이 되셨습니다! 환영합니다 👑')
+      : '🎉 결제 완료! AI머니야 회원이 되셨습니다 👑';
     showToast(_greeting);
-    // 헤더 버튼 업데이트
+
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
       payBtn.textContent = '👑 회원전용';
@@ -5829,7 +5903,6 @@ function onPaypleResult(data){
       payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
       payBtn.style.animation = 'none';
     }
-    // 마이페이지 즉시 오픈 (시뮬레이터 노출 방지)
     setTimeout(() => mpOpen(), 300);
   } else {
     showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
@@ -6396,7 +6469,7 @@ document.addEventListener('DOMContentLoaded', function(){
    금융집짓기® 마이페이지 JS
 ════════════════════════════════════════ */
 let mpIsSubscribed = false;
-let mpSelectedPlan = 'month';
+let mpSelectedPlan = 'single'; // 하위호환용 (selectedPlan 변수가 주 변수)
 const MP_MEMBER_KEY = 'fh_member_v1';
 
 // ─────────────────────────────────────────
@@ -6449,48 +6522,23 @@ function headerMainAction() {
 
 /* ── 구독 모달 ── */
 function mpOpenSubscribe() {
-  // 얼리버드 가격 업데이트
-  const _plan = getEarlyBirdPlan();
-  const _yEl = document.getElementById('mp-year-price');
-  const _yUEl = document.getElementById('mp-year-unit');
-  const _mPrice = document.querySelector('#mp-plan-month .mp-plan-price');
-  if(_yEl) _yEl.textContent = '₩' + _plan.annual.toLocaleString();
-  if(_yUEl) _yUEl.textContent = '/ 년 (₩' + Math.round(_plan.annual/12).toLocaleString() + '/월)';
-  if(_mPrice) _mPrice.textContent = '₩' + _plan.monthly.toLocaleString();
-  updateEarlyBirdCounter();
-  // 이름/이메일 입력 필드 초기화 (직접입력 방식)
-  mpResetLoginUI();
+  // 모달 열기
   document.getElementById('mp-sub-bg').classList.add('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.add('mp-sub-open');
+  // 기본 탭: 브론즈로 시작
+  mpSelectTier('bronze');
+  // 구글 로그인 상태에 맞게 UI 업데이트
+  if (window._fhCurrentUser && window._fhCurrentUser.email) {
+    fhUpdateLoginUI(window._fhCurrentUser);
+  } else {
+    fhUpdateLoginUI(null);
+  }
 }
 function mpCloseSubscribe() {
   document.getElementById('mp-sub-bg').classList.remove('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.remove('mp-sub-open');
 }
-function mpSelectPlan(p) {
-  mpSelectedPlan = p;
-  var singleEl = document.getElementById('mp-plan-single');
-  document.getElementById('mp-plan-month').classList.toggle('mp-selected', p==='month');
-  document.getElementById('mp-plan-year').classList.toggle('mp-selected', p==='year');
-  if(singleEl) singleEl.classList.toggle('mp-selected', p==='single');
-  // 선택된 카드 강조
-  if(singleEl) singleEl.style.borderColor = p==='single' ? 'var(--gold)' : '';
-  document.getElementById('mp-plan-month').style.borderColor = p==='month' ? 'var(--gold)' : '';
-  document.getElementById('mp-plan-year').style.borderColor = p==='year' ? 'var(--gold)' : '';
-
-  const cta = document.getElementById('mp-sub-cta');
-  if(cta) {
-    if(p==='single') cta.textContent = '지금 ₩19,900 단일상담 결제하기 →';
-    else if(p==='year') cta.textContent = '지금 ₩199,000/년 구독 시작하기 →';
-    else cta.textContent = '지금 ₩19,900/월 구독 시작하기 →';
-  }
-
-  // 안내 문구: 월간만 표시 (정기결제), 나머지는 숨김
-  const notice = document.getElementById('mp-cert-notice');
-  const amountEl = document.getElementById('mp-cert-amount');
-  if(notice) notice.style.display = p==='month' ? 'flex' : 'none';
-  if(amountEl) amountEl.textContent = '₩19,900';
-}
+// ── 구버전 mpSelectPlan 제거됨 → 새 버전(5700번대)의 mpSelectPlan/mpSelectTier 사용 ──
 function mpCompletePurchase() {
   // MVP: mvpCompletePurchase로 대체됨 (간단 입력폼 방식)
   mvpCompletePurchase();
@@ -6760,58 +6808,82 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ main용: 원트큐브 위에 결제 모달만 바로 띄우기 (배경 유지)
+  // ★ main용: 결제 모달로 진입
   mpOpenSubscribe();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
 function mvpCompletePurchase() {
-  var nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
-  var phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
-  var emailVal = (document.getElementById('mvp-email') || {}).value || '';
-  var privacyChecked = (document.getElementById('mvp-privacy') || {}).checked || false;
+  var isGoogleLogin = window._fhCurrentUser && window._fhCurrentUser.email &&
+                      !window._fhCurrentUser.uid.startsWith('mvp_');
 
-  // 유효성 검사
-  if (!nameVal.trim()) {
-    showToast('이름을 입력해 주세요.');
-    document.getElementById('mvp-name').focus();
-    return;
-  }
-  if (!phoneVal.trim()) {
-    showToast('전화번호를 입력해 주세요.');
-    document.getElementById('mvp-phone').focus();
-    return;
-  }
-  if (!emailVal.trim() || emailVal.indexOf('@') < 0) {
-    showToast('올바른 이메일을 입력해 주세요.');
-    document.getElementById('mvp-email').focus();
-    return;
-  }
-  if (!privacyChecked) {
-    showToast('개인정보 수집 동의에 체크해 주세요.');
-    return;
+  var nameVal, phoneVal, emailVal, privacyChecked;
+
+  if (isGoogleLogin) {
+    // 구글 로그인 경로
+    nameVal  = window._fhCurrentUser.displayName || '';
+    emailVal = window._fhCurrentUser.email || '';
+    phoneVal = (document.getElementById('mvp-phone-google') || {}).value || '';
+    privacyChecked = (document.getElementById('mvp-privacy-google') || {}).checked || false;
+    if (!phoneVal.trim()) {
+      showToast('전화번호를 입력해 주세요.');
+      var ph = document.getElementById('mvp-phone-google');
+      if (ph) ph.focus();
+      return;
+    }
+    if (!privacyChecked) {
+      showToast('개인정보 수집 동의에 체크해 주세요.');
+      return;
+    }
+  } else {
+    // 직접 입력 경로
+    nameVal  = (document.getElementById('mvp-name')  || {}).value || '';
+    phoneVal = (document.getElementById('mvp-phone') || {}).value || '';
+    emailVal = (document.getElementById('mvp-email') || {}).value || '';
+    privacyChecked = (document.getElementById('mvp-privacy') || {}).checked || false;
+
+    if (!nameVal.trim()) {
+      showToast('이름을 입력해 주세요.');
+      var n = document.getElementById('mvp-name'); if (n) n.focus();
+      return;
+    }
+    if (!phoneVal.trim()) {
+      showToast('전화번호를 입력해 주세요.');
+      var p = document.getElementById('mvp-phone'); if (p) p.focus();
+      return;
+    }
+    if (!emailVal.trim() || emailVal.indexOf('@') < 0) {
+      showToast('올바른 이메일을 입력해 주세요.');
+      var e = document.getElementById('mvp-email'); if (e) e.focus();
+      return;
+    }
+    if (!privacyChecked) {
+      showToast('개인정보 수집 동의에 체크해 주세요.');
+      return;
+    }
   }
 
-  // 결제자 정보 저장
+  // 결제자 정보 전역 저장
   window._fhPayerName  = nameVal.trim();
   window._fhPayerEmail = emailVal.trim();
   window._fhPayerPhone = phoneVal.trim();
 
-  // user 객체 생성 (기존 Google user 의존 코드 호환)
-  window._fhCurrentUser = {
-    displayName: nameVal.trim(),
-    email: emailVal.trim(),
-    phoneNumber: phoneVal.trim(),
-    uid: 'mvp_' + Date.now()
-  };
+  if (!isGoogleLogin) {
+    window._fhCurrentUser = {
+      displayName: nameVal.trim(),
+      email: emailVal.trim(),
+      phoneNumber: phoneVal.trim(),
+      uid: 'mvp_' + Date.now()
+    };
+  }
 
-  // ★ 결제 먼저 실행 (구글시트/make.com은 결제 성공 후에만 호출)
-  confirmPay(mpSelectedPlan);
+  // ★ 선택된 플랜으로 결제 실행
+  confirmPay(selectedPlan);
 }
 
 // MVP: 구글시트 DB 저장 + 안내 발송
 function mvpSaveToSheet(name, phone, email) {
-  // 웹훅 서버로 고객 정보 전송 (구글시트 DB 저장)
+  var currentPlan = window._fhCurrentPlan || selectedPlan || 'single';
   fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -6819,7 +6891,7 @@ function mvpSaveToSheet(name, phone, email) {
       name:  name,
       email: email,
       phone: phone,
-      plan:  mpSelectedPlan === 'single' ? 'single-19900' : (mpSelectedPlan === 'year' ? 'annual-199000' : 'monthly-19900'),
+      plan:  currentPlan,
       source: 'main-payment-form',
       timestamp: new Date().toISOString()
     })
@@ -6832,10 +6904,24 @@ function mvpSaveToSheet(name, phone, email) {
 
 // ★ make.com 웹훅 → 땡큐 카톡 + 땡큐 이메일 자동발송
 function mvpSendMakeWebhook(name, phone, email) {
-  var planName = mpSelectedPlan === 'single' ? '단일상담 1회' : (mpSelectedPlan === 'year' ? '연회비 구독' : '월정기 구독');
-  var planAmount = mpSelectedPlan === 'single' ? 19900 : (mpSelectedPlan === 'year' ? 199000 : 19900);
+  var currentPlan = window._fhCurrentPlan || selectedPlan || 'single';
+  var planNameMap = {
+    'single':'브론즈 단일진단 1회(9,900원)',
+    'silver-month':'실버 월정기구독(9,900원/월)',
+    'silver-year':'실버 연회비(99,000원)',
+    'gold-month':'골드 월정기구독(19,900원/월)',
+    'gold-year':'골드 연회비(199,000원)',
+    'expert-month':'전문가 월정기구독(29,900원/월)',
+    'expert-year':'전문가 연회비(299,000원)'
+  };
+  var amountMap = {
+    'single':9900, 'silver-month':9900, 'silver-year':99000,
+    'gold-month':19900, 'gold-year':199000,
+    'expert-month':29900, 'expert-year':299000
+  };
+  var planName   = planNameMap[currentPlan] || currentPlan;
+  var planAmount = amountMap[currentPlan] || 0;
 
-  // make.com 웹훅 URL (상열님의 make.com 시나리오에서 발급받은 URL로 교체 필요)
   var MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9';
 
   fetch(MAKE_WEBHOOK_URL, {
@@ -7157,8 +7243,12 @@ function mvpVoiceTimeUp() {
   var liveDot = document.querySelector('.c-live-dot');
   if(liveDot) liveDot.style.background = '#3b82f6';
 
-  // STT 영역에 안내 메시지
-  diagAddSTT('ai', '⏰ 음성 크레딧 50분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
+  // STT 영역에 안내 메시지 (플랜별 크레딧 표시)
+  var _planCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
+  var _planName   = localStorage.getItem('fh_plan') || 'single';
+  var _creditMap  = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _totalMin   = _creditMap[_planName] || 20;
+  diagAddSTT('ai', '⏰ 음성 크레딧 ' + _totalMin + '분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
 
   showToast('🔵 음성 종료 · 텍스트 무제한 상담 계속 가능');
 }
@@ -7181,6 +7271,31 @@ function mpClose() {
 function mpRefreshData() {
   const score = typeof calcScore === 'function' ? Math.round(calcScore()) : 0;
   const name = D.name || '회원';
+
+  // ── 플랜 표시 업데이트 ──
+  var _planKey = localStorage.getItem('fh_plan') || 'single';
+  var _planLabelMap = {
+    'single':       '🥉 브론즈 · 10분',
+    'silver-month': '🥈 실버 · 20분/월',
+    'silver-year':  '🥈 실버 · 20분/월 (연회비)',
+    'gold-month':   '🥇 골드 · 40분/월',
+    'gold-year':    '🥇 골드 · 40분/월 (연회비)',
+    'expert-month': '👔 전문가 · 40분/월',
+    'expert-year':  '👔 전문가 · 40분/월 (연회비)'
+  };
+  var _planCreditMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _planLabel  = _planLabelMap[_planKey] || '🥉 브론즈';
+  var _planCredit = _planCreditMap[_planKey] || 10;
+  var _remainCredit = parseInt(localStorage.getItem('mvp_credit_min') || String(_planCredit));
+  // 프로필 since 텍스트
+  var sinceEl = document.getElementById('mp-profile-since');
+  if (sinceEl) {
+    var subDays = Math.floor((Date.now() - new Date(localStorage.getItem('fh_sub_date')||Date.now()).getTime()) / 86400000);
+    sinceEl.innerHTML = _planLabel + ' · 구독 D+<span id="mp-sub-days2">' + subDays + '</span>일';
+  }
+  // 마이페이지 현재 플랜 카드 업데이트
+  var planNowEl = document.querySelector('#mp-panel-6 [style*="실버 (현재)"], #mp-panel-6 .mp-plan-now-label');
+  if (planNowEl) planNowEl.textContent = _planLabel + ' (현재)';
 
   // 웰컴 배너
   const wbName = document.getElementById('mp-wb-name');
@@ -8399,6 +8514,8 @@ function mpDoWithdraw() {
           }
         });
     }
+    // 별칭 (버튼에서 호출)
+    function fhSignInGoogle() { fhGoogleLogin(); }
 
     // Google 로그아웃
     function fhGoogleLogout() {
@@ -8409,6 +8526,8 @@ function mpDoWithdraw() {
         fhUpdateLoginUI(null);
       });
     }
+    // 별칭 (버튼에서 호출)
+    function fhSignOut() { fhGoogleLogout(); }
 
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -11283,6 +11402,8 @@ function diagFillField(partIdx, labelKey, value) {
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
   // ★ v2.1: 자동입력 임시 비활성화 (오입력 방지 — 정교한 매칭 개발 후 활성화)
+  // 현재 패턴 매칭이 부정확하여 엉뚱한 필드에 값이 들어가는 문제 발생
+  // TODO: Claude API로 고객 발화를 분석하여 정확한 필드에 입력하도록 개선
   return;
 
   // ── 수정 요청 감지 ──
@@ -11487,13 +11608,20 @@ function forceCleanupVapi() {
     vapiCallActive = false;
   }
   _vapiConnecting = false;
+  // Daily.co iframe 강제 제거
   try { document.querySelectorAll('iframe[id*="daily"]').forEach(function(f){ f.remove(); }); } catch(e) {}
+  // 모든 오디오 정리
   try { document.querySelectorAll('audio').forEach(function(a){ a.pause(); a.srcObject=null; a.src=''; try{a.remove();}catch(e){} }); } catch(e) {}
+  // 마이크 스트림 해제
   try { if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } } catch(e) {}
   console.log('[Vapi] 페이지 종료 — 완전 정리 완료');
 }
+
+// 페이지 닫기/새로고침 시
 window.addEventListener('beforeunload', forceCleanupVapi);
+// 모바일에서 탭 전환/앱 전환 시
 window.addEventListener('pagehide', forceCleanupVapi);
+// 브라우저 비활성화 시 (모바일)
 document.addEventListener('visibilitychange', function() {
   if(document.visibilityState === 'hidden' && vapi && vapiCallActive) {
     console.log('[Vapi] 페이지 비활성화 감지 — 세션 정리');
@@ -11646,176 +11774,299 @@ document.addEventListener('visibilitychange', function() {
 <div class="mp-sub-modal" id="mp-sub-modal">
   <div class="mp-sub-handle"></div>
 
-  <!-- 얼리버드 카운터 리마인더 -->
-  <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.08));border:1px solid rgba(201,151,42,.35);border-radius:10px;padding:7px 12px;margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-      <div>
-        <div style="font-size:8px;color:rgba(11,29,58,.5);margin-bottom:1px">🔥 얼리버드 특가 · 지금 가입하면 평생 고정!</div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy)"><span id="fh-current-price">₩19,900</span><span style="font-size:9px;color:var(--muted)">/월</span></div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:8px;color:rgba(11,29,58,.5)">현재 가입자</div>
-        <div style="font-size:18px;font-weight:900;color:var(--navy)"><span id="fh-subscriber-count">247</span>명</div>
-        <div style="font-size:8px;color:var(--gold);font-weight:700"><span id="fh-remaining-slots">753명</span> 후 ₩29,000</div>
-      </div>
-    </div>
-    <div style="background:rgba(11,29,58,.1);border-radius:4px;height:4px;overflow:hidden">
-      <div id="fh-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;width:24.7%;transition:width .8s ease"></div>
-    </div>
-    <div style="text-align:center;font-size:7px;color:rgba(11,29,58,.4);margin-top:3px">1,000명 초과 시 ₩29,000 · 10,000명 초과 시 ₩39,000으로 자동 변경</div>
-  </div>
-
-  <div class="mp-sub-title">🏥 AI 재무검진 구독하기</div>
+  <div class="mp-sub-title">🏥 AI 재무진단 플랜 선택</div>
   <div class="mp-sub-desc">오상열 CFP(20년) × AI 머니야 · 금융집짓기® 8대 영역 종합 진단</div>
-  <div class="mp-plan-cards" style="flex-direction:column;gap:8px;">
 
-    <!-- 단일상담 1회 -->
-    <div class="mp-plan-card" id="mp-plan-single" onclick="mpSelectPlan('single')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
-      <div>
-        <div class="mp-plan-type" style="font-size:11px;">🎯 단일상담</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1회 AI 음성 재무검진 50분</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="mp-plan-price" style="font-size:18px;">₩19,900</div>
-        <div class="mp-plan-unit" style="font-size:9px;">1회</div>
-      </div>
-    </div>
-
-    <!-- 월정기 구독 -->
-    <div class="mp-plan-card mp-selected" id="mp-plan-month" onclick="mpSelectPlan('month')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:2px solid var(--gold);">
-      <div>
-        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;">추천</div>
-        <div class="mp-plan-type" style="font-size:11px;">📅 월정기 구독</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">매월 AI 음성 50분 + 텍스트 무제한</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="mp-plan-price" style="font-size:18px;">₩19,900</div>
-        <div class="mp-plan-unit" style="font-size:9px;">/ 월</div>
-        <div class="mp-plan-save" style="font-size:8px;">언제든 해지 가능</div>
-      </div>
-    </div>
-
-    <!-- 연회비 구독 -->
-    <div class="mp-plan-card" id="mp-plan-year" onclick="mpSelectPlan('year')" style="display:flex;align-items:center;justify-content:space-between;padding:14px;">
-      <div>
-        <div class="mp-plan-badge" style="display:inline-block;font-size:8px;padding:2px 6px;margin-bottom:4px;">2개월 무료</div>
-        <div class="mp-plan-type" style="font-size:11px;">📆 연회비 구독</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">12개월 음성 50분/월 + 텍스트 무제한</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="mp-plan-price" id="mp-year-price" style="font-size:18px;">₩199,000</div>
-        <div class="mp-plan-unit" id="mp-year-unit" style="font-size:9px;">/ 년 (₩8,250/월)</div>
-        <div class="mp-plan-save" style="font-size:8px;">₩19,800 절약</div>
-      </div>
-    </div>
-
+  <!-- ══ 플랜 탭 (브론즈/실버/골드/전문가) ══ -->
+  <div id="mp-plan-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:rgba(11,29,58,.06);border-radius:10px;padding:4px;">
+    <button onclick="mpSelectTier('bronze')" id="mp-tab-bronze"
+      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:#CD7F32;color:#fff;">
+      🥉 브론즈
+    </button>
+    <button onclick="mpSelectTier('silver')" id="mp-tab-silver"
+      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      🥈 실버
+    </button>
+    <button onclick="mpSelectTier('gold')" id="mp-tab-gold"
+      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      🥇 골드
+    </button>
+    <button onclick="mpSelectTier('expert')" id="mp-tab-expert"
+      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      👔 전문가
+    </button>
   </div>
-  <div class="mp-sub-features">
 
-    <!-- 1순위: AI 재무진단 -->
-    <div class="mp-sub-feature mp-feat-highlight">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">🤖 AI 재무진단 화상 · 月 1회</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">오상열 CFP 지식 기반 · RAG 5,700개 학습 · 맞춤 진단</div>
-      </div>
-    </div>
-
-    <div class="mp-sub-feature mp-feat-highlight">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">💬 AI 텍스트 재무진단 무제한</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">24시간 언제든지 · 재무 고민 즉시 해결</div>
-      </div>
-    </div>
-
-    <!-- 2순위: PDF 리포트 -->
-    <div class="mp-sub-feature">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">📊 종합재무설계 PDF 리포트</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">시뮬레이터 결과 자동 생성 · 월 1회 발행</div>
-      </div>
-    </div>
-
-    <!-- 3순위: 히스토리 -->
-    <div class="mp-sub-feature">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">📈 비포 & 에프터 히스토리 대시보드</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">저장할 때마다 자동 기록 · 재무 성장이 눈에 보임</div>
-      </div>
-    </div>
-
-    <!-- 4순위: 시뮬레이터 -->
-    <div class="mp-sub-feature">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">🏠 금융집짓기® 시뮬레이터 7대 영역 전체</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">은퇴·주택·투자·부채·목돈·세금·보험 완전 개방</div>
-      </div>
-    </div>
-
-    <!-- 5순위: CFP 상담 신청 -->
-    <div class="mp-sub-feature">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">👨‍💼 오상열 CFP 직접 상담 우선 예약</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">비대면·대면·VIP 상담 · 회원 전용 우선 일정</div>
-      </div>
-    </div>
-
-    <!-- 6순위: 금감원 영상 -->
-    <div class="mp-sub-feature">
-      <span class="mp-chk">✓</span>
-      <div>
-        <div style="font-weight:900;color:var(--navy);font-size:12px">🎬 금융감독원 공식 재무교육 영상</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">금감원 인증 전문가 강의 · 무제한 시청</div>
-      </div>
-    </div>
-
-  </div>
-  <!-- 고객 정보 입력 -->
-  <div style="margin-bottom:10px">
-
-    <!-- MVP: 간단 입력 폼 (이름/전번/이메일) -->
-    <div id="mvp-simple-login">
-      <div style="background:#fff;border-radius:12px;padding:14px;border:1.5px solid #eee;">
-        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 상담 신청 정보 입력</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <input id="mvp-name" type="text" placeholder="이름 (필수)" required
-            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
-            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
-            transition:border-color .2s;"
-            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-          <input id="mvp-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678" required
-            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
-            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
-            transition:border-color .2s;"
-            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-          <input id="mvp-email" type="email" placeholder="이메일 (필수) 예: name@email.com" required
-            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;
-            font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;
-            transition:border-color .2s;"
-            onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-          <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
-            <input id="mvp-privacy" type="checkbox"
-              style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
-            <span style="font-size:10px;color:#666;line-height:1.5;">
-              [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-              <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무검진 상담 및 안내 | 보유기간: 서비스 이용 종료 시까지</span>
-            </span>
-          </label>
+  <!-- ══ 브론즈 플랜 패널 ══ -->
+  <div id="mp-tier-bronze" class="mp-tier-panel">
+    <div style="background:linear-gradient(135deg,rgba(205,127,50,.12),rgba(205,127,50,.05));border:1.5px solid rgba(205,127,50,.4);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:11px;font-weight:900;color:#92400E;">🥉 브론즈 플랜</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">AI 음성 재무진단 1회 체험</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:900;color:#92400E;">₩9,900</div>
+          <div style="font-size:9px;color:var(--muted);">당일 1회 단일결제</div>
         </div>
       </div>
-      <div style="font-size:9px;color:#999;margin-top:5px;text-align:center">
-        🔒 입력하신 정보는 재무검진 안내에만 사용됩니다
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#CD7F32;font-weight:700;">✓</span> AI 음성 재무진단 <strong>10분</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#CD7F32;font-weight:700;">✓</span> 텍스트 재무진단 당일 무제한
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무건강점수 즉시 확인
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
+          <span>✗</span> 정기 구독 혜택 제외
+        </div>
+      </div>
+    </div>
+    <!-- 결제 방식 선택 (브론즈는 단일결제만) -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div class="mp-plan-card mp-selected" id="mp-plan-single" onclick="mpSelectPlan('single')"
+        style="flex:1;padding:10px;border:2px solid #CD7F32;">
+        <div style="font-size:10px;font-weight:700;color:#92400E;">단일결제</div>
+        <div style="font-size:16px;font-weight:900;color:#92400E;">₩9,900</div>
+        <div style="font-size:8px;color:var(--muted);">1회 (당일)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 실버 플랜 패널 ══ -->
+  <div id="mp-tier-silver" class="mp-tier-panel" style="display:none;">
+    <div style="background:linear-gradient(135deg,rgba(148,163,184,.12),rgba(148,163,184,.05));border:1.5px solid rgba(148,163,184,.5);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:11px;font-weight:900;color:#475569;">🥈 실버 플랜</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">매월 AI 재무진단 구독</div>
+          <div style="display:inline-block;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:4px;">추천</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:900;color:#475569;">₩9,900</div>
+          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#475569;font-weight:700;">✓</span> AI 음성 재무진단 <strong>월 20분</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#475569;font-weight:700;">✓</span> 텍스트 재무진단 무제한
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#475569;font-weight:700;">✓</span> PDF 재무진단 리포트
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#475569;font-weight:700;">✓</span> 금융집짓기® 시뮬레이터 전체
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#475569;font-weight:700;">✓</span> 언제든 해지 가능
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div class="mp-plan-card mp-selected" id="mp-plan-silver-month" onclick="mpSelectPlan('silver-month')"
+        style="flex:1;padding:10px;border:2px solid #94a3b8;">
+        <div style="font-size:10px;font-weight:700;color:#475569;">월정기구독</div>
+        <div style="font-size:16px;font-weight:900;color:#475569;">₩9,900</div>
+        <div style="font-size:8px;color:var(--muted);">/ 월</div>
+      </div>
+      <div class="mp-plan-card" id="mp-plan-silver-year" onclick="mpSelectPlan('silver-year')"
+        style="flex:1;padding:10px;">
+        <div style="font-size:10px;font-weight:700;color:#475569;">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
+        <div style="font-size:16px;font-weight:900;color:#475569;">₩99,000</div>
+        <div style="font-size:8px;color:var(--muted);">/ 년 (₩8,250/월)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 골드 플랜 패널 ══ -->
+  <div id="mp-tier-gold" class="mp-tier-panel" style="display:none;">
+    <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.5);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:11px;font-weight:900;color:var(--gold);">🥇 골드 플랜</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">프리미엄 AI 재무진단</div>
+          <div style="display:inline-block;background:var(--gold);color:var(--navy);font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:4px;">PREMIUM</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:900;color:var(--gold);">₩19,900</div>
+          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:var(--gold);font-weight:700;">✓</span> AI 음성 재무진단 <strong>월 40분</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:var(--gold);font-weight:700;">✓</span> 텍스트 재무진단 무제한
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:var(--gold);font-weight:700;">✓</span> PDF 재무진단 리포트 + 히스토리
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:var(--gold);font-weight:700;">✓</span> 금융집짓기® 시뮬레이터 전체
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:var(--gold);font-weight:700;">✓</span> 오상열 CFP 직접 상담 우선 예약
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div class="mp-plan-card mp-selected" id="mp-plan-gold-month" onclick="mpSelectPlan('gold-month')"
+        style="flex:1;padding:10px;border:2px solid var(--gold);">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">월정기구독</div>
+        <div style="font-size:16px;font-weight:900;color:var(--gold);">₩19,900</div>
+        <div style="font-size:8px;color:var(--muted);">/ 월</div>
+      </div>
+      <div class="mp-plan-card" id="mp-plan-gold-year" onclick="mpSelectPlan('gold-year')"
+        style="flex:1;padding:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
+        <div style="font-size:16px;font-weight:900;color:var(--gold);">₩199,000</div>
+        <div style="font-size:8px;color:var(--muted);">/ 년 (₩16,583/월)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 전문가 플랜 패널 ══ -->
+  <div id="mp-tier-expert" class="mp-tier-panel" style="display:none;">
+    <div style="background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.05));border:1.5px solid rgba(99,102,241,.4);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:11px;font-weight:900;color:#4338CA;">👔 전문가 플랜 (FC)</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:900;color:#4338CA;">₩29,900</div>
+          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 전용 링크 발급
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 재무진단 결과 대시보드
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#4338CA;font-weight:700;">✓</span> 골드 플랜 혜택 전체 포함
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
+          <span style="color:#4338CA;font-weight:700;">✓</span> ARK-Genie 설계사 툴 연동 (예정)
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div class="mp-plan-card mp-selected" id="mp-plan-expert-month" onclick="mpSelectPlan('expert-month')"
+        style="flex:1;padding:10px;border:2px solid #6366f1;">
+        <div style="font-size:10px;font-weight:700;color:#4338CA;">월정기구독</div>
+        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩29,900</div>
+        <div style="font-size:8px;color:var(--muted);">/ 월</div>
+      </div>
+      <div class="mp-plan-card" id="mp-plan-expert-year" onclick="mpSelectPlan('expert-year')"
+        style="flex:1;padding:10px;">
+        <div style="font-size:10px;font-weight:700;color:#4338CA;">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
+        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩299,000</div>
+        <div style="font-size:8px;color:var(--muted);">/ 년 (₩24,917/월)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 구글 로그인 (결제화면 하단 고정) ══ -->
+  <div style="margin-bottom:10px;">
+    <div style="border-top:1px solid rgba(11,29,58,.1);padding-top:12px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-align:center;">
+        📋 결제 정보 입력
       </div>
     </div>
 
+    <!-- 구글 로그인 전 -->
+    <div id="fh-before-login">
+      <button onclick="fhSignInGoogle()"
+        style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #ddd;
+        background:#fff;color:#3c4043;font-size:13px;font-weight:700;
+        font-family:var(--fn);cursor:pointer;display:flex;align-items:center;
+        justify-content:center;gap:8px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);
+        transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.15)'"
+        onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.1)'">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Google 계정으로 간편 로그인
+      </button>
+      <div style="text-align:center;font-size:10px;color:var(--muted);margin-bottom:8px;">또는 직접 입력</div>
+
+      <!-- 직접 입력 폼 -->
+      <div id="mvp-simple-login">
+        <div style="background:#fff;border-radius:10px;padding:12px;border:1.5px solid #eee;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <input id="mvp-name" type="text" placeholder="이름 (필수)" required
+              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
+              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+            <input id="mvp-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
+              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
+              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+            <input id="mvp-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
+              style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
+              font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+            <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;">
+              <input id="mvp-privacy" type="checkbox"
+                style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
+              <span style="font-size:10px;color:#666;line-height:1.5;">
+                [필수] 개인정보 수집 및 이용에 동의합니다.<br>
+                <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무진단 상담 및 안내</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 구글 로그인 후 -->
+    <div id="fh-after-login" style="display:none;">
+      <div style="background:#f8f9fa;border-radius:10px;padding:12px;border:1.5px solid #e8eaed;
+        display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <img id="fh-login-photo" src="" style="width:36px;height:36px;border-radius:50%;display:none;border:2px solid var(--gold);">
+        <div style="flex:1;">
+          <div id="fh-login-name" style="font-size:13px;font-weight:700;color:var(--navy);"></div>
+          <div id="fh-login-email" style="font-size:10px;color:var(--muted);"></div>
+        </div>
+        <button onclick="fhSignOut()"
+          style="padding:5px 10px;border-radius:6px;border:1px solid #ddd;
+          background:#fff;color:#666;font-size:10px;font-family:var(--fn);cursor:pointer;">
+          변경
+        </button>
+      </div>
+      <input id="mvp-phone-google" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
+        style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;
+        font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;margin-bottom:7px;"
+        onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-bottom:7px;">
+        <input id="mvp-privacy-google" type="checkbox"
+          style="width:16px;height:16px;margin-top:2px;accent-color:#C9972A;flex-shrink:0;">
+        <span style="font-size:10px;color:#666;line-height:1.5;">
+          [필수] 개인정보 수집 및 이용에 동의합니다.
+        </span>
+      </label>
+    </div>
+
+    <div style="font-size:9px;color:#999;text-align:center;">
+      🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
+    </div>
   </div>
+
   <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
-    지금 ₩19,900/월 구독 시작하기 →
+    지금 ₩9,900 단일결제 시작하기 →
   </button>
 
 </div><!-- /mp-sub-modal -->
