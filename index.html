@@ -5835,25 +5835,26 @@ function confirmPay(plan){
   try {
     var order_id = 'FH_' + cfg.prefix + '_' + Date.now();
 
-    // ── 페이플 파라미터 ──
-    // 월정기구독: PAY + REGULER_FLAG='Y' + REGULER_DATE (빌링결제)
-    // 단일/연회비: PAY + REGULER_FLAG='N' (즉시결제)
+    // ── 페이플 파라미터 (공식 문서 기준) ──
+    // 월정기빌링: PCD_PAY_WORK='CERT' + PCD_CARD_VER='01' (카드등록+동시결제)
+    // 단일/연회비: PCD_PAY_WORK='PAY' + PCD_CARD_VER='01' (즉시결제)
     var isMonthly = (cfg.regular === 'Y');
     var obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
-    obj.PCD_PAY_WORK     = 'PAY';
+    obj.PCD_CARD_VER     = '01'; // 정기빌링 필수 (공식문서 1.5항)
     obj.PCD_PAY_GOODS    = 'AI 재무진단 ' + cfg.name;
     obj.PCD_PAY_TOTAL    = cfg.amount;
     obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = cfg.regular;
 
-    // 빌링결제 전용 파라미터 (단일/연회비엔 미포함)
     if(isMonthly) {
+      // 빌링결제: CERT = 카드등록 + 동시결제 (공식문서 1.4항)
+      obj.PCD_PAY_WORK     = 'CERT';
       obj.PCD_REGULER_DATE = '15'; // 매월 15일 자동 결제
     } else {
-      // 즉시결제에만 사용하는 파라미터
-      obj.PCD_CARD_VER    = '01';
+      // 즉시결제: PAY
+      obj.PCD_PAY_WORK    = 'PAY';
       obj.PCD_SIMPLE_FLAG = 'Y';
     }
 
