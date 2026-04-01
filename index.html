@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 
 
-  
 <script>
 (function(){
   var ua = navigator.userAgent || '';
@@ -9456,24 +9455,9 @@ async function diagConnectVoice(isPaid) {
     await new Promise(function(r){ setTimeout(r, 1000); });
   }
 
-  /* ★ 마이크 선점 — Chrome 호환성 핵심 */
-  try {
-    var tempStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    tempStream.getTracks().forEach(function(t){ t.stop(); });
-    showToast('🎤 마이크 연결됨 · AI 머니야 접속 중...');
-  } catch(e) {
-    if(e.name === 'NotAllowedError') {
-      showToast('❌ 마이크 권한이 필요합니다. 설정에서 허용해 주세요.');
-    } else {
-      showToast('❌ 마이크 연결 오류: ' + e.message);
-    }
-    diagAddSTT('ai','마이크를 연결해 주시면 음성 진단을 시작할 수 있습니다. 텍스트 입력창을 이용하셔도 됩니다.',null);
-    _vapiConnecting = false;
-    return;
-  }
-
-  /* ★ 500ms 딜레이 — Chrome 마이크 해제 시간 확보 (핵심!) */
-  await new Promise(function(r){ setTimeout(r, 500); });
+  /* ★ Chrome 호환: getUserMedia를 호출하지 않음 — Vapi가 자체적으로 마이크를 잡도록 */
+  /* Chrome은 마이크를 두 곳에서 동시 사용 불가 (Edge는 허용) */
+  showToast('🎤 AI 머니야 접속 중...');
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
