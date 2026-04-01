@@ -6755,8 +6755,20 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ main용: 원트큐브 위에 결제 모달만 바로 띄우기 (배경 유지)
-  mpOpenSubscribe();
+  // ★ staging: 결제 없이 바로 구독 상태로 진입
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1',  '1');
+  if (!localStorage.getItem('fh_sub_date')) {
+    localStorage.setItem('fh_sub_date', new Date().toISOString());
+  }
+  // 크레딧 초기화 (첫 접속 시만)
+  if (!localStorage.getItem('mvp_credit_min')) {
+    localStorage.setItem('mvp_credit_min', '20');
+  }
+  // 퍼널 숨기고 마이페이지(상담) 진입
+  try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+  showToast('🆓 STAGING — 결제 없이 바로 진입 (음성 20분)', 4000);
+  setTimeout(function(){ if(typeof mpOpen === 'function') mpOpen(); }, 300);
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
