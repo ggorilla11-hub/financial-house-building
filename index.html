@@ -6755,35 +6755,8 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if(!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
-  }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if(daysPassed > 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
-    mpOpenSubscribe();
-    return;
-  }
-  var remaining = 7 - daysPassed;
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  mpIsSubscribed = true;
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  mpOpen();
+  // ★ main용: 원트큐브 위에 결제 모달만 바로 띄우기 (배경 유지)
+  mpOpenSubscribe();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
@@ -11302,8 +11275,6 @@ function diagFillField(partIdx, labelKey, value) {
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
   // ★ v2.1: 자동입력 임시 비활성화 (오입력 방지 — 정교한 매칭 개발 후 활성화)
-  // 현재 패턴 매칭이 부정확하여 엉뚱한 필드에 값이 들어가는 문제 발생
-  // TODO: Claude API로 고객 발화를 분석하여 정확한 필드에 입력하도록 개선
   return;
 
   // ── 수정 요청 감지 ──
@@ -11508,20 +11479,13 @@ function forceCleanupVapi() {
     vapiCallActive = false;
   }
   _vapiConnecting = false;
-  // Daily.co iframe 강제 제거
   try { document.querySelectorAll('iframe[id*="daily"]').forEach(function(f){ f.remove(); }); } catch(e) {}
-  // 모든 오디오 정리
   try { document.querySelectorAll('audio').forEach(function(a){ a.pause(); a.srcObject=null; a.src=''; try{a.remove();}catch(e){} }); } catch(e) {}
-  // 마이크 스트림 해제
   try { if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } } catch(e) {}
   console.log('[Vapi] 페이지 종료 — 완전 정리 완료');
 }
-
-// 페이지 닫기/새로고침 시
 window.addEventListener('beforeunload', forceCleanupVapi);
-// 모바일에서 탭 전환/앱 전환 시
 window.addEventListener('pagehide', forceCleanupVapi);
-// 브라우저 비활성화 시 (모바일)
 document.addEventListener('visibilitychange', function() {
   if(document.visibilityState === 'hidden' && vapi && vapiCallActive) {
     console.log('[Vapi] 페이지 비활성화 감지 — 세션 정리');
@@ -12820,7 +12784,7 @@ document.addEventListener('visibilitychange', function() {
       </div>
 
       <div id="fh-dev-version" style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)"
-        onclick="fhDevTap()" title="개발자 메뉴">앱 버전 v2.8.1 (금융집짓기®)</div>
+        onclick="fhDevTap()" title="개발자 메뉴">앱 버전 v2.8.1 (금융집짓기®) · STAGING</div>
 
       <!-- 개발자 초기화 패널 (숨김) -->
       <div id="fh-dev-panel" style="display:none;margin:0 12px 12px;padding:14px;
