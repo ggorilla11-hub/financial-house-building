@@ -5849,6 +5849,14 @@ function confirmPay(plan){
     obj.PCD_REGULER_FLAG = cfg.regular;
     obj.PCD_SIMPLE_FLAG  = 'Y';
 
+    // 정기결제 필수 파라미터 (PCD_REGULER_FLAG='Y' 일 때)
+    if(cfg.regular === 'Y') {
+      var _now = new Date();
+      obj.PCD_PAY_YEAR     = String(_now.getFullYear());           // 최초 결제 년도 (YYYY)
+      obj.PCD_PAY_MONTH    = String(_now.getMonth() + 1).padStart(2, '0'); // 최초 결제 월 (MM)
+      obj.PCD_REGULER_DATE = '15';                                 // 매월 결제일 (15일)
+    }
+
     // 고객 정보
     obj.PCD_PAYER_NAME   = window._fhPayerName  || '';
     obj.PCD_PAYER_HP     = (window._fhPayerPhone || '').replace(/[^0-9]/g, '');
