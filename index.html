@@ -2447,8 +2447,15 @@ html{visibility:visible !important;}
 <!-- Vapi SDK [DEV-001] — html-script-tag (daily-js 최신) -->
   <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
   <script>
-    window.VapiReady = true;
-    console.log('[Vapi] SDK 로드 완료:', typeof vapiSDK);
+    window.VapiReady = false;
+    (function checkVapi() {
+      if (typeof vapiSDK !== 'undefined') {
+        window.VapiReady = true;
+        console.log('[Vapi] html-script-tag 로드 완료');
+      } else {
+        setTimeout(checkVapi, 100);
+      }
+    })();
   </script>
 
 </head>
@@ -9424,14 +9431,15 @@ async function diagConnectVoice(isPaid) {
 
   /* ── Vapi SDK 로드 대기 ── */
   if(!window.VapiReady) {
-    showToast('⏳ AI 엔진 로딩 중... 잠시만 기다려주세요');
+    showToast('⏳ AI 엔진 로딩 중...');
     await new Promise(function(resolve) {
-      if(window.VapiReady) return resolve();
-      window.addEventListener('vapi-ready', resolve, { once: true });
-      setTimeout(resolve, 5000); // 최대 5초 대기
+      var check = setInterval(function() {
+        if(window.VapiReady) { clearInterval(check); resolve(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); resolve(); }, 5000);
     });
   }
-  if(!window.VapiClass) {
+  if(typeof vapiSDK === 'undefined') {
     showToast('❌ AI 엔진 로드 실패. 페이지를 새로고침해주세요.');
     _vapiConnecting = false;
     return;
