@@ -2444,13 +2444,18 @@ html{visibility:visible !important;}
 
 
 
-<!-- Vapi SDK [DEV-001] — ESM v2.5.2 + 로드 완료 보장 -->
-  <script type="module">
-    import VapiDefault from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/+esm';
-    window.VapiClass = VapiDefault;
-    window.VapiReady = true;
-    console.log('[Vapi] ESM 로드 완료:', typeof VapiDefault);
-    window.dispatchEvent(new Event('vapi-ready'));
+<!-- Vapi SDK [DEV-001] — html-script-tag (캐시 퍼지 후 최신) -->
+  <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js?v=20260401"></script>
+  <script>
+    window.VapiReady = false;
+    (function checkVapi() {
+      if (typeof vapiSDK !== 'undefined') {
+        window.VapiReady = true;
+        console.log('[Vapi] html-script-tag 로드 완료 (purged)');
+      } else {
+        setTimeout(checkVapi, 100);
+      }
+    })();
   </script>
 
 </head>
@@ -9428,12 +9433,13 @@ async function diagConnectVoice(isPaid) {
   if(!window.VapiReady) {
     showToast('⏳ AI 엔진 로딩 중...');
     await new Promise(function(resolve) {
-      if(window.VapiReady) return resolve();
-      window.addEventListener('vapi-ready', resolve, { once: true });
-      setTimeout(resolve, 5000);
+      var check = setInterval(function() {
+        if(window.VapiReady) { clearInterval(check); resolve(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); resolve(); }, 5000);
     });
   }
-  if(!window.VapiClass) {
+  if(typeof vapiSDK === 'undefined') {
     showToast('❌ AI 엔진 로드 실패. 페이지를 새로고침해주세요.');
     _vapiConnecting = false;
     return;
@@ -9449,7 +9455,7 @@ async function diagConnectVoice(isPaid) {
     try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null;
     vapiCallActive = false;
-    await new Promise(function(r){ setTimeout(r, 1000); }); // 1초 대기
+    await new Promise(function(r){ setTimeout(r, 1000); });
   }
 
   try {
@@ -9466,26 +9472,15 @@ async function diagConnectVoice(isPaid) {
     return;
   }
 
-  /* ★ 마이크 디바이스 ID 확보 (Chrome STT 해결) */
-  var micDeviceId = undefined;
-  try {
-    var devices = await navigator.mediaDevices.enumerateDevices();
-    var mic = devices.find(function(d) { return d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications'; });
-    if(mic) micDeviceId = mic.deviceId;
-    console.log('[DEBUG] 마이크 디바이스:', mic ? mic.label : 'default', micDeviceId);
-  } catch(e) { console.log('[DEBUG] 디바이스 목록 실패:', e); }
-
   /* ★ 마이크 스트림 해제 (Vapi가 직접 마이크를 잡도록) */
   try { if(diagMicStream){ diagMicStream.getTracks().forEach(function(t){ t.stop(); }); diagMicStream=null; } } catch(e) {}
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-    var VapiConstructor = window.VapiClass.default || window.VapiClass;
-    console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
-    console.log('[DEBUG] apiKey:', VAPI_PUBLIC_KEY);
+    console.log('[DEBUG] vapiSDK:', typeof vapiSDK);
     console.log('[DEBUG] assistantId:', assistantId);
-    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
-    console.log('[DEBUG] vapi instance:', vapi);
+    vapi = vapiSDK.run({ apiKey: VAPI_PUBLIC_KEY, assistant: { id: assistantId } });
+    console.log('[DEBUG] run result:', vapi);
     if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); _vapiConnecting = false; return; }
     /* ── 연결 시작 ── */
     vapi.on('call-start', function() {
