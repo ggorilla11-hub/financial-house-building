@@ -9552,14 +9552,9 @@ async function diagConnectVoice(isPaid) {
       showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
 
-    /* ── 통화 시작 (디바이스 ID 명시 지정) ── */
-    if(micDeviceId) {
-      console.log('[DEBUG] start with deviceId:', micDeviceId);
-      vapi.start(assistantId, { deviceId: micDeviceId });
-    } else {
-      console.log('[DEBUG] start without deviceId');
-      vapi.start(assistantId);
-    }
+    /* ── 통화 시작 ── */
+    console.log('[DEBUG] start call');
+    vapi.start(assistantId);
     _vapiConnecting = false;
 
   } catch(e) {
