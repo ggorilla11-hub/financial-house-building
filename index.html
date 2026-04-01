@@ -9547,7 +9547,8 @@ async function diagConnectVoice(isPaid) {
       showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
 
-    /* ── 구 SDK: vapiSDK.run()에서 바로 통화 시작됨 ── */
+    /* ── 통화 시작 (이벤트 등록 후 마지막에 호출) ── */
+    vapi.start(assistantId);
     _vapiConnecting = false;
 
   } catch(e) {
