@@ -5849,9 +5849,11 @@ function confirmPay(plan){
     obj.PCD_REGULER_FLAG = cfg.regular;
 
     if(isMonthly) {
-      // 빌링결제: CERT = 카드등록 + 동시결제 (공식문서 1.4항)
-      obj.PCD_PAY_WORK     = 'CERT';
-      obj.PCD_REGULER_DATE = '15'; // 매월 15일 자동 결제
+      // 빌링결제: AUTH = 카드 등록만 (빌링키 발급)
+      // 실결제는 서버에서 빌링키(PCD_PAYER_ID)로 매월 청구
+      obj.PCD_PAY_WORK    = 'AUTH';
+      obj.PCD_SIMPLE_FLAG = 'Y';
+      // PCD_REGULER_DATE, PCD_PAY_YEAR, PCD_PAY_MONTH 불필요 (카드등록 단계)
     } else {
       // 즉시결제: PAY
       obj.PCD_PAY_WORK    = 'PAY';
