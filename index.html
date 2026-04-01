@@ -5836,28 +5836,28 @@ function confirmPay(plan){
     var order_id = 'FH_' + cfg.prefix + '_' + Date.now();
 
     // ── 페이플 파라미터 ──
-    // 월정기: PCD_PAY_WORK='PAY' + PCD_REGULER_FLAG='Y'
-    // 단일/연회비: PCD_PAY_WORK='PAY' + PCD_REGULER_FLAG='N'
+    // 월정기구독: PAY + REGULER_FLAG='Y' + REGULER_DATE (빌링결제)
+    // 단일/연회비: PAY + REGULER_FLAG='N' (즉시결제)
+    var isMonthly = (cfg.regular === 'Y');
     var obj = {};
     obj.clientKey        = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
     obj.PCD_PAY_TYPE     = 'card';
     obj.PCD_PAY_WORK     = 'PAY';
-    obj.PCD_CARD_VER     = '01';
     obj.PCD_PAY_GOODS    = 'AI 재무진단 ' + cfg.name;
     obj.PCD_PAY_TOTAL    = cfg.amount;
     obj.PCD_PAY_OID      = order_id;
     obj.PCD_REGULER_FLAG = cfg.regular;
-    obj.PCD_SIMPLE_FLAG  = 'Y';
 
-    // 정기결제 필수 파라미터 (PCD_REGULER_FLAG='Y' 일 때)
-    if(cfg.regular === 'Y') {
-      var _now = new Date();
-      obj.PCD_PAY_YEAR     = String(_now.getFullYear());           // 최초 결제 년도 (YYYY)
-      obj.PCD_PAY_MONTH    = String(_now.getMonth() + 1).padStart(2, '0'); // 최초 결제 월 (MM)
-      obj.PCD_REGULER_DATE = '15';                                 // 매월 결제일 (15일)
+    // 빌링결제 전용 파라미터 (단일/연회비엔 미포함)
+    if(isMonthly) {
+      obj.PCD_REGULER_DATE = '15'; // 매월 15일 자동 결제
+    } else {
+      // 즉시결제에만 사용하는 파라미터
+      obj.PCD_CARD_VER    = '01';
+      obj.PCD_SIMPLE_FLAG = 'Y';
     }
 
-    // 고객 정보
+    // 고객 정보 (빌링결제 필수)
     obj.PCD_PAYER_NAME   = window._fhPayerName  || '';
     obj.PCD_PAYER_HP     = (window._fhPayerPhone || '').replace(/[^0-9]/g, '');
     obj.PCD_PAYER_EMAIL  = window._fhPayerEmail || '';
