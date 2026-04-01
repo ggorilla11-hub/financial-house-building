@@ -7437,6 +7437,20 @@ function mpRefreshData() {
   const score = typeof calcScore === 'function' ? Math.round(calcScore()) : 0;
   const name = D.name || '회원';
 
+  // ★ 크레딧 동적 업데이트
+  var _creditMin = localStorage.getItem('fh_voice_limit') || localStorage.getItem('mvp_credit_min') || '20';
+  var _remainMin = localStorage.getItem('mvp_credit_min') || _creditMin;
+  var _headerNum = document.getElementById('mvp-credit-header-num');
+  var _remainEl = document.getElementById('mvp-credit-remain');
+  var _diagDisplay = document.getElementById('diag-voice-limit-display');
+  var _planLabel = document.getElementById('mp-current-plan-label');
+  var _currentPlan = localStorage.getItem('fh_current_plan') || '';
+  var _planInfo = (typeof FH_PLANS !== 'undefined' && FH_PLANS[_currentPlan]) ? FH_PLANS[_currentPlan] : null;
+  if(_headerNum) _headerNum.textContent = _remainMin;
+  if(_remainEl) _remainEl.innerHTML = _remainMin + ' <span style="font-size:10px;font-weight:500;">분</span>';
+  if(_diagDisplay) _diagDisplay.textContent = '음성 ' + _creditMin + '분';
+  if(_planLabel && _planInfo) _planLabel.textContent = _planInfo.label + ' · 음성 ' + _planInfo.voiceMin + '분 · 텍스트무제한';
+
   // 웰컴 배너
   const wbName = document.getElementById('mp-wb-name');
   if(wbName) wbName.textContent = name + ' 님, 환영합니다!';
@@ -9071,7 +9085,7 @@ var FH_PART_NAMES = [
 ];
 
 var FH_NOTE_PARTS = [
-  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'50분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'플랜별 음성시간'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
   { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
   { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
   { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
@@ -9628,13 +9642,9 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    var _voiceLimit = parseInt(localStorage.getItem('fh_voice_limit') || '20');
-    var _warnMin5 = (_voiceLimit - 5) * 60;
-    var _warnMin1 = (_voiceLimit - 1) * 60;
-    var _limitSec = _voiceLimit * 60;
-    if(diagSec === _warnMin5 && _warnMin5 > 0) showToast('⏰ ' + (_voiceLimit-5) + '분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
-    if(diagSec === _warnMin1 && _warnMin1 > 0) showToast('⚠️ ' + (_voiceLimit-1) + '분 경과 · 1분 남았습니다!');
-    if(diagSec === _limitSec) {
+    if(diagSec===45*60) showToast('⏰ 45분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
+    if(diagSec===49*60) showToast('⚠️ 49분 경과 · 1분 남았습니다!');
+    if(diagSec===50*60) {
       // ★ 음성만 종료, 텍스트 상담은 계속 가능
       mvpVoiceTimeUp();
     }
@@ -9765,15 +9775,7 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      // ★ 비정상 종료 감지: 크레딧이 남아있는데 통화가 끝남 = 에러
-      var _remainCredit = parseInt(localStorage.getItem('fh_voice_limit') || '20');
-      var _usedMin = Math.ceil(diagSec / 60);
-      if(_usedMin < _remainCredit && !mvpTextOnlyMode) {
-        console.warn('[Vapi] 비정상 종료 감지 — 사용:' + _usedMin + '분, 한도:' + _remainCredit + '분');
-        handleVoiceError({ type: 'call-end-unexpected' });
-      } else {
-        showToast('📞 상담이 종료됐습니다');
-      }
+      showToast('📞 상담이 종료됐습니다');
       /* DEV-003: 리포트 생성 — 추후 활성화 */
       // generateFinalReport();
     });
@@ -9781,7 +9783,7 @@ async function diagConnectVoice(isPaid) {
     /* ── 오류 ── */
     vapi.on('error', function(e) {
       console.error('[Vapi 오류]', e);
-      handleVoiceError(e);
+      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
     });
 
     /* ── 통화 시작 (이벤트 등록 후 마지막에 호출) ── */
@@ -10794,7 +10796,7 @@ function diagEndConsult() {
 
   /* MVP: 크레딧 차감 (사용 시간 저장) */
   var usedMin = Math.ceil(diagSec / 60);
-  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || '50');
+  var totalCredit = parseInt(localStorage.getItem('mvp_credit_min') || localStorage.getItem('fh_voice_limit') || '20');
   var remaining = Math.max(0, totalCredit - usedMin);
   localStorage.setItem('mvp_credit_min', String(remaining));
   localStorage.setItem('mvp_last_session_min', String(usedMin));
@@ -12189,7 +12191,7 @@ diagAddSTT = function(role, text, tag) {
             <div style="padding:10px 14px;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
-                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 50분</div></div>
+                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);" id="diag-voice-limit-display">초회상담</div></div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
@@ -12212,21 +12214,21 @@ diagAddSTT = function(role, text, tag) {
           <div class="mpc-hd" onclick="mvpToggle('mvpCreditBody','mvpCreditChev')" style="background:var(--navy);padding:11px 14px;">
             <span class="mpc-icon" style="color:#fff;">🎫</span>
             <span class="mpc-title" style="color:#fff;font-weight:900;">이용권 현황</span>
-            <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;">30<span style="font-size:10px;font-weight:500;">분</span></span>
+            <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;" id="mvp-credit-header"><span id="mvp-credit-header-num">—</span><span style="font-size:10px;font-weight:500;">분</span></span>
             <span class="mpc-chevron" id="mvpCreditChev" style="color:rgba(255,255,255,.6);">▾</span>
           </div>
           <div class="accordion-body open" id="mvpCreditBody">
             <div style="padding:10px 14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <span style="font-size:11px;color:var(--muted);">이번달 남은 시간</span>
-                <span style="font-size:20px;font-weight:900;color:var(--gold);">30 <span style="font-size:10px;font-weight:500;">분</span></span>
+                <span style="font-size:20px;font-weight:900;color:var(--gold);" id="mvp-credit-remain">— <span style="font-size:10px;font-weight:500;">분</span></span>
               </div>
               <div style="width:100%;height:6px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden;">
                 <div style="width:100%;height:100%;background:linear-gradient(90deg,#C9972A,#E8B84B);border-radius:3px;"></div>
               </div>
               <div style="font-size:9px;color:var(--muted);margin-top:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
               <div style="margin-top:8px;padding:6px 10px;background:rgba(201,151,42,.08);border-radius:8px;font-size:9.5px;color:var(--navy);">
-                🌟 초회상담 50분 · 금융집짓기® 8단계 전체 진단
+                🌟 금융집짓기® 8대 영역 전체 진단
               </div>
             </div>
           </div>
