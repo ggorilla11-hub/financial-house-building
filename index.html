@@ -2448,7 +2448,9 @@ html{visibility:visible !important;}
   <script type="module">
     import VapiDefault from 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/+esm';
     window.VapiClass = VapiDefault;
-    console.log('[Vapi SDK] 로드 완료:', typeof VapiDefault);
+    window.VapiReady = true;
+    console.log('[Vapi] ESM 로드 완료:', typeof VapiDefault);
+    window.dispatchEvent(new Event('vapi-ready'));
   </script>
 
 </head>
@@ -9394,6 +9396,21 @@ var _vapiConnecting = false;
 async function diagConnectVoice(isPaid) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
+
+  /* ── Vapi SDK 로드 대기 ── */
+  if(!window.VapiReady) {
+    showToast('⏳ AI 엔진 로딩 중... 잠시만 기다려주세요');
+    await new Promise(function(resolve) {
+      if(window.VapiReady) return resolve();
+      window.addEventListener('vapi-ready', resolve, { once: true });
+      setTimeout(resolve, 5000); // 최대 5초 대기
+    });
+  }
+  if(!window.VapiClass) {
+    showToast('❌ AI 엔진 로드 실패. 페이지를 새로고침해주세요.');
+    _vapiConnecting = false;
+    return;
+  }
 
   /* ── 중복 호출 방지 ── */
   if(_vapiConnecting) { console.log('[Vapi] 이미 연결 중 — 중복 호출 차단'); return; }
