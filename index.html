@@ -5875,7 +5875,7 @@ function confirmPay(plan){
     obj.callbackFunction = onPaypleResult;
 
     console.log('[페이플 결제 요청]', {
-      plan: plan, work: 'PAY', regular: cfg.regular,
+      plan: plan, work: obj.PCD_PAY_WORK, regular: cfg.regular,
       amount: cfg.amount, orderId: order_id
     });
     PaypleCpayAuthCheck(obj);
@@ -11657,40 +11657,12 @@ document.addEventListener('visibilitychange', function() {
 </script>
 
 
-<div class="pay-modal-bg" id="pay-modal-bg" onclick="closePayModal(event)">
+<!-- ★ 구버전 결제 모달 비활성화 (새 mp-sub-modal로 대체됨) -->
+<div class="pay-modal-bg" id="pay-modal-bg" style="display:none!important;" onclick="closePayModal(event)">
   <div class="pay-modal" id="pay-modal-inner">
-    <div class="pay-modal-title">🏠 금융집짓기® 구독</div>
-    <div class="pay-modal-sub">7대 영역 전체 + 몬테카를로 + AI분석 + PDF저장<br>언제든 해지 가능 · 카드·카카오페이·네이버페이</div>
-
-    
-    <div class="pay-plans">
-      <div class="pay-plan selected" id="plan-month" onclick="selectPlan('month')">
-        <div class="pay-plan-type">월간 구독</div>
-        <div class="pay-plan-price">₩19,900</div>
-        <div class="pay-plan-unit">/ 월</div>
-        <div class="pay-plan-save">커피 두 잔 값</div>
-      </div>
-      <div class="pay-plan" id="plan-year" onclick="selectPlan('year')">
-        <div class="pay-plan-badge">2개월 무료</div>
-        <div class="pay-plan-type">연간 구독</div>
-        <div class="pay-plan-price">₩199,000</div>
-        <div class="pay-plan-unit">/ 년 (₩8,250/월)</div>
-        <div class="pay-plan-save">₩19,800 절약</div>
-      </div>
-    </div>
-
-    
-    <div class="pay-methods">
-      <button class="pay-method-btn on" onclick="selPayMethod(this)">💳 카드</button>
-      <button class="pay-method-btn" onclick="selPayMethod(this)">🟡 카카오페이</button>
-      <button class="pay-method-btn" onclick="selPayMethod(this)">🟢 네이버페이</button>
-    </div>
-
-    
-    <button class="pay-confirm-btn" id="pay-confirm-btn" onclick="confirmPay()">
-      지금 ₩19,900/월 구독 시작하기 →
+    <button class="pay-confirm-btn" id="pay-confirm-btn" onclick="confirmPay(selectedPlan)">
+      결제하기
     </button>
-    <div class="pay-secure">🔒 토스페이먼츠 보안결제 · SSL 암호화 · 개인정보 안전</div>
     <button class="pay-cancel" onclick="closePayModal()">취소</button>
   </div>
 </div>
