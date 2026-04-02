@@ -9797,11 +9797,219 @@ function diagHandleFile(input) {
       showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
     });
   } else {
-    const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
-    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
-    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
+    var statMap2 = {ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
+    var statEl = document.getElementById(statMap2[diagUpKey]||'');
+    if(statEl) statEl.textContent = '🔄';
+    showToast('📎 ' + fname + ' 분석 중...');
+    diagOcrAnalyze(file, diagUpKey);
   }
   input.value='';
+}
+
+/* ── 서류 메뉴 ── */
+function diagOpenUploadMenu() {
+  // 서류 종류 선택 모달 (DOM API만 사용)
+  var old = document.getElementById('_ocrMenu');
+  if(old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_ocrMenu';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9995;display:flex;align-items:flex-end;justify-content:center;';
+
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:#0B1D3A;border-radius:16px 16px 0 0;width:100%;max-width:430px;padding:16px 16px 32px;';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:13px;font-weight:900;color:#E8B84B;margin-bottom:12px;text-align:center;';
+  title.textContent = '📎 서류 종류 선택';
+  sheet.appendChild(title);
+
+  var items = [
+    {key:'ins',  icon:'🛡️', label:'보험증권',   desc:'보장내역 분석'},
+    {key:'pen',  icon:'💰', label:'연금명세서', desc:'은퇴설계 분석'},
+    {key:'tax',  icon:'📊', label:'세금신고서', desc:'절세 전략 분석'},
+    {key:'sal',  icon:'💵', label:'급여명세서', desc:'수입 분석'},
+    {key:'etc',  icon:'📁', label:'기타 서류',  desc:'종합 분석'},
+  ];
+
+  items.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.06);cursor:pointer;';
+    row.innerHTML = '<span style="font-size:22px;">' + item.icon + '</span>'
+      + '<div><div style="font-size:12px;font-weight:700;color:#fff;">' + item.label + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,.4);">' + item.desc + '</div></div>';
+    row.onclick = function() {
+      overlay.remove();
+      diagOpenUpload(item.key);
+    };
+    sheet.appendChild(row);
+  });
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'width:100%;padding:12px;border-radius:10px;border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;margin-top:4px;';
+  cancelBtn.textContent = '취소';
+  cancelBtn.onclick = function() { overlay.remove(); };
+  sheet.appendChild(cancelBtn);
+
+  overlay.appendChild(sheet);
+  overlay.onclick = function(e) { if(e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+/* ── OCR 분석 ── */
+function diagOcrAnalyze(file, docType) {
+  var labels = {ins:'보험증권', sal:'급여명세서', pen:'연금명세서', tax:'세금신고서', etc:'기타서류'};
+  var label = labels[docType] || '서류';
+  var prompts = {
+    ins: '이 보험증권을 분석해주세요. 보험사명, 상품명, 월보험료, 사망보험금, 암진단금, 실손보험금, 납입현황, 보장 공백을 항목별로 추출해주세요.',
+    sal: '이 급여명세서를 분석해주세요. 기본급, 수당, 실수령액, 4대보험 납부액을 항목별로 추출하고 재무설계 관점 의견을 주세요.',
+    pen: '이 연금명세서를 분석해주세요. 연금종류, 월납입금, 적립금, 예상연금액을 추출하고 은퇴설계 관점 의견을 주세요.',
+    tax: '이 세금신고서를 분석해주세요. 종합소득, 세액공제, 납부/환급세액을 추출하고 절세 관점 의견을 주세요.',
+    etc: '이 서류의 주요 재무 관련 내용을 분석하고 요약해주세요.'
+  };
+
+  // ── 로딩 오버레이 생성 (DOM API)
+  var old = document.getElementById('_ocrResult');
+  if(old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_ocrResult';
+  overlay.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9990;background:#0B1D3A;border-top:2px solid #C9972A;max-height:55vh;overflow-y:auto;';
+
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:#0B1D3A;z-index:1;';
+
+  var headerTitle = document.createElement('div');
+  headerTitle.style.cssText = 'font-size:11px;font-weight:700;color:#E8B84B;';
+  headerTitle.textContent = '📋 ' + label + ' 분석 중...';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 6px;';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = function() { overlay.remove(); };
+
+  header.appendChild(headerTitle);
+  header.appendChild(closeBtn);
+  overlay.appendChild(header);
+
+  var body = document.createElement('div');
+  body.id = '_ocrResultBody';
+  body.style.cssText = 'padding:12px 14px;font-size:10px;color:rgba(255,255,255,.6);line-height:1.7;';
+  body.textContent = '🔍 Claude가 서류를 분석하고 있습니다...';
+  overlay.appendChild(body);
+  document.body.appendChild(overlay);
+
+  // ── 자막창에도 분석중 표시
+  var sttArea = document.getElementById('diagStt');
+  if(sttArea) {
+    var loadDiv = document.createElement('div');
+    loadDiv.id = '_ocrLoadBubble';
+    loadDiv.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;';
+    avatar.textContent = '🤖';
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'padding:6px 10px;font-size:9.5px;color:rgba(255,255,255,.7);border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);';
+    bubble.textContent = '🔍 ' + label + ' 분석 중...';
+    loadDiv.appendChild(avatar);
+    loadDiv.appendChild(bubble);
+    sttArea.appendChild(loadDiv);
+    sttArea.scrollTop = sttArea.scrollHeight;
+  }
+
+  // ── FileReader로 읽기
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var parts = e.target.result.split(',');
+    var base64 = parts[1];
+    var mime = file.type || 'image/jpeg';
+    var isImage = mime.indexOf('image') === 0;
+
+    var msgContent;
+    if(isImage) {
+      msgContent = [
+        {type:'image', source:{type:'base64', media_type:mime, data:base64}},
+        {type:'text', text:prompts[docType] || prompts.etc}
+      ];
+    } else {
+      msgContent = [
+        {type:'document', source:{type:'base64', media_type:'application/pdf', data:base64}},
+        {type:'text', text:prompts[docType] || prompts.etc}
+      ];
+    }
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{role:'user', content:msgContent}]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var result = (data.content && data.content[0] && data.content[0].text) || '분석 결과를 불러오지 못했습니다.';
+
+      // 아이콘 완료
+      var statMap = {ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
+      var statEl = document.getElementById(statMap[docType] || '');
+      if(statEl) statEl.textContent = '✅';
+
+      // 결과 저장
+      if(!window._ocrResults) window._ocrResults = {};
+      window._ocrResults[docType] = {label:label, result:result};
+
+      // 오버레이 결과 표시
+      headerTitle.textContent = '📋 ' + label + ' 분석 완료';
+      body.style.color = 'rgba(255,255,255,.88)';
+      body.style.whiteSpace = 'pre-wrap';
+      body.textContent = result;
+
+      // 자막창 업데이트
+      var sttArea2 = document.getElementById('diagStt');
+      var loadBubble = document.getElementById('_ocrLoadBubble');
+      if(loadBubble) loadBubble.remove();
+      if(sttArea2) {
+        var resultDiv = document.createElement('div');
+        resultDiv.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
+        var av2 = document.createElement('div');
+        av2.style.cssText = 'width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;';
+        av2.textContent = '🤖';
+        var bub2 = document.createElement('div');
+        bub2.style.cssText = 'max-width:85%;padding:7px 10px;font-size:9px;color:rgba(255,255,255,.88);border-radius:0 7px 7px 7px;background:rgba(201,151,42,.12);border:1px solid rgba(201,151,42,.25);line-height:1.6;white-space:pre-wrap;';
+        var titleSpan = document.createElement('div');
+        titleSpan.style.cssText = 'font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:4px;';
+        titleSpan.textContent = '📋 ' + label + ' 분석 완료';
+        bub2.appendChild(titleSpan);
+        var textNode = document.createTextNode(result);
+        bub2.appendChild(textNode);
+        resultDiv.appendChild(av2);
+        resultDiv.appendChild(bub2);
+        sttArea2.appendChild(resultDiv);
+        sttArea2.scrollTop = sttArea2.scrollHeight;
+      }
+
+      // Vapi 주입
+      if(typeof vapiCallActive !== 'undefined' && vapiCallActive && typeof vapi !== 'undefined' && vapi) {
+        try {
+          vapi.send({
+            type: 'add-message',
+            message: {role:'user', content: label + ' 분석 결과입니다. ' + result + ' 이 내용을 바탕으로 상담을 이어가 주세요.'}
+          });
+        } catch(ve) { console.log('[OCR→Vapi]', ve.message); }
+      }
+      showToast('✅ ' + label + ' 분석 완료!');
+    })
+    .catch(function() {
+      body.style.color = '#f87171';
+      body.textContent = '❌ 분석 오류. 다시 시도해 주세요.';
+      var lb = document.getElementById('_ocrLoadBubble');
+      if(lb) lb.remove();
+      showToast('❌ OCR 분석 실패');
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 /* ── 상담 시작 ── */
@@ -13043,7 +13251,7 @@ document.addEventListener('visibilitychange', function() {
               <div class="ico" id="mvpRecIco">⏺</div>
               <div class="lbl" id="mvpRecLbl">녹음</div>
             </div>
-            <div class="c-mini-btn" onclick="diagOpenUpload('application')">
+            <div class="c-mini-btn" onclick="diagOpenUploadMenu()">
               <div class="ico">📎</div>
               <div class="lbl">서류</div>
             </div>
