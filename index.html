@@ -6713,7 +6713,7 @@ function showFreeThankYou(name, scoreData) {
 
     // 유료 CTA
     + '<button onclick="thankYouToCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);margin-bottom:10px;">'
-    + '🏥 유료 AI 재무검진 시작하기 →'
+    + '🏥 유료 AI재무진단 시작하기 →'
     + '<span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">5대 영역 전체 정밀 진단 · 맞춤형 재무설계</span>'
     + '</button>'
 
@@ -6975,6 +6975,86 @@ function mvpSendMakeWebhook(name, phone, email) {
 }
 
 // MVP: 검진안내 → AI진단 탭으로 이동 + 바로 상담 시작
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 진단안내 페이지 플랜별 UI 업데이트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function mvpUpdateGuideUI() {
+  var plan     = localStorage.getItem('fh_plan') || 'single';
+  var creditMap = {
+    'single':       { min: 10, label: '브론즈',   desc: '브론즈 10분 · 핵심 재무진단' },
+    'silver-month': { min: 20, label: '실버',     desc: '실버 20분 · 7단계 재무진단'  },
+    'silver-year':  { min: 20, label: '실버',     desc: '실버 20분 · 7단계 재무진단'  },
+    'gold-month':   { min: 40, label: '골드',     desc: '골드 40분 · 8단계 전체 진단' },
+    'gold-year':    { min: 40, label: '골드',     desc: '골드 40분 · 8단계 전체 진단' },
+    'expert-month': { min: 40, label: '전문가',   desc: '전문가 40분 · 8단계 전체 진단' },
+    'expert-year':  { min: 40, label: '전문가',   desc: '전문가 40분 · 8단계 전체 진단' },
+  };
+  var info = creditMap[plan] || { min: 10, label: '브론즈', desc: '브론즈 10분 · 핵심 재무진단' };
+
+  // 잔여 크레딧
+  var remainCredit = parseInt(localStorage.getItem('mvp_credit_min') || String(info.min));
+
+  // ① 상담시간 표시 (플랜명 + 분 수)
+  var timeEl = document.getElementById('mvpPlanTimeDisplay');
+  if(timeEl) {
+    timeEl.innerHTML = info.label + ' · ' + info.min + '분'
+      + ' <span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:4px;">'
+      + '(잔여 ' + remainCredit + '분)</span>';
+  }
+
+  // ② 이용권현황 상단 숫자
+  var creditNumEl = document.querySelector('#mvpCreditChev')
+    ? document.querySelector('#mvpCreditChev').closest('.mpc-hd')
+              .querySelector('span[style*="font-size:16px"]') : null;
+  if(creditNumEl) creditNumEl.innerHTML = remainCredit + '<span style="font-size:10px;font-weight:500;">분</span>';
+
+  // ③ 이용권현황 남은 시간 숫자
+  var creditBodyEls = document.querySelectorAll('#mvpCreditBody span[style*="font-size:20px"]');
+  if(creditBodyEls.length > 0) {
+    creditBodyEls[0].innerHTML = remainCredit + ' <span style="font-size:10px;font-weight:500;">분</span>';
+  }
+
+  // ④ 이용권현황 프로그레스바
+  var bar = document.querySelector('#mvpCreditBody div[style*="height:100%"][style*="background:linear-gradient"]');
+  if(bar) {
+    var pct = Math.round((remainCredit / info.min) * 100);
+    bar.style.width = pct + '%';
+  }
+
+  // ⑤ 이용권현황 플랜 설명 문구
+  var noteEl = document.getElementById('mvpCreditPlanNote');
+  if(noteEl) noteEl.textContent = '🌟 ' + info.desc;
+
+  // ⑥ 시작 버튼 텍스트: 크레딧 남아있으면 "이어서 상담하기"
+  var startBtn  = document.getElementById('mvpStartBtn');
+  var startNote = document.getElementById('mvpStartNote');
+  var isResume  = (remainCredit > 0 && remainCredit < info.min);
+  if(startBtn) {
+    if(isResume) {
+      startBtn.innerHTML = '🎙️ 유료 AI재무진단 이어서 상담하기';
+      startBtn.style.background = 'linear-gradient(135deg,#1d4ed8,#3b82f6)';
+    } else {
+      startBtn.innerHTML = '🎙️ 유료 AI재무진단 시작하기';
+      startBtn.style.background = '';
+    }
+  }
+  if(startNote) {
+    startNote.textContent = isResume
+      ? '이전 상담을 이어서 진행합니다'
+      : 'AI진단 탭으로 이동하여 상담이 시작됩니다';
+  }
+
+  // ⑦ Vapi 플랜 정보를 window에 저장 (diagConnectVoice에서 활용)
+  window._currentPlanInfo = {
+    plan:        plan,
+    label:       info.label,
+    creditMin:   info.min,
+    remainMin:   remainCredit,
+    isResume:    isResume,
+    sessionNo:   parseInt(localStorage.getItem('fh_session_no') || '1'),
+  };
+}
+
 function mvpGoToDiag() {
   /* ── 개인정보 동의 체크 ── */
   var privacyChk = document.getElementById('mvp-privacy-guide');
@@ -7225,6 +7305,217 @@ function mvpPlayRec(idx) {
 
 /* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
 var mvpTextOnlyMode = false;
+var _vapiUserEnded = false; // 사용자가 직접 종료버튼 눌렀을 때 true
+var _textConsultHistory = []; // 텍스트 전환 후 대화 맥락 보관
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   음성 에러대응 & 텍스트 전환 완전 구현 (계획서 v1.0)
+   ★ 음성 코드 일절 수정 없음 — 이벤트 핸들러에 분기만
+   ★ 텍스트 전환 후 Render /api/consult-chat 연동
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// ── 1. 에러 감지 → 크레딧 보호 → 배너 표시 ──────────
+function handleVoiceError(err) {
+  if(mvpTextOnlyMode) return; // 이미 텍스트 모드면 스킵
+  var banner = document.getElementById('voiceErrorBanner');
+  if(banner && banner.style.display === 'flex') return; // 배너 이미 표시 중
+
+  // 크레딧 타이머 즉시 중지 (음성 크레딧 보호)
+  if(diagInt) {
+    clearInterval(diagInt);
+    diagInt = null;
+  }
+  var usedMin = Math.ceil((diagSec || 0) / 60);
+  var _planName   = localStorage.getItem('fh_plan') || 'single';
+  var _creditMap  = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var totalCredit = _creditMap[_planName] || 20;
+  var remaining   = Math.max(0, totalCredit - usedMin);
+  localStorage.setItem('mvp_credit_min', String(remaining));
+  console.log('[크레딧] 에러로 중지 — 사용: ' + usedMin + '분, 잔여: ' + remaining + '분');
+
+  // 채팅 로그 안내
+  diagAddSTT('system', '⚠️ 음성 연결이 일시 중단되었습니다. 크레딧은 중지되었으니 안심하세요.', null);
+
+  // 배너 표시
+  if(banner) { banner.style.display = 'flex'; }
+  console.log('[에러대응] 배너 표시 완료 — 크레딧 보호됨');
+}
+
+// ── 2. 대화 내역 수집 (채팅 로그 → 배열) ──────────────
+function collectConversationHistory() {
+  var history = [];
+  var chatLog = document.getElementById('dn_chat_log');
+  if(!chatLog) return history;
+
+  var bubbles = chatLog.querySelectorAll('[data-role]');
+  bubbles.forEach(function(b) {
+    var role = b.getAttribute('data-role');
+    var textEl = b.querySelector('.dn-bubble-text') || b.querySelector('div');
+    var text = textEl ? textEl.textContent.trim() : '';
+    if(text && role && role !== 'system') {
+      history.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
+    }
+  });
+
+  // data-role 없을 때 폴백: 스타일로 구분
+  if(history.length === 0) {
+    chatLog.querySelectorAll('.dn-bubble').forEach(function(b) {
+      var isUser = b.classList.contains('dn-bubble-user');
+      var text = b.textContent.trim();
+      if(text) history.push({ role: isUser ? 'user' : 'assistant', content: text });
+    });
+  }
+
+  console.log('[맥락수집] 대화 ' + history.length + '개 수집 완료');
+  return history;
+}
+
+// ── 3. 맥락 이어서 텍스트 상담 시작 (Render API) ────────
+async function startTextConsultWithHistory(history) {
+  _textConsultHistory = history;
+
+  // 마지막 AI 질문 찾기
+  var lastAiMessage = '';
+  for(var i = history.length - 1; i >= 0; i--) {
+    if(history[i].role === 'assistant') {
+      lastAiMessage = history[i].content;
+      break;
+    }
+  }
+
+  // 전환 안내 메시지
+  diagAddSTT('ai', '음성 연결이 전환되었습니다. 걱정 마세요, 지금까지 말씀하신 내용은 모두 기억하고 있습니다. 텍스트로 이어서 진행하겠습니다.', null);
+
+  // 마지막 질문 다시 표시
+  if(lastAiMessage) {
+    setTimeout(function() {
+      diagAddSTT('ai', lastAiMessage, null);
+    }, 1500);
+  }
+}
+
+// ── 4. 텍스트 메시지 전송 → Render /api/consult-chat ──
+async function sendTextConsultMessage(txt) {
+  // 로딩 표시
+  var loadingId = 'loading_' + Date.now();
+  diagAddSTT('ai', '...', null);
+
+  try {
+    var userName = localStorage.getItem('fh_payer_name') || (window.D && window.D.name) || '고객';
+    var financialContext = {
+      name:          userName,
+      age:           window.D ? window.D.age : 0,
+      monthlyIncome: window.D ? window.D.income : 0,
+      totalAssets:   window.D ? ((window.D.safeAsset||0)+(window.D.riskAsset||0)) : 0,
+      totalDebt:     window.D ? ((window.D.debtCredit||0)+(window.D.debtCollat||0)) : 0,
+    };
+
+    var response = await fetch('https://moneya-server.onrender.com/api/consult-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: txt,
+        userName: userName,
+        financialContext: financialContext,
+        conversationHistory: _textConsultHistory.slice(-10) // 최근 10개만
+      })
+    });
+
+    var data = await response.json();
+
+    // 로딩 메시지 제거 후 실제 응답 표시
+    var chatLog = document.getElementById('dn_chat_log');
+    if(chatLog) {
+      var lastBubble = chatLog.lastElementChild;
+      if(lastBubble && lastBubble.textContent.trim() === '...') lastBubble.remove();
+    }
+
+    if(data.success && data.message) {
+      diagAddSTT('ai', data.message, null);
+      // 대화 맥락에 추가
+      _textConsultHistory.push({ role: 'user', content: txt });
+      _textConsultHistory.push({ role: 'assistant', content: data.message });
+    } else {
+      diagAddSTT('ai', '죄송합니다. 잠시 후 다시 입력해 주세요.', null);
+    }
+  } catch(e) {
+    console.error('[텍스트 상담] 오류:', e);
+    var chatLog2 = document.getElementById('dn_chat_log');
+    if(chatLog2) {
+      var last = chatLog2.lastElementChild;
+      if(last && last.textContent.trim() === '...') last.remove();
+    }
+    diagAddSTT('ai', '연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.', null);
+  }
+}
+
+// ── 5. 텍스트 모드 전환 (UI 전체 전환) ─────────────────
+function switchToTextMode() {
+  var banner = document.getElementById('voiceErrorBanner');
+  if(banner) banner.style.display = 'none';
+
+  mvpTextOnlyMode = true;
+
+  // 음성 파형 숨기기
+  var wave = document.getElementById('diagWave');
+  if(wave) wave.style.display = 'none';
+
+  // 마이크/카메라 버튼 숨기기
+  document.querySelectorAll('.c-mini-btn').forEach(function(btn) {
+    var lbl = btn.querySelector('.lbl');
+    if(lbl && (lbl.textContent.includes('마이크') || lbl.textContent.includes('카메라') || lbl.textContent.includes('녹음'))) {
+      btn.style.display = 'none';
+    }
+  });
+
+  // 상태 표시 변경
+  var liveTxt = document.querySelector('.c-live-txt');
+  if(liveTxt) liveTxt.textContent = '💬 텍스트 상담 중';
+  var liveDot = document.querySelector('.c-live-dot');
+  if(liveDot) liveDot.style.background = '#3b82f6';
+
+  // 마이크 아이콘 변경
+  var micIco = document.getElementById('diagMicIco');
+  if(micIco) micIco.textContent = '🔇';
+
+  // 텍스트 입력창 강조
+  var inp = document.getElementById('diagTextInp');
+  if(inp) {
+    inp.placeholder = '메시지를 입력하세요...';
+    inp.style.fontSize = '14px';
+    inp.focus();
+  }
+
+  // 대화 내역 수집 → 맥락 이어서 시작
+  var history = collectConversationHistory();
+  startTextConsultWithHistory(history);
+
+  showToast('💬 텍스트 상담으로 전환되었습니다');
+}
+
+// ── 6. 음성 다시 시도 ────────────────────────────────────
+function retryVoice() {
+  var banner = document.getElementById('voiceErrorBanner');
+  if(banner) banner.style.display = 'none';
+  showToast('🔄 음성 재연결 중...');
+  setTimeout(function() {
+    _vapiConnecting = false;
+    diagConnectVoice(); // ★ 기존 음성 함수 그대로 호출
+  }, 3000);
+}
+
+// ── 7. 수동 텍스트 전환 (하단 버튼) ─────────────────────
+function manualSwitchToText() {
+  if(mvpTextOnlyMode) { showToast('이미 텍스트 상담 중입니다'); return; }
+  // 크레딧 사용한 만큼만 차감
+  if(diagInt) { clearInterval(diagInt); diagInt = null; }
+  var usedMin = Math.ceil((diagSec || 0) / 60);
+  var _planName  = localStorage.getItem('fh_plan') || 'single';
+  var _creditMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var totalCredit = _creditMap[_planName] || 20;
+  localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
+  switchToTextMode();
+}
 
 function mvpVoiceTimeUp() {
   // 녹음 중이면 자동 저장
@@ -7283,6 +7574,8 @@ function mvpVoiceTimeUp() {
 function mpOpen() {
   mpRefreshData();
   document.getElementById('mypageOverlay').classList.add('mp-open');
+  // ★ 진단안내 페이지 플랜별 UI 업데이트
+  setTimeout(mvpUpdateGuideUI, 100);
   mpDrawChart();
   // MVP: 시뮬레이터 숨기기 (AI 재무검진 모드에서는 보이지 않아야 함)
   var simWrap = document.getElementById('sim-wrap');
@@ -9498,6 +9791,13 @@ function diagStartConsult() {
   if(diagInt) { clearInterval(diagInt); diagInt = null; }
   diagSec=0;
 
+  // 플랜별 크레딧 분 가져오기
+  var _timerPlan    = localStorage.getItem('fh_plan') || 'single';
+  var _timerCredMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _creditMin    = _timerCredMap[_timerPlan] || 20;
+  var _creditSec    = _creditMin * 60;
+  var _warnSec      = (_creditMin - 1) * 60; // 1분 전 경고
+
   diagInt=setInterval(function(){
     if(diagPaused) return;
     diagSec++;
@@ -9505,9 +9805,10 @@ function diagStartConsult() {
     const s=String(diagSec%60).padStart(2,'0');
     const el=document.getElementById('diagTimer');
     if(el) el.textContent=m+':'+s;
-    if(diagSec===45*60) showToast('⏰ 45분 경과 · 5분 남았습니다. 마무리 준비해 주세요');
-    if(diagSec===49*60) showToast('⚠️ 49분 경과 · 1분 남았습니다!');
-    if(diagSec===50*60) {
+    // 플랜별 경고 (크레딧-1분 전 토스트)
+    // 브론즈(10분)→9분, 실버(20분)→19분, 골드(40분)→39분
+    if(diagSec===_warnSec) showToast('⚠️ 1분 후 텍스트 상담으로 자동 전환됩니다');
+    if(diagSec>=_creditSec) {
       // ★ 음성만 종료, 텍스트 상담은 계속 가능
       mvpVoiceTimeUp();
     }
@@ -9580,6 +9881,20 @@ async function diagConnectVoice(isPaid) {
 
   try {
     var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
+
+    // ★ 플랜 정보를 Vapi assistantOverrides로 주입
+    // 머니야가 어떤 플랜인지 알 수 있도록 시스템 프롬프트 앞에 주입
+    var planInfo = window._currentPlanInfo || {};
+    var planLabel    = planInfo.label     || '골드';
+    var planMin      = planInfo.creditMin || 40;
+    var remainMin    = planInfo.remainMin || planMin;
+    var sessionNo    = planInfo.sessionNo || 1;
+    var isResume     = planInfo.isResume  || false;
+    var planInject   = sessionNo >= 2
+      ? '【오늘 상담: ' + sessionNo + '회차 정기상담 플랜】'
+      : '【오늘 상담: ' + planLabel + ' ' + planMin + '분 플랜】';
+    planInject += ' 잔여크레딧: ' + remainMin + '분.';
+    console.log('[Vapi] 플랜 주입:', planInject);
     var VapiConstructor = window.VapiClass.default || window.VapiClass;
     console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
     console.log('[DEBUG] assistantId:', assistantId);
@@ -9640,7 +9955,13 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      showToast('📞 상담이 종료됐습니다');
+      // ★ 에러대응: 정상종료(사용자가 직접 종료)가 아닌 경우 배너 표시
+      if(!_vapiUserEnded && !mvpTextOnlyMode) {
+        handleVoiceError(null); // 비정상 종료 → 텍스트 전환 안내
+      } else {
+        showToast('📞 상담이 종료됐습니다');
+      }
+      _vapiUserEnded = false; // 플래그 초기화
       /* DEV-003: 리포트 생성 — 추후 활성화 */
       // generateFinalReport();
     });
@@ -9648,12 +9969,17 @@ async function diagConnectVoice(isPaid) {
     /* ── 오류 ── */
     vapi.on('error', function(e) {
       console.error('[Vapi 오류]', e);
-      showToast('⚠️ 연결 오류 · 다시 시도해 주세요');
+      handleVoiceError(e); // ★ 에러대응: 텍스트 전환 배너 표시
     });
 
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
-    await vapi.start(assistantId);
+    // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
+    await vapi.start(assistantId, {
+      variableValues: {
+        planInfo: planInject,
+      }
+    });
     _vapiConnecting = false;
 
   } catch(e) {
@@ -10933,7 +11259,7 @@ function renderHealthReport() {
       +'<strong style="color:#C9972A;">📋 본 검진결과는 통계 기반 추정치입니다</strong><br>'
       +'"—" 표시된 항목은 유료 AI 재무검진을 통해 정확한 수치와 맞춤형 솔루션을 제공받으실 수 있습니다.<br>'
       +'<div style="text-align:center;margin-top:10px;">'
-      +'<button onclick="mpOpenSubscribe()" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border:none;padding:10px 24px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;">🏥 유료 AI 재무검진 시작하기 →</button>'
+      +'<button onclick="mpOpenSubscribe()" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border:none;padding:10px 24px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;">🏥 유료 AI재무진단 시작하기 →</button>'
       +'</div></div>';
   }
 
@@ -11245,15 +11571,20 @@ function diagSendText() {
   const inp=document.getElementById('diagTextInp');
   if(!inp||!inp.value.trim()) return;
   const txt=inp.value.trim();
-  diagAddSTT('user',txt,null);
   inp.value='';
-  /* [DEV-001] Vapi로 텍스트 전송 */
-  if(vapi && vapiCallActive) {
-    try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
+
+  if(mvpTextOnlyMode) {
+    // ★ 텍스트 모드: 채팅 표시 → Render /api/consult-chat 전송
+    diagAddSTT('user', txt, null);
+    sendTextConsultMessage(txt);
+  } else {
+    // 기존 음성 모드: Vapi로 전송 (수정 없음!)
+    diagAddSTT('user', txt, null);
+    if(vapi && vapiCallActive) {
+      try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }
+      catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
+    }
   }
-  // [비활성화 by DEV-001] 기존 WebSocket
-  // if(diagWs&&diagWs.readyState===1)
-  //   diagWs.send(JSON.stringify({type:'text_input',text:txt}));
 }
 
 
@@ -12129,7 +12460,12 @@ document.addEventListener('visibilitychange', function() {
             <div style="padding:10px 14px;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
-                <div><div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div><div style="font-size:12px;font-weight:700;color:var(--navy);">초회상담 50분</div></div>
+                <div>
+                  <div style="font-size:9px;color:var(--muted);font-weight:500;">상담 시간</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);" id="mvpPlanTimeDisplay">
+                    <!-- 플랜별 동적 표시 -->
+                  </div>
+                </div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
@@ -12166,7 +12502,7 @@ document.addEventListener('visibilitychange', function() {
               </div>
               <div style="font-size:9px;color:var(--muted);margin-top:6px;">매월 1일 자동 지급 · 미사용 시 이월</div>
               <div style="margin-top:8px;padding:6px 10px;background:rgba(201,151,42,.08);border-radius:8px;font-size:9.5px;color:var(--navy);">
-                🌟 초회상담 50분 · 금융집짓기® 8단계 전체 진단
+                <span id="mvpCreditPlanNote">🌟 AI재무진단 · 금융집짓기® 8단계 전체 진단</span>
               </div>
             </div>
           </div>
@@ -12251,19 +12587,19 @@ document.addEventListener('visibilitychange', function() {
                 <input id="mvp-privacy-guide" type="checkbox" style="width:18px;height:18px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;">
                 <span style="font-size:10px;color:#444;line-height:1.6;">
                   [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-                  <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무검진 상담 | 보유기간: 서비스 이용 종료 시까지</span>
+                  <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무진단 상담 | 보유기간: 서비스 이용 종료 시까지</span>
                 </span>
               </label>
             </div>
           </div>
         </div>
 
-        <!-- AI 재무검진 시작 버튼 -->
+        <!-- AI 재무진단 시작 버튼 -->
         <div class="start-area" style="padding:12px;">
-          <button class="start-btn start-btn-pulse" onclick="mvpGoToDiag()">
-            🎙️ 유료 AI 재무검진 시작하기
+          <button class="start-btn start-btn-pulse" id="mvpStartBtn" onclick="mvpGoToDiag()">
+            🎙️ 유료 AI재무진단 시작하기
           </button>
-          <div class="start-note">AI진단 탭으로 이동하여 상담이 시작됩니다</div>
+          <div class="start-note" id="mvpStartNote">AI진단 탭으로 이동하여 상담이 시작됩니다</div>
         </div>
 
         <!-- 숨겨진 파일 input -->
@@ -12586,7 +12922,11 @@ document.addEventListener('visibilitychange', function() {
           </div>
           <div class="c-top-btns">
             <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
-            <button class="c-tbtn c-tbtn-end" onclick="diagShowEndModal()">종료</button>
+            <button class="c-tbtn" id="diagTextSwitchBtn" onclick="manualSwitchToText()"
+              style="background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);">
+              💬 텍스트전환
+            </button>
+            <button class="c-tbtn c-tbtn-end" onclick="_vapiUserEnded=true; diagShowEndModal()">종료</button>
           </div>
         </div>
 
@@ -12676,6 +13016,38 @@ document.addEventListener('visibilitychange', function() {
         </div>
 
         <!-- 종료 모달 -->
+        <!-- ★ 음성 에러대응 배너 (작업7) -->
+        <div id="voiceErrorBanner" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px;">
+          <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:2px solid #C9972A;
+            border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;">
+            <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+            <div style="font-size:15px;font-weight:900;color:#E8B84B;margin-bottom:8px;">
+              음성 연결이 일시 중단되었습니다
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.8;margin-bottom:20px;">
+              기술적 사유로 음성이 중단되었습니다.<br>
+              텍스트로 상담을 이어가겠습니다.<br>
+              <span style="color:#E8B84B;font-size:11px;">크레딧은 중지되었으니 안심하세요.</span>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button onclick="switchToTextMode()"
+                style="flex:1;padding:14px;border-radius:12px;border:none;
+                background:linear-gradient(135deg,#C9972A,#E8B84B);
+                color:#0B1D3A;font-size:13px;font-weight:900;
+                font-family:var(--fn);cursor:pointer;">
+                💬 텍스트로 전환
+              </button>
+              <button onclick="retryVoice()"
+                style="flex:1;padding:14px;border-radius:12px;
+                border:2px solid rgba(255,255,255,.3);background:transparent;
+                color:#fff;font-size:13px;font-weight:900;
+                font-family:var(--fn);cursor:pointer;">
+                🔄 다시 시도
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="end-modal" id="diagEndModal">
           <div class="end-box">
             <div class="end-box-icon">🏁</div>
@@ -12683,7 +13055,7 @@ document.addEventListener('visibilitychange', function() {
             <div class="end-box-desc">종료 시 PDF 리포트가 자동 생성됩니다.<br>상담 내용은 히스토리에 저장됩니다.</div>
             <div class="end-btns">
               <button class="end-btn end-cancel" onclick="diagHideEndModal()">계속하기</button>
-              <button class="end-btn end-confirm" onclick="diagEndConsult()">종료하기</button>
+              <button class="end-btn end-confirm" onclick="_vapiUserEnded=true; diagEndConsult()">종료하기</button>
             </div>
           </div>
         </div>
