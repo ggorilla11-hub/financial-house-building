@@ -7292,9 +7292,9 @@ function mvpSaveRecording(blob) {
     var tx = db.transaction('blobs', 'readwrite');
     tx.objectStore('blobs').put({ id: recId, blob: blob });
     tx.oncomplete = function() {
-      // ★ window 캐시에도 URL 저장 (같은 세션 즉시 재생용)
-      if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
-      window._mvpRecBlobs[recId] = URL.createObjectURL(blob);
+      // ★ window 캐시에 blob 저장 (같은 세션 즉시 재생용)
+      if(!window._mvpRecBlobData) window._mvpRecBlobData = {};
+      window._mvpRecBlobData[recId] = blob;
       console.log('[녹음] 저장 완료:', recId);
     };
   }).catch(function(e) {
@@ -7347,24 +7347,42 @@ function mvpPlayRec(idx) {
   if(!recordings[idx]) return;
   var r = recordings[idx];
 
-  function playUrl(url) {
-    var audio = new Audio(url);
+  function playBlob(blob) {
+    // ★ DOM에 audio 엘리먼트 추가 (iOS 포함 모든 브라우저 호환)
+    var old = document.getElementById('mvpAudioPlayer');
+    if(old) old.remove();
+
+    var url = URL.createObjectURL(blob);
+    var audio = document.createElement('audio');
+    audio.id = 'mvpAudioPlayer';
+    audio.controls = true;
+    audio.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99999;width:280px;border-radius:8px;';
+    audio.src = url;
     audio.volume = 1.0;
-    var playPromise = audio.play();
-    if(playPromise) {
-      playPromise.then(function() {
+    document.body.appendChild(audio);
+
+    audio.oncanplaythrough = function() {
+      audio.play().then(function() {
         showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
       }).catch(function(err) {
-        showToast('재생 오류: ' + err.message);
+        showToast('▶ 재생바를 눌러 재생하세요');
       });
-    } else {
-      showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
-    }
+    };
+    audio.onended = function() {
+      setTimeout(function() {
+        audio.remove();
+        URL.revokeObjectURL(url);
+      }, 1000);
+    };
+    audio.onerror = function() {
+      showToast('재생 오류: 파일을 읽을 수 없습니다.');
+    };
+    audio.load();
   }
 
-  // ★ 1순위: window 캐시 URL (같은 세션)
-  if(window._mvpRecBlobs && window._mvpRecBlobs[r.id]) {
-    playUrl(window._mvpRecBlobs[r.id]);
+  // ★ 1순위: window 캐시 blob
+  if(window._mvpRecBlobData && window._mvpRecBlobData[r.id]) {
+    playBlob(window._mvpRecBlobData[r.id]);
     return;
   }
 
@@ -7375,14 +7393,13 @@ function mvpPlayRec(idx) {
     req.onsuccess = function(e) {
       var data = e.target.result;
       if(!data || !data.blob) {
-        showToast('녹음 파일이 없습니다. (세션 종료 시 삭제됨)');
+        showToast('녹음 파일이 없습니다.');
         return;
       }
-      var url = URL.createObjectURL(data.blob);
-      // window 캐시에도 저장
-      if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
-      window._mvpRecBlobs[r.id] = url;
-      playUrl(url);
+      // window 캐시에 blob 저장
+      if(!window._mvpRecBlobData) window._mvpRecBlobData = {};
+      window._mvpRecBlobData[r.id] = data.blob;
+      playBlob(data.blob);
     };
     req.onerror = function() {
       showToast('녹음 파일을 찾을 수 없습니다.');
@@ -10048,40 +10065,42 @@ function diagHandleFile(input) {
 function diagOcrAnalyze(file, docType) {
   var docLabels = {ins:'보험증권', sal:'급여명세서', pen:'연금명세서', tax:'세금신고서', etc:'기타서류'};
   var label = docLabels[docType] || '서류';
-
   var prompts = {
-    ins: '이 보험증권을 전문 보험설계사 관점으로 분석해 주세요. 다음 항목을 포함해 주세요: 1)보험사/상품명/계약일 2)월보험료 3)주요 보장내용(사망/암/실손 등 항목별 보장금액) 4)납입현황 5)보장 Gap 분석(부족한 보장) 6)종합 의견. 한국어로 간결하게 작성해 주세요.',
-    sal: '이 급여명세서를 분석해 주세요. 기본급, 각종수당, 실수령액, 4대보험 납부액을 항목별로 추출하고 재무설계 관점에서 의견을 주세요.',
+    ins: '이 보험증권을 전문 보험설계사 관점으로 분석해 주세요. 1)보험사/상품명/계약일 2)월보험료 3)주요 보장내용(항목별 보장금액) 4)납입현황 5)보장 Gap 분석 6)종합 의견. 한국어로 작성해 주세요.',
+    sal: '이 급여명세서를 분석해 주세요. 기본급, 수당, 실수령액, 4대보험 납부액을 항목별로 추출하고 재무설계 관점에서 의견을 주세요.',
     pen: '이 연금명세서를 분석해 주세요. 연금종류(국민/퇴직/개인), 월납입금, 적립금, 예상연금액을 추출하고 은퇴설계 관점에서 의견을 주세요.',
     tax: '이 세금신고서를 분석해 주세요. 종합소득, 세액공제 항목, 납부/환급세액을 추출하고 절세 관점에서 의견을 주세요.',
     etc: '이 서류의 주요 재무 관련 내용을 분석하고 재무설계 관점에서 요약해 주세요.'
   };
   var prompt = prompts[docType] || prompts.etc;
 
-  // ★ AI진단 탭으로 이동
-  var tabs = document.querySelectorAll('.mp-tab');
-  if(tabs && tabs[1]) tabs[1].click();
+  showToast('📎 ' + label + ' 분석 중...');
 
-  var sttArea = document.getElementById('diagStt');
+  // ★ 음성 상담 중이면 diagStt에 표시, 아니면 오버레이로 표시
+  var isInConsult = (typeof vapiCallActive !== 'undefined' && vapiCallActive) ||
+                   (document.getElementById('diagScreenB') &&
+                    document.getElementById('diagScreenB').style.display !== 'none');
 
-  // ★ 1. 이미지 썸네일 말풍선 (ARK-Genie 방식)
-  if(sttArea && file.type && file.type.indexOf('image') === 0) {
-    var imgUrl = URL.createObjectURL(file);
-    var imgBubble = document.createElement('div');
-    imgBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;flex-direction:row-reverse;';
-    imgBubble.innerHTML =
-      '<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">👤</div>' +
-      '<div style="max-width:78%;">' +
-        '<img src="' + imgUrl + '" style="max-width:180px;max-height:160px;border-radius:8px;display:block;margin-bottom:4px;" onload="URL.revokeObjectURL(this.src)">' +
-        '<div style="font-size:8px;color:rgba(255,255,255,.5);">📎 ' + file.name + ' · 분석 중...</div>' +
-      '</div>';
-    sttArea.appendChild(imgBubble);
-    sttArea.scrollTop = sttArea.scrollHeight;
+  // ★ 분석 결과 오버레이 생성 (상담 중/전 모두 표시)
+  var ocrOverlay = document.getElementById('ocrResultOverlay');
+  if(!ocrOverlay) {
+    ocrOverlay = document.createElement('div');
+    ocrOverlay.id = 'ocrResultOverlay';
+    ocrOverlay.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9990;background:rgba(6,14,30,.98);border-top:2px solid #C9972A;max-height:50vh;overflow-y:auto;transition:transform .3s ease;';
+    document.body.appendChild(ocrOverlay);
   }
+  ocrOverlay.style.display = 'block';
+  ocrOverlay.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);">' +
+      '<div style="font-size:10px;font-weight:700;color:#E8B84B;">📋 ' + label + ' 분석 중...</div>' +
+      '<button onclick="document.getElementById('ocrResultOverlay').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;">✕</button>' +
+    '</div>' +
+    '<div id="ocrResultBody" style="padding:10px 12px;font-size:9px;color:rgba(255,255,255,.6);">🔍 Claude가 서류를 분석하고 있습니다...</div>';
 
-  // ★ 2. "분석 중..." 말풍선
+  // diagStt에도 로딩 버블 추가 (상담 중이면)
+  var sttArea = document.getElementById('diagStt');
   var loadingBubble = null;
-  if(sttArea) {
+  if(sttArea && isInConsult) {
     loadingBubble = document.createElement('div');
     loadingBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
     loadingBubble.innerHTML =
@@ -10124,63 +10143,60 @@ function diagOcrAnalyze(file, docType) {
       if(!window._ocrResults) window._ocrResults = {};
       window._ocrResults[docType] = {label:label, result:result};
 
-      // ★ 3. 로딩 말풍선 제거 후 결과 말풍선 표시 (ARK-Genie 방식)
-      if(loadingBubble && loadingBubble.parentNode) {
-        loadingBubble.parentNode.removeChild(loadingBubble);
-      }
-
-      var sttArea2 = document.getElementById('diagStt');
-      if(sttArea2) {
-        var resultBubble = document.createElement('div');
-        resultBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
-        // 마크다운 → HTML 간단 변환
+      // ★ 오버레이에 결과 표시
+      var resultBody = document.getElementById('ocrResultBody');
+      if(resultBody) {
         var htmlResult = result
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/#{1,3}\s(.+)/g, '<div style="font-weight:900;color:#E8B84B;margin:4px 0 2px;">$1</div>')
-          .replace(/\|([^|]+)\|([^|]+)\|([^|]+)\|/g, '')
-          .replace(/\n/g, '<br>');
+          .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#E8B84B;">$1</strong>')
+          .replace(/#{1,3}\s(.+)/g, '<div style="font-weight:900;color:#E8B84B;margin:6px 0 2px;font-size:10px;">$1</div>')
+          .replace(/
+/g, '<br>');
+        resultBody.innerHTML =
+          '<div style="font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:6px;">✅ 분석 완료 · ' + label + '</div>' +
+          '<div style="line-height:1.7;color:rgba(255,255,255,.85);">' + htmlResult + '</div>';
+        // 헤더도 업데이트
+        var overlay = document.getElementById('ocrResultOverlay');
+        if(overlay) {
+          overlay.querySelector('div').firstChild.textContent = '📋 ' + label + ' 분석 완료';
+        }
+      }
 
+      // ★ diagStt에도 결과 버블 추가 (상담 중이면)
+      var sttArea2 = document.getElementById('diagStt');
+      if(loadingBubble && loadingBubble.parentNode) loadingBubble.parentNode.removeChild(loadingBubble);
+      if(sttArea2 && isInConsult) {
+        var resultBubble = document.createElement('div');
+        resultBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
         resultBubble.innerHTML =
-          '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden;">🤖</div>' +
-          '<div style="max-width:85%;">' +
-            '<div style="padding:8px 10px;font-size:9px;color:rgba(255,255,255,.88);border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);line-height:1.6;">' +
-              '<div style="font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:5px;">📋 ' + label + ' 분석 완료</div>' +
-              htmlResult +
-            '</div>' +
+          '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;">🤖</div>' +
+          '<div style="max-width:85%;padding:8px 10px;font-size:9px;color:rgba(255,255,255,.88);border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);line-height:1.6;">' +
+            '<div style="font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:4px;">📋 ' + label + ' 분석 완료</div>' +
+            result.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/
+/g,'<br>') +
           '</div>';
         sttArea2.appendChild(resultBubble);
         sttArea2.scrollTop = sttArea2.scrollHeight;
       }
 
-      // ★ 4. Vapi에 결과 주입 (음성 상담 중)
+      // ★ Vapi에 결과 주입 (음성 상담 중)
       if(typeof vapiCallActive !== 'undefined' && vapiCallActive && typeof vapi !== 'undefined' && vapi) {
         try {
           vapi.send({
             type: 'add-message',
             message: {
               role: 'user',
-              content: '[' + label + ' 분석 결과] ' + result + ' [이 내용을 바탕으로 고객에게 설명하고 상담을 이어가 주세요]'
+              content: label + ' 분석 결과입니다. ' + result + ' 이 내용을 바탕으로 고객에게 설명하고 상담을 이어가 주세요.'
             }
           });
         } catch(ve) { console.log('[OCR→Vapi]', ve.message); }
       }
-
       showToast('✅ ' + label + ' 분석 완료!');
     })
     .catch(function() {
-      if(loadingBubble && loadingBubble.parentNode) {
-        loadingBubble.parentNode.removeChild(loadingBubble);
-      }
-      var sttArea3 = document.getElementById('diagStt');
-      if(sttArea3) {
-        var errBubble = document.createElement('div');
-        errBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
-        errBubble.innerHTML =
-          '<div style="width:19px;height:19px;border-radius:50%;background:rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;">⚠️</div>' +
-          '<div style="padding:6px 10px;font-size:9px;color:#f87171;border-radius:0 7px 7px 7px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);">' + label + ' 분석 오류. 다시 시도해 주세요.</div>';
-        sttArea3.appendChild(errBubble);
-      }
+      if(loadingBubble && loadingBubble.parentNode) loadingBubble.parentNode.removeChild(loadingBubble);
+      var resultBody2 = document.getElementById('ocrResultBody');
+      if(resultBody2) resultBody2.innerHTML = '<div style="color:#f87171;">❌ 분석 오류. 다시 시도해 주세요.</div>';
       showToast('❌ OCR 분석 실패');
     });
   };
