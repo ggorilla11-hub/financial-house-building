@@ -2201,7 +2201,7 @@ body { color: #1a1a1a; }
 .c-ntab.on{color:var(--gold);border-bottom-color:var(--gold);}
 
 /* 노트 본문 — flex:1 세로 확보 */
-.c-note-body{flex:2;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
+.c-note-body{flex:1;overflow:hidden;background:var(--paper);min-height:0;display:flex;flex-direction:column;}
 .c-note-body::-webkit-scrollbar{display:none;}
 
 /* ── AI진단탭 전용: 높이 체인 확보 ── */
@@ -2256,11 +2256,10 @@ body { color: #1a1a1a; }
 
 /* ━━━ STT — 길게 ━━━ */
 .c-stt{
-  flex:1;
   flex-shrink:0;
   background:rgba(6,14,30,.97);
   border-top:1px solid rgba(255,255,255,.06);
-  min-height:120px;
+  height:110px; /* 고정 높이로 충분히 */
   overflow-y:auto;
   padding:7px 11px;
   scrollbar-width:none;
@@ -2442,7 +2441,6 @@ html{visibility:visible !important;}
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
 
@@ -5925,11 +5923,6 @@ function onPaypleResult(data){
     localStorage.setItem('fh_payer_name',  _payerName);
     localStorage.setItem('fh_payer_email', _payerEmail);
 
-    // ★ Firestore에 구독 상태 저장 (어느 기기에서나 자동 입장)
-    if(window.fhSaveSubscription && _payerEmail) {
-      window.fhSaveSubscription(_payerEmail, currentPlan, credit, data.PCD_PAY_OID || '');
-    }
-
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
 
@@ -6865,20 +6858,35 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // 기결제자 → 바로 검진안내(마이페이지)로 직행
-  // 미결제자 → 결제 화면으로 이동
-  var isSubscribed = mpIsSubscribed
-    || localStorage.getItem('fh_subscribed') === '1'
-    || localStorage.getItem('fh_member_v1') === '1';
-
-  if(isSubscribed) {
-    // ★ 기결제자: 퍼널 숨기고 바로 검진안내 화면으로
-    try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
-    mpOpen();
-  } else {
-    // 미결제자: 결제 모달
-    mpOpenSubscribe();
+  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
+  var trialStart = localStorage.getItem('fh_trial_start');
+  if(!trialStart) {
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    trialStart = new Date().toISOString();
   }
+  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
+  if(daysPassed > 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  mpIsSubscribed = true;
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
@@ -7265,18 +7273,6 @@ function mvpStopRecord() {
   showToast('✅ 녹음 저장 완료 · 마이페이지에서 재생 가능');
 }
 
-// ★ IndexedDB 초기화 (blob 저장용)
-function mvpOpenIDB() {
-  return new Promise(function(resolve, reject) {
-    var req = indexedDB.open('mvpRecDB', 1);
-    req.onupgradeneeded = function(e) {
-      e.target.result.createObjectStore('blobs', { keyPath: 'id' });
-    };
-    req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror   = function(e) { reject(e.target.error); };
-  });
-}
-
 function mvpSaveRecording(blob) {
   var now = mvpRecStartTime || new Date();
   var dateStr = now.getFullYear() + '.' +
@@ -7284,38 +7280,26 @@ function mvpSaveRecording(blob) {
     String(now.getDate()).padStart(2,'0');
   var timeStr = String(now.getHours()).padStart(2,'0') + ':' +
     String(now.getMinutes()).padStart(2,'0');
-  var duration = mvpRecStartTime ? Math.round((Date.now() - mvpRecStartTime.getTime()) / 1000) : 0;
-  var recId = 'rec_' + Date.now();
 
-  // ★ IndexedDB에 blob 저장 (용량 효율적)
-  mvpOpenIDB().then(function(db) {
-    var tx = db.transaction('blobs', 'readwrite');
-    tx.objectStore('blobs').put({ id: recId, blob: blob });
-    tx.oncomplete = function() {
-      // ★ window 캐시에 blob 저장 (같은 세션 즉시 재생용)
-      if(!window._mvpRecBlobData) window._mvpRecBlobData = {};
-      window._mvpRecBlobData[recId] = blob;
-      console.log('[녹음] 저장 완료:', recId);
-    };
-  }).catch(function(e) {
-    // IndexedDB 실패 시 window 캐시만이라도 저장
-    if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
-    window._mvpRecBlobs[recId] = URL.createObjectURL(blob);
-    console.error('[녹음] IndexedDB 실패, window 캐시만 사용:', e.message);
-  });
+  // Blob URL 생성
+  var url = URL.createObjectURL(blob);
 
-  // localStorage에는 메타데이터만 저장
+  // localStorage에 녹음 목록 저장
   var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
-  if(recordings.length >= 20) recordings.shift(); // 최대 20개
   recordings.push({
-    date:     dateStr,
-    time:     timeStr,
-    size:     blob.size,
-    duration: duration,
-    id:       recId
+    date: dateStr,
+    time: timeStr,
+    url: url,
+    size: blob.size,
+    duration: mvpRecStartTime ? Math.round((Date.now() - mvpRecStartTime.getTime()) / 1000) : 0,
+    id: 'rec_' + Date.now()
   });
   localStorage.setItem('mvp_recordings', JSON.stringify(recordings));
-  showToast('✅ 녹음 저장 완료 · 마이페이지에서 재생 가능');
+
+  // Blob도 별도 저장 (IndexedDB 간이 버전 - sessionStorage 대안)
+  // 세션 유지를 위해 window 객체에 저장
+  if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
+  window._mvpRecBlobs['rec_' + Date.now()] = url;
 }
 
 // 마이페이지에서 녹음 목록 렌더링
@@ -7328,16 +7312,15 @@ function mvpRenderRecordings() {
     return;
   }
   container.innerHTML = recordings.map(function(r, i) {
-    var mins = Math.floor((r.duration||0) / 60);
-    var secs = (r.duration||0) % 60;
-    return '<div style="display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);">' +
-      '<div style="font-size:22px;">🎙️</div>' +
-      '<div style="flex:1;min-width:0;">' +
+    var mins = Math.floor(r.duration / 60);
+    var secs = r.duration % 60;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);">' +
+      '<div style="font-size:24px;">🎙️</div>' +
+      '<div style="flex:1;">' +
         '<div style="font-size:12px;font-weight:700;color:var(--navy);">상담 녹음 #' + (i+1) + '</div>' +
-        '<div style="font-size:9px;color:var(--muted);">📅 ' + (r.date||'') + ' ' + (r.time||'') + ' · ' + mins + '분 ' + secs + '초</div>' +
+        '<div style="font-size:9px;color:var(--muted);">📅 ' + r.date + ' ' + r.time + ' · ' + mins + '분 ' + secs + '초</div>' +
       '</div>' +
-      '<button onclick="mvpPlayRec(' + i + ')" style="padding:6px 10px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);white-space:nowrap;">▶ 재생</button>' +
-      '<button onclick="mvpDeleteRec(' + i + ')" style="padding:6px 8px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.1);color:#ef4444;font-size:10px;cursor:pointer;font-family:var(--fn);">🗑️</button>' +
+      '<button onclick="mvpPlayRec(' + i + ')" style="padding:6px 12px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);">▶ 재생</button>' +
     '</div>';
   }).join('');
 }
@@ -7346,82 +7329,13 @@ function mvpPlayRec(idx) {
   var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
   if(!recordings[idx]) return;
   var r = recordings[idx];
-
-  function playBlob(blob) {
-    // ★ DOM에 audio 엘리먼트 추가 (iOS 포함 모든 브라우저 호환)
-    var old = document.getElementById('mvpAudioPlayer');
-    if(old) old.remove();
-
-    var url = URL.createObjectURL(blob);
-    var audio = document.createElement('audio');
-    audio.id = 'mvpAudioPlayer';
-    audio.controls = true;
-    audio.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99999;width:280px;border-radius:8px;';
-    audio.src = url;
-    audio.volume = 1.0;
-    document.body.appendChild(audio);
-
-    audio.oncanplaythrough = function() {
-      audio.play().then(function() {
-        showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
-      }).catch(function(err) {
-        showToast('▶ 재생바를 눌러 재생하세요');
-      });
-    };
-    audio.onended = function() {
-      setTimeout(function() {
-        audio.remove();
-        URL.revokeObjectURL(url);
-      }, 1000);
-    };
-    audio.onerror = function() {
-      showToast('재생 오류: 파일을 읽을 수 없습니다.');
-    };
-    audio.load();
+  if(r.url) {
+    var audio = new Audio(r.url);
+    audio.play().catch(function(e) {
+      showToast('재생할 수 없습니다. 같은 세션에서만 재생 가능합니다.');
+    });
+    showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
   }
-
-  // ★ 1순위: window 캐시 blob
-  if(window._mvpRecBlobData && window._mvpRecBlobData[r.id]) {
-    playBlob(window._mvpRecBlobData[r.id]);
-    return;
-  }
-
-  // ★ 2순위: IndexedDB에서 blob 꺼내서 재생
-  mvpOpenIDB().then(function(db) {
-    var tx = db.transaction('blobs', 'readonly');
-    var req = tx.objectStore('blobs').get(r.id);
-    req.onsuccess = function(e) {
-      var data = e.target.result;
-      if(!data || !data.blob) {
-        showToast('녹음 파일이 없습니다.');
-        return;
-      }
-      // window 캐시에 blob 저장
-      if(!window._mvpRecBlobData) window._mvpRecBlobData = {};
-      window._mvpRecBlobData[r.id] = data.blob;
-      playBlob(data.blob);
-    };
-    req.onerror = function() {
-      showToast('녹음 파일을 찾을 수 없습니다.');
-    };
-  }).catch(function() {
-    showToast('재생할 수 없습니다.');
-  });
-}
-
-function mvpDeleteRec(idx) {
-  var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
-  if(!recordings[idx]) return;
-  var recId = recordings[idx].id;
-  // IndexedDB에서 삭제
-  mvpOpenIDB().then(function(db) {
-    db.transaction('blobs', 'readwrite').objectStore('blobs').delete(recId);
-  });
-  // localStorage 메타데이터 삭제
-  recordings.splice(idx, 1);
-  localStorage.setItem('mvp_recordings', JSON.stringify(recordings));
-  mvpRenderRecordings();
-  showToast('🗑️ 녹음이 삭제되었습니다.');
 }
 
 /* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
@@ -8902,77 +8816,6 @@ function mpDoWithdraw() {
     }
     window._fhAuth     = firebase.auth();
     window._fhProvider = new firebase.auth.GoogleAuthProvider();
-    window._fhDb       = firebase.firestore();
-
-    // ★ Firestore 구독 저장 함수 (전역)
-    window.fhSaveSubscription = function(email, plan, creditMin, orderId) {
-      if (!email || !window._fhDb) return;
-      var emailKey = email.split('.').join('_').split('@').join('_at_');
-      var planLabels = {
-        'single':'브론즈', 'silver-month':'실버', 'silver-year':'실버',
-        'gold-month':'골드', 'gold-year':'골드',
-        'expert-month':'전문가', 'expert-year':'전문가'
-      };
-      var days = plan === 'single' ? 30 : (plan.indexOf('year') >= 0 ? 366 : 31);
-      var expiry = new Date();
-      expiry.setDate(expiry.getDate() + days);
-      window._fhDb.collection('subscribers').doc(emailKey).set({
-        email:     email,
-        plan:      plan,
-        planLabel: planLabels[plan] || plan,
-        creditMin: creditMin,
-        orderId:   orderId || '',
-        createdAt: new Date().toISOString(),
-        expiry:    expiry.toISOString(),
-        active:    true
-      }).then(function() {
-        console.log('[Firestore] 구독 저장 완료:', email, plan);
-      }).catch(function(e) {
-        console.error('[Firestore] 저장 실패:', e.message);
-      });
-    };
-
-    // ★ Firestore 구독 확인 함수 (전역)
-    window.fhCheckSubscription = function(user) {
-      if (!user || !user.email || !window._fhDb) return;
-      var emailKey = user.email.split('.').join('_').split('@').join('_at_');
-      window._fhDb.collection('subscribers').doc(emailKey).get()
-        .then(function(doc) {
-          if (!doc.exists) {
-            console.log('[Firestore] 구독 없음:', user.email);
-            return;
-          }
-          var sub = doc.data();
-          var expiry = sub.expiry ? new Date(sub.expiry) : null;
-          var isValid = !expiry || expiry > new Date();
-          if (!isValid || !sub.plan) {
-            console.log('[Firestore] 구독 만료:', sub.expiry);
-            return;
-          }
-          // ★ 구독 유효 → localStorage 복원 후 자동 입장
-          var creditMap = {
-            'single':10, 'silver-month':20, 'silver-year':20,
-            'gold-month':40, 'gold-year':40, 'expert-month':40, 'expert-year':40
-          };
-          localStorage.setItem('fh_subscribed', '1');
-          localStorage.setItem('fh_member_v1', '1');
-          localStorage.setItem('fh_plan', sub.plan);
-          localStorage.setItem('mvp_credit_min', String(sub.creditMin || creditMap[sub.plan] || 10));
-          localStorage.setItem('fh_payer_name', user.displayName || '');
-          localStorage.setItem('fh_payer_email', user.email || '');
-          mpIsSubscribed = true;
-          mpSetMemberButton();
-          try { mpCloseSubscribe(); } catch(e) {}
-          try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
-          var planLabel = sub.planLabel || sub.plan || '구독';
-          showToast('✅ ' + (user.displayName || '고객') + '님 ' + planLabel + ' 확인! 바로 시작합니다 🎉');
-          setTimeout(function() { mpOpen(); }, 800);
-          console.log('[Firestore] 구독 유효:', sub.plan, '만료:', sub.expiry);
-        })
-        .catch(function(e) {
-          console.error('[Firestore] 조회 오류:', e.message);
-        });
-    };
 
     // 로그인 상태 감지
     window._fhAuth.onAuthStateChanged(function(user) {
@@ -8980,9 +8823,8 @@ function mpDoWithdraw() {
       if (user) {
         window._fhPayerName  = user.displayName || '';
         window._fhPayerEmail = user.email || '';
+        // 구독 모달이 열려 있으면 UI 업데이트
         fhUpdateLoginUI(user);
-        // ★ 구독 상태 확인 → 자동 입장
-        window.fhCheckSubscription(user);
       } else {
         window._fhPayerName  = '';
         window._fhPayerEmail = '';
@@ -9021,8 +8863,6 @@ function mpDoWithdraw() {
           window._fhPayerName  = user.displayName || '';
           window._fhPayerEmail = user.email || '';
           fhUpdateLoginUI(user);
-          // ★ 로그인 직후 구독 확인
-          if(window.fhCheckSubscription) window.fhCheckSubscription(user);
         })
         .catch(function(err) {
           console.error('[Google 로그인 오류]', err.code, err.message);
@@ -9395,107 +9235,13 @@ function fhDocUpload(key) {
   var inp = document.getElementById('fh-doc-file');
   if (inp) inp.click();
 }
-// ★ 상담신청서 엑셀 양식 (내장)
-var _FH_FORM_XLSX = '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';
 function fhDocDownload(key) {
-  if(key !== 'application') return;
-  try {
-    var byteStr = atob(_FH_FORM_XLSX);
-    var ab = new ArrayBuffer(byteStr.length);
-    var ia = new Uint8Array(ab);
-    for(var i=0; i<byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
-    var blob = new Blob([ab], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = '금융집짓기_재무상담신청서_오원트금융연구소.xlsx';
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    showToast('📥 상담신청서 양식 다운로드 완료!');
-  } catch(e) {
-    showToast('다운로드 오류: ' + e.message);
-  }
+  showToast('📥 상담신청서 양식 다운로드 준비 중입니다 (xlsx)');
 }
-// ★ 사전 서류 OCR 분석 → 재무설계리포트 기초자료 저장
-function fhOcrAndSaveReport(file, docType) {
-  var labels = {
-    application: '재무상담신청서',
-    ins: '보험증권', pen: '연금명세서',
-    tax: '세금신고서', etc: '기타서류'
-  };
-  var label = labels[docType] || '서류';
-  var prompts = {
-    application: '재무상담신청서를 분석해 주세요. 가족사항(성명/나이/직업), 자산(예적금/펀드/연금/부동산), 부채(담보대출/신용대출), 월소득, 월지출 항목별 금액을 추출해 주세요.',
-    ins:  '보험증권을 분석해 주세요. 보험사명, 상품명, 월보험료, 사망보험금, 암진단금, 실손보험금을 항목별로 추출해 주세요.',
-    pen:  '연금명세서를 분석해 주세요. 연금종류, 월납입금, 적립금, 예상연금액을 항목별로 추출해 주세요.',
-    tax:  '세금신고서를 분석해 주세요. 종합소득, 세액공제, 환급세액을 항목별로 추출해 주세요.',
-    etc:  '이 서류의 주요 재무 관련 내용을 요약해 주세요.'
-  };
-  var prompt = prompts[docType] || prompts.etc;
-  showToast('📎 ' + label + ' 분석 중...');
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    var base64  = dataUrl.split(',')[1];
-    var mime    = file.type || 'image/jpeg';
-    var isImage = mime.indexOf('image') === 0;
-    var msgContent = isImage
-      ? [{type:'image', source:{type:'base64', media_type:mime, data:base64}}, {type:'text', text:prompt}]
-      : [{type:'document', source:{type:'base64', media_type:'application/pdf', data:base64}}, {type:'text', text:prompt}];
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:1500, messages:[{role:'user', content:msgContent}]})
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var result = (data.content && data.content[0] && data.content[0].text) || '분석 결과를 불러오지 못했습니다.';
-      // 재무설계리포트 기초자료에 저장
-      if(!window._fhReportData) window._fhReportData = {};
-      window._fhReportData[docType] = {label: label, result: result, time: new Date().toLocaleString('ko-KR')};
-      // 리포트 탭 업데이트
-      fhUpdateReportTab();
-      showToast('✅ ' + label + ' 분석 완료! 재무설계리포트에 반영됐습니다.');
-    })
-    .catch(function() {
-      showToast('❌ ' + label + ' 분석 실패. 다시 시도해 주세요.');
-    });
-  };
-  reader.readAsDataURL(file);
-}
-
-// ★ 재무설계리포트 탭 업데이트
-function fhUpdateReportTab() {
-  var container = document.getElementById('fhReportTabContent');
-  if(!container || !window._fhReportData) return;
-  var html = '<div style="padding:4px;">';
-  var order = ['application','ins','pen','tax','etc'];
-  var hasData = false;
-  order.forEach(function(key) {
-    var d = window._fhReportData[key];
-    if(!d) return;
-    hasData = true;
-    html += '<div style="margin-bottom:12px;padding:10px;background:#fff8e6;border-radius:8px;border-left:3px solid #C9972A;">';
-    html += '<div style="font-size:10px;font-weight:700;color:#C9972A;margin-bottom:4px;">📋 ' + d.label + ' · ' + d.time + '</div>';
-    html += '<div style="font-size:10px;color:#374151;line-height:1.7;white-space:pre-wrap;">' + d.result + '</div>';
-    html += '</div>';
-  });
-  if(!hasData) {
-    html += '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:11px;">사전 서류를 업로드하면<br>여기에 재무설계리포트 기초자료가 표시됩니다.</div>';
-  }
-  html += '</div>';
-  container.innerHTML = html;
-}
-
 function fhDocFileSelected(input) {
   var file = input.files[0];
   if (!file || !fhCurrentDocKey) return;
   var key = fhCurrentDocKey;
-
-  // ★ 모든 서류 업로드 시 즉시 OCR 분석 → 재무설계리포트 기초자료 생성
-  fhOcrAndSaveReport(file, key);
 
   if (key === 'application') {
     var statusEl = document.getElementById('doc-app-status');
@@ -10051,160 +9797,12 @@ function diagHandleFile(input) {
       showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
     });
   } else {
-    // ★ 보험/연금/세금/기타 서류 → OCR 분석
     const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
-    const statEl=document.getElementById(statMap[diagUpKey]||'');
-    if(statEl) statEl.textContent='🔄';
-    showToast('📎 ' + fname + ' 분석 중...');
-    diagOcrAnalyze(file, diagUpKey);
+    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
+    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
   }
   input.value='';
 }
-
-// ★ OCR 분석 함수 (Claude API)
-function diagOcrAnalyze(file, docType) {
-  var docLabels = {ins:'보험증권', sal:'급여명세서', pen:'연금명세서', tax:'세금신고서', etc:'기타서류'};
-  var label = docLabels[docType] || '서류';
-  var prompts = {
-    ins: '이 보험증권을 전문 보험설계사 관점으로 분석해 주세요. 1)보험사/상품명/계약일 2)월보험료 3)주요 보장내용(항목별 보장금액) 4)납입현황 5)보장 Gap 분석 6)종합 의견. 한국어로 작성해 주세요.',
-    sal: '이 급여명세서를 분석해 주세요. 기본급, 수당, 실수령액, 4대보험 납부액을 항목별로 추출하고 재무설계 관점에서 의견을 주세요.',
-    pen: '이 연금명세서를 분석해 주세요. 연금종류(국민/퇴직/개인), 월납입금, 적립금, 예상연금액을 추출하고 은퇴설계 관점에서 의견을 주세요.',
-    tax: '이 세금신고서를 분석해 주세요. 종합소득, 세액공제 항목, 납부/환급세액을 추출하고 절세 관점에서 의견을 주세요.',
-    etc: '이 서류의 주요 재무 관련 내용을 분석하고 재무설계 관점에서 요약해 주세요.'
-  };
-  var prompt = prompts[docType] || prompts.etc;
-
-  showToast('📎 ' + label + ' 분석 중...');
-
-  // ★ 음성 상담 중이면 diagStt에 표시, 아니면 오버레이로 표시
-  var isInConsult = (typeof vapiCallActive !== 'undefined' && vapiCallActive) ||
-                   (document.getElementById('diagScreenB') &&
-                    document.getElementById('diagScreenB').style.display !== 'none');
-
-  // ★ 분석 결과 오버레이 생성 (상담 중/전 모두 표시)
-  var ocrOverlay = document.getElementById('ocrResultOverlay');
-  if(!ocrOverlay) {
-    ocrOverlay = document.createElement('div');
-    ocrOverlay.id = 'ocrResultOverlay';
-    ocrOverlay.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9990;background:rgba(6,14,30,.98);border-top:2px solid #C9972A;max-height:50vh;overflow-y:auto;transition:transform .3s ease;';
-    document.body.appendChild(ocrOverlay);
-  }
-  ocrOverlay.style.display = 'block';
-  ocrOverlay.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);">' +
-      '<div style="font-size:10px;font-weight:700;color:#E8B84B;">📋 ' + label + ' 분석 중...</div>' +
-      '<button id="ocrCloseBtn" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;">✕</button>' +
-    '</div>' +
-    '<div id="ocrResultBody" style="padding:10px 12px;font-size:9px;color:rgba(255,255,255,.6);">🔍 Claude가 서류를 분석하고 있습니다...</div>';
-  var closeBtn = document.getElementById('ocrCloseBtn');
-  if(closeBtn) closeBtn.onclick = function() { ocrOverlay.style.display = 'none'; };
-
-  // diagStt에도 로딩 버블 추가 (상담 중이면)
-  var sttArea = document.getElementById('diagStt');
-  var loadingBubble = null;
-  if(sttArea && isInConsult) {
-    loadingBubble = document.createElement('div');
-    loadingBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
-    loadingBubble.innerHTML =
-      '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;">🤖</div>' +
-      '<div style="padding:6px 10px;font-size:9.5px;color:rgba(255,255,255,.7);border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);">🔍 ' + label + ' 파일을 분석하고 있습니다...</div>';
-    sttArea.appendChild(loadingBubble);
-    sttArea.scrollTop = sttArea.scrollHeight;
-  }
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    var base64 = dataUrl.split(',')[1];
-    var mime = file.type || 'image/jpeg';
-    var isImage = mime.indexOf('image') === 0;
-
-    var msgContent = isImage
-      ? [{type:'image', source:{type:'base64', media_type:mime, data:base64}}, {type:'text', text:prompt}]
-      : [{type:'document', source:{type:'base64', media_type:'application/pdf', data:base64}}, {type:'text', text:prompt}];
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{role:'user', content:msgContent}]
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var result = (data.content && data.content[0] && data.content[0].text) || '분석 결과를 불러오지 못했습니다.';
-
-      // 아이콘 완료 표시
-      var statMap = {ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
-      var el = document.getElementById(statMap[docType] || '');
-      if(el) el.textContent = '✅';
-
-      // 결과 저장
-      if(!window._ocrResults) window._ocrResults = {};
-      window._ocrResults[docType] = {label:label, result:result};
-
-      // ★ 오버레이에 결과 표시
-      var resultBody = document.getElementById('ocrResultBody');
-      if(resultBody) {
-        var htmlResult = result
-          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#E8B84B;">$1</strong>')
-          .replace(/#{1,3}\s(.+)/g, '<div style="font-weight:900;color:#E8B84B;margin:6px 0 2px;font-size:10px;">$1</div>')
-          .replace(/
-/g, '<br>');
-        resultBody.innerHTML =
-          '<div style="font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:6px;">✅ 분석 완료 · ' + label + '</div>' +
-          '<div style="line-height:1.7;color:rgba(255,255,255,.85);">' + htmlResult + '</div>';
-        // 헤더도 업데이트
-        var overlay = document.getElementById('ocrResultOverlay');
-        if(overlay) {
-          overlay.querySelector('div').firstChild.textContent = '📋 ' + label + ' 분석 완료';
-        }
-      }
-
-      // ★ diagStt에도 결과 버블 추가 (상담 중이면)
-      var sttArea2 = document.getElementById('diagStt');
-      if(loadingBubble && loadingBubble.parentNode) loadingBubble.parentNode.removeChild(loadingBubble);
-      if(sttArea2 && isInConsult) {
-        var resultBubble = document.createElement('div');
-        resultBubble.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;';
-        resultBubble.innerHTML =
-          '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;">🤖</div>' +
-          '<div style="max-width:85%;padding:8px 10px;font-size:9px;color:rgba(255,255,255,.88);border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05);line-height:1.6;">' +
-            '<div style="font-size:8px;color:#E8B84B;font-weight:700;margin-bottom:4px;">📋 ' + label + ' 분석 완료</div>' +
-            result.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/
-/g,'<br>') +
-          '</div>';
-        sttArea2.appendChild(resultBubble);
-        sttArea2.scrollTop = sttArea2.scrollHeight;
-      }
-
-      // ★ Vapi에 결과 주입 (음성 상담 중)
-      if(typeof vapiCallActive !== 'undefined' && vapiCallActive && typeof vapi !== 'undefined' && vapi) {
-        try {
-          vapi.send({
-            type: 'add-message',
-            message: {
-              role: 'user',
-              content: label + ' 분석 결과입니다. ' + result + ' 이 내용을 바탕으로 고객에게 설명하고 상담을 이어가 주세요.'
-            }
-          });
-        } catch(ve) { console.log('[OCR→Vapi]', ve.message); }
-      }
-      showToast('✅ ' + label + ' 분석 완료!');
-    })
-    .catch(function() {
-      if(loadingBubble && loadingBubble.parentNode) loadingBubble.parentNode.removeChild(loadingBubble);
-      var resultBody2 = document.getElementById('ocrResultBody');
-      if(resultBody2) resultBody2.innerHTML = '<div style="color:#f87171;">❌ 분석 오류. 다시 시도해 주세요.</div>';
-      showToast('❌ OCR 분석 실패');
-    });
-  };
-  reader.readAsDataURL(file);
-}
-
 
 /* ── 상담 시작 ── */
 function diagStartConsult() {
@@ -10789,8 +10387,7 @@ function diagBuildNotes() {
     <button class="dnt done" onclick="dnGo(7)">🎯 종합설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
     <button class="dnt" onclick="dnGo(9)">💬 대화록</button>
-    <button class="dnt" onclick="dnGo(10)">📊 검진결과</button>
-    <button class="dnt" onclick="dnGo(11)">📋 재무설계리포트</button>
+    <button class="dnt" onclick="dnGo(10)">📄 리포트</button>
   </div>
   <div id="dnPanels">
 
@@ -11251,24 +10848,6 @@ function diagBuildNotes() {
     </div>
   </div>
 
-  <!-- 패널11: 재무설계리포트 (사전 서류 분석 기반) -->
-  <div class="dnp" id="dnp11">
-    <div class="dncard">
-      <div class="dnchd">
-        <div class="dncicon">📋</div>
-        <div>
-          <div class="dnctitle">재무설계리포트</div>
-          <div class="dncsub">사전 서류 분석 기반 · AI 자동 생성</div>
-        </div>
-      </div>
-      <div class="dncbody" id="fhReportTabContent">
-        <div style="text-align:center;padding:20px;color:#9ca3af;font-size:11px;">
-          검진안내 탭에서 서류를 업로드하면<br>여기에 재무설계리포트 기초자료가 표시됩니다.
-        </div>
-      </div>
-    </div>
-  </div>
-
   </div><!-- /dnPanels -->
 </div><!-- /dnWrap -->
 `;
@@ -11279,7 +10858,6 @@ function diagBuildNotes() {
     document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
     document.getElementById('dnPanels').scrollTop = 0;
     if(i===8) dnLoadBA();
-    if(i===11 && typeof fhUpdateReportTab === 'function') fhUpdateReportTab();
     // ★ 탭 자동 스크롤 — 선택된 탭이 보이도록
     var activeTab = document.querySelectorAll('.dnt')[i];
     if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
