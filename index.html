@@ -8919,7 +8919,7 @@ function mpDoWithdraw() {
         var expiry = new Date();
         expiry.setDate(expiry.getDate() + days);
 
-        await window._fhDb.collection('subscriptions').doc(emailKey).set({
+        await window._fhDb.collection('subscribers').doc(emailKey).set({
           email:      email,
           plan:       plan,
           planLabel:  planLabels[plan] || plan,
@@ -8941,7 +8941,7 @@ function mpDoWithdraw() {
       try {
         showToast('🔍 구독 상태 확인 중...');
         var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
-        var doc = await window._fhDb.collection('subscriptions').doc(emailKey).get();
+        var doc = await window._fhDb.collection('subscribers').doc(emailKey).get();
 
         if (doc.exists) {
           var subData = doc.data();
