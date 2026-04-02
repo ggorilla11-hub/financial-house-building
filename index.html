@@ -2256,12 +2256,12 @@ body { color: #1a1a1a; }
 
 /* ━━━ STT — 길게 ━━━ */
 .c-stt{
-  flex-shrink:0;
+  flex:2;
+  min-height:80px;
   background:rgba(6,14,30,.97);
   border-top:1px solid rgba(255,255,255,.06);
-  height:110px; /* 고정 높이로 충분히 */
   overflow-y:auto;
-  padding:7px 11px;
+  padding:7px 11px 10px;
   scrollbar-width:none;
 }
 .c-stt::-webkit-scrollbar{display:none;}
@@ -9853,7 +9853,17 @@ function diagOpenUploadMenu() {
 
   overlay.appendChild(sheet);
   overlay.onclick = function(e) { if(e.target === overlay) overlay.remove(); };
-  document.body.appendChild(overlay);
+  // 자막창(diagStt) 맨 앞에 삽입 — 하단 컨트롤 항상 보임
+  var sttContainer = document.getElementById('diagStt');
+  if(sttContainer) {
+    sttContainer.insertBefore(overlay, sttContainer.firstChild);
+    sttContainer.scrollTop = 0;
+  } else {
+    // fallback: 자막창이 없으면 diagScreenB 안 c-bottom 바로 위에 삽입
+    var bottom = document.querySelector('.c-bottom');
+    if(bottom) bottom.parentNode.insertBefore(overlay, bottom);
+    else document.body.appendChild(overlay);
+  }
 }
 
 /* ── OCR 분석 ── */
@@ -9874,7 +9884,7 @@ function diagOcrAnalyze(file, docType) {
 
   var overlay = document.createElement('div');
   overlay.id = '_ocrResult';
-  overlay.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9990;background:#0B1D3A;border-top:2px solid #C9972A;max-height:55vh;overflow-y:auto;';
+  overlay.style.cssText = 'background:rgba(11,29,58,.95);border:1px solid #C9972A;border-radius:8px;margin-bottom:6px;overflow:hidden;';
 
   var header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:#0B1D3A;z-index:1;';
@@ -9940,7 +9950,11 @@ function diagOcrAnalyze(file, docType) {
 
     fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
