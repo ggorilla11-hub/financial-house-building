@@ -10139,8 +10139,7 @@ function diagOcrAnalyze(file, docType) {
           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
           .replace(/#{1,3}\s(.+)/g, '<div style="font-weight:900;color:#E8B84B;margin:4px 0 2px;">$1</div>')
           .replace(/\|([^|]+)\|([^|]+)\|([^|]+)\|/g, '')
-          .replace(/
-/g, '<br>');
+          .replace(/\n/g, '<br>');
 
         resultBubble.innerHTML =
           '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden;">🤖</div>' +
