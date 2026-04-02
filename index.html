@@ -9947,8 +9947,7 @@ async function diagOcrAnalyze(file, docType) {
       if(el) el.textContent = '✅';
 
       // 채팅창에 분석 결과 표시
-      diagAddSTT('system', '📋 [' + label + ' 분석 완료]
-' + result, null);
+      diagAddSTT('system', '📋 [' + label + ' 분석 완료] ' + result, null);
 
       // Vapi에 서류 내용 주입 (머니야가 읽고 상담 진행)
       if(vapi && vapiCallActive) {
