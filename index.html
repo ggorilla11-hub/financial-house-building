@@ -2441,6 +2441,7 @@ html{visibility:visible !important;}
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
 
@@ -5923,6 +5924,11 @@ function onPaypleResult(data){
     localStorage.setItem('fh_payer_name',  _payerName);
     localStorage.setItem('fh_payer_email', _payerEmail);
 
+    // ★ Firestore에 구독 상태 저장 (어느 기기에서나 자동 입장)
+    if(window.fhSaveSubscription && _payerEmail) {
+      window.fhSaveSubscription(_payerEmail, currentPlan, credit, data.PCD_PAY_OID || '');
+    }
+
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
 
@@ -8788,6 +8794,77 @@ function mpDoWithdraw() {
     }
     window._fhAuth     = firebase.auth();
     window._fhProvider = new firebase.auth.GoogleAuthProvider();
+    window._fhDb       = firebase.firestore();
+
+    // ★ Firestore 구독 저장 함수 (전역)
+    window.fhSaveSubscription = function(email, plan, creditMin, orderId) {
+      if (!email || !window._fhDb) return;
+      var emailKey = email.split('.').join('_').split('@').join('_at_');
+      var planLabels = {
+        'single':'브론즈', 'silver-month':'실버', 'silver-year':'실버',
+        'gold-month':'골드', 'gold-year':'골드',
+        'expert-month':'전문가', 'expert-year':'전문가'
+      };
+      var days = plan === 'single' ? 30 : (plan.indexOf('year') >= 0 ? 366 : 31);
+      var expiry = new Date();
+      expiry.setDate(expiry.getDate() + days);
+      window._fhDb.collection('subscribers').doc(emailKey).set({
+        email:     email,
+        plan:      plan,
+        planLabel: planLabels[plan] || plan,
+        creditMin: creditMin,
+        orderId:   orderId || '',
+        createdAt: new Date().toISOString(),
+        expiry:    expiry.toISOString(),
+        active:    true
+      }).then(function() {
+        console.log('[Firestore] 구독 저장 완료:', email, plan);
+      }).catch(function(e) {
+        console.error('[Firestore] 저장 실패:', e.message);
+      });
+    };
+
+    // ★ Firestore 구독 확인 함수 (전역)
+    window.fhCheckSubscription = function(user) {
+      if (!user || !user.email || !window._fhDb) return;
+      var emailKey = user.email.split('.').join('_').split('@').join('_at_');
+      window._fhDb.collection('subscribers').doc(emailKey).get()
+        .then(function(doc) {
+          if (!doc.exists) {
+            console.log('[Firestore] 구독 없음:', user.email);
+            return;
+          }
+          var sub = doc.data();
+          var expiry = sub.expiry ? new Date(sub.expiry) : null;
+          var isValid = !expiry || expiry > new Date();
+          if (!isValid || !sub.plan) {
+            console.log('[Firestore] 구독 만료:', sub.expiry);
+            return;
+          }
+          // ★ 구독 유효 → localStorage 복원 후 자동 입장
+          var creditMap = {
+            'single':10, 'silver-month':20, 'silver-year':20,
+            'gold-month':40, 'gold-year':40, 'expert-month':40, 'expert-year':40
+          };
+          localStorage.setItem('fh_subscribed', '1');
+          localStorage.setItem('fh_member_v1', '1');
+          localStorage.setItem('fh_plan', sub.plan);
+          localStorage.setItem('mvp_credit_min', String(sub.creditMin || creditMap[sub.plan] || 10));
+          localStorage.setItem('fh_payer_name', user.displayName || '');
+          localStorage.setItem('fh_payer_email', user.email || '');
+          mpIsSubscribed = true;
+          mpSetMemberButton();
+          try { mpCloseSubscribe(); } catch(e) {}
+          try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+          var planLabel = sub.planLabel || sub.plan || '구독';
+          showToast('✅ ' + (user.displayName || '고객') + '님 ' + planLabel + ' 확인! 바로 시작합니다 🎉');
+          setTimeout(function() { mpOpen(); }, 800);
+          console.log('[Firestore] 구독 유효:', sub.plan, '만료:', sub.expiry);
+        })
+        .catch(function(e) {
+          console.error('[Firestore] 조회 오류:', e.message);
+        });
+    };
 
     // 로그인 상태 감지
     window._fhAuth.onAuthStateChanged(function(user) {
@@ -8795,8 +8872,9 @@ function mpDoWithdraw() {
       if (user) {
         window._fhPayerName  = user.displayName || '';
         window._fhPayerEmail = user.email || '';
-        // 구독 모달이 열려 있으면 UI 업데이트
         fhUpdateLoginUI(user);
+        // ★ 구독 상태 확인 → 자동 입장
+        window.fhCheckSubscription(user);
       } else {
         window._fhPayerName  = '';
         window._fhPayerEmail = '';
@@ -8835,6 +8913,8 @@ function mpDoWithdraw() {
           window._fhPayerName  = user.displayName || '';
           window._fhPayerEmail = user.email || '';
           fhUpdateLoginUI(user);
+          // ★ 로그인 직후 구독 확인
+          if(window.fhCheckSubscription) window.fhCheckSubscription(user);
         })
         .catch(function(err) {
           console.error('[Google 로그인 오류]', err.code, err.message);
