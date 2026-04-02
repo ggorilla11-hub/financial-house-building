@@ -6864,35 +6864,20 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if(!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
-  }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if(daysPassed > 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+  // 기결제자 → 바로 검진안내(마이페이지)로 직행
+  // 미결제자 → 결제 화면으로 이동
+  var isSubscribed = mpIsSubscribed
+    || localStorage.getItem('fh_subscribed') === '1'
+    || localStorage.getItem('fh_member_v1') === '1';
+
+  if(isSubscribed) {
+    // ★ 기결제자: 퍼널 숨기고 바로 검진안내 화면으로
+    try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+    mpOpen();
+  } else {
+    // 미결제자: 결제 모달
     mpOpenSubscribe();
-    return;
   }
-  var remaining = 7 - daysPassed;
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  mpIsSubscribed = true;
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
