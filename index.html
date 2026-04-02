@@ -6864,7 +6864,20 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  mpOpenSubscribe();
+  // 기결제자 → 바로 검진안내(마이페이지)로 직행
+  // 미결제자 → 결제 화면으로 이동
+  var isSubscribed = mpIsSubscribed
+    || localStorage.getItem('fh_subscribed') === '1'
+    || localStorage.getItem('fh_member_v1') === '1';
+
+  if(isSubscribed) {
+    // ★ 기결제자: 퍼널 숨기고 바로 검진안내 화면으로
+    try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+    mpOpen();
+  } else {
+    // 미결제자: 결제 모달
+    mpOpenSubscribe();
+  }
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
