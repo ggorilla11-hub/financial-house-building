@@ -7264,6 +7264,18 @@ function mvpStopRecord() {
   showToast('✅ 녹음 저장 완료 · 마이페이지에서 재생 가능');
 }
 
+// ★ IndexedDB 초기화 (blob 저장용)
+function mvpOpenIDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open('mvpRecDB', 1);
+    req.onupgradeneeded = function(e) {
+      e.target.result.createObjectStore('blobs', { keyPath: 'id' });
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror   = function(e) { reject(e.target.error); };
+  });
+}
+
 function mvpSaveRecording(blob) {
   var now = mvpRecStartTime || new Date();
   var dateStr = now.getFullYear() + '.' +
@@ -7271,26 +7283,32 @@ function mvpSaveRecording(blob) {
     String(now.getDate()).padStart(2,'0');
   var timeStr = String(now.getHours()).padStart(2,'0') + ':' +
     String(now.getMinutes()).padStart(2,'0');
+  var duration = mvpRecStartTime ? Math.round((Date.now() - mvpRecStartTime.getTime()) / 1000) : 0;
+  var recId = 'rec_' + Date.now();
 
-  // Blob URL 생성
-  var url = URL.createObjectURL(blob);
+  // ★ IndexedDB에 blob 저장 (용량 효율적)
+  mvpOpenIDB().then(function(db) {
+    var tx = db.transaction('blobs', 'readwrite');
+    tx.objectStore('blobs').put({ id: recId, blob: blob });
+    tx.oncomplete = function() {
+      console.log('[녹음] IndexedDB 저장 완료:', recId);
+    };
+  }).catch(function(e) {
+    console.error('[녹음] IndexedDB 저장 실패:', e);
+  });
 
-  // localStorage에 녹음 목록 저장
+  // localStorage에는 메타데이터만 저장
   var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
+  if(recordings.length >= 20) recordings.shift(); // 최대 20개
   recordings.push({
-    date: dateStr,
-    time: timeStr,
-    url: url,
-    size: blob.size,
-    duration: mvpRecStartTime ? Math.round((Date.now() - mvpRecStartTime.getTime()) / 1000) : 0,
-    id: 'rec_' + Date.now()
+    date:     dateStr,
+    time:     timeStr,
+    size:     blob.size,
+    duration: duration,
+    id:       recId
   });
   localStorage.setItem('mvp_recordings', JSON.stringify(recordings));
-
-  // Blob도 별도 저장 (IndexedDB 간이 버전 - sessionStorage 대안)
-  // 세션 유지를 위해 window 객체에 저장
-  if(!window._mvpRecBlobs) window._mvpRecBlobs = {};
-  window._mvpRecBlobs['rec_' + Date.now()] = url;
+  showToast('✅ 녹음 저장 완료 · 마이페이지에서 재생 가능');
 }
 
 // 마이페이지에서 녹음 목록 렌더링
@@ -7303,15 +7321,16 @@ function mvpRenderRecordings() {
     return;
   }
   container.innerHTML = recordings.map(function(r, i) {
-    var mins = Math.floor(r.duration / 60);
-    var secs = r.duration % 60;
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);">' +
-      '<div style="font-size:24px;">🎙️</div>' +
-      '<div style="flex:1;">' +
+    var mins = Math.floor((r.duration||0) / 60);
+    var secs = (r.duration||0) % 60;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);">' +
+      '<div style="font-size:22px;">🎙️</div>' +
+      '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:12px;font-weight:700;color:var(--navy);">상담 녹음 #' + (i+1) + '</div>' +
-        '<div style="font-size:9px;color:var(--muted);">📅 ' + r.date + ' ' + r.time + ' · ' + mins + '분 ' + secs + '초</div>' +
+        '<div style="font-size:9px;color:var(--muted);">📅 ' + (r.date||'') + ' ' + (r.time||'') + ' · ' + mins + '분 ' + secs + '초</div>' +
       '</div>' +
-      '<button onclick="mvpPlayRec(' + i + ')" style="padding:6px 12px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);">▶ 재생</button>' +
+      '<button onclick="mvpPlayRec(' + i + ')" style="padding:6px 10px;border-radius:8px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);white-space:nowrap;">▶ 재생</button>' +
+      '<button onclick="mvpDeleteRec(' + i + ')" style="padding:6px 8px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.1);color:#ef4444;font-size:10px;cursor:pointer;font-family:var(--fn);">🗑️</button>' +
     '</div>';
   }).join('');
 }
@@ -7320,13 +7339,46 @@ function mvpPlayRec(idx) {
   var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
   if(!recordings[idx]) return;
   var r = recordings[idx];
-  if(r.url) {
-    var audio = new Audio(r.url);
-    audio.play().catch(function(e) {
-      showToast('재생할 수 없습니다. 같은 세션에서만 재생 가능합니다.');
-    });
-    showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
-  }
+
+  // ★ IndexedDB에서 blob 꺼내서 재생
+  mvpOpenIDB().then(function(db) {
+    var tx = db.transaction('blobs', 'readonly');
+    var req = tx.objectStore('blobs').get(r.id);
+    req.onsuccess = function(e) {
+      var data = e.target.result;
+      if(!data || !data.blob) {
+        showToast('녹음 파일을 찾을 수 없습니다.');
+        return;
+      }
+      var url = URL.createObjectURL(data.blob);
+      var audio = new Audio(url);
+      audio.play().catch(function(err) {
+        showToast('재생 오류: ' + err.message);
+      });
+      audio.onended = function() { URL.revokeObjectURL(url); };
+      showToast('▶ 녹음 #' + (idx+1) + ' 재생 중...');
+    };
+    req.onerror = function() {
+      showToast('녹음 파일을 찾을 수 없습니다.');
+    };
+  }).catch(function() {
+    showToast('재생할 수 없습니다.');
+  });
+}
+
+function mvpDeleteRec(idx) {
+  var recordings = JSON.parse(localStorage.getItem('mvp_recordings') || '[]');
+  if(!recordings[idx]) return;
+  var recId = recordings[idx].id;
+  // IndexedDB에서 삭제
+  mvpOpenIDB().then(function(db) {
+    db.transaction('blobs', 'readwrite').objectStore('blobs').delete(recId);
+  });
+  // localStorage 메타데이터 삭제
+  recordings.splice(idx, 1);
+  localStorage.setItem('mvp_recordings', JSON.stringify(recordings));
+  mvpRenderRecordings();
+  showToast('🗑️ 녹음이 삭제되었습니다.');
 }
 
 /* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
@@ -9862,11 +9914,94 @@ function diagHandleFile(input) {
       showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
     });
   } else {
+    // ★ 보험/연금/세금/기타 서류 → OCR 분석
     const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
-    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
-    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
+    const statEl=document.getElementById(statMap[diagUpKey]||'');
+    if(statEl) statEl.textContent='🔄';
+    showToast('📎 ' + fname + ' 분석 중...');
+    diagOcrAnalyze(file, diagUpKey);
   }
   input.value='';
+}
+
+// ★ OCR 분석 함수 (Claude API)
+function diagOcrAnalyze(file, docType) {
+  var docLabels = {ins:'보험증권', sal:'급여명세서', pen:'연금명세서', tax:'세금신고서', etc:'기타서류'};
+  var label = docLabels[docType] || '서류';
+  var prompts = {
+    ins:  '보험증권을 분석해 주세요. 보험사명, 상품명, 보험기간, 월보험료, 사망보험금, 암진단금, 실손보험금을 항목별로 추출해 주세요.',
+    sal:  '급여명세서를 분석해 주세요. 기본급, 각종수당, 실수령액, 국민연금, 건강보험 납부액을 항목별로 추출해 주세요.',
+    pen:  '연금명세서를 분석해 주세요. 연금종류, 가입일, 월납입금, 적립금, 예상연금액을 항목별로 추출해 주세요.',
+    tax:  '세금신고서를 분석해 주세요. 종합소득, 세액공제항목, 납부세액, 환급세액을 항목별로 추출해 주세요.',
+    etc:  '이 서류의 주요 내용을 간결하게 요약해 주세요.'
+  };
+  var prompt = prompts[docType] || prompts.etc;
+
+  // 채팅창 안내
+  diagAddSTT('system', '[' + label + '] 분석 중입니다. 잠시만 기다려 주세요...', null);
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    var base64  = dataUrl.split(',')[1];
+    var mime    = file.type || 'image/jpeg';
+    var isImage = mime.indexOf('image') === 0;
+
+    var msgContent = isImage
+      ? [
+          {type:'image',  source:{type:'base64', media_type:mime, data:base64}},
+          {type:'text',   text: prompt}
+        ]
+      : [
+          {type:'document', source:{type:'base64', media_type:'application/pdf', data:base64}},
+          {type:'text',     text: prompt}
+        ];
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages:   [{role:'user', content:msgContent}]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var result = (data.content && data.content[0] && data.content[0].text) || '분석 결과를 불러오지 못했습니다.';
+
+      // 아이콘 완료 표시
+      var statMap2 = {ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
+      var el2 = document.getElementById(statMap2[docType]||'');
+      if(el2) el2.textContent = '✅';
+
+      // 채팅창에 분석 결과 표시
+      diagAddSTT('system', '[' + label + ' 분석 완료] ' + result, null);
+
+      // 결과 저장 (텍스트 상담 시 활용)
+      if(!window._ocrResults) window._ocrResults = {};
+      window._ocrResults[docType] = {label:label, result:result};
+
+      // Vapi 음성 상담 중이면 결과 주입
+      if(vapi && vapiCallActive && typeof vapiCallActive !== 'undefined') {
+        try {
+          vapi.send({
+            type:'add-message',
+            message:{
+              role:'user',
+              content:'[' + label + ' 분석 결과] ' + result + ' [이 내용을 참고하여 상담을 이어가 주세요]'
+            }
+          });
+        } catch(ve) { console.log('[OCR→Vapi]', ve.message); }
+      }
+      showToast('✅ ' + label + ' 분석 완료!');
+    })
+    .catch(function(err) {
+      diagAddSTT('system', '[' + label + '] 분석 오류가 발생했습니다. 다시 시도해 주세요.', null);
+      showToast('❌ OCR 분석 실패');
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 /* ── 상담 시작 ── */
