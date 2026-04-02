@@ -2438,9 +2438,10 @@ html{visibility:visible !important;}
   
   <script src="https://cpay.payple.kr/js/v1/payment.js" defer></script>
 
-  <!-- Firebase SDK (Google 로그인) -->
+  <!-- Firebase SDK (Google 로그인 + Firestore 구독 상태) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
 
@@ -5923,6 +5924,9 @@ function onPaypleResult(data){
     localStorage.setItem('fh_payer_name',  _payerName);
     localStorage.setItem('fh_payer_email', _payerEmail);
 
+    // ★ Firestore에 구독 상태 저장 (어느 기기에서나 자동 입장)
+    fhSaveSubscription(_payerEmail, currentPlan, credit, data.PCD_PAY_OID || '');
+
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
 
@@ -8530,12 +8534,27 @@ document.addEventListener('DOMContentLoaded', function() {
   var params = new URLSearchParams(window.location.search);
   var payResult = params.get('pay_result');
   if (payResult === 'success') {
-    var oid = params.get('oid') || '';
+    var oid   = params.get('oid')  || '';
+    var plan  = params.get('plan') || '';
+    var auth1 = params.get('auth') || '';
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
     localStorage.setItem('fh_sub_date', new Date().toISOString());
-    if (oid) localStorage.setItem('fh_sub_oid', oid);
+    if (oid)  localStorage.setItem('fh_sub_oid', oid);
+    // AUTH 방식(정기빌링) 플랜 저장
+    if (auth1 === '1' && plan) {
+      var planKeyMap = {'브론즈':'single','실버':'silver-month','골드':'gold-month','전문가':'expert-month'};
+      var planKey = planKeyMap[plan] || 'silver-month';
+      var creditMap2 = {'single':10,'silver-month':20,'gold-month':40,'expert-month':40};
+      localStorage.setItem('fh_plan', planKey);
+      localStorage.setItem('mvp_credit_min', String(creditMap2[planKey] || 20));
+      // ★ Firestore에도 저장
+      var _email = localStorage.getItem('fh_payer_email') || '';
+      if (_email && window._fhDb) {
+        fhSaveSubscription(_email, planKey, creditMap2[planKey] || 20, oid);
+      }
+    }
     mpIsSubscribed = true;
     mpSetMemberButton();
     // URL 파라미터 제거
@@ -8796,15 +8815,17 @@ function mpDoWithdraw() {
     }
     window._fhAuth     = firebase.auth();
     window._fhProvider = new firebase.auth.GoogleAuthProvider();
+    window._fhDb       = firebase.firestore(); // ★ Firestore 구독 상태 저장/조회
 
-    // 로그인 상태 감지
+    // 로그인 상태 감지 → Firestore에서 구독 상태 확인
     window._fhAuth.onAuthStateChanged(function(user) {
       window._fhCurrentUser = user || null;
       if (user) {
         window._fhPayerName  = user.displayName || '';
         window._fhPayerEmail = user.email || '';
-        // 구독 모달이 열려 있으면 UI 업데이트
         fhUpdateLoginUI(user);
+        // ★ 핵심: 구독 상태 확인 → 자동 입장
+        fhCheckSubscription(user);
       } else {
         window._fhPayerName  = '';
         window._fhPayerEmail = '';
@@ -8843,6 +8864,8 @@ function mpDoWithdraw() {
           window._fhPayerName  = user.displayName || '';
           window._fhPayerEmail = user.email || '';
           fhUpdateLoginUI(user);
+          // ★ 로그인 즉시 구독 상태 확인
+          fhCheckSubscription(user);
         })
         .catch(function(err) {
           console.error('[Google 로그인 오류]', err.code, err.message);
@@ -8852,6 +8875,83 @@ function mpDoWithdraw() {
             showToast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
           }
         });
+    }
+
+    // ★ Firestore에 구독 상태 저장 (결제 완료 시 호출)
+    async function fhSaveSubscription(email, plan, creditMin, orderId) {
+      if (!email || !window._fhDb) return;
+      try {
+        var emailKey = email.replace(/\./g, '_').replace(/@/g, '_at_');
+        var planLabels = {
+          'single':'브론즈','silver-month':'실버','silver-year':'실버',
+          'gold-month':'골드','gold-year':'골드','expert-month':'전문가','expert-year':'전문가'
+        };
+        // 만료일: 단일 30일, 월정기 31일, 연간 366일
+        var days = plan === 'single' ? 30 : plan.endsWith('-year') ? 366 : 31;
+        var expiry = new Date();
+        expiry.setDate(expiry.getDate() + days);
+
+        await window._fhDb.collection('subscriptions').doc(emailKey).set({
+          email:      email,
+          plan:       plan,
+          planLabel:  planLabels[plan] || plan,
+          creditMin:  creditMin,
+          orderId:    orderId,
+          createdAt:  new Date().toISOString(),
+          expiry:     expiry.toISOString(),
+          active:     true
+        });
+        console.log('[Firestore] 구독 저장 완료:', email, plan, '만료:', expiry.toLocaleDateString('ko-KR'));
+      } catch(e) {
+        console.error('[Firestore] 구독 저장 실패:', e.message);
+      }
+    }
+
+    // ★★★ 핵심 함수: Firestore에서 구독 상태 확인 → 자동 입장
+    async function fhCheckSubscription(user) {
+      if (!user || !user.email) return;
+      try {
+        showToast('🔍 구독 상태 확인 중...');
+        var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+        var doc = await window._fhDb.collection('subscriptions').doc(emailKey).get();
+
+        if (doc.exists) {
+          var subData = doc.data();
+          var expiry  = subData.expiry ? new Date(subData.expiry) : null;
+          var isValid = !expiry || expiry > new Date();
+
+          if (isValid && subData.plan) {
+            // ★ 구독 유효 → localStorage 복원 후 바로 입장
+            localStorage.setItem('fh_subscribed', '1');
+            localStorage.setItem('fh_member_v1', '1');
+            localStorage.setItem('fh_plan', subData.plan || 'single');
+            localStorage.setItem('mvp_credit_min', String(subData.creditMin || 10));
+            localStorage.setItem('fh_payer_name', user.displayName || '');
+            localStorage.setItem('fh_payer_email', user.email || '');
+            mpIsSubscribed = true;
+            mpSetMemberButton();
+            // 결제 모달 닫기
+            try { mpCloseSubscribe(); } catch(e) {}
+            try { document.getElementById('funnel-wrap').classList.add('fn-hidden'); } catch(e) {}
+            var planLabel = subData.planLabel || subData.plan || '구독';
+            showToast('✅ ' + (user.displayName || '고객') + '님, ' + planLabel + ' 구독 확인! 바로 시작합니다 🎉');
+            setTimeout(function() { mpOpen(); }, 600);
+            console.log('[구독확인] Firestore 구독 유효:', subData.plan, '만료:', expiry);
+            return;
+          }
+        }
+        // 구독 없음 → 결제 화면 유지
+        localStorage.removeItem('fh_subscribed');
+        console.log('[구독확인] Firestore 구독 없음 또는 만료');
+        showToast('');
+      } catch(e) {
+        console.error('[구독확인] Firestore 조회 오류:', e.message);
+        // Firestore 오류 시 localStorage 폴백
+        if (localStorage.getItem('fh_subscribed') === '1') {
+          mpIsSubscribed = true;
+          mpSetMemberButton();
+        }
+      }
     }
     // 별칭 (버튼에서 호출)
     function fhSignInGoogle() { fhGoogleLogin(); }
@@ -9777,11 +9877,102 @@ function diagHandleFile(input) {
       showToast('📋 신청서 업로드 완료 (수동 입력 모드)');
     });
   } else {
+    // ★ 보험/연금/세금/기타 서류 → Claude API OCR 분석
     const statMap={ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'};
-    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='✅';
-    showToast('📎 '+fname+' 업로드 완료! OCR 분석 중...');
+    const el=document.getElementById(statMap[diagUpKey]||''); if(el) el.textContent='🔄';
+    showToast('📎 ' + fname + ' OCR 분석 중...');
+    diagOcrAnalyze(file, diagUpKey);
   }
   input.value='';
+}
+
+// ★ Claude API OCR 분석 함수 (ARK-Genie 방식)
+async function diagOcrAnalyze(file, docType) {
+  var docLabels = {
+    ins: '보험증권', sal: '급여명세서',
+    pen: '연금명세서', tax: '세금신고서', etc: '기타서류'
+  };
+  var label = docLabels[docType] || '서류';
+
+  // 채팅창에 분석 시작 안내
+  diagAddSTT('system', '📎 ' + label + ' 분석 중입니다. 잠시만 기다려 주세요...', null);
+
+  try {
+    // 파일을 base64로 변환
+    var reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async function(e) {
+      var base64Data = e.target.result.split(',')[1];
+      var mediaType = file.type || 'image/jpeg';
+      var isImage = mediaType.startsWith('image/');
+
+      // Claude API 호출
+      var prompt = label + ' 서류를 분석해 주세요. ';
+      var typePrompts = {
+        ins: '보험증권에서 다음을 추출해 주세요: 보험사명, 상품명, 보험기간, 보험료, 사망보험금, 암진단금, 실손보험금, 기타 주요 보장내용.',
+        sal: '급여명세서에서 다음을 추출해 주세요: 기본급, 각종 수당, 공제항목, 실수령액, 국민연금/건강보험 납부액.',
+        pen: '연금명세서에서 다음을 추출해 주세요: 연금 종류, 가입일, 납입금액, 적립금, 예상 연금액.',
+        tax: '세금신고서에서 다음을 추출해 주세요: 종합소득, 세액공제 항목, 납부세액, 환급세액.',
+        etc: '이 서류의 주요 내용을 요약해 주세요.',
+      };
+      prompt = (typePrompts[docType] || typePrompts.etc) + ' 결과를 간결하게 항목별로 정리해 주세요.';
+
+      var body = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: isImage ? [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } },
+            { type: 'text', text: prompt }
+          ] : [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      };
+
+      var res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      var result = (data.content && data.content[0] && data.content[0].text) || 'OCR 분석 결과를 불러오지 못했습니다.';
+
+      // 아이콘 완료 표시
+      var el = document.getElementById(({ins:'diagStatIns',sal:'diagStatSal',pen:'diagStatPen',tax:'diagStatTax',etc:'diagStatEtc'})[docType]||'');
+      if(el) el.textContent = '✅';
+
+      // 채팅창에 분석 결과 표시
+      diagAddSTT('system', '📋 [' + label + ' 분석 완료]
+' + result, null);
+
+      // Vapi에 서류 내용 주입 (머니야가 읽고 상담 진행)
+      if(vapi && vapiCallActive) {
+        try {
+          vapi.send({
+            type: 'add-message',
+            message: {
+              role: 'user',
+              content: '[' + label + ' 분석 결과가 도착했습니다. 이 내용을 바탕으로 상담을 이어가 주세요]
+' + result
+            }
+          });
+        } catch(e) { console.log('[OCR→Vapi] 전송 오류:', e.message); }
+      }
+
+      // window에도 저장 (텍스트 상담 시 활용)
+      if(!window._ocrResults) window._ocrResults = [];
+      window._ocrResults.push({ type: docType, label: label, result: result });
+
+      showToast('✅ ' + label + ' 분석 완료!');
+    };
+  } catch(err) {
+    console.error('[OCR] 분석 오류:', err);
+    diagAddSTT('system', '❌ 서류 분석 중 오류가 발생했습니다. 다시 시도해 주세요.', null);
+    showToast('❌ OCR 분석 실패');
+  }
 }
 
 /* ── 상담 시작 ── */
