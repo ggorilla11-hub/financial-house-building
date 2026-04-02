@@ -10093,9 +10093,11 @@ function diagOcrAnalyze(file, docType) {
   ocrOverlay.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);">' +
       '<div style="font-size:10px;font-weight:700;color:#E8B84B;">📋 ' + label + ' 분석 중...</div>' +
-      '<button onclick="document.getElementById('ocrResultOverlay').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;">✕</button>' +
+      '<button id="ocrCloseBtn" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;">✕</button>' +
     '</div>' +
     '<div id="ocrResultBody" style="padding:10px 12px;font-size:9px;color:rgba(255,255,255,.6);">🔍 Claude가 서류를 분석하고 있습니다...</div>';
+  var closeBtn = document.getElementById('ocrCloseBtn');
+  if(closeBtn) closeBtn.onclick = function() { ocrOverlay.style.display = 'none'; };
 
   // diagStt에도 로딩 버블 추가 (상담 중이면)
   var sttArea = document.getElementById('diagStt');
