@@ -6858,7 +6858,6 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  // ★ main용: 결제 모달로 진입
   mpOpenSubscribe();
 }
 
@@ -6991,8 +6990,16 @@ function mvpUpdateGuideUI() {
   };
   var info = creditMap[plan] || { min: 10, label: '브론즈', desc: '브론즈 10분 · 핵심 재무진단' };
 
-  // 잔여 크레딧
-  var remainCredit = parseInt(localStorage.getItem('mvp_credit_min') || String(info.min));
+  // 잔여 크레딧 — 플랜 최대값 초과 시 최대값으로 보정
+  var storedCredit = parseInt(localStorage.getItem('mvp_credit_min') || '-1');
+  var remainCredit;
+  if(storedCredit < 0 || storedCredit > info.min) {
+    // localStorage 미설정이거나 플랜 최대값 초과 → 최대값으로 세팅
+    remainCredit = info.min;
+    localStorage.setItem('mvp_credit_min', String(remainCredit));
+  } else {
+    remainCredit = storedCredit;
+  }
 
   // ① 상담시간 표시 (플랜명 + 분 수)
   var timeEl = document.getElementById('mvpPlanTimeDisplay');
@@ -7305,7 +7312,8 @@ function mvpPlayRec(idx) {
 
 /* ━━━ MVP: 음성 시간 종료 → 텍스트 전용 모드 전환 ━━━ */
 var mvpTextOnlyMode = false;
-var _vapiUserEnded = false; // 사용자가 직접 종료버튼 눌렀을 때 true
+var _vapiUserEnded = false;    // 사용자가 직접 종료버튼 눌렀을 때 true
+var _ignoreVapiOutput = false; // 에러 발생 시 Vapi 자막 출력 차단 플래그
 var _textConsultHistory = []; // 텍스트 전환 후 대화 맥락 보관
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -7319,6 +7327,10 @@ function handleVoiceError(err) {
   if(mvpTextOnlyMode) return; // 이미 텍스트 모드면 스킵
   var banner = document.getElementById('voiceErrorBanner');
   if(banner && banner.style.display === 'flex') return; // 배너 이미 표시 중
+
+  // ★ Vapi 자막 출력 즉시 차단 (음성코드 불가침 — 플래그만)
+  _ignoreVapiOutput = true;
+  console.log('[에러대응] Vapi 자막 차단 플래그 ON');
 
   // 크레딧 타이머 즉시 중지 (음성 크레딧 보호)
   if(diagInt) {
@@ -7337,7 +7349,11 @@ function handleVoiceError(err) {
   diagAddSTT('system', '⚠️ 음성 연결이 일시 중단되었습니다. 크레딧은 중지되었으니 안심하세요.', null);
 
   // 배너 표시
-  if(banner) { banner.style.display = 'flex'; }
+  if(banner) {
+    banner.style.display = 'flex';
+    banner.style.alignItems = 'center';
+    banner.style.justifyContent = 'center';
+  }
   console.log('[에러대응] 배너 표시 완료 — 크레딧 보호됨');
 }
 
@@ -7452,7 +7468,7 @@ async function sendTextConsultMessage(txt) {
 // ── 5. 텍스트 모드 전환 (UI 전체 전환) ─────────────────
 function switchToTextMode() {
   var banner = document.getElementById('voiceErrorBanner');
-  if(banner) banner.style.display = 'none';
+  if(banner) { banner.style.display = 'none'; }
 
   mvpTextOnlyMode = true;
 
@@ -9844,6 +9860,11 @@ const diagFinCtx = {
 /* [DEV-001] Vapi.ai 음성 연결 */
 var _vapiConnecting = false;
 async function diagConnectVoice(isPaid) {
+  // ★ 정상 상담 시작 시 에러 플래그 초기화 (이전 에러 상태 리셋)
+  _ignoreVapiOutput = false;
+  _vapiUserEnded    = false;
+  console.log('[음성연결] 에러 플래그 초기화 — 정상 상담 시작');
+
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
 
@@ -9918,6 +9939,12 @@ async function diagConnectVoice(isPaid) {
         var displayText = msg.transcript;
         if(!displayText || !displayText.trim()) return;
 
+        // ★ 에러 발생 후 출력 차단 (음성코드 불가침 — 출력 분기만 추가)
+        if(_ignoreVapiOutput) {
+          console.log('[자막차단] 에러 플래그 활성 — 자막 무시:', displayText.slice(0,20));
+          return;
+        }
+
         /* STT 영역에 표시 */
         diagAddSTT(role, displayText, null);
 
@@ -9955,9 +9982,11 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      // ★ 에러대응: 정상종료(사용자가 직접 종료)가 아닌 경우 배너 표시
+      // ★ 에러대응: 정상종료(사용자가 직접 종료)가 아닌 경우 즉시 배너 표시
       if(!_vapiUserEnded && !mvpTextOnlyMode) {
-        handleVoiceError(null); // 비정상 종료 → 텍스트 전환 안내
+        console.log('[에러대응] 비정상 call-end 감지 → 배너 즉시 표시');
+        // 즉시 배너 표시 (지연 없이)
+        handleVoiceError({ type: 'call-end', message: 'Meeting ended unexpectedly' });
       } else {
         showToast('📞 상담이 종료됐습니다');
       }
@@ -9969,6 +9998,15 @@ async function diagConnectVoice(isPaid) {
     /* ── 오류 ── */
     vapi.on('error', function(e) {
       console.error('[Vapi 오류]', e);
+      // daily-error (Meeting ejection 포함) 즉시 처리
+      var errType = (e && e.type) || '';
+      var errMsg  = (e && e.error && e.error.msg) || (e && e.message) || '';
+      console.log('[에러대응] 타입:', errType, '메시지:', errMsg);
+      // ejection 에러: Vapi 재시작 방지
+      if(errType === 'daily-error' || errMsg.indexOf('ejection') >= 0 || errMsg.indexOf('ended') >= 0) {
+        vapiCallActive = false;
+        _vapiConnecting = false;
+      }
       handleVoiceError(e); // ★ 에러대응: 텍스트 전환 배너 표시
     });
 
