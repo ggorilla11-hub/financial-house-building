@@ -2466,7 +2466,7 @@ html{visibility:visible !important;}
 <!-- ═══════════════════════════════════════
      S0: 랜딩
 ═══════════════════════════════════════ -->
-<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
+<div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow-y:auto;overflow-x:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
 
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
@@ -2501,11 +2501,11 @@ html{visibility:visible !important;}
     </div>
   </div>
 
-  <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
+  <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;width:90%;max-width:320px;margin-top:8px;">
     내 재무건강점수 확인 →
   </button>
 
-  <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
+  <button onclick="fnSkipToSim()" style="margin-top:10px;margin-bottom:24px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
     이미 알고 있어요, 시뮬레이터 바로 시작 →
   </button>
 
@@ -8878,7 +8878,7 @@ function mpDoWithdraw() {
     }
 
     // ★ Firestore에 구독 상태 저장 (결제 완료 시 호출)
-    async function fhSaveSubscription(email, plan, creditMin, orderId) {
+    window.fhSaveSubscription = async function fhSaveSubscription(email, plan, creditMin, orderId) {
       if (!email || !window._fhDb) return;
       try {
         var emailKey = email.replace(/\./g, '_').replace(/@/g, '_at_');
@@ -8908,7 +8908,7 @@ function mpDoWithdraw() {
     }
 
     // ★★★ 핵심 함수: Firestore에서 구독 상태 확인 → 자동 입장
-    async function fhCheckSubscription(user) {
+    window.fhCheckSubscription = async function fhCheckSubscription(user) {
       if (!user || !user.email) return;
       try {
         showToast('🔍 구독 상태 확인 중...');
@@ -8954,6 +8954,7 @@ function mpDoWithdraw() {
       }
     }
     // 별칭 (버튼에서 호출)
+    window.fhSignInGoogle = function() { fhGoogleLogin(); };
     function fhSignInGoogle() { fhGoogleLogin(); }
 
     // Google 로그아웃
@@ -8966,6 +8967,7 @@ function mpDoWithdraw() {
       });
     }
     // 별칭 (버튼에서 호출)
+    window.fhSignOut = function() { fhGoogleLogout(); };
     function fhSignOut() { fhGoogleLogout(); }
 
 
