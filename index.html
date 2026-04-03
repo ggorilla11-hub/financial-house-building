@@ -6883,7 +6883,7 @@ function mvpStartCheckup() {
     if(funnelWrap) funnelWrap.classList.add('fn-hidden');
     mpOpen(); return;
   }
-  mpOpenSubscribe(); return;
+  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
   var trialStart = localStorage.getItem('fh_trial_start');
   if(!trialStart) {
     localStorage.setItem('fh_trial_start', new Date().toISOString());
