@@ -7436,21 +7436,17 @@ function collectConversationHistory() {
   var bubbles = chatLog.querySelectorAll('[data-role]');
   bubbles.forEach(function(b) {
     var role = b.getAttribute('data-role');
-    var textEl = b.querySelector('.dn-bubble-text') || b.querySelector('div');
-    var text = textEl ? textEl.textContent.trim() : '';
-    if(text && role && role !== 'system') {
+    if(role === 'system') return;
+    // data-text 속성 우선 사용 (가장 정확)
+    var text = b.getAttribute('data-text') || '';
+    if(!text) {
+      var textEl = b.querySelector('.dn-bubble-text') || b.querySelector('div');
+      text = textEl ? textEl.textContent.trim() : '';
+    }
+    if(text && role) {
       history.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
     }
   });
-
-  // data-role 없을 때 폴백: 스타일로 구분
-  if(history.length === 0) {
-    chatLog.querySelectorAll('.dn-bubble').forEach(function(b) {
-      var isUser = b.classList.contains('dn-bubble-user');
-      var text = b.textContent.trim();
-      if(text) history.push({ role: isUser ? 'user' : 'assistant', content: text });
-    });
-  }
 
   console.log('[맥락수집] 대화 ' + history.length + '개 수집 완료');
   return history;
@@ -7470,7 +7466,11 @@ async function startTextConsultWithHistory(history) {
   }
 
   // 전환 안내 메시지
-  diagAddSTT('ai', '음성 연결이 전환되었습니다. 걱정 마세요, 지금까지 말씀하신 내용은 모두 기억하고 있습니다. 텍스트로 이어서 진행하겠습니다.', null);
+  if(history.length > 0) {
+    diagAddSTT('ai', '텍스트 상담으로 전환되었습니다. 지금까지 나눈 ' + history.length + '개 대화를 모두 기억하고 있으니 이어서 진행하겠습니다.', null);
+  } else {
+    diagAddSTT('ai', '텍스트 상담으로 전환되었습니다. 텍스트로 질문해 주세요.', null);
+  }
 
   // 마지막 질문 다시 표시
   if(lastAiMessage) {
@@ -7503,7 +7503,7 @@ async function sendTextConsultMessage(txt) {
         message: txt,
         userName: userName,
         financialContext: financialContext,
-        conversationHistory: _textConsultHistory.slice(-10) // 최근 10개만
+        conversationHistory: _textConsultHistory // 전체 맥락 전달
       })
     });
 
@@ -7536,7 +7536,7 @@ async function sendTextConsultMessage(txt) {
 }
 
 // ── 5. 텍스트 모드 전환 (UI 전체 전환) ─────────────────
-function switchToTextMode() {
+function switchToTextMode(existingHistory) {
   var banner = document.getElementById('voiceErrorBanner');
   if(banner) { banner.style.display = 'none'; }
 
@@ -7572,11 +7572,78 @@ function switchToTextMode() {
     inp.focus();
   }
 
-  // 대화 내역 수집 → 맥락 이어서 시작
-  var history = collectConversationHistory();
+  // 맥락 이어서 시작 (이미 수집된 맥락 사용)
+  var history = existingHistory || collectConversationHistory();
   startTextConsultWithHistory(history);
 
-  showToast('💬 텍스트 상담으로 전환되었습니다');
+  // ★ 텍스트전환 버튼 → 음성복귀 버튼으로 변경
+  var switchBtn = document.getElementById('diagTextSwitchBtn');
+  if(switchBtn) {
+    switchBtn.textContent = '🎤 음성복귀';
+    switchBtn.style.background = 'rgba(34,197,94,.15)';
+    switchBtn.style.color = '#86efac';
+    switchBtn.style.border = '1px solid rgba(34,197,94,.3)';
+    switchBtn.onclick = function() { manualReturnToVoice(); };
+  }
+  showToast('💬 텍스트 상담으로 전환되었습니다. 텍스트로 입력해 주세요.');
+}
+
+// ★ 수동 음성복귀 함수
+function manualReturnToVoice() {
+  if(!mvpTextOnlyMode) { showToast('이미 음성 상담 중입니다'); return; }
+  mvpTextOnlyMode = false;
+
+  // Vapi 뮤트 해제
+  if(vapi && vapiCallActive) {
+    try { vapi.setMuted(false); } catch(e) {}
+    try {
+      vapi.send({
+        type: 'add-message',
+        message: { role: 'system', content: '고객이 음성 모드로 복귀했습니다. 대화를 이어가 주세요.' }
+      });
+    } catch(e) {}
+  }
+
+  // UI 복원
+  var wave = document.getElementById('diagWave');
+  if(wave) wave.style.display = '';
+  document.querySelectorAll('.c-mini-btn').forEach(function(btn) {
+    btn.style.display = '';
+  });
+  var liveTxt = document.querySelector('.c-live-txt');
+  if(liveTxt) liveTxt.textContent = 'LIVE 진단 중';
+  var liveDot = document.querySelector('.c-live-dot');
+  if(liveDot) liveDot.style.background = '';
+
+  // 버튼 원상복구
+  var switchBtn = document.getElementById('diagTextSwitchBtn');
+  if(switchBtn) {
+    switchBtn.textContent = '💬 텍스트전환';
+    switchBtn.style.background = 'rgba(59,130,246,.15)';
+    switchBtn.style.color = '#93c5fd';
+    switchBtn.style.border = '1px solid rgba(59,130,246,.3)';
+    switchBtn.onclick = function() { manualSwitchToText(); };
+  }
+  // ★ 타이머 재시작 (음성 복귀 - 크레딧 차감 재개)
+  if(!diagInt) {
+    var _planR    = localStorage.getItem('fh_plan') || 'single';
+    var _credMapR = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+    var _creditSecR = (_credMapR[_planR] || 20) * 60;
+    var _warnSecR   = _creditSecR - 60;
+    diagInt = setInterval(function() {
+      if(diagPaused) return;
+      diagSec++;
+      var mm = String(Math.floor(diagSec/60)).padStart(2,'0');
+      var ss = String(diagSec%60).padStart(2,'0');
+      var el = document.getElementById('diagTimer');
+      if(el) el.textContent = mm + ':' + ss;
+      if(diagSec === _warnSecR) showToast('⚠️ 1분 후 텍스트 상담으로 자동 전환됩니다');
+      if(diagSec >= _creditSecR) { mvpVoiceTimeUp(); }
+    }, 1000);
+  }
+  // 1페이지 이용권현황 갱신
+  if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+  showToast('🎤 음성 상담으로 복귀했습니다.');
 }
 
 // ── 6. 음성 다시 시도 ────────────────────────────────────
@@ -7593,14 +7660,24 @@ function retryVoice() {
 // ── 7. 수동 텍스트 전환 (하단 버튼) ─────────────────────
 function manualSwitchToText() {
   if(mvpTextOnlyMode) { showToast('이미 텍스트 상담 중입니다'); return; }
-  // 크레딧 사용한 만큼만 차감
+
+  // ★ 타이머 정지 (텍스트는 무료 - 크레딧 차감 중지)
   if(diagInt) { clearInterval(diagInt); diagInt = null; }
-  var usedMin = Math.ceil((diagSec || 0) / 60);
-  var _planName  = localStorage.getItem('fh_plan') || 'single';
-  var _creditMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
-  var totalCredit = _creditMap[_planName] || 20;
-  localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
-  switchToTextMode();
+  // ★ 대화 맥락 먼저 수집 (Vapi 종료 전에)
+  var _history = collectConversationHistory();
+  console.log('[텍스트전환] 맥락 ' + _history.length + '개 수집');
+
+  // ★ Vapi 완전 종료 (비용 절감)
+  _vapiUserEnded = true; // 에러배너 방지
+  if(vapi) {
+    try { vapi.stop(); } catch(e) { console.log('[텍스트전환] vapi.stop:', e.message); }
+    try { vapi.removeAllListeners(); } catch(e) {}
+    vapi = null;
+    vapiCallActive = false;
+  }
+
+  // 텍스트 모드 전환 (수집된 맥락 전달)
+  switchToTextMode(_history);
 }
 
 function mvpVoiceTimeUp() {
@@ -9942,9 +10019,12 @@ function diagStartConsult() {
 
   diagBuildNotes();
 
-  /* ── 기존 타이머 정리 (중복 실행 방지) ── */
+  /* ── 기존 타이머 정리 + 상태 완전 리셋 ── */
   if(diagInt) { clearInterval(diagInt); diagInt = null; }
-  diagSec=0;
+  diagSec = 0;
+  diagPaused = false;  // ★ 재시작 시 일시정지 해제
+  mvpTextOnlyMode = false;  // ★ 텍스트모드 해제
+  _vapiUserEnded = false;
 
   // 플랜별 크레딧 분 가져오기
   var _timerPlan    = localStorage.getItem('fh_plan') || 'single';
@@ -10082,11 +10162,14 @@ async function diagConnectVoice(isPaid) {
           var isUser = (role === 'user');
           var bubble = document.createElement('div');
           bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+          // ★ data-role 추가 - 텍스트전환 시 맥락 수집용
+          bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
+          bubble.setAttribute('data-text', displayText);
           bubble.innerHTML =
             '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
               (isUser ? '👤 고객' : '🤖 머니야') +
             '</div>' +
-            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
+            '<div class="dn-bubble-text" style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
               (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
               displayText.replace(/</g, '&lt;') +
             '</div>';
@@ -11159,6 +11242,8 @@ function diagEndConsult() {
   localStorage.setItem('mvp_credit_min', String(remaining));
   localStorage.setItem('mvp_last_session_min', String(usedMin));
   console.log('[크레딧] 사용: ' + usedMin + '분, 잔여: ' + remaining + '분');
+  // ★ 1페이지 이용권현황 즉시 갱신
+  if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
 
   /* [DEV-001] Vapi 통화 강제 종료 */
   if(vapi) {
@@ -11212,6 +11297,9 @@ function diagEndConsult() {
     list.insertBefore(div, list.firstChild);
   }
   showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
+  // ★ diagScreenB 숨김 - 재시작 시 diagStartConsult 정상 호출 보장
+  // (리포트는 dnp10 탭에 표시되어 있으므로 노트컨테이너는 유지)
+
 
   /* ★ 종료 안내 배너 — 리포트 탭 상단에 삽입 */
   var usedMinDisplay = Math.floor(diagSec / 60);
