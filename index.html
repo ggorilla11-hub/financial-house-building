@@ -7480,6 +7480,29 @@ async function startTextConsultWithHistory(history) {
   }
 }
 
+// ★ 대화록(dn_chat_log)에 버블 추가 헬퍼
+function addToChatLog(role, text) {
+  var chatLog = document.getElementById('dn_chat_log');
+  if(!chatLog || !text) return;
+  var isUser = (role === 'user');
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+  bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
+  bubble.setAttribute('data-text', text);
+  bubble.innerHTML =
+    '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
+      (isUser ? '👤 고객' : '🤖 머니야') +
+    '</div>' +
+    '<div class="dn-bubble-text" style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
+      (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
+      text.replace(/</g, '&lt;') +
+    '</div>';
+  chatLog.appendChild(bubble);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
+  if(placeholder) placeholder.remove();
+}
+
 // ── 4. 텍스트 메시지 전송 → Render /api/consult-chat ──
 async function sendTextConsultMessage(txt) {
   // 로딩 표시
@@ -7518,6 +7541,9 @@ async function sendTextConsultMessage(txt) {
 
     if(data.success && data.message) {
       diagAddSTT('ai', data.message, null);
+      // ★ 대화록에도 기록 (음성이든 텍스트이든 항상)
+      addToChatLog('user', txt);
+      addToChatLog('ai', data.message);
       // 대화 맥락에 추가
       _textConsultHistory.push({ role: 'user', content: txt });
       _textConsultHistory.push({ role: 'assistant', content: data.message });
@@ -7593,11 +7619,14 @@ function manualReturnToVoice() {
   if(!mvpTextOnlyMode) { showToast('이미 음성 상담 중입니다'); return; }
   mvpTextOnlyMode = false;
 
-  // ★ Vapi 재연결 (텍스트전환 시 완전 종료했으므로 재연결 필요)
+  // ★ Vapi 재연결 - 대화록 맥락 수집 후 전달
+  var _resumeHistory = collectConversationHistory();
+  console.log('[음성복귀] 맥락 ' + _resumeHistory.length + '개 전달');
   showToast('🎤 음성 재연결 중입니다. 잠시만 기다려 주세요...');
-  diagAddSTT('ai', '음성 연결 중입니다. 잠시만 기다려 주세요...', null);
+  diagAddSTT('ai', '음성 연결 중입니다. 지금까지 나눈 대화를 기억하고 이어서 진행하겠습니다.', null);
+  addToChatLog('ai', '음성 연결 중입니다. 지금까지 나눈 대화를 기억하고 이어서 진행하겠습니다.');
   if(typeof diagConnectVoice === 'function') {
-    diagConnectVoice();
+    diagConnectVoice(_resumeHistory);
   }
 
   // UI 복원
@@ -10074,7 +10103,7 @@ const diagFinCtx = {
 
 /* [DEV-001] Vapi.ai 음성 연결 */
 var _vapiConnecting = false;
-async function diagConnectVoice(isPaid) {
+async function diagConnectVoice(isPaid, resumeHistory) {
   /* isPaid 인자 없으면 기본 유료 */
   if(isPaid === undefined) isPaid = true;
 
@@ -10220,11 +10249,19 @@ async function diagConnectVoice(isPaid) {
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
     // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
-    await vapi.start(assistantId, {
+    // ★ 음성복귀 시 이전 대화 맥락 주입
+    var _startOpts = {
       variableValues: {
         planInfo: planInject,
       }
-    });
+    };
+    if(resumeHistory && resumeHistory.length > 0) {
+      _startOpts.messages = resumeHistory.map(function(m) {
+        return { role: m.role, content: m.content };
+      });
+      console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 주입');
+    }
+    await vapi.start(assistantId, _startOpts);
     _vapiConnecting = false;
 
   } catch(e) {
