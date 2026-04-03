@@ -10274,9 +10274,18 @@ async function diagConnectVoice(isPaid, resumeHistory) {
     console.log('[DEBUG] start call');
     // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
     // ★ 음성복귀 시 이전 대화 맥락 주입
+    // ★ 음성복귀 시 이전 대화록을 resumeContext로 주입
+    var _resumeCtx = '';
+    if(resumeHistory && resumeHistory.length > 0) {
+      _resumeCtx = resumeHistory.map(function(m) {
+        return (m.role === 'assistant' ? '머니야: ' : '고객: ') + m.content;
+      }).join('\n');
+      console.log('[Vapi] resumeContext ' + resumeHistory.length + '개 주입');
+    }
     var _startOpts = {
       variableValues: {
         planInfo: planInject,
+        resumeContext: _resumeCtx
       }
     };
     await vapi.start(assistantId, _startOpts);
