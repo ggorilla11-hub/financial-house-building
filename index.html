@@ -2441,6 +2441,7 @@ html{visibility:visible !important;}
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
 
@@ -5925,6 +5926,19 @@ function onPaypleResult(data){
 
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
+    if(window._fhDb && _payerEmail) {
+      var _docId = _payerEmail.replace(/\./g, '_').replace(/@/g, '_at_');
+      var _exp = new Date(); _exp.setMonth(_exp.getMonth()+1);
+      window._fhDb.collection('subscribers').doc(_docId).set({
+        email:_payerEmail, name:_payerName, plan:currentPlan,
+        creditMin:credit, active:true, expiry:_exp.toISOString(),
+        paidAt:new Date().toISOString(), orderId:data.PCD_PAY_OID||''
+      }).catch(function(e){ console.log('[Firestore]', e.message); });
+    }
+    mpIsSubscribed = true;
+    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+    if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+    mpSetMemberButton();
 
     if(_payerEmail) {
       fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
@@ -6858,7 +6872,48 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  mpOpenSubscribe();
+  var isSubscribed = mpIsSubscribed
+    || localStorage.getItem('fh_member_v1') === '1'
+    || localStorage.getItem('fh_subscribed') === '1';
+  if(isSubscribed) {
+    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+    var simWrap = document.getElementById('sim-wrap');
+    if(simWrap) simWrap.style.display = 'none';
+    var funnelWrap = document.getElementById('funnel-wrap');
+    if(funnelWrap) funnelWrap.classList.add('fn-hidden');
+    mpOpen(); return;
+  }
+  mpOpenSubscribe(); return;
+  var trialStart = localStorage.getItem('fh_trial_start');
+  if(!trialStart) {
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    trialStart = new Date().toISOString();
+  }
+  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
+  if(daysPassed > 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  localStorage.setItem('fh_plan', 'silver-month');
+  localStorage.setItem('mvp_credit_min', '20');
+  mpIsSubscribed = true;
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
@@ -6977,6 +7032,10 @@ function mvpSendMakeWebhook(name, phone, email) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 진단안내 페이지 플랜별 UI 업데이트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function mpUpdatePlanDisplay() {
+  if(typeof mpRefreshData === 'function') mpRefreshData();
+}
+
 function mvpUpdateGuideUI() {
   var plan     = localStorage.getItem('fh_plan') || 'single';
   var creditMap = {
@@ -7060,6 +7119,22 @@ function mvpUpdateGuideUI() {
     isResume:    isResume,
     sessionNo:   parseInt(localStorage.getItem('fh_session_no') || '1'),
   };
+}
+
+function mvpCheckAndGoToDiag(btn) {
+  var privacyChk = document.getElementById("mvp-privacy-guide");
+  if(privacyChk && !privacyChk.checked) {
+    showToast("❗ 개인정보 수집 동의에 체크해 주세요.");
+    var privSection = privacyChk.closest(".mpc");
+    if(privSection) {
+      privSection.scrollIntoView({behavior:"smooth", block:"center"});
+      privSection.style.outline = "2px solid #C9972A";
+      setTimeout(function(){ privSection.style.outline = ""; }, 1500);
+    }
+    return;
+  }
+  // 동의 완료 → AI진단 탭으로 이동
+  mpTab(2, btn);
 }
 
 function mvpGoToDiag() {
@@ -7634,11 +7709,36 @@ function mpRefreshData() {
   const wbScore = document.getElementById('mp-wb-score');
   if(wbScore) wbScore.textContent = score > 0 ? score + '점' : '—';
 
-  // 프로필
-  const av = document.getElementById('mp-profile-av');
-  if(av) av.textContent = name ? name[0] : '?';
-  const pName = document.getElementById('mp-profile-name');
-  if(pName) pName.textContent = name;
+  // 프로필 (구글 로그인 정보 반영)
+  var _uName  = window._fhPayerName  || localStorage.getItem('fh_payer_name')  || name || '회원';
+  var _uEmail = window._fhPayerEmail || localStorage.getItem('fh_payer_email') || '';
+  var _uPhoto = (window._fhCurrentUser && window._fhCurrentUser.photoURL) || '';
+  var av = document.getElementById('mp-profile-av');
+  if(av) {
+    if(_uPhoto) {
+      var img = document.createElement('img');
+      img.src = _uPhoto;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      img.onerror = function() { av.textContent = _uName ? _uName[0] : '?'; };
+      av.innerHTML = ''; av.appendChild(img);
+    } else { av.textContent = _uName ? _uName[0] : '?'; }
+  }
+  var pName = document.getElementById('mp-profile-name');
+  if(pName) pName.textContent = _uName;
+  var pEmail = document.getElementById('mp-profile-email');
+  if(pEmail) pEmail.textContent = _uEmail || '';
+  var _amtMap = {'single':'₩9,900','silver-month':'₩9,900','silver-year':'₩99,000',
+    'gold-month':'₩19,900','gold-year':'₩199,000','expert-month':'₩29,900','expert-year':'₩299,000'};
+  var _descMap = {'single':'AI진단상담 10분','silver-month':'AI진단상담 월20분',
+    'silver-year':'AI진단상담 월20분(연)','gold-month':'AI진단상담 월40분',
+    'gold-year':'AI진단상담 월40분(연)','expert-month':'AI진단상담 월40분',
+    'expert-year':'AI진단상담 월40분(연)'};
+  var _nlEl = document.getElementById('mp-plan-now-label');
+  var _ndEl = document.getElementById('mp-plan-now-desc');
+  var _npEl = document.getElementById('mp-plan-now-price');
+  if(_nlEl) _nlEl.textContent = _planLabel + ' (현재)';
+  if(_ndEl) _ndEl.textContent = _descMap[_planKey] || 'AI진단상담';
+  if(_npEl) _npEl.textContent = _amtMap[_planKey] || '₩9,900';
 
   // KPI
   const netAsset = (D.safeAsset||0)+(D.riskAsset||0)+((D.reHome||0)+(D.reInv||0))*10000
@@ -8149,6 +8249,11 @@ function mpTab(idx, btn) {
       if(sa && sb && sb.style.display !== 'flex') {
         if(sa) sa.style.display='none';
         if(sb) { sb.style.display='flex'; sb.style.flexDirection='column'; sb.style.height='100%'; sb.style.overflow='hidden'; }
+      }
+      // ★ 항상 상담노트 탭 보장 (빈 페이지 방지)
+      var nc = document.getElementById('diagNoteContainer');
+      if(nc && !nc.innerHTML.trim() && typeof diagBuildNotes === 'function') {
+        diagBuildNotes();
       }
     }, 300);
   } else {
@@ -8788,6 +8893,7 @@ function mpDoWithdraw() {
     }
     window._fhAuth     = firebase.auth();
     window._fhProvider = new firebase.auth.GoogleAuthProvider();
+    try { window._fhDb = firebase.firestore(); } catch(e) { console.log('[Firestore]', e.message); }
 
     // 로그인 상태 감지
     window._fhAuth.onAuthStateChanged(function(user) {
@@ -8797,6 +8903,7 @@ function mpDoWithdraw() {
         window._fhPayerEmail = user.email || '';
         // 구독 모달이 열려 있으면 UI 업데이트
         fhUpdateLoginUI(user);
+        if(typeof fhCheckAndAutoEnter === 'function') fhCheckAndAutoEnter(user);
       } else {
         window._fhPayerName  = '';
         window._fhPayerEmail = '';
@@ -8834,7 +8941,9 @@ function mpDoWithdraw() {
           var user = result.user;
           window._fhPayerName  = user.displayName || '';
           window._fhPayerEmail = user.email || '';
+          window._fhCurrentUser = user;
           fhUpdateLoginUI(user);
+          if(typeof fhCheckAndAutoEnter === 'function') fhCheckAndAutoEnter(user);
         })
         .catch(function(err) {
           console.error('[Google 로그인 오류]', err.code, err.message);
@@ -8847,6 +8956,41 @@ function mpDoWithdraw() {
     }
     // 별칭 (버튼에서 호출)
     function fhSignInGoogle() { fhGoogleLogin(); }
+
+    // ★ 로그인 후 구독확인 + 자동입장
+    function fhCheckAndAutoEnter(user) {
+      if(!user || !user.email) return;
+      var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+      if(localSub) {
+        mpIsSubscribed = true;
+        mpSetMemberButton();
+        if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+        if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+        showToast('✅ ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!');
+        return;
+      }
+      if(window._fhDb) {
+        var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+        window._fhDb.collection('subscribers').doc(docId).get()
+          .then(function(doc) {
+            if(doc.exists) {
+              var d = doc.data();
+              var isActive = d.active && (!d.expiry || new Date(d.expiry) > new Date());
+              if(isActive) {
+                localStorage.setItem('fh_member_v1', '1');
+                localStorage.setItem('fh_subscribed', '1');
+                localStorage.setItem('fh_plan', d.plan || 'silver-month');
+                localStorage.setItem('mvp_credit_min', String(d.creditMin || 20));
+                mpIsSubscribed = true;
+                mpSetMemberButton();
+                if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+                if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+                showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
+              }
+            }
+          }).catch(function(e) { console.log('[Firestore]', e.message); });
+      }
+    }
 
     // Google 로그아웃
     function fhGoogleLogout() {
@@ -12443,7 +12587,7 @@ document.addEventListener('visibilitychange', function() {
   <div class="mp-tabs">
     <button class="mp-tab-btn mp-active" onclick="mpTab(0,this)">🏥 검진안내</button>
     <button class="mp-tab-btn" onclick="mpTab(1,this)" style="display:none">📈 히스토리</button>
-    <button class="mp-tab-btn" onclick="mpTab(2,this)">📹 AI진단</button>
+    <button class="mp-tab-btn" onclick="mvpCheckAndGoToDiag(this)">📹 AI진단</button>
     <button class="mp-tab-btn" onclick="mpTab(3,this)" style="display:none">📚 콘텐츠</button>
     <button class="mp-tab-btn" onclick="mpTab(4,this)" style="display:none">🗺️ DESIRE</button>
     <button class="mp-tab-btn" onclick="mpTab(5,this)" style="display:none">📋 서비스</button>
@@ -12669,7 +12813,7 @@ document.addEventListener('visibilitychange', function() {
       <div class="mpc mp-fade-in" style="margin:8px 12px">
         <div class="mpc-hd"><span class="mpc-icon">⚡</span><span class="mpc-title">빠른 메뉴</span></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 0">
-          <div class="mp-qm" onclick="mpTab(2,document.querySelectorAll('.mp-tab-btn')[2])">
+          <div class="mp-qm" onclick="mvpCheckAndGoToDiag(document.querySelectorAll('.mp-tab-btn')[2])">
             <div class="mp-qm-ic">📹</div><div class="mp-qm-lbl">AI진단</div>
           </div>
           <div class="mp-qm" onclick="mpTab(3,document.querySelectorAll('.mp-tab-btn')[3])">
@@ -13358,7 +13502,7 @@ document.addEventListener('visibilitychange', function() {
         <div class="mp-profile-av" id="mp-profile-av">?</div>
         <div>
           <div class="mp-profile-name" id="mp-profile-name">회원</div>
-          <div class="mp-profile-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2c4b4b435e4540404d1d1d6c4b414d4540024f4341">[email&#160;protected]</a></div>
+          <div class="mp-profile-email" id="mp-profile-email">—</div>
           <div class="mp-profile-since">🥈 실버 회원 · 구독 D+<span id="mp-sub-days2">0</span>일</div>
         </div>
       </div>
@@ -13369,8 +13513,8 @@ document.addEventListener('visibilitychange', function() {
         <div class="mpc-bd">
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
-              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월50분 · 텍스트무제한</div></div>
-              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩19,900</span>
+              <div><div id="mp-plan-now-label" style="font-size:11px;font-weight:700;color:var(--gold)">🥉 브론즈 (현재)</div><div id="mp-plan-now-desc" style="font-size:9px;color:var(--muted)">AI진단상담 10분</div></div>
+              <span id="mp-plan-now-price" style="font-size:11px;font-weight:700;color:var(--gold)">₩9,900</span>
             </div>
             <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center" onclick="showToast('준비 중입니다')">
               <div><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5)">🥇 골드 (준비중)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 무제한</div></div>
