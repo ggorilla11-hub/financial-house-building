@@ -7593,15 +7593,11 @@ function manualReturnToVoice() {
   if(!mvpTextOnlyMode) { showToast('이미 음성 상담 중입니다'); return; }
   mvpTextOnlyMode = false;
 
-  // Vapi 뮤트 해제
-  if(vapi && vapiCallActive) {
-    try { vapi.setMuted(false); } catch(e) {}
-    try {
-      vapi.send({
-        type: 'add-message',
-        message: { role: 'system', content: '고객이 음성 모드로 복귀했습니다. 대화를 이어가 주세요.' }
-      });
-    } catch(e) {}
+  // ★ Vapi 재연결 (텍스트전환 시 완전 종료했으므로 재연결 필요)
+  showToast('🎤 음성 재연결 중입니다. 잠시만 기다려 주세요...');
+  diagAddSTT('ai', '음성 연결 중입니다. 잠시만 기다려 주세요...', null);
+  if(typeof diagConnectVoice === 'function') {
+    diagConnectVoice();
   }
 
   // UI 복원
