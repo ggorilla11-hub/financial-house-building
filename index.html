@@ -10261,6 +10261,12 @@ async function diagConnectVoice(isPaid, resumeHistory) {
         vapiCallActive = false;
         _vapiConnecting = false;
       }
+      // ★ start-method-error: Vapi 지원안하는 파라미터 → 배너 표시 안함
+      if(errType === 'start-method-error') {
+        console.log('[에러대응] start-method-error 무시');
+        _vapiConnecting = false;
+        return;
+      }
       handleVoiceError(e); // ★ 에러대응: 텍스트 전환 배너 표시
     });
 
@@ -10273,12 +10279,6 @@ async function diagConnectVoice(isPaid, resumeHistory) {
         planInfo: planInject,
       }
     };
-    if(resumeHistory && resumeHistory.length > 0) {
-      _startOpts.messages = resumeHistory.map(function(m) {
-        return { role: m.role, content: m.content };
-      });
-      console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 주입');
-    }
     await vapi.start(assistantId, _startOpts);
     _vapiConnecting = false;
 
