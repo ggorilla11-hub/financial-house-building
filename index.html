@@ -10168,6 +10168,24 @@ async function diagConnectVoice(isPaid, resumeHistory) {
       showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
       var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
       if(w) w.classList.remove('muted');
+      // ★ 음성복귀 시 맥락 주입 - 연결 완료 후 시스템 메시지로 전달
+      if(resumeHistory && resumeHistory.length > 0) {
+        setTimeout(function() {
+          try {
+            var _ctx = resumeHistory.map(function(m) {
+              return (m.role === 'assistant' ? '머니야: ' : '고객: ') + m.content;
+            }).join('\n');
+            vapi.send({
+              type: 'add-message',
+              message: {
+                role: 'system',
+                content: '【이전 대화 맥락】아래는 지금까지 나눈 대화입니다. 이 맥락을 바탕으로 자연스럽게 이어서 상담해 주세요.\n\n' + _ctx + '\n\n이어서 상담을 계속해 주세요.'
+              }
+            });
+            console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 주입 완료');
+          } catch(e) { console.log('[Vapi] 맥락 주입 오류:', e.message); }
+        }, 1000);
+      }
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
