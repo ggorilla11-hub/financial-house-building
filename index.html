@@ -7763,9 +7763,14 @@ function mpRefreshData() {
 
   var av = document.getElementById('mp-profile-av');
   if(av) {
+  if(av) {
     if(_userPhoto) {
-      av.innerHTML = '<img src="' + _userPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='' + (_userName[0]||'?') + ''">';
-    } else {
+      var img = document.createElement('img');
+      img.src = _userPhoto;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;'
+      img.onerror = function() { av.textContent = _userName ? _userName[0] : '?'; };
+      av.innerHTML = '';
+      av.appendChild(img);
       av.textContent = _userName ? _userName[0] : '?';
     }
   }
