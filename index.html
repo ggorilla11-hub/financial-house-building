@@ -6919,6 +6919,9 @@ function mvpStartCheckup() {
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
+  // ★ staging: 실버 플랜(20분)으로 세팅
+  localStorage.setItem('fh_plan', 'silver-month');
+  localStorage.setItem('mvp_credit_min', '20');
   mpIsSubscribed = true;
   var btn = document.getElementById('btn-header-main');
   if(btn){
@@ -7753,11 +7756,45 @@ function mpRefreshData() {
   const wbScore = document.getElementById('mp-wb-score');
   if(wbScore) wbScore.textContent = score > 0 ? score + '점' : '—';
 
-  // 프로필
-  const av = document.getElementById('mp-profile-av');
-  if(av) av.textContent = name ? name[0] : '?';
-  const pName = document.getElementById('mp-profile-name');
-  if(pName) pName.textContent = name;
+  // 프로필 (이름 + 이메일 + 아바타)
+  var _userName  = window._fhPayerName  || localStorage.getItem('fh_payer_name')  || name || '회원';
+  var _userEmail = window._fhPayerEmail || localStorage.getItem('fh_payer_email') || '';
+  var _userPhoto = window._fhCurrentUser ? (window._fhCurrentUser.photoURL || '') : '';
+
+  var av = document.getElementById('mp-profile-av');
+  if(av) {
+    if(_userPhoto) {
+      av.innerHTML = '<img src="' + _userPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='' + (_userName[0]||'?') + ''">';
+    } else {
+      av.textContent = _userName ? _userName[0] : '?';
+    }
+  }
+  var pName = document.getElementById('mp-profile-name');
+  if(pName) pName.textContent = _userName;
+  var pEmail = document.getElementById('mp-profile-email');
+  if(pEmail) pEmail.textContent = _userEmail || '(이메일 없음)';
+
+  // 멤버십 플랜 카드 갱신
+  var planAmountMap = {
+    'single':'₩9,900', 'silver-month':'₩9,900', 'silver-year':'₩99,000',
+    'gold-month':'₩19,900', 'gold-year':'₩199,000',
+    'expert-month':'₩29,900', 'expert-year':'₩299,000'
+  };
+  var planDescMap = {
+    'single':'AI진단상담 10분 · 단일결제',
+    'silver-month':'AI진단상담 월20분 · 텍스트무제한',
+    'silver-year':'AI진단상담 월20분 · 텍스트무제한 (연)',
+    'gold-month':'AI진단상담 월40분 · 텍스트무제한',
+    'gold-year':'AI진단상담 월40분 · 텍스트무제한 (연)',
+    'expert-month':'AI진단상담 월40분 · 전문가',
+    'expert-year':'AI진단상담 월40분 · 전문가 (연)'
+  };
+  var nowLabel = document.getElementById('mp-plan-now-label');
+  var nowDesc  = document.getElementById('mp-plan-now-desc');
+  var nowPrice = document.getElementById('mp-plan-now-price');
+  if(nowLabel) nowLabel.textContent = _planLabel + ' (현재)';
+  if(nowDesc)  nowDesc.textContent  = planDescMap[_planKey] || 'AI진단상담';
+  if(nowPrice) nowPrice.textContent = planAmountMap[_planKey] || '₩9,900';
 
   // KPI
   const netAsset = (D.safeAsset||0)+(D.riskAsset||0)+((D.reHome||0)+(D.reInv||0))*10000
@@ -13527,7 +13564,7 @@ document.addEventListener('visibilitychange', function() {
         <div class="mp-profile-av" id="mp-profile-av">?</div>
         <div>
           <div class="mp-profile-name" id="mp-profile-name">회원</div>
-          <div class="mp-profile-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2c4b4b435e4540404d1d1d6c4b414d4540024f4341">[email&#160;protected]</a></div>
+          <div class="mp-profile-email" id="mp-profile-email">—</div>
           <div class="mp-profile-since">🥈 실버 회원 · 구독 D+<span id="mp-sub-days2">0</span>일</div>
         </div>
       </div>
@@ -13538,8 +13575,8 @@ document.addEventListener('visibilitychange', function() {
         <div class="mpc-bd">
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="padding:10px;border-radius:8px;background:rgba(201,151,42,.08);border:1.5px solid rgba(201,151,42,.4);display:flex;justify-content:space-between;align-items:center">
-              <div><div style="font-size:11px;font-weight:700;color:var(--gold)">🥈 실버 (현재)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 월50분 · 텍스트무제한</div></div>
-              <span style="font-size:11px;font-weight:700;color:var(--gold)">₩19,900</span>
+              <div><div id="mp-plan-now-label" style="font-size:11px;font-weight:700;color:var(--gold)">🥉 브론즈 (현재)</div><div id="mp-plan-now-desc" style="font-size:9px;color:var(--muted)">AI진단상담 10분</div></div>
+              <span id="mp-plan-now-price" style="font-size:11px;font-weight:700;color:var(--gold)">₩9,900</span>
             </div>
             <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center" onclick="showToast('준비 중입니다')">
               <div><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5)">🥇 골드 (준비중)</div><div style="font-size:9px;color:var(--muted)">AI진단상담 무제한</div></div>
