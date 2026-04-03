@@ -6860,37 +6860,6 @@ function calcFreeHealthScore(answers) {
 function mvpStartCheckup() {
   mpOpenSubscribe();
 }
-function _staging_mvpStartCheckup() {
-  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if(!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
-  }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if(daysPassed > 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
-    mpOpenSubscribe();
-    return;
-  }
-  var remaining = 7 - daysPassed;
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  mpIsSubscribed = true;
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  mpOpen();
-}
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
 function mvpCompletePurchase() {
@@ -10028,30 +9997,11 @@ async function diagConnectVoice(isPaid) {
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
     // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
-    // ★ 음성복귀 시 맥락 주입 (고수분 방식)
-    var _summary = '';
-    if(resumeHistory && resumeHistory.length > 0) {
-      _summary = resumeHistory.map(function(h) {
-        return (h.role === 'assistant' ? '머니야' : '고객') + ': ' + h.content;
-      }).join('\n').substring(0, 3000);
-      console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 주입');
-    }
-    if(_summary) {
-      await vapi.start(VAPI_ASSISTANT_PAID, {
-        firstMessage: '네, 이어서 진행하겠습니다. 방금 나눈 내용을 바탕으로 계속할게요.',
-        firstMessageMode: 'assistant-speaks-first',
-        model: {
-          messages: [{
-            role: 'system',
-            content: '당신은 AI 재무검진 서비스 머니야입니다. 고객과 이전에 대화한 내용이 있습니다. 이 대화를 이어서 진행하세요. 처음부터 다시 시작하지 마세요.\n\n[이전 대화 내용]\n' + _summary
-          }]
-        }
-      });
-    } else {
-      await vapi.start(assistantId, {
-        variableValues: { planInfo: planInject }
-      });
-    }
+    await vapi.start(assistantId, {
+      variableValues: {
+        planInfo: planInject,
+      }
+    });
     _vapiConnecting = false;
 
   } catch(e) {
