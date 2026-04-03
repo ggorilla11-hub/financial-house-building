@@ -2441,6 +2441,7 @@ html{visibility:visible !important;}
   <!-- Firebase SDK (Google 로그인) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
 
@@ -5926,6 +5927,27 @@ function onPaypleResult(data){
     mvpSaveToSheet(_payerName, _payerPhone, _payerEmail);
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
 
+    // ★ Firestore에 구독 저장 (새 기기 로그인 시 자동입장용)
+    if(window._fhDb && _payerEmail) {
+      var docId = _payerEmail.replace(/\./g, '_').replace(/@/g, '_at_');
+      var expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      window._fhDb.collection('subscribers').doc(docId).set({
+        email:     _payerEmail,
+        name:      _payerName,
+        plan:      currentPlan,
+        creditMin: credit,
+        active:    true,
+        expiry:    expiryDate.toISOString(),
+        paidAt:    new Date().toISOString(),
+        orderId:   data.PCD_PAY_OID || ''
+      }).then(function() {
+        console.log('[Firestore] 구독 저장 완료:', docId);
+      }).catch(function(e) {
+        console.log('[Firestore] 저장 오류:', e.message);
+      });
+    }
+
     if(_payerEmail) {
       fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
         method: 'POST',
@@ -5945,6 +5967,12 @@ function onPaypleResult(data){
       ? ('🎉 ' + _payerName + '님, AI머니야 회원이 되셨습니다! 환영합니다 👑')
       : '🎉 결제 완료! AI머니야 회원이 되셨습니다 👑';
     showToast(_greeting);
+
+    // ★ 결제 완료 후 UI 즉시 전체 갱신
+    mpIsSubscribed = true;
+    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+    if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+    mpSetMemberButton();
 
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
@@ -6858,7 +6886,49 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  mpOpenSubscribe();
+  // ★ 기결제자 확인: localStorage + mpIsSubscribed
+  var isSubscribed = mpIsSubscribed
+    || localStorage.getItem('fh_member_v1') === '1'
+    || localStorage.getItem('fh_subscribed') === '1';
+  if(isSubscribed) {
+    // UI 갱신 후 바로 진입
+    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+    var simWrap = document.getElementById('sim-wrap');
+    if(simWrap) simWrap.style.display = 'none';
+    var funnelWrap = document.getElementById('funnel-wrap');
+    if(funnelWrap) funnelWrap.classList.add('fn-hidden');
+    mpOpen();
+    return;
+  }
+  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
+  var trialStart = localStorage.getItem('fh_trial_start');
+  if(!trialStart) {
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    trialStart = new Date().toISOString();
+  }
+  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
+  if(daysPassed > 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
+  var simWrap = document.getElementById('sim-wrap');
+  if(simWrap) simWrap.style.display = 'none';
+  document.getElementById('funnel-wrap').classList.add('fn-hidden');
+  localStorage.setItem('fh_subscribed', '1');
+  localStorage.setItem('fh_member_v1', '1');
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  mpIsSubscribed = true;
+  var btn = document.getElementById('btn-header-main');
+  if(btn){
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
@@ -6977,6 +7047,55 @@ function mvpSendMakeWebhook(name, phone, email) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 진단안내 페이지 플랜별 UI 업데이트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ★ 마이페이지 탭6 플랜명 갱신
+function mpUpdatePlanDisplay() {
+  var plan = localStorage.getItem('fh_plan') || 'single';
+  var planLabels = {
+    'single':       '🥉 브론즈',
+    'silver-month': '🥈 실버',
+    'silver-year':  '🥈 실버',
+    'gold-month':   '🥇 골드',
+    'gold-year':    '🥇 골드',
+    'expert-month': '👔 전문가',
+    'expert-year':  '👔 전문가',
+  };
+  var planDescs = {
+    'single':       'AI진단상담 10분 · 브론즈',
+    'silver-month': 'AI진단상담 월20분 · 실버',
+    'silver-year':  'AI진단상담 월20분 · 실버',
+    'gold-month':   'AI진단상담 월40분 · 골드',
+    'gold-year':    'AI진단상담 월40분 · 골드',
+    'expert-month': 'AI진단상담 월40분 · 전문가',
+    'expert-year':  'AI진단상담 월40분 · 전문가',
+  };
+  var label = planLabels[plan] || '🥉 브론즈';
+  var desc  = planDescs[plan]  || 'AI진단상담 10분 · 브론즈';
+
+  // 마이페이지 탭6 플랜카드 업데이트
+  var planNowEl = document.querySelector(
+    '#mp-panel-6 [style*="실버 (현재)"], #mp-panel-6 .mp-plan-now-label'
+  );
+  if(planNowEl) planNowEl.textContent = label + ' (현재)';
+
+  // 실버/골드 표시 div 업데이트
+  var planDivs = document.querySelectorAll('#mp-panel-6 .mp-grade-card, #mp-panel-6 .mpc-bd');
+  planDivs.forEach(function(el) {
+    var nowSpan = el.querySelector('[style*="실버 (현재)"], [style*="골드 (현재)"], [style*="브론즈 (현재)"]');
+    if(nowSpan) {
+      nowSpan.textContent = label + ' (현재)';
+      var subEl = nowSpan.nextElementSibling;
+      if(subEl) subEl.textContent = desc;
+    }
+  });
+
+  // 프로필 멤버 등급 텍스트 갱신
+  var sinceEl = document.getElementById('mp-profile-since');
+  if(sinceEl) {
+    var days = Math.floor((Date.now() - new Date(localStorage.getItem('fh_sub_date')||Date.now()).getTime())/(1000*60*60*24));
+    sinceEl.innerHTML = label + ' 회원 · 구독 D+' + days + '일';
+  }
+}
+
 function mvpUpdateGuideUI() {
   var plan     = localStorage.getItem('fh_plan') || 'single';
   var creditMap = {
@@ -8788,6 +8907,8 @@ function mpDoWithdraw() {
     }
     window._fhAuth     = firebase.auth();
     window._fhProvider = new firebase.auth.GoogleAuthProvider();
+    // ★ Firestore 초기화
+    try { window._fhDb = firebase.firestore(); } catch(e) { console.log('[Firestore]', e.message); }
 
     // 로그인 상태 감지
     window._fhAuth.onAuthStateChanged(function(user) {
@@ -8797,6 +8918,8 @@ function mpDoWithdraw() {
         window._fhPayerEmail = user.email || '';
         // 구독 모달이 열려 있으면 UI 업데이트
         fhUpdateLoginUI(user);
+        // ★ 앱 로드 시 자동 구독 확인 (재방문 처리)
+        if(typeof fhCheckAndAutoEnter === 'function') fhCheckAndAutoEnter(user);
       } else {
         window._fhPayerName  = '';
         window._fhPayerEmail = '';
@@ -8834,7 +8957,10 @@ function mpDoWithdraw() {
           var user = result.user;
           window._fhPayerName  = user.displayName || '';
           window._fhPayerEmail = user.email || '';
+          window._fhCurrentUser = user;
           fhUpdateLoginUI(user);
+          // ★ 로그인 후 Firestore 구독 확인 → 기결제자 자동 입장
+          fhCheckAndAutoEnter(user);
         })
         .catch(function(err) {
           console.error('[Google 로그인 오류]', err.code, err.message);
@@ -8847,6 +8973,49 @@ function mpDoWithdraw() {
     }
     // 별칭 (버튼에서 호출)
     function fhSignInGoogle() { fhGoogleLogin(); }
+
+    // ★ 로그인 후 구독 확인 + 자동 입장
+    function fhCheckAndAutoEnter(user) {
+      if(!user || !user.email) return;
+
+      // 1순위: localStorage 확인 (빠른 체크)
+      var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+      if(localSub) {
+        mpIsSubscribed = true;
+        mpSetMemberButton();
+        if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+        if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+        showToast('✅ ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!');
+        return;
+      }
+
+      // 2순위: Firestore 확인
+      if(window._fhDb) {
+        var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+        window._fhDb.collection('subscribers').doc(docId).get()
+          .then(function(doc) {
+            if(doc.exists) {
+              var data = doc.data();
+              var now = new Date();
+              var expiry = data.expiry ? new Date(data.expiry) : null;
+              var isActive = data.active && (!expiry || expiry > now);
+              if(isActive) {
+                // Firestore 구독 정보를 localStorage에 저장
+                localStorage.setItem('fh_member_v1', '1');
+                localStorage.setItem('fh_subscribed', '1');
+                localStorage.setItem('fh_plan', data.plan || 'silver-month');
+                localStorage.setItem('mvp_credit_min', String(data.creditMin || 20));
+                mpIsSubscribed = true;
+                mpSetMemberButton();
+                if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+                if(typeof mpUpdatePlanDisplay === 'function') mpUpdatePlanDisplay();
+                showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
+              }
+            }
+          })
+          .catch(function(e) { console.log('[Firestore 구독확인]', e.message); });
+      }
+    }
 
     // Google 로그아웃
     function fhGoogleLogout() {
