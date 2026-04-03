@@ -6883,7 +6883,7 @@ function mvpStartCheckup() {
     if(funnelWrap) funnelWrap.classList.add('fn-hidden');
     mpOpen(); return;
   }
-  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
+  mpOpenSubscribe(); return;
   var trialStart = localStorage.getItem('fh_trial_start');
   if(!trialStart) {
     localStorage.setItem('fh_trial_start', new Date().toISOString());
@@ -10139,158 +10139,38 @@ async function diagConnectVoice(isPaid, resumeHistory) {
   /* Chrome은 마이크를 두 곳에서 동시 사용 불가 (Edge는 허용) */
   showToast('🎤 AI 머니야 접속 중...');
 
+
+  /* ── Vapi 시작 ── */
   try {
-    var assistantId = isPaid ? VAPI_ASSISTANT_PAID : (VAPI_ASSISTANT_FREE || VAPI_ASSISTANT_PAID);
-
-    // ★ 플랜 정보를 Vapi assistantOverrides로 주입
-    // 머니야가 어떤 플랜인지 알 수 있도록 시스템 프롬프트 앞에 주입
-    var planInfo = window._currentPlanInfo || {};
-    var planLabel    = planInfo.label     || '골드';
-    var planMin      = planInfo.creditMin || 40;
-    var remainMin    = planInfo.remainMin || planMin;
-    var sessionNo    = planInfo.sessionNo || 1;
-    var isResume     = planInfo.isResume  || false;
-    var planInject   = sessionNo >= 2
-      ? '【오늘 상담: ' + sessionNo + '회차 정기상담 플랜】'
-      : '【오늘 상담: ' + planLabel + ' ' + planMin + '분 플랜】';
-    planInject += ' 잔여크레딧: ' + remainMin + '분.';
-    console.log('[Vapi] 플랜 주입:', planInject);
-    var VapiConstructor = window.VapiClass.default || window.VapiClass;
-    console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
-    console.log('[DEBUG] assistantId:', assistantId);
-    vapi = new VapiConstructor(VAPI_PUBLIC_KEY);
-    console.log('[DEBUG] vapi instance:', vapi);
-    if(!vapi) { showToast('❌ Vapi 연결 실패 · 페이지를 새로고침해주세요'); _vapiConnecting = false; return; }
-    /* ── 연결 시작 ── */
-    vapi.on('call-start', function() {
-      vapiCallActive = true;
-      diagMic = true;
-      showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
-      var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
-      if(w) w.classList.remove('muted');
-      // ★ 음성복귀 시 맥락 주입 - 연결 완료 후 시스템 메시지로 전달
-      if(resumeHistory && resumeHistory.length > 0) {
-        setTimeout(function() {
-          try {
-            var _ctx = resumeHistory.map(function(m) {
-              return (m.role === 'assistant' ? '머니야: ' : '고객: ') + m.content;
-            }).join('\n');
-            vapi.send({
-              type: 'add-message',
-              message: {
-                role: 'system',
-                content: '【이전 대화 맥락】아래는 지금까지 나눈 대화입니다. 이 맥락을 바탕으로 자연스럽게 이어서 상담해 주세요.\n\n' + _ctx + '\n\n이어서 상담을 계속해 주세요.'
-              }
-            });
-            console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 주입 완료');
-          } catch(e) { console.log('[Vapi] 맥락 주입 오류:', e.message); }
-        }, 1000);
-      }
-    });
-
-    /* ── 메시지 수신 (자막 + Tool Call) ── */
-    vapi.on('message', function(msg) {
-      /* 자막 표시 */
-      if(msg.type === 'transcript' && msg.transcriptType === 'final') {
-        var role = msg.role === 'assistant' ? 'ai' : 'user';
-        var displayText = msg.transcript;
-        if(!displayText || !displayText.trim()) return;
-
-        /* STT 영역에 표시 */
-        diagAddSTT(role, displayText, null);
-
-        /* 대화록 탭(dnp9)에도 실시간 기록 */
-        var chatLog = document.getElementById('dn_chat_log');
-        if(chatLog) {
-          var isUser = (role === 'user');
-          var bubble = document.createElement('div');
-          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
-          // ★ data-role 추가 - 텍스트전환 시 맥락 수집용
-          bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
-          bubble.setAttribute('data-text', displayText);
-          bubble.innerHTML =
-            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-              (isUser ? '👤 고객' : '🤖 머니야') +
-            '</div>' +
-            '<div class="dn-bubble-text" style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
-              displayText.replace(/</g, '&lt;') +
-            '</div>';
-          chatLog.appendChild(bubble);
-          chatLog.scrollTop = chatLog.scrollHeight;
-          var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
-          if(placeholder) placeholder.remove();
-        }
-
-        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
-        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
-      }
-
-      /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
-      if(msg.type === 'tool-calls') {
-        handleVapiToolCall(msg.toolCallList);
-      }
-    });
-
-    /* ── 통화 종료 ── */
-    vapi.on('call-end', function() {
-      vapiCallActive = false;
-      diagMic = false;
-      // ★ 에러대응: 정상종료(사용자가 직접 종료)가 아닌 경우 즉시 배너 표시
-      if(!_vapiUserEnded && !mvpTextOnlyMode) {
-        console.log('[에러대응] 비정상 call-end 감지 → 배너 즉시 표시');
-        // 즉시 배너 표시 (지연 없이)
-        handleVoiceError({ type: 'call-end', message: 'Meeting ended unexpectedly' });
-      } else {
-        showToast('📞 상담이 종료됐습니다');
-      }
-      _vapiUserEnded = false; // 플래그 초기화
-      /* DEV-003: 리포트 생성 — 추후 활성화 */
-      // generateFinalReport();
-    });
-
-    /* ── 오류 ── */
-    vapi.on('error', function(e) {
-      console.error('[Vapi 오류]', e);
-      // daily-error (Meeting ejection 포함) 즉시 처리
-      var errType = (e && e.type) || '';
-      var errMsg  = (e && e.error && e.error.msg) || (e && e.message) || '';
-      console.log('[에러대응] 타입:', errType, '메시지:', errMsg);
-      // ejection 에러: Vapi 재시작 방지
-      if(errType === 'daily-error' || errMsg.indexOf('ejection') >= 0 || errMsg.indexOf('ended') >= 0) {
-        vapiCallActive = false;
-        _vapiConnecting = false;
-      }
-      // ★ start-method-error: Vapi 지원안하는 파라미터 → 배너 표시 안함
-      if(errType === 'start-method-error') {
-        console.log('[에러대응] start-method-error 무시');
-        _vapiConnecting = false;
-        return;
-      }
-      handleVoiceError(e); // ★ 에러대응: 텍스트 전환 배너 표시
-    });
-
-    /* ── 통화 시작 ── */
-    console.log('[DEBUG] start call');
-    // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
-    // ★ 음성복귀 시 이전 대화 맥락 주입
-    // ★ 음성복귀 시 이전 대화록을 resumeContext로 주입
-    var _resumeCtx = '';
+    // 이전 대화 수집 및 요약 (최대 3000자)
+    var _summary = '';
     if(resumeHistory && resumeHistory.length > 0) {
-      _resumeCtx = resumeHistory.map(function(m) {
-        return (m.role === 'assistant' ? '머니야: ' : '고객: ') + m.content;
-      }).join('\n');
-      console.log('[Vapi] resumeContext ' + resumeHistory.length + '개 주입');
+      _summary = resumeHistory.map(function(h) {
+        return (h.role === 'assistant' ? '머니야' : '고객') + ': ' + h.content;
+      }).join('\n').substring(0, 3000);
+      console.log('[Vapi] 맥락 ' + resumeHistory.length + '개 assistantOverrides 주입');
     }
-    var _startOpts = {
-      variableValues: {
-        planInfo: planInject,
-        resumeContext: _resumeCtx
-      }
-    };
-    await vapi.start(assistantId, _startOpts);
-    _vapiConnecting = false;
 
+    if(_summary) {
+      // 음성복귀: assistantOverrides.model.messages로 맥락 주입
+      var _overrides = {
+        firstMessage: '네, 이어서 진행하겠습니다. 방금 나눈 내용을 바탕으로 계속할게요.',
+        firstMessageMode: 'assistant-speaks-first',
+        model: {
+          messages: [{
+            role: 'system',
+            content: '당신은 AI 재무검진 서비스 머니야입니다. 고객과 이전에 대화한 내용이 있습니다. 이 대화를 이어서 진행하세요. 처음부터 다시 시작하지 마세요. 이전 대화에서 이미 수집한 정보는 다시 묻지 마세요.\n\n[이전 대화 내용]\n' + _summary
+          }]
+        }
+      };
+      await vapi.start(VAPI_ASSISTANT_PAID, _overrides);
+    } else {
+      // 일반 시작: 기존 방식
+      await vapi.start(assistantId, {
+        variableValues: { planInfo: planInject }
+      });
+    }
+    _vapiConnecting = false;
   } catch(e) {
     _vapiConnecting = false;
     console.error('[Vapi 연결 오류]', e);
