@@ -6869,11 +6869,20 @@ function ftcAddMessage(role, text) {
 async function ftcSend() {
   var input = document.getElementById('ftc-input');
   if (!input || !input.value.trim() || ftcIsLoading) return;
+
+  // ── 비로그인 3회 제한, 로그인 후 무제한 ──
+  var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
+  var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
+  if (!isLoggedIn && userMsgCount >= 3) {
+    ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 계속 상담할 수 있어요. 10초면 됩니다!');
+    setTimeout(function(){ showMiniLogin('계속 상담하려면 로그인이 필요해요', null); }, 500);
+    return;
+  }
+
   var userMsg = input.value.trim();
   input.value = '';
   ftcAddMessage('user', userMsg);
   ftcIsLoading = true;
-  // 로딩 표시
   var loadId = 'ftc-load-' + Date.now();
   var log = document.getElementById('ftc-log');
   if (log) {
@@ -6886,7 +6895,6 @@ async function ftcSend() {
     log.scrollTop = log.scrollHeight;
   }
   try {
-    // 대화 히스토리 구성
     var history = ftcMessages.slice(-8).map(function(m) {
       return { role: m.role === 'ai' ? 'assistant' : 'user', content: m.text };
     });
@@ -6907,16 +6915,13 @@ async function ftcSend() {
     var loadEl = document.getElementById(loadId);
     if (loadEl) loadEl.remove();
     ftcAddMessage('ai', reply);
-    // 3회 대화 후 로그인 유도 (미니 오버레이)
-    var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
-    if (userMsgCount === 3) {
-      var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
-      if (!isLoggedIn) {
-        setTimeout(function(){
-          ftcAddMessage('ai', '💡 지금까지 나눈 대화를 저장하려면 로그인하세요. 다음에 오실 때 이어서 상담할 수 있어요!');
-          setTimeout(function(){ showMiniLogin('대화 기록을 저장하려면 로그인이 필요해요', null); }, 800);
-        }, 800);
-      }
+    // 3회 완료 후 — 비로그인이면 로그인 유도 안내
+    var newCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
+    if (!isLoggedIn && newCount === 3) {
+      setTimeout(function(){
+        ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 다음 상담이 더 정밀해집니다. 로그인 없이는 3회까지 무료로 사용하실 수 있어요.');
+        setTimeout(function(){ showMiniLogin('대화 맥락을 기억하려면 로그인이 필요해요', null); }, 800);
+      }, 800);
     }
   } catch(e) {
     var loadEl2 = document.getElementById(loadId);
@@ -7294,6 +7299,8 @@ function freeScoreSubmit() {
   var phone = ((document.getElementById('free-phone') || {}).value || '').trim();
   var privacy = (document.getElementById('free-privacy') || {}).checked || false;
   if (!email) { showToast('먼저 Google 로그인을 해주세요.'); return; }
+  if (!phone) { showToast('전화번호를 입력해 주세요. (카카오 발송에 필요합니다)'); return; }
+  if (phone.replace(/[^0-9]/g,'').length < 10) { showToast('올바른 전화번호를 입력해 주세요.'); return; }
   if (!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
   var resultTitle = (document.getElementById('fn-r-title') || {}).textContent || '';
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
@@ -7303,8 +7310,8 @@ function freeScoreSubmit() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type: 'free_score', name: name, phone: '', email: email,
-      plan: '무료 재무진단점수', result_title: resultTitle,
+      type: 'free_score', name: name, phone: phone, email: email,
+      plan: '무료 재무건강점수', result_title: resultTitle,
       result_sub: resultSub, result_d: resultD,
       health_score: scoreData.totalScore, score_grade: scoreData.grade,
       score_expense: scoreData.expense, score_asset: scoreData.asset,
