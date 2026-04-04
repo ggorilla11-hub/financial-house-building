@@ -7522,19 +7522,53 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  var isSubscribed = mpIsSubscribed
-    || localStorage.getItem('fh_member_v1') === '1'
-    || localStorage.getItem('fh_subscribed') === '1';
-  if(isSubscribed) {
-    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
-    var simWrap = document.getElementById('sim-wrap');
-    if(simWrap) simWrap.style.display = 'none';
-    var funnelWrap = document.getElementById('funnel-wrap');
-    if(funnelWrap) funnelWrap.classList.add('fn-hidden');
-    mpOpen(); return;
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  // 로그인 안 된 경우 → 결제 모달
+  if (!user) {
+    mpOpenSubscribe();
+    return;
   }
-  // ★ main용: 결제 필수
-  mpOpenSubscribe();
+  // 로그인된 경우 → Firestore에서 구독 확인
+  if (window._fhDb) {
+    var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+    window._fhDb.collection('subscribers').doc(docId).get()
+      .then(function(doc) {
+        var isValid = false;
+        if (doc.exists) {
+          var d = doc.data();
+          if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
+            isValid = true;
+            // localStorage 동기화
+            localStorage.setItem('fh_member_v1', '1');
+            localStorage.setItem('fh_subscribed', '1');
+            localStorage.setItem('fh_plan', d.plan || 'silver-month');
+            localStorage.setItem('mvp_credit_min', String(d.creditMin || 20));
+            mpIsSubscribed = true;
+          }
+        }
+        if (isValid) {
+          if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+          var simWrap = document.getElementById('sim-wrap');
+          if (simWrap) simWrap.style.display = 'none';
+          var funnelWrap = document.getElementById('funnel-wrap');
+          if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+          mpOpen();
+        } else {
+          // Firestore에 구독 없음 → localStorage 초기화 후 결제 모달
+          ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+          mpIsSubscribed = false;
+          mpOpenSubscribe();
+        }
+      })
+      .catch(function(e) {
+        console.log('[구독확인 오류]', e.message);
+        // Firestore 오류 시 결제 모달로 안전하게 처리
+        mpOpenSubscribe();
+      });
+  } else {
+    // Firestore 미연결 → 결제 모달
+    mpOpenSubscribe();
+  }
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
