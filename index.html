@@ -6841,6 +6841,10 @@ function openFreeTextChat() {
 function closeFreeTextChat() {
   var modal = document.getElementById('freeTextChatModal');
   if (modal) modal.style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
 var ftcMessages = [];
@@ -7024,6 +7028,10 @@ function openDesireSimulator() {
 function closeDesireSimulator() {
   var modal = document.getElementById('desireSimModal');
   if (modal) modal.style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
 function dsRender() {
@@ -7405,6 +7413,10 @@ function thankYouToCheckup() {
 
 function closeThankYou() {
   document.getElementById('freeThankYou').style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
 /* ━━━ 무료 재무진단점수 계산 (통계 중간값 기반) ━━━ */
