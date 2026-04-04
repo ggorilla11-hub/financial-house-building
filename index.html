@@ -2632,9 +2632,9 @@ html{visibility:visible !important;}
       </button>
 
       <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
-      <button onclick="openDesireSimulator()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
+      <button onclick="openDesireViaMypage()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🗺️ 나의 DESIRE 단계 파악하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 로그인 후 이용</span>
       </button>
 
       <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
@@ -6796,6 +6796,30 @@ function doMiniLogin() {
     });
 }
 
+/* ━━━ DESIRE 버튼 → 마이페이지 DESIRE 탭 연결 ━━━ */
+function openDesireViaMypage() {
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if (!user) {
+    // 비로그인 → 미니 로그인 오버레이
+    showMiniLogin('DESIRE 로드맵은 로그인 후 이용할 수 있어요', function() {
+      _openDesireTab();
+    });
+    return;
+  }
+  _openDesireTab();
+}
+function _openDesireTab() {
+  // 퍼널 숨기고 마이페이지 열기
+  var funnelWrap = document.getElementById('funnel-wrap');
+  if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+  mpOpen();
+  // DESIRE 탭(4번)으로 이동
+  setTimeout(function() {
+    var tabs = document.querySelectorAll('.mp-tab-btn');
+    if (tabs[4]) mpTab(4, tabs[4]);
+  }, 200);
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    무료 텍스트 상담 모달
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -9630,13 +9654,7 @@ function mpDoWithdraw() {
 
     function fhCheckAndAutoEnter(user) {
       if(!user || !user.email) return;
-      var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
-      if(localSub) {
-        mpIsSubscribed = true; mpSetMemberButton();
-        if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
-        showToast('✅ ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!');
-        return;
-      }
+      // Firestore를 항상 먼저 확인 (localStorage만 믿지 않음)
       if(window._fhDb) {
         var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
         window._fhDb.collection('subscribers').doc(docId).get()
@@ -9644,15 +9662,31 @@ function mpDoWithdraw() {
             if(doc.exists) {
               var d = doc.data();
               if(d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
-                localStorage.setItem('fh_member_v1','1'); localStorage.setItem('fh_subscribed','1');
+                localStorage.setItem('fh_member_v1','1');
+                localStorage.setItem('fh_subscribed','1');
                 localStorage.setItem('fh_plan', d.plan||'silver-month');
                 localStorage.setItem('mvp_credit_min', String(d.creditMin||20));
                 mpIsSubscribed = true; mpSetMemberButton();
                 if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
                 showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
+              } else {
+                ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+                mpIsSubscribed = false;
+                showToast('\uD83D\uDC4B ' + (user.displayName||'회원') + '님, 로그인되었습니다.');
               }
+            } else {
+              ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+              mpIsSubscribed = false;
+              showToast('\uD83D\uDC4B ' + (user.displayName||'회원') + '님, 로그인되었습니다.');
             }
-          }).catch(function(e){ console.log('[Firestore]', e.message); });
+          }).catch(function(e){
+            console.log('[Firestore]', e.message);
+            var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+            if(localSub) { mpIsSubscribed = true; mpSetMemberButton(); showToast('\u2705 ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!'); }
+          });
+      } else {
+        var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+        if(localSub) { mpIsSubscribed = true; mpSetMemberButton(); showToast('\u2705 ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!'); }
       }
     }
 
