@@ -2684,30 +2684,42 @@ html{visibility:visible !important;}
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:32px;margin-bottom:6px;">🆓</div>
       <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무진단점수 확인</div>
-      <div style="font-size:11px;color:#8896B0;margin-top:4px;">입력하신 정보로 결과를 이메일/카톡으로 보내드립니다</div>
+      <div style="font-size:11px;color:#8896B0;margin-top:4px;">Google 로그인 후 결과를 이메일로 발송해 드립니다</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <input id="free-name" type="text" placeholder="이름 (필수)"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <input id="free-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <input id="free-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
+    <!-- 로그인 전 -->
+    <div id="freeScore-before-login">
+      <button onclick="freeScoreGoogleLogin()"
+        style="width:100%;padding:13px;border-radius:10px;border:1.5px solid #ddd;background:#fff;color:#3c4043;font-size:14px;font-weight:700;font-family:var(--fn);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);margin-bottom:10px;">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Google 계정으로 로그인 후 결과 받기
+      </button>
+      <div style="font-size:10px;color:#aaa;text-align:center;">🔒 Google 계정 정보 외 별도 입력 불필요</div>
+    </div>
+    <!-- 로그인 후 -->
+    <div id="freeScore-after-login" style="display:none;">
+      <div style="background:#f0f9f0;border-radius:10px;padding:12px;border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:#166534;font-weight:700;margin-bottom:1px;">✅ 로그인 완료</div>
+          <div id="freeScore-login-name" style="font-size:13px;font-weight:900;color:#0B1D3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="freeScore-login-email" style="font-size:10px;color:#8896B0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-bottom:14px;">
         <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
-        <span style="font-size:10px;color:#666;line-height:1.5;">
-          [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+        <span style="font-size:10px;color:#666;line-height:1.5;">[필수] 개인정보 수집 및 이용에 동의합니다.<br>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 이메일 | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
         </span>
       </label>
+      <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,.35);">
+        무료 재무진단점수 받기
+      </button>
     </div>
-    <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-top:14px;box-shadow:0 4px 16px rgba(59,130,246,.35);">
-      무료 재무진단점수 받기
-    </button>
-    <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:6px;">닫기</button>
+    <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:8px;">닫기</button>
   </div>
 </div>
 
@@ -2789,7 +2801,7 @@ html{visibility:visible !important;}
   <!-- 토스트 -->
   <div id="ds-toast" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(201,151,42,.9);color:#0B1D3A;font-size:12px;font-weight:700;padding:10px 18px;border-radius:20px;opacity:0;transition:opacity .3s;z-index:99999;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;"></div>
   <!-- 인증 오버레이 -->
-  <div id="ds-cert-overlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:99995;align-items:center;justify-content:center;padding:20px;">
+  <div id="ds-cert-overlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:9999999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#1a2940;border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:24px;width:100%;max-width:360px;text-align:center;">
       <div style="font-size:48px;margin-bottom:12px;">🏆</div>
       <div id="ds-cert-title" style="font-size:18px;font-weight:900;color:#E8B84B;margin-bottom:4px;"></div>
@@ -6753,27 +6765,25 @@ function closeMiniLogin(skipCallback) {
 }
 
 function doMiniLogin() {
-  var btn = document.getElementById('miniLoginGoogleBtn');
-  if (btn) { btn.textContent = '로그인 중...'; btn.disabled = true; }
   if (typeof fhGoogleLogin !== 'function') {
     showToast('로그인 기능을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-    if (btn) { btn.innerHTML = 'Google 계정으로 로그인'; btn.disabled = false; }
     return;
   }
-  // Firebase onAuthStateChanged가 자동으로 처리
-  // 로그인 성공 후 콜백 실행을 위해 일회성 리스너 등록
-  var unsubscribe = null;
-  if (typeof firebase !== 'undefined' && firebase.auth) {
-    unsubscribe = firebase.auth().onAuthStateChanged(function(user) {
-      if (user && unsubscribe) {
-        unsubscribe();
-        unsubscribe = null;
-        closeMiniLogin(false); // 오버레이 닫고 콜백 실행
-        showToast('✅ ' + (user.displayName || '회원') + '님, 로그인 완료!');
-        if (btn) { btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google 계정으로 로그인'; btn.disabled = false; }
-      }
-    });
-  }
+  // fhGoogleLogin 성공 후 onAuthStateChanged가 fhUpdateLoginUI·fhCheckAndAutoEnter를 처리함
+  // 추가로 미니 오버레이 닫기 + 콜백 실행만 연결
+  var _once = false;
+  var _unsub = firebase.auth().onAuthStateChanged(function(user) {
+    if (user && !_once) {
+      _once = true;
+      _unsub();
+      closeMiniLogin(false);
+      showToast('✅ ' + (user.displayName || '회원') + '님, 로그인 완료!');
+    }
+  });
+  // 팝업 실패 시 30초 후 리스너 자동 해제 (무한 대기 방지)
+  setTimeout(function() {
+    if (!_once) { try { _unsub(); } catch(e) {} closeMiniLogin(true); }
+  }, 30000);
   fhGoogleLogin();
 }
 
@@ -7202,68 +7212,80 @@ function dsShowToast(msg) {
 /* ━━━ 무료 재무진단점수 신청 모달 ━━━ */
 function freeScoreModalOpen() {
   var m = document.getElementById('freeScoreModal');
-  if(m) m.style.display = 'flex';
+  if (m) m.style.display = 'flex';
+  // 이미 로그인 상태면 바로 after-login 표시
+  var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  if (user) {
+    freeScoreShowLoggedIn(user);
+  } else {
+    var b = document.getElementById('freeScore-before-login');
+    var a = document.getElementById('freeScore-after-login');
+    if (b) b.style.display = 'block';
+    if (a) a.style.display = 'none';
+  }
 }
 function freeScoreModalClose() {
   var m = document.getElementById('freeScoreModal');
-  if(m) m.style.display = 'none';
+  if (m) m.style.display = 'none';
+}
+function freeScoreShowLoggedIn(user) {
+  var b = document.getElementById('freeScore-before-login');
+  var a = document.getElementById('freeScore-after-login');
+  var n = document.getElementById('freeScore-login-name');
+  var e = document.getElementById('freeScore-login-email');
+  if (b) b.style.display = 'none';
+  if (a) a.style.display = 'block';
+  if (n) n.textContent = user.displayName || '사용자';
+  if (e) e.textContent = user.email || '';
+}
+function freeScoreGoogleLogin() {
+  if (typeof fhGoogleLogin !== 'function') {
+    showToast('로그인 기능 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+  var _once = false;
+  var _unsub = firebase.auth().onAuthStateChanged(function(user) {
+    if (user && !_once) {
+      _once = true;
+      _unsub();
+      freeScoreShowLoggedIn(user);
+    }
+  });
+  setTimeout(function(){ if (!_once) { try { _unsub(); } catch(e) {} } }, 30000);
+  fhGoogleLogin();
 }
 function freeScoreSubmit() {
-  var name = (document.getElementById('free-name') || {}).value || '';
-  var phone = (document.getElementById('free-phone') || {}).value || '';
-  var email = (document.getElementById('free-email') || {}).value || '';
+  var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  var name = user ? (user.displayName || '사용자') : '';
+  var email = user ? (user.email || '') : '';
   var privacy = (document.getElementById('free-privacy') || {}).checked || false;
-
-  if(!name.trim()) { showToast('이름을 입력해 주세요.'); return; }
-  if(!phone.trim()) { showToast('전화번호를 입력해 주세요.'); return; }
-  if(!email.trim() || email.indexOf('@') < 0) { showToast('올바른 이메일을 입력해 주세요.'); return; }
-  if(!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
-
-  // 원트큐브 결과 데이터 수집
+  if (!email) { showToast('먼저 Google 로그인을 해주세요.'); return; }
+  if (!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
   var resultTitle = (document.getElementById('fn-r-title') || {}).textContent || '';
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
-
-  // ★ 재무진단점수 계산 (통계 중간값 기반)
   var scoreData = calcFreeHealthScore(fnAnswers);
-
-  // ★ make.com 웹훅으로만 전송 (구글시트 기록 + 카톡 + 이메일 발송 모두 make.com에서 처리)
   fetch('https://hook.eu1.make.com/slpo33bjiux7xs821r1deb5f67c1va28', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type: 'free_score',
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      plan: '무료 재무진단점수',
-      result_title: resultTitle,
-      result_sub: resultSub,
-      result_d: resultD,
-      // ★ 재무검진결과표 데이터
-      health_score: scoreData.totalScore,
-      score_grade: scoreData.grade,
-      score_expense: scoreData.expense,
-      score_asset: scoreData.asset,
-      score_insurance: scoreData.insurance,
-      score_retirement: scoreData.retirement,
-      score_debt: scoreData.debt,
-      wealth_index: scoreData.wealthIndex,
-      wealth_grade: scoreData.wealthGrade,
-      age_label: scoreData.ageLabel,
-      income_label: scoreData.incomeLabel,
-      estimated_age: scoreData.estimatedAge,
-      estimated_income: scoreData.estimatedIncome,
-      estimated_asset: scoreData.estimatedAsset,
+      type: 'free_score', name: name, phone: '', email: email,
+      plan: '무료 재무진단점수', result_title: resultTitle,
+      result_sub: resultSub, result_d: resultD,
+      health_score: scoreData.totalScore, score_grade: scoreData.grade,
+      score_expense: scoreData.expense, score_asset: scoreData.asset,
+      score_insurance: scoreData.insurance, score_retirement: scoreData.retirement,
+      score_debt: scoreData.debt, wealth_index: scoreData.wealthIndex,
+      wealth_grade: scoreData.wealthGrade, age_label: scoreData.ageLabel,
+      income_label: scoreData.incomeLabel, estimated_age: scoreData.estimatedAge,
+      estimated_income: scoreData.estimatedIncome, estimated_asset: scoreData.estimatedAsset,
       checkup_url: 'https://financial-house-building.vercel.app',
       timestamp: new Date().toISOString()
     })
-  }).then(function(r) { console.log('[무료점수] make.com 웹훅:', r.status); })
-    .catch(function(e) { console.log('[무료점수] make.com 오류:', e); });
-
-  // 모달 → 감사 화면(Thank You Screen)으로 전환
+  }).then(function(r){ console.log('[무료점수] make.com:', r.status); })
+    .catch(function(e){ console.log('[무료점수] 오류:', e); });
   freeScoreModalClose();
-  showFreeThankYou(name.trim(), scoreData);
+  showFreeThankYou(name, scoreData);
 }
 
 /* ━━━ 무료 신청 감사 화면 (Thank You Screen) ━━━ */
