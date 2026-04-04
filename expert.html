@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ko" style="visibility:hidden;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>AI머니야 전문가 FC플랜 | 오원트금융연구소</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- 페이플 -->
+<script src="https://cpay.payple.kr/js/v1/payment.js" defer></script>
+
+<!-- Vapi (골드플랜 상담용) -->
+<script>
+(function(){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
+  s.async=true;
+  document.head.appendChild(s);
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --navy:#0B1D3A; --navy2:#1a3260; --navy3:#243B55;
+  --gold:#C9972A; --gold2:#E8B84B; --gold3:#fff8e6;
+  --green:#16A34A; --red:#DC2626; --gray:#8896B0;
+  --fn:'Noto Sans KR',-apple-system,sans-serif;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:var(--fn);}
+body{display:flex;align-items:center;justify-content:center;}
+
+.app{width:100%;max-width:430px;height:100vh;margin:0 auto;background:#f0f2f5;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+
+/* ── 헤더 ── */
+.hd{background:var(--navy);border-bottom:3px solid var(--gold);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.hd-logo{font-size:14px;font-weight:900;color:#fff;letter-spacing:1px;}
+.hd-sub{font-size:9px;color:var(--gold);margin-top:1px;}
+.hd-badge{background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--gold2);font-weight:700;}
+
+/* ── 스크린 ── */
+.screen{display:none;flex:1;overflow-y:auto;padding:16px;padding-bottom:30px;}
+.screen.active{display:block;}
+
+/* ── 스텝바 ── */
+.stepbar{display:flex;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0;}
+.step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.step-c{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;transition:all .3s;z-index:1;}
+.step-c.done{background:var(--green);color:#fff;}
+.step-c.active{background:var(--gold);color:var(--navy);}
+.step-c.wait{background:#ddd;color:#999;}
+.step-lbl{font-size:9px;font-weight:700;margin-top:3px;color:#aaa;}
+.step-lbl.active{color:var(--gold);}
+.step-line{position:absolute;top:14px;left:50%;width:100%;height:2px;background:#ddd;z-index:0;}
+.step-line.done{background:var(--green);}
+
+/* ── 카드 ── */
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:0 1px 8px rgba(0,0,0,.06);}
+.ct{font-size:14px;font-weight:900;color:var(--navy);margin-bottom:3px;}
+.cs{font-size:11px;color:var(--gray);margin-bottom:14px;line-height:1.6;}
+
+/* ── 플랜 카드 ── */
+.plan-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.plan-card{border:2px solid #e5e7eb;border-radius:12px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
+.plan-card.sel{border-color:var(--gold);background:var(--gold3);}
+.plan-badge{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--navy);font-size:9px;font-weight:900;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.plan-name{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.plan-price{font-size:18px;font-weight:900;color:var(--navy);}
+.plan-unit{font-size:9px;color:var(--gray);}
+.plan-desc{font-size:9px;color:var(--gray);margin-top:5px;line-height:1.5;}
+
+/* ── 혜택 리스트 ── */
+.benefit-list{display:flex;flex-direction:column;gap:10px;}
+.benefit-item{display:flex;gap:10px;align-items:flex-start;padding:10px;background:#f8f9fa;border-radius:10px;}
+.benefit-icon{font-size:20px;flex-shrink:0;}
+.benefit-title{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px;}
+.benefit-desc{font-size:10px;color:var(--gray);line-height:1.5;}
+
+/* ── 입력 ── */
+.field{margin-bottom:12px;}
+.field-label{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:5px;display:flex;gap:4px;align-items:center;}
+.req{color:var(--red);font-size:9px;}
+.field input,.field select{width:100%;padding:11px 13px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:var(--fn);outline:none;transition:border .2s;background:#fff;}
+.field input:focus,.field select:focus{border-color:var(--gold);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-hint{font-size:10px;color:var(--gray);margin-top:3px;}
+
+/* ── 전문분야 체크 ── */
+.spec-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.spec-chip{padding:6px 12px;border-radius:20px;border:1.5px solid #e5e7eb;font-size:11px;font-weight:700;color:#666;cursor:pointer;transition:all .2s;user-select:none;}
+.spec-chip.sel{border-color:var(--gold);background:var(--gold3);color:var(--gold);}
+
+/* ── 동의 ── */
+.agree-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;}
+.agree-row input{width:16px;height:16px;margin-top:2px;accent-color:var(--gold);flex-shrink:0;}
+.agree-label{font-size:11px;color:#555;line-height:1.6;cursor:pointer;}
+
+/* ── 결제 요약 ── */
+.pay-box{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:16px;margin-bottom:14px;}
+.pay-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08);}
+.pay-row:last-child{border-bottom:none;padding-top:10px;margin-top:4px;}
+.pay-lbl{font-size:11px;color:rgba(255,255,255,.55);}
+.pay-val{font-size:11px;color:#fff;font-weight:700;}
+.pay-total-lbl{font-size:12px;color:rgba(255,255,255,.8);font-weight:700;}
+.pay-total-val{font-size:19px;color:var(--gold2);font-weight:900;}
+
+/* ── 코드박스 ── */
+.code-box{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:18px;text-align:center;border:1px solid rgba(201,151,42,.3);margin-bottom:12px;}
+.code-lbl{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:6px;}
+.code-val{font-size:24px;font-weight:900;color:var(--gold2);letter-spacing:3px;}
+.code-sub{font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;}
+.url-box{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:10px;padding:11px;font-size:11px;color:var(--navy);font-weight:600;word-break:break-all;margin-bottom:8px;}
+
+/* ── 버튼 ── */
+.btn-primary{width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:14px;font-weight:900;font-family:var(--fn);cursor:pointer;min-height:52px;transition:opacity .2s;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary:not(:disabled):active{opacity:.85;}
+.btn-secondary{width:100%;padding:13px;border-radius:12px;border:2px solid var(--navy);background:transparent;color:var(--navy);font-size:13px;font-weight:700;font-family:var(--fn);cursor:pointer;margin-top:10px;min-height:48px;}
+.btn-outline{padding:10px 16px;border-radius:10px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;min-height:40px;}
+.btn-sm{padding:9px 14px;border-radius:8px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;min-height:38px;}
+.btn-copy{background:rgba(201,151,42,.15);color:var(--gold);border:1px solid rgba(201,151,42,.4);}
+.btn-kakao{background:#FEE500;color:#333;}
+.btn-navy{background:var(--navy);color:#fff;}
+
+/* ── 대시보드 ── */
+.dash-hd{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:14px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden;}
+.dash-hd::after{content:'👔';position:absolute;right:16px;top:14px;font-size:36px;opacity:.15;}
+.dash-name{font-size:15px;font-weight:900;color:#fff;}
+.dash-info{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;margin-bottom:10px;}
+.dash-plan{display:inline-flex;align-items:center;gap:5px;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--gold2);font-weight:700;}
+
+/* ── 통계 그리드 ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.stat-card{background:#fff;border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+.stat-icon{font-size:18px;margin-bottom:4px;}
+.stat-num{font-size:20px;font-weight:900;color:var(--navy);}
+.stat-lbl{font-size:9px;color:var(--gray);margin-top:2px;}
+.stat-card.hot{border:2px solid rgba(220,38,38,.2);}
+.stat-card.hot .stat-num{color:var(--red);}
+
+/* ── 탭 ── */
+.tabs{display:flex;gap:0;background:#eee;border-radius:10px;padding:3px;margin-bottom:12px;flex-shrink:0;}
+.tab{flex:1;padding:9px 4px;border-radius:8px;border:none;background:transparent;font-size:10px;font-weight:700;color:#888;cursor:pointer;font-family:var(--fn);transition:all .2s;min-height:36px;}
+.tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+/* ── 클라이언트 아이템 ── */
+.client-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f3f4f6;}
+.client-item:last-child{border-bottom:none;}
+.client-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.av-hot{background:rgba(220,38,38,.1);}
+.av-warm{background:rgba(201,151,42,.1);}
+.av-new{background:rgba(22,163,74,.1);}
+.client-name{font-size:12px;font-weight:700;color:var(--navy);}
+.client-needs{font-size:10px;color:var(--gray);margin-top:1px;}
+.badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;}
+.badge-hot{background:rgba(220,38,38,.1);color:var(--red);}
+.badge-warm{background:rgba(201,151,42,.1);color:var(--gold);}
+.badge-new{background:rgba(22,163,74,.1);color:var(--green);}
+
+/* ── 플로우 ── */
+.flow{display:flex;flex-direction:column;gap:0;}
+.flow-step{display:flex;gap:10px;padding-bottom:16px;position:relative;}
+.flow-step::before{content:'';position:absolute;left:13px;top:28px;width:2px;bottom:0;background:linear-gradient(to bottom,rgba(201,151,42,.4),rgba(201,151,42,.05));}
+.flow-step:last-child::before{display:none;}
+.flow-num{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;z-index:1;}
+.flow-t{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px;margin-top:4px;}
+.flow-d{font-size:10px;color:var(--gray);line-height:1.6;}
+
+/* ── 음성 상담 ── */
+.voice-wrap{background:linear-gradient(135deg,var(--navy),#0d2448);border-radius:14px;padding:18px;margin-bottom:12px;text-align:center;}
+.voice-title{font-size:14px;font-weight:900;color:#fff;margin-bottom:4px;}
+.voice-sub{font-size:10px;color:rgba(255,255,255,.45);margin-bottom:16px;}
+.voice-btn{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:50px;padding:14px 32px;font-size:14px;font-weight:900;color:var(--navy);cursor:pointer;font-family:var(--fn);min-height:50px;transition:all .2s;}
+.voice-btn:active{opacity:.85;}
+.voice-btn.listening{background:linear-gradient(135deg,var(--red),#ef4444);color:#fff;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4);}50%{box-shadow:0 0 0 12px rgba(220,38,38,0);}}
+.credit-bar{background:rgba(255,255,255,.08);border-radius:20px;height:6px;margin:12px 0 4px;overflow:hidden;}
+.credit-fill{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:20px;transition:width 1s ease;}
+
+/* ── 링크 발송 ── */
+.phone-row{display:flex;gap:8px;}
+.phone-row input{flex:1;padding:11px 13px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:var(--fn);outline:none;}
+.phone-row input:focus{border-color:var(--gold);}
+.phone-row button{padding:11px 14px;border-radius:10px;border:none;background:var(--navy);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--fn);min-height:46px;}
+
+/* ── 월별 차트 ── */
+.chart-wrap{display:flex;align-items:flex-end;gap:6px;height:72px;margin:12px 0 6px;}
+.chart-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:2px;}
+.bar-group{display:flex;gap:2px;align-items:flex-end;width:100%;}
+.bar{border-radius:3px 3px 0 0;min-height:2px;}
+.bar-a{background:rgba(11,29,58,.2);}
+.bar-b{background:var(--gold);}
+.bar-c{background:var(--red);}
+.chart-m{font-size:8px;color:var(--gray);text-align:center;}
+.legend{display:flex;gap:10px;justify-content:center;}
+.legend-item{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--gray);}
+.legend-dot{width:7px;height:7px;border-radius:2px;}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;opacity:0;transition:opacity .3s;z-index:9999;pointer-events:none;max-width:90%;}
+.toast.show{opacity:1;}
+
+/* ── 로그인 오버레이 ── */
+.login-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:999;align-items:flex-end;justify-content:center;}
+.login-overlay.show{display:flex;}
+.login-card{background:linear-gradient(135deg,var(--navy),var(--navy2));border:1px solid rgba(201,151,42,.3);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;}
+.login-title{font-size:15px;font-weight:900;color:var(--gold2);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:11px;color:rgba(255,255,255,.45);text-align:center;margin-bottom:20px;line-height:1.6;}
+.google-btn{width:100%;padding:14px;border-radius:12px;border:1.5px solid #ddd;background:#fff;color:#3c4043;font-size:13px;font-weight:700;font-family:var(--fn);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;}
+
+/* ── 알림박스 ── */
+.info-box{background:rgba(22,163,74,.05);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:11px;margin-bottom:12px;display:flex;gap:8px;}
+.warn-box{background:rgba(201,151,42,.05);border:1px solid rgba(201,151,42,.2);border-radius:10px;padding:11px;margin-bottom:12px;display:flex;gap:8px;}
+.box-text{font-size:11px;color:#555;line-height:1.6;}
+.box-text strong{color:var(--navy);}
+
+/* ── 성공 화면 ── */
+.success-wrap{text-align:center;padding:20px 0 16px;}
+.success-icon{font-size:52px;margin-bottom:10px;}
+.success-title{font-size:20px;font-weight:900;color:var(--navy);margin-bottom:5px;}
+.success-sub{font-size:12px;color:var(--gray);line-height:1.7;}
+
+/* ── ROI 카드 ── */
+.roi-row{display:flex;justify-content:space-between;align-items:center;padding:9px;border-radius:8px;margin-bottom:6px;}
+.roi-row.highlight{background:var(--gold3);border:1px solid rgba(201,151,42,.3);}
+.roi-row.dark{background:linear-gradient(135deg,var(--navy),var(--navy2));}
+.roi-lbl{font-size:11px;color:#555;}
+.roi-val{font-size:14px;font-weight:900;color:var(--navy);}
+.roi-row.highlight .roi-val{color:var(--gold);}
+.roi-row.dark .roi-lbl{color:rgba(255,255,255,.6);}
+.roi-row.dark .roi-val{color:var(--gold2);}
+
+/* ── 구독정보 ── */
+.sub-row{display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-bottom:1px solid #f3f4f6;}
+.sub-row:last-child{border-bottom:none;}
+.sub-key{color:var(--gray);}
+.sub-val{font-weight:700;color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ 헤더 ══ -->
+<div class="hd">
+  <div>
+    <div class="hd-logo">금융집짓기® AI머니야</div>
+    <div class="hd-sub">오원트금융연구소 · 전문가 FC플랜</div>
+  </div>
+  <div class="hd-badge" id="hd-login-badge">👔 설계사 전용</div>
+</div>
+
+<!-- ══ 스텝바 (가입 화면에서만) ══ -->
+<div class="stepbar" id="stepbar">
+  <div class="step">
+    <div class="step-c active" id="sc1">1</div>
+    <div class="step-lbl active" id="sl1">플랜</div>
+  </div>
+  <div class="step">
+    <div class="step-line" id="sline1"></div>
+    <div class="step-c wait" id="sc2">2</div>
+    <div class="step-lbl" id="sl2">정보입력</div>
+  </div>
+  <div class="step">
+    <div class="step-line" id="sline2"></div>
+    <div class="step-c wait" id="sc3">3</div>
+    <div class="step-lbl" id="sl3">결제</div>
+  </div>
+  <div class="step">
+    <div class="step-line" id="sline3"></div>
+    <div class="step-c wait" id="sc4">4</div>
+    <div class="step-lbl" id="sl4">완료</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     스크린 1: 플랜 선택
+══════════════════════════════════ -->
+<div class="screen active" id="scr1">
+
+  <div class="card">
+    <div class="ct">AI머니야 전문가 FC플랜</div>
+    <div class="cs">월 33,000원으로 AI가 고객 발굴·관리·연결을 대신합니다.<br>설계사 1건 계약 수수료 = 수십~수백만원. 3.3만원은 투자입니다.</div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;">결제 방식</div>
+    <div class="plan-row">
+      <div class="plan-card" onclick="selBilling('month')" id="pb-month">
+        <div class="plan-name">월정기구독</div>
+        <div class="plan-price">33,000</div>
+        <div class="plan-unit">원/월</div>
+        <div class="plan-desc">언제든 해지 가능</div>
+      </div>
+      <div class="plan-card sel" onclick="selBilling('year')" id="pb-year">
+        <div class="plan-badge">💎 2개월 무료</div>
+        <div class="plan-name">연간구독</div>
+        <div class="plan-price">330,000</div>
+        <div class="plan-unit">원/년 (월 27,500)</div>
+        <div class="plan-desc">연 396,000 → 330,000</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📦 포함 혜택</div>
+    <div class="benefit-list">
+      <div class="benefit-item">
+        <div class="benefit-icon">🔗</div>
+        <div>
+          <div class="benefit-title">전용 고객 링크 발급</div>
+          <div class="benefit-desc">내 코드가 담긴 URL — 고객에게 공유하면 자동 추적됩니다</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">🤖</div>
+        <div>
+          <div class="benefit-title">AI 자동 전문가 연결</div>
+          <div class="benefit-desc">상담 중 니즈 감지 → "OOO 설계사님 연결해드릴까요?" 자동 안내</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">🔔</div>
+        <div>
+          <div class="benefit-title">핫 리드 카톡 즉시 알림</div>
+          <div class="benefit-desc">고객 동의 시 → 설계사 카톡으로 즉시 + 니즈 요약 전달</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">🎙️</div>
+        <div>
+          <div class="benefit-title">골드플랜 음성 상담 포함</div>
+          <div class="benefit-desc">설계사 본인도 AI머니야로 40분 음성 재무진단 이용 가능</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">📊</div>
+        <div>
+          <div class="benefit-title">전용 대시보드</div>
+          <div class="benefit-desc">링크 공유·검진 완료·연결 요청 수 실시간 확인</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="goScr(2)">다음 — 설계사 정보 입력 →</button>
+</div>
+
+<!-- ══════════════════════════════════
+     스크린 2: 설계사 정보 입력
+══════════════════════════════════ -->
+<div class="screen" id="scr2">
+
+  <div class="card">
+    <div class="ct">설계사 정보 입력</div>
+    <div class="cs">입력하신 정보는 고객 연결 알림 및 대시보드에 사용됩니다. 고객에게는 이름만 공개됩니다.</div>
+
+    <div class="field">
+      <div class="field-label">이름 <span class="req">*필수</span></div>
+      <input type="text" id="f-name" placeholder="홍길동" oninput="chkStep2()">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-label">전화번호 <span class="req">*</span></div>
+        <input type="tel" id="f-phone" placeholder="010-0000-0000" oninput="chkStep2()">
+      </div>
+      <div class="field">
+        <div class="field-label">이메일 <span class="req">*</span></div>
+        <input type="email" id="f-email" placeholder="id@co.com" oninput="chkStep2()">
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">소속 회사 <span class="req">*필수</span></div>
+      <input type="text" id="f-company" placeholder="예: 삼성생명, 한화생명, 오원트금융연구소" oninput="chkStep2()">
+      <div class="field-hint">보험사, GA, 독립FP, 금융연구소 모두 가입 가능</div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-label">소속 <span class="req">*</span></div>
+        <select id="f-dept" onchange="chkStep2()">
+          <option value="">선택</option>
+          <option>팀</option><option>지점</option><option>본부</option>
+          <option>지역단</option><option>FA센터</option><option>독립</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">직책</div>
+        <select id="f-title">
+          <option value="">선택(선택)</option>
+          <option>FC (설계사)</option><option>팀장</option><option>지점장</option>
+          <option>본부장</option><option>부본부장</option><option>수석 FP</option><option>대표</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">주요 전문 분야</div>
+      <div class="spec-grid" id="spec-grid">
+        <div class="spec-chip" onclick="toggleSpec(this,'보험')">보험</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'연금')">연금</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'저축')">저축</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'투자')">투자</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'세금절약')">세금절약</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'부동산')">부동산</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'은퇴설계')">은퇴설계</div>
+        <div class="spec-chip" onclick="toggleSpec(this,'부채관리')">부채관리</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="info-box" style="margin-bottom:0;">
+      <div style="font-size:16px;">⚖️</div>
+      <div class="box-text"><strong>법적 안전 구조</strong> — 고객 정보는 고객이 직접 입력합니다. 설계사는 고객 연결 동의 시 이름·연락처·니즈 요약만 받습니다.</div>
+    </div>
+    <div style="height:14px;"></div>
+    <div class="agree-row">
+      <input type="checkbox" id="ag1" onchange="chkStep2()">
+      <label class="agree-label" for="ag1">[필수] 서비스 이용약관 및 전문가 플랜 운영 정책에 동의합니다.</label>
+    </div>
+    <div class="agree-row">
+      <input type="checkbox" id="ag2" onchange="chkStep2()">
+      <label class="agree-label" for="ag2">[필수] 개인정보 수집·이용에 동의합니다. (이름, 전화번호, 이메일, 소속정보)</label>
+    </div>
+    <div class="agree-row">
+      <input type="checkbox" id="ag3" onchange="chkStep2()">
+      <label class="agree-label" for="ag3">[필수] 고객과의 연결은 고객 직접 동의 후에만 이루어짐을 확인합니다.</label>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="btn-scr2" onclick="goScr(3)" disabled>다음 — 결제 확인 →</button>
+  <button class="btn-secondary" onclick="goScr(1)">← 이전</button>
+</div>
+
+<!-- ══════════════════════════════════
+     스크린 3: 결제
+══════════════════════════════════ -->
+<div class="screen" id="scr3">
+  <div class="card">
+    <div class="ct">결제 확인</div>
+    <div class="cs">아래 내용을 확인하고 결제를 진행해주세요.</div>
+
+    <div class="pay-box">
+      <div class="pay-row"><span class="pay-lbl">플랜</span><span class="pay-val" id="pp-plan">전문가 연간구독</span></div>
+      <div class="pay-row"><span class="pay-lbl">가입자</span><span class="pay-val" id="pp-name">—</span></div>
+      <div class="pay-row"><span class="pay-lbl">소속</span><span class="pay-val" id="pp-company">—</span></div>
+      <div class="pay-row"><span class="pay-lbl">포함 상담</span><span class="pay-val">골드플랜 40분 (₩19,900 상당)</span></div>
+      <div class="pay-row"><span class="pay-lbl">결제 방식</span><span class="pay-val">신용카드 정기결제 (페이플)</span></div>
+      <div class="pay-row"><span class="pay-total-lbl">결제 금액</span><span class="pay-total-val" id="pp-amount">330,000원</span></div>
+    </div>
+
+    <div class="code-box">
+      <div class="code-lbl">결제 완료 후 발급될 전용 코드</div>
+      <div class="code-val" id="pp-code">AGT_???</div>
+      <div class="code-sub">이 코드가 담긴 링크를 고객에게 공유하세요</div>
+    </div>
+
+    <div class="warn-box">
+      <div style="font-size:16px;">🔒</div>
+      <div class="box-text"><strong>페이플 정기결제</strong> — 카드 등록 후 자동 청구됩니다. 언제든지 대시보드에서 해지 가능합니다.</div>
+    </div>
+
+    <!-- 구글 로그인 섹션 -->
+    <div id="login-section">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">결제 전 로그인 필요</div>
+      <button class="google-btn" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Google 계정으로 로그인
+      </button>
+    </div>
+    <div id="logged-section" style="display:none;">
+      <div style="background:#f0f9f0;border-radius:10px;padding:11px;border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;">
+        <img id="login-photo" src="" style="width:32px;height:32px;border-radius:50%;display:none;border:2px solid var(--gold);">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:#166534;font-weight:700;">✅ 로그인 완료</div>
+          <div id="login-name" style="font-size:12px;font-weight:900;color:var(--navy);"></div>
+          <div id="login-email" style="font-size:10px;color:var(--gray);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="btn-pay" onclick="doPay()">💳 카드 정기결제 시작하기</button>
+  <button class="btn-secondary" onclick="goScr(2)">← 정보 수정</button>
+</div>
+
+<!-- ══════════════════════════════════
+     스크린 4: 결제 완료 + 코드 발급
+══════════════════════════════════ -->
+<div class="screen" id="scr4">
+  <div class="success-wrap">
+    <div class="success-icon">🎉</div>
+    <div class="success-title" id="success-name">OOO 설계사님</div>
+    <div class="success-sub">전문가 FC플랜 가입 완료!<br>전용 링크를 고객에게 공유해보세요.</div>
+  </div>
+
+  <div class="code-box">
+    <div class="code-lbl">나의 전용 설계사 코드</div>
+    <div class="code-val" id="my-code">AGT_HG001</div>
+    <div class="code-sub">이 코드는 변경되지 않습니다</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📎 나의 전용 고객 링크</div>
+    <div class="cs">이 링크로 들어온 고객은 자동으로 나와 연결됩니다</div>
+    <div class="url-box" id="my-url">https://financial-house-building.vercel.app?agent=AGT_HG001</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <button class="btn-sm btn-copy" onclick="copyLink()">📋 URL 복사</button>
+      <button class="btn-sm btn-kakao" onclick="shareKakao()">💬 카톡</button>
+      <button class="btn-sm btn-navy" onclick="shareSMS()">📱 문자</button>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <div style="font-size:16px;">💡</div>
+    <div class="box-text"><strong>골드플랜 상담 활성화</strong> — 대시보드의 "내 상담" 탭에서 AI 음성 재무진단(40분)을 바로 이용할 수 있습니다.</div>
+  </div>
+
+  <button class="btn-primary" onclick="goDash()">👔 대시보드 바로가기 →</button>
+</div>
+
+<!-- ══════════════════════════════════
+     스크린 5: 대시보드
+══════════════════════════════════ -->
+<div class="screen" id="scr5">
+  <div class="dash-hd">
+    <div class="dash-name" id="d-name">홍길동 설계사님</div>
+    <div class="dash-info" id="d-info">삼성생명 · 본부 · 팀장 | 2026.04.04 가입</div>
+    <div class="dash-plan" id="d-plan">👔 전문가 FC플랜 · 연간구독</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="dTab('overview',this)">📊 현황</button>
+    <button class="tab" onclick="dTab('consult',this)">🎙️ 내상담</button>
+    <button class="tab" onclick="dTab('send',this)">📤 링크발송</button>
+    <button class="tab" onclick="dTab('clients',this)">👥 고객</button>
+    <button class="tab" onclick="dTab('stats',this)">📈 통계</button>
+  </div>
+
+  <!-- 탭: 현황 -->
+  <div id="dt-overview">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📤</div>
+        <div class="stat-num">45</div>
+        <div class="stat-lbl">링크 공유</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-num">12</div>
+        <div class="stat-lbl">검진 완료</div>
+      </div>
+      <div class="stat-card hot">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-num">3</div>
+        <div class="stat-lbl">연결 요청</div>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid rgba(220,38,38,.15);">
+      <div class="ct" style="color:var(--red);">🔔 즉시 연락 필요 (핫 리드)</div>
+      <div class="cs">고객이 전문가 상담을 요청했습니다</div>
+      <div class="client-item">
+        <div class="client-avatar av-hot">👤</div>
+        <div style="flex:1;">
+          <div class="client-name">김○○ (40대 맞벌이)</div>
+          <div class="client-needs">보험 보장 부족 · 오늘 14:23 요청</div>
+          <div style="font-size:10px;color:var(--red);margin-top:2px;">010-****-3721</div>
+        </div>
+        <span class="badge badge-hot">🔴 HOT</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-hot">👤</div>
+        <div style="flex:1;">
+          <div class="client-name">이○○ (50대 남성)</div>
+          <div class="client-needs">노후 연금 부족 · 어제 16:45 요청</div>
+          <div style="font-size:10px;color:var(--red);margin-top:2px;">010-****-8832</div>
+        </div>
+        <span class="badge badge-hot">🔴 HOT</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-warm">👤</div>
+        <div style="flex:1;">
+          <div class="client-name">박○○ (30대 여성)</div>
+          <div class="client-needs">부채 관리 · 2일 전 요청</div>
+        </div>
+        <span class="badge badge-warm">🟡 WARM</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">🔄 바이럴 플로우</div>
+      <div class="cs">AI가 트로이목마처럼 고객을 발굴합니다</div>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div><div class="flow-t">무료 링크 발송</div><div class="flow-d">"재무건강점수 무료 확인" — 거부감 없이 자연스럽게</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div><div class="flow-t">AI 재무진단 (고객이 스스로)</div><div class="flow-d">원트큐브 → 텍스트상담 → 음성진단 자연스럽게 진행</div></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div><div class="flow-t">머니야가 니즈 감지</div><div class="flow-d">"보험이 부족하시네요. OOO 설계사님 연결해드릴까요?"</div></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div><div class="flow-t">고객 동의 → 핫 리드 알림</div><div class="flow-d">설계사 카톡으로 즉시 + 니즈 요약 전달</div></div></div>
+        <div class="flow-step"><div class="flow-num">5</div><div><div class="flow-t">고객 바이럴</div><div class="flow-d">"좋은 앱 소개해줘서 감사해요" → 지인에게 자발적 공유</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭: 내 상담 (골드플랜) -->
+  <div id="dt-consult" style="display:none;">
+    <div class="voice-wrap">
+      <div class="voice-title">🎙️ AI 재무진단 음성 상담</div>
+      <div class="voice-sub">골드플랜 포함 · 40분 · AI머니야와 직접 상담</div>
+      <div class="credit-bar"><div class="credit-fill" id="credit-fill" style="width:100%;"></div></div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:14px;">잔여 <span id="credit-min">40</span>분</div>
+      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎙️ 음성 상담 시작하기</button>
+    </div>
+
+    <div class="card">
+      <div class="ct">골드플랜 상담 안내</div>
+      <div class="cs">전문가 FC플랜에 골드플랜(40분) 상담이 포함되어 있습니다.</div>
+      <div class="benefit-list">
+        <div class="benefit-item">
+          <div class="benefit-icon">⏱️</div>
+          <div><div class="benefit-title">월 40분 음성 상담</div><div class="benefit-desc">매월 초기화됩니다. 이번 달 잔여: 40분</div></div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">📋</div>
+          <div><div class="benefit-title">8단계 전체 재무 진단</div><div class="benefit-desc">금융집짓기® 방법론 기반 종합 설계</div></div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">🗺️</div>
+          <div><div class="benefit-title">DESIRE 단계 확인</div><div class="benefit-desc">D→E→S→I→R→E 6단계 재무 로드맵</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭: 링크 발송 -->
+  <div id="dt-send" style="display:none;">
+    <div class="card">
+      <div class="ct">📎 나의 전용 고객 링크</div>
+      <div class="cs">이 링크로 접속한 고객은 자동으로 나와 연결됩니다</div>
+      <div class="url-box" id="d-url">https://financial-house-building.vercel.app?agent=AGT_HG001</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+        <button class="btn-sm btn-copy" onclick="copyLink()">📋 URL 복사</button>
+        <button class="btn-sm btn-kakao" onclick="shareKakao()">💬 카톡</button>
+        <button class="btn-sm btn-navy" onclick="shareSMS()">📱 문자</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">📤 고객에게 카톡 알림톡 발송</div>
+      <div class="cs">전화번호 입력 시 내 전용 링크가 담긴 카톡이 자동 발송됩니다</div>
+      <div class="field">
+        <div class="field-label">수신자 이름 (선택)</div>
+        <input type="text" id="send-name" placeholder="홍길동 (생략 시 고객님으로 발송)" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <div class="field-label">전화번호 <span class="req">*필수</span></div>
+        <div class="phone-row">
+          <input type="tel" id="send-phone" placeholder="010-0000-0000">
+          <button onclick="doSendKakao()">카톡 발송</button>
+        </div>
+      </div>
+      <!-- 미리보기 -->
+      <div style="background:#FEE500;border-radius:12px;padding:12px;margin-top:10px;">
+        <div style="font-size:10px;font-weight:700;color:#333;margin-bottom:6px;">💬 알림톡 미리보기</div>
+        <div style="background:#fff;border-radius:8px;padding:10px;font-size:11px;color:#333;line-height:1.8;">
+          <strong>[AI머니야] 무료 재무진단점수 안내</strong><br><br>
+          안녕하세요 <span id="prev-name" style="color:var(--navy);font-weight:700;">고객</span>님,<br>
+          <span id="prev-fc" style="color:var(--navy);font-weight:700;">설계사</span>님이 보내드리는<br>
+          무료 AI 재무건강점수 확인 링크입니다.<br><br>
+          🏠 <span style="color:#0066cc;text-decoration:underline;">[링크 클릭]</span><br><br>
+          오원트금융연구소 · AI머니야
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">📋 최근 발송 이력</div>
+      <div class="client-item">
+        <div class="client-avatar av-new">📤</div>
+        <div style="flex:1;"><div class="client-name">010-****-3721</div><div class="client-needs">오늘 09:12 · 검진 완료 ✅</div></div>
+        <span class="badge badge-new">완료</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-new">📤</div>
+        <div style="flex:1;"><div class="client-name">010-****-8832</div><div class="client-needs">어제 15:30 · 링크 클릭 ✅</div></div>
+        <span class="badge badge-warm">진행중</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar">📤</div>
+        <div style="flex:1;"><div class="client-name">010-****-2291</div><div class="client-needs">3일 전 · 미확인</div></div>
+        <span class="badge" style="background:#f3f4f6;color:#999;">대기중</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭: 고객 목록 -->
+  <div id="dt-clients" style="display:none;">
+    <div class="card">
+      <div class="ct">👥 내 링크로 접속한 전체 고객</div>
+      <div class="cs">이달 기준 · 총 12명 검진 완료</div>
+      <div class="client-item">
+        <div class="client-avatar av-hot">👤</div>
+        <div style="flex:1;"><div class="client-name">김○○ · 40대 · 맞벌이</div><div class="client-needs">보험 보장 부족 · 연결 요청 ⚡</div></div>
+        <span class="badge badge-hot">🔴 HOT</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-hot">👤</div>
+        <div style="flex:1;"><div class="client-name">이○○ · 50대 · 외벌이</div><div class="client-needs">노후 연금 부족 · 연결 요청 ⚡</div></div>
+        <span class="badge badge-hot">🔴 HOT</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-warm">👤</div>
+        <div style="flex:1;"><div class="client-name">박○○ · 30대 · 여성</div><div class="client-needs">부채 관리 · 상담 예정</div></div>
+        <span class="badge badge-warm">🟡 WARM</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-new">👤</div>
+        <div style="flex:1;"><div class="client-name">최○○ · 35세 · 맞벌이</div><div class="client-needs">재무진단점수 55점 · 검진 완료</div></div>
+        <span class="badge badge-new">🟢 NEW</span>
+      </div>
+      <div class="client-item">
+        <div class="client-avatar av-new">👤</div>
+        <div style="flex:1;"><div class="client-name">정○○ · 42세 · 남성</div><div class="client-needs">투자 자산 분배 · 진단 중</div></div>
+        <span class="badge badge-new">🟢 진행중</span>
+      </div>
+      <div style="text-align:center;padding:12px 0;font-size:11px;color:var(--gray);">+ 7명 더 보기</div>
+    </div>
+  </div>
+
+  <!-- 탭: 통계 -->
+  <div id="dt-stats" style="display:none;">
+    <div class="card">
+      <div class="ct">📈 월별 성과 추이</div>
+      <div class="cs">링크공유 · 검진완료 · 연결요청</div>
+      <div class="chart-wrap" id="chart-bars"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;" id="chart-months"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(11,29,58,.2);"></div>링크공유</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--gold);"></div>검진완료</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>연결요청</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">💰 예상 수익 환산</div>
+      <div class="cs">연결 요청 = 핫 리드. 전환율 30% 기준</div>
+      <div class="roi-row" style="background:#f8f9fa;"><span class="roi-lbl">이달 연결 요청</span><span class="roi-val">3건</span></div>
+      <div class="roi-row" style="background:#f8f9fa;margin-bottom:6px;"><span class="roi-lbl">예상 계약 (전환율 30%)</span><span class="roi-val">약 1건</span></div>
+      <div class="roi-row highlight"><span class="roi-lbl" style="font-weight:700;color:var(--navy);">예상 수수료 수익</span><span class="roi-val">50~200만원</span></div>
+      <div class="roi-row dark"><span class="roi-lbl">월 구독료</span><span class="roi-val">33,000원</span></div>
+      <div style="text-align:center;font-size:10px;color:var(--gray);margin-top:8px;">📊 ROI: 약 1,500% ~ 6,000%</div>
+    </div>
+
+    <div class="card">
+      <div class="ct">🔔 구독 정보</div>
+      <div class="sub-row"><span class="sub-key">플랜</span><span class="sub-val" id="st-plan">전문가 연간구독</span></div>
+      <div class="sub-row"><span class="sub-key">가입일</span><span class="sub-val">2026.04.04</span></div>
+      <div class="sub-row"><span class="sub-key">다음 결제일</span><span class="sub-val" id="st-next-pay">2027.04.04</span></div>
+      <div class="sub-row"><span class="sub-key">내 코드</span><span class="sub-val" style="color:var(--gold);" id="st-code">AGT_HG001</span></div>
+      <div class="sub-row"><span class="sub-key">골드 잔여시간</span><span class="sub-val">40분</span></div>
+      <div style="margin-top:14px;">
+        <button class="btn-outline" style="width:100%;" onclick="showToast('해지 신청은 고객센터 문의: ggorilla11@gmail.com')">구독 해지 신청</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /scr5 -->
+
+</div><!-- /app -->
+
+<!-- ── 토스트 ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+// 설정
+// ════════════════════════════════
+var FIREBASE_CONFIG = {
+  apiKey:            'AIzaSyBiMmPrfOzU9raSBWL1W3_aFX5IRvkzJPA',
+  authDomain:        'moneya-72fe6.firebaseapp.com',
+  projectId:         'moneya-72fe6',
+  storageBucket:     'moneya-72fe6.firebasestorage.app',
+  messagingSenderId: '688215695102',
+  appId:             '1:688215695102:web:bfbbf70f2ddbf47aa44faf'
+};
+var VAPI_PUBLIC_KEY     = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
+var VAPI_ASSISTANT_PAID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98';
+var PAYPLE_CLIENT_KEY   = 'A5FAA5CC8F3A24C178790CF50FD1A19B';
+var MAKE_WEBHOOK_URL    = 'https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9';
+var RENDER_URL          = 'https://moneya-server.onrender.com';
+
+// ════════════════════════════════
+// 상태
+// ════════════════════════════════
+var S = {
+  billing: 'year',
+  name:'', phone:'', email:'', company:'', dept:'', title:'',
+  specs: [],
+  agentCode: '', agentUrl: '',
+  currentUser: null,
+  db: null,
+  vapi: null,
+  voiceActive: false,
+  creditMin: 40
+};
+
+// ════════════════════════════════
+// Firebase 초기화
+// ════════════════════════════════
+(function initFB(){
+  if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  S.db = firebase.firestore();
+  firebase.auth().onAuthStateChanged(function(user){
+    S.currentUser = user || null;
+    var lsec = document.getElementById('login-section');
+    var llog = document.getElementById('logged-section');
+    if(user){
+      if(lsec) lsec.style.display = 'none';
+      if(llog) llog.style.display = 'block';
+      var nm = document.getElementById('login-name');
+      var em = document.getElementById('login-email');
+      var ph = document.getElementById('login-photo');
+      if(nm) nm.textContent = user.displayName || '';
+      if(em) em.textContent = user.email || '';
+      if(ph && user.photoURL){ ph.src=user.photoURL; ph.style.display='block'; }
+    } else {
+      if(lsec) lsec.style.display = 'block';
+      if(llog) llog.style.display = 'none';
+    }
+    // 이미 가입된 설계사인지 확인
+    if(user && S.db){
+      S.db.collection('agents').where('email','==',user.email).limit(1).get()
+        .then(function(snap){
+          if(!snap.empty){
+            var d = snap.docs[0].data();
+            S.agentCode = d.code;
+            S.agentUrl  = 'https://financial-house-building.vercel.app?agent=' + d.code;
+            S.name      = d.name;
+            S.company   = d.company;
+            S.billing   = d.plan && d.plan.indexOf('year')>-1 ? 'year' : 'month';
+            loadDashboard(d);
+          }
+        }).catch(function(){});
+    }
+  });
+})();
+
+// ════════════════════════════════
+// 플랜 선택
+// ════════════════════════════════
+function selBilling(type){
+  S.billing = type;
+  document.getElementById('pb-month').classList.toggle('sel', type==='month');
+  document.getElementById('pb-year').classList.toggle('sel',  type==='year');
+}
+
+// ════════════════════════════════
+// 스크린 이동
+// ════════════════════════════════
+function goScr(n){
+  if(n===3){
+    S.name    = v('f-name');
+    S.phone   = v('f-phone');
+    S.email   = v('f-email');
+    S.company = v('f-company');
+    S.dept    = v('f-dept');
+    S.title   = v('f-title');
+    if(!S.name||!S.phone||!S.email||!S.company||!S.dept){
+      showToast('필수 항목을 모두 입력해주세요'); return;
+    }
+    if(!g('ag1').checked||!g('ag2').checked||!g('ag3').checked){
+      showToast('필수 동의 항목을 체크해주세요'); return;
+    }
+    // 결제 화면 업데이트
+    g('pp-plan').textContent    = S.billing==='year'?'전문가 연간구독':'전문가 월정기구독';
+    g('pp-name').textContent    = S.name + ' ' + (S.title||'설계사');
+    g('pp-company').textContent = S.company + ' · ' + S.dept;
+    g('pp-amount').textContent  = S.billing==='year'?'330,000원':'33,000원';
+    // 코드 미리보기 생성
+    var prefix = S.name.replace(/\s/g,'').substring(0,2).toUpperCase();
+    var num = Math.floor(Math.random()*900)+100;
+    S.agentCode = 'AGT_' + prefix + num;
+    g('pp-code').textContent = S.agentCode;
+    // prev-fc 업데이트
+    g('prev-fc').textContent = S.name;
+  }
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  g('scr'+n).classList.add('active');
+  updateStepBar(n);
+  g('scr'+n).scrollTop = 0;
+}
+
+function updateStepBar(cur){
+  var sb = g('stepbar');
+  if(cur>=5){ sb.style.display='none'; return; }
+  sb.style.display='flex';
+  [1,2,3,4].forEach(function(i){
+    var c = g('sc'+i), l = g('sl'+i);
+    c.classList.remove('done','active','wait');
+    if(l) l.classList.remove('active');
+    if(i<cur){ c.classList.add('done'); c.textContent='✓'; }
+    else if(i===cur){ c.classList.add('active'); c.textContent=i; if(l) l.classList.add('active'); }
+    else{ c.classList.add('wait'); c.textContent=i; }
+    if(i<4){
+      var ln = g('sline'+i);
+      if(ln) ln.classList.toggle('done', i<cur);
+    }
+  });
+}
+
+// ════════════════════════════════
+// Step2 유효성
+// ════════════════════════════════
+function chkStep2(){
+  var ok = v('f-name')&&v('f-phone')&&v('f-email')&&v('f-company')&&v('f-dept')
+        && g('ag1').checked && g('ag2').checked && g('ag3').checked;
+  g('btn-scr2').disabled = !ok;
+}
+
+function toggleSpec(el, spec){
+  el.classList.toggle('sel');
+  if(el.classList.contains('sel')){ S.specs.push(spec); }
+  else{ S.specs = S.specs.filter(function(s){ return s!==spec; }); }
+}
+
+// ════════════════════════════════
+// 구글 로그인
+// ════════════════════════════════
+function doGoogleLogin(){
+  var provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then(function(r){
+      showToast('✅ ' + (r.user.displayName||'설계사') + '님, 로그인 완료!');
+    })
+    .catch(function(e){
+      if(e.code==='auth/popup-blocked') showToast('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.');
+      else showToast('로그인 중 오류가 발생했습니다.');
+    });
+}
+
+// ════════════════════════════════
+// 결제 (페이플)
+// ════════════════════════════════
+function doPay(){
+  if(!S.currentUser){ showToast('먼저 구글 로그인을 해주세요.'); return; }
+  if(typeof PaypleCpayAuthCheck !== 'function'){
+    // 개발 환경 시뮬레이션
+    showToast('결제 처리 중...(시뮬레이션)');
+    setTimeout(doPaySuccess, 1800);
+    return;
+  }
+  var plan = S.billing==='year' ? 'fc-year' : 'fc-month';
+  var amount = S.billing==='year' ? 330000 : 33000;
+  var orderId = 'FC_' + (S.billing==='year'?'YEAR':'MONTH') + '_' + Date.now();
+  var obj = {};
+  obj.clientKey        = PAYPLE_CLIENT_KEY;
+  obj.PCD_PAY_TYPE     = 'card';
+  obj.PCD_CARD_VER     = '01';
+  obj.PCD_PAY_GOODS    = 'AI머니야 전문가 FC플랜 ' + (S.billing==='year'?'연간':'월정기');
+  obj.PCD_PAY_TOTAL    = amount;
+  obj.PCD_PAY_OID      = orderId;
+  obj.PCD_REGULER_FLAG = 'Y';
+  obj.PCD_PAY_WORK     = 'AUTH';
+  obj.PCD_SIMPLE_FLAG  = 'Y';
+  obj.PCD_PAYER_NAME   = S.name;
+  obj.PCD_PAYER_HP     = S.phone.replace(/[^0-9]/g,'');
+  obj.PCD_PAYER_EMAIL  = S.email;
+  obj.PCD_RST_URL      = 'https://ohwant-webhook.vercel.app/api/payple'
+    + '?payer_name='  + encodeURIComponent(S.name)
+    + '&payer_email=' + encodeURIComponent(S.email)
+    + '&payer_phone=' + encodeURIComponent(S.phone)
+    + '&plan=fc-expert'
+    + '&uid='         + encodeURIComponent(S.currentUser.uid||'');
+  obj.callbackFunction = function(data){
+    if(data.PCD_PAY_RST==='success'){ doPaySuccess(); }
+    else{ showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG||'다시 시도해주세요.')); }
+  };
+  PaypleCpayAuthCheck(obj);
+}
+
+function doPaySuccess(){
+  // agentCode 확정
+  S.agentUrl = 'https://financial-house-building.vercel.app?agent=' + S.agentCode;
+  // Firestore agents 컬렉션에 저장
+  if(S.db && S.currentUser){
+    var docId = S.currentUser.email.replace(/\./g,'_').replace(/@/g,'_at_');
+    S.db.collection('agents').doc(docId).set({
+      code:          S.agentCode,
+      name:          S.name,
+      phone:         S.phone,
+      email:         S.email,
+      company:       S.company,
+      dept:          S.dept,
+      title:         S.title,
+      specialty:     S.specs,
+      plan:          'fc-' + S.billing,
+      subscribeDate: new Date().toISOString(),
+      active:        true,
+      creditMin:     40,
+      stats:         { linksShared:0, clientsCompleted:0, connectRequests:0 },
+      uid:           S.currentUser.uid
+    }).catch(function(e){ console.log('[Firestore]', e.message); });
+  }
+  // make.com 알림
+  fetch(MAKE_WEBHOOK_URL, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      type:'expert_signup', name:S.name, phone:S.phone, email:S.email,
+      company:S.company, dept:S.dept, title:S.title, code:S.agentCode,
+      plan:'fc-'+S.billing, timestamp:new Date().toISOString()
+    })
+  }).catch(function(){});
+  // 성공 화면
+  g('success-name').textContent = S.name + ' 설계사님';
+  g('my-code').textContent      = S.agentCode;
+  g('my-url').textContent       = S.agentUrl;
+  g('d-url').textContent        = S.agentUrl;
+  goScr(4);
+}
+
+// ════════════════════════════════
+// 대시보드 진입
+// ════════════════════════════════
+function goDash(){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  g('scr5').classList.add('active');
+  updateStepBar(5);
+  g('d-name').textContent    = S.name + ' 설계사님 대시보드';
+  g('d-info').textContent    = S.company + ' · ' + S.dept + (S.title?' · '+S.title:'') + ' | 2026.04.04 가입';
+  g('d-plan').textContent    = '👔 전문가 FC플랜 · ' + (S.billing==='year'?'연간구독':'월정기구독');
+  g('st-plan').textContent   = S.billing==='year'?'전문가 연간구독':'전문가 월정기구독';
+  g('st-code').textContent   = S.agentCode;
+  g('st-next-pay').textContent = S.billing==='year'?'2027.04.04':'2026.05.04';
+  g('prev-fc').textContent   = S.name;
+  g('hd-login-badge').textContent = '👔 ' + S.name;
+  renderChart();
+  g('scr5').scrollTop = 0;
+}
+
+function loadDashboard(d){
+  // 이미 가입된 설계사 — 바로 대시보드
+  S.name = d.name; S.company = d.company||'';
+  S.dept = d.dept||''; S.title = d.title||'';
+  S.billing = (d.plan||'').indexOf('year')>-1 ? 'year' : 'month';
+  S.agentUrl = 'https://financial-house-building.vercel.app?agent=' + d.code;
+  goDash();
+}
+
+// ════════════════════════════════
+// 대시보드 탭
+// ════════════════════════════════
+function dTab(name, el){
+  ['overview','consult','send','clients','stats'].forEach(function(t){
+    var el2 = g('dt-'+t);
+    if(el2) el2.style.display = 'none';
+  });
+  var target = g('dt-'+name);
+  if(target) target.style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  if(name==='stats') renderChart();
+}
+
+// ════════════════════════════════
+// 월별 차트
+// ════════════════════════════════
+function renderChart(){
+  var months  = ['11월','12월','1월','2월','3월','4월'];
+  var links   = [20,28,30,38,42,45];
+  var done    = [5,8,8,10,11,12];
+  var connect = [1,1,2,2,3,3];
+  var maxV    = Math.max.apply(null,links);
+  var barsEl  = g('chart-bars');
+  var mEl     = g('chart-months');
+  if(!barsEl||!mEl) return;
+  barsEl.innerHTML = ''; mEl.innerHTML = '';
+  months.forEach(function(m,i){
+    var col = document.createElement('div');
+    col.className = 'chart-col';
+    var grp = document.createElement('div');
+    grp.className = 'bar-group';
+    var h1 = Math.round((links[i]/maxV)*65);
+    var h2 = Math.round((done[i]/maxV)*65);
+    var h3 = Math.round((connect[i]/maxV)*65);
+    grp.innerHTML =
+      '<div class="bar bar-a" style="width:20px;height:'+h1+'px;"></div>'+
+      '<div class="bar bar-b" style="width:13px;height:'+h2+'px;"></div>'+
+      '<div class="bar bar-c" style="width:9px;height:'+h3+'px;"></div>';
+    col.appendChild(grp);
+    barsEl.appendChild(col);
+    var mo = document.createElement('div');
+    mo.className = 'chart-m';
+    mo.style.flex = '1';
+    mo.textContent = m;
+    mEl.appendChild(mo);
+  });
+}
+
+// ════════════════════════════════
+// 음성 상담 (Vapi 골드플랜)
+// ════════════════════════════════
+function toggleVoice(){
+  var btn = g('voice-btn');
+  if(S.voiceActive){
+    // 종료
+    if(S.vapi) try{ S.vapi.stop(); }catch(e){}
+    S.voiceActive = false;
+    btn.className = 'voice-btn';
+    btn.textContent = '🎙️ 음성 상담 시작하기';
+    showToast('상담이 종료되었습니다.');
+    return;
+  }
+  // 시작
+  if(typeof Vapi === 'undefined'){
+    showToast('음성 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+  if(!S.vapi) S.vapi = new Vapi(VAPI_PUBLIC_KEY);
+  var overrides = {
+    firstMessage: S.name+'설계사님, 안녕하세요! AI머니야입니다. 오늘 재무진단을 시작하겠습니다. 편하게 말씀해주세요.',
+  };
+  S.vapi.start(VAPI_ASSISTANT_PAID, overrides);
+  S.voiceActive = true;
+  btn.className = 'voice-btn listening';
+  btn.textContent = '🔴 상담 중 — 종료하려면 클릭';
+  showToast('🎙️ 음성 상담이 시작되었습니다');
+  // 크레딧 타이머 시뮬레이션
+  var timer = setInterval(function(){
+    if(!S.voiceActive){ clearInterval(timer); return; }
+    S.creditMin = Math.max(0, S.creditMin - 1/60);
+    var pct = (S.creditMin/40)*100;
+    var fillEl = g('credit-fill');
+    var minEl  = g('credit-min');
+    if(fillEl) fillEl.style.width = pct+'%';
+    if(minEl)  minEl.textContent  = Math.ceil(S.creditMin);
+  }, 1000);
+}
+
+// ════════════════════════════════
+// 링크 공유
+// ════════════════════════════════
+function copyLink(){
+  var url = S.agentUrl || (g('my-url')||{}).textContent || '';
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(function(){ showToast('✅ 링크 복사 완료!'); });
+  } else { showToast('✅ 링크 복사 완료!'); }
+}
+function shareKakao(){ showToast('💬 카카오 공유 — 실제 배포 시 활성화'); }
+function shareSMS(){   showToast('📱 문자 발송 — 실제 배포 시 활성화'); }
+
+function updatePreview(){
+  var n = g('send-name').value || '고객';
+  g('prev-name').textContent = n;
+}
+
+function doSendKakao(){
+  var ph = g('send-phone').value.trim();
+  var nm = g('send-name').value.trim() || '고객';
+  if(!ph){ showToast('전화번호를 입력해주세요'); return; }
+  showToast('💬 ' + nm + '님에게 카톡 알림톡 발송 완료!');
+  // make.com으로 실제 발송
+  fetch(MAKE_WEBHOOK_URL,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      type:'agent_link_send', agentName:S.name, agentCode:S.agentCode,
+      recipientPhone:ph, recipientName:nm, agentUrl:S.agentUrl,
+      timestamp:new Date().toISOString()
+    })
+  }).catch(function(){});
+  g('send-phone').value = '';
+  g('send-name').value  = '';
+}
+
+// ════════════════════════════════
+// 유틸
+// ════════════════════════════════
+function v(id){ return (document.getElementById(id)||{}).value||''; }
+function g(id){ return document.getElementById(id); }
+
+function showToast(msg){
+  var t = g('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+// 초기 설정
+selBilling('year');
+
+// 페이지 로드 완료
+document.documentElement.style.visibility = 'visible';
+</script>
+</body>
+</html>
