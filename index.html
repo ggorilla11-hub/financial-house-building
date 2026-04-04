@@ -2632,9 +2632,9 @@ html{visibility:visible !important;}
       </button>
 
       <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
-      <button onclick="openDesireViaMypage()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
+      <button onclick="openDesireSimulator()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🗺️ 나의 DESIRE 단계 파악하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 로그인 후 이용</span>
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
       </button>
 
       <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
@@ -6044,7 +6044,15 @@ function onPaypleResult(data){
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
     if(window._fhDb && _payerEmail) {
       var _docId = _payerEmail.replace(/\./g, '_').replace(/@/g, '_at_');
-      var _exp = new Date(); _exp.setMonth(_exp.getMonth()+1);
+      var _exp = new Date();
+      // 플랜별 만료일 계산
+      if(currentPlan === 'single') {
+        _exp.setDate(_exp.getDate() + 1); // 단일진단: 당일
+      } else if(currentPlan.indexOf('year') > -1) {
+        _exp.setFullYear(_exp.getFullYear() + 1); // 연간: 1년
+      } else {
+        _exp.setMonth(_exp.getMonth() + 1); // 월간: 1개월
+      }
       window._fhDb.collection('subscribers').doc(_docId).set({
         email:_payerEmail, name:_payerName, plan:currentPlan,
         creditMin:credit, active:true, expiry:_exp.toISOString(),
@@ -6078,11 +6086,11 @@ function onPaypleResult(data){
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
       payBtn.textContent = '👑 회원전용';
-      payBtn.onclick = () => mpOpen();
+      payBtn.onclick = () => mvpStartCheckup();
       payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
       payBtn.style.animation = 'none';
     }
-    setTimeout(() => mpOpen(), 300);
+    setTimeout(() => mpOpen(), 300); // 결제 직후 최초 1회는 바로 열기
   } else {
     showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
   }
@@ -6675,14 +6683,13 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
   }
 })();
 
-// 앱 로드 시 구독 상태 복원 (버전 검증 통과 후 실행)
+// 앱 로드 시 버튼 UI만 복원 (구독 진입은 항상 Firestore 확인 후)
 (function(){
   const saved = localStorage.getItem(MP_MEMBER_KEY)
              || localStorage.getItem('fh_subscribed');
   if(saved) {
-    mpIsSubscribed = true;
+    // mpIsSubscribed는 세팅하지 않음 — mvpStartCheckup에서 Firestore 확인 후 결정
     mpSetMemberButton();
-    // ※ 자동 오픈 제거 — 버튼만 업데이트, 고객이 직접 클릭해서 진입
   }
 })();
 
@@ -6691,12 +6698,11 @@ function mpSetMemberButton() {
   if(!btn) return;
   btn.className = 'hbtn hbtn-member';
   btn.textContent = '👑 회원전용';
-  btn.onclick = mpOpen;
+  btn.onclick = mvpStartCheckup; // 항상 Firestore 확인 후 진입
 }
 
 function headerMainAction() {
-  if(mpIsSubscribed) mpOpen();
-  else mpOpenSubscribe();
+  mvpStartCheckup();
 }
 
 /* ── 구독 모달 ── */
