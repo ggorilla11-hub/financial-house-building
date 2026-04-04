@@ -2471,7 +2471,7 @@ html{visibility:visible !important;}
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
     <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;">만약 은퇴까지 남은 기간이 </span>
-    <span id="fn-d-landing" style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#E8B84B;">D-25년</span>
+    <span id="fn-d-landing" style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#E8B84B;">D-3년</span>
     <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;"> 이라면</span>
   </div>
 
@@ -2479,10 +2479,10 @@ html{visibility:visible !important;}
   <div style="font-size:13px;background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.25);color:#D4A853;padding:7px 16px;border-radius:20px;font-weight:600;margin-bottom:18px;">⏱️ 딱 6번 클릭 · 30초 완성</div>
 
   <h1 style="font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1.4;margin-bottom:14px;color:#fff;">
-    은퇴 전<br>당신이 알아야 할<br>당신의 <span style="color:#D4A853;">재무건강점수</span>는?
+    은퇴 전<br>당신이 알아야 할<br>당신의 <span style="color:#D4A853;">재무진단점수</span>는?
   </h1>
   <p style="font-size:15px;opacity:.8;line-height:1.7;margin-bottom:24px;color:#fff;max-width:320px;">
-    729가지 조합을 분석하여<br>당신의 재무건강점수를 알려드립니다
+    729가지 조합을 분석하여<br>당신의 재무진단점수를 알려드립니다
   </p>
 
   <!-- 신뢰 지표 -->
@@ -2502,7 +2502,7 @@ html{visibility:visible !important;}
   </div>
 
   <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
-    내 재무건강점수 확인 →
+    내 재무진단점수 확인 →
   </button>
 
   <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
@@ -2579,7 +2579,7 @@ html{visibility:visible !important;}
     <!-- 최우선 재무목표 -->
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;">
       <div id="fn-r-emoji" style="font-size:56px;margin-bottom:10px;"></div>
-      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무건강점수</div>
+      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무진단점수</div>
       <div id="fn-r-title" style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:#fff;margin-bottom:8px;"></div>
       <div id="fn-r-sub" style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;"></div>
     </div>
@@ -2621,14 +2621,14 @@ html{visibility:visible !important;}
 
       <!-- ★ 무료 리드마그넷 버튼 (위) -->
       <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        🆓 무료 재무건강점수 확인하기
+        🆓 무료 재무진단점수 확인하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">이메일 · 카톡으로 결과 즉시 발송</span>
       </button>
 
       <!-- ★ 무료 텍스트 상담 버튼 (신규) -->
       <button onclick="openFreeTextChat()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(76,175,125,.5);background:rgba(76,175,125,.1);color:#81C995;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        💬 무료 텍스트 상담 시작하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI에게 재무 고민 바로 물어보기 · 로그인하면 기록 저장</span>
+        💬 AI재무진단 텍스트상담
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무 상담 · 로그인하면 기록 저장</span>
       </button>
 
       <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
@@ -2678,12 +2678,12 @@ html{visibility:visible !important;}
 
 </div><!-- /funnel-wrap -->
 
-<!-- ★ 무료 재무건강점수 신청 모달 -->
+<!-- ★ 무료 재무진단점수 신청 모달 -->
 <div id="freeScoreModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:18px;padding:24px 20px;width:90%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:32px;margin-bottom:6px;">🆓</div>
-      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무건강점수 확인</div>
+      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무진단점수 확인</div>
       <div style="font-size:11px;color:#8896B0;margin-top:4px;">입력하신 정보로 결과를 이메일/카톡으로 보내드립니다</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;">
@@ -2700,12 +2700,12 @@ html{visibility:visible !important;}
         <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
         <span style="font-size:10px;color:#666;line-height:1.5;">
           [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무건강점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
         </span>
       </label>
     </div>
     <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-top:14px;box-shadow:0 4px 16px rgba(59,130,246,.35);">
-      무료 재무건강점수 받기
+      무료 재무진단점수 받기
     </button>
     <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:6px;">닫기</button>
   </div>
@@ -2713,6 +2713,32 @@ html{visibility:visible !important;}
 
 <!-- ★ 무료 신청 감사 화면 (Thank You Screen) -->
 <div id="freeThankYou" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;"></div>
+
+<!-- ★ 미니 로그인 오버레이 (S8 위 — 텍스트상담·DESIRE 인증 연결) -->
+<div id="miniLoginOverlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99980;align-items:flex-end;justify-content:center;padding-bottom:0;">
+  <div id="miniLoginCard" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:1px solid rgba(201,151,42,.35);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;">
+    <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:28px;margin-bottom:10px;">🔐</div>
+      <div id="miniLoginMsg" style="font-size:15px;font-weight:700;color:#E8B84B;margin-bottom:6px;">로그인이 필요해요</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.5;">한 번 로그인하면 유료 진단 시에도<br>자동으로 로그인 상태가 유지됩니다</div>
+    </div>
+    <button id="miniLoginGoogleBtn" onclick="doMiniLogin()"
+      style="width:100%;padding:14px;border-radius:12px;border:1.5px solid #ddd;background:#fff;color:#3c4043;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Google 계정으로 로그인
+    </button>
+    <button onclick="closeMiniLogin(true)"
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;">
+      로그인 없이 계속하기
+    </button>
+  </div>
+</div>
 <!-- ★ 무료 텍스트 상담 모달 -->
 <div id="freeTextChatModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:99990;flex-direction:column;">
   <style>
@@ -2722,8 +2748,8 @@ html{visibility:visible !important;}
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
     <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8B6914,#C9972A);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
     <div style="flex:1;">
-      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI 머니야 무료 상담</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.4);">텍스트로 재무 고민 바로 물어보기 · AI 학습 미사용</div>
+      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 텍스트상담</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);">AI 재무 상담 · AI 학습 미사용</div>
     </div>
     <button onclick="closeFreeTextChat()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:32px;height:32px;border-radius:8px;cursor:pointer;line-height:1;">×</button>
   </div>
@@ -2732,7 +2758,7 @@ html{visibility:visible !important;}
   <!-- 입력 -->
   <div style="border-top:1px solid rgba(255,255,255,.08);padding:12px 14px;background:rgba(11,29,58,.98);flex-shrink:0;">
     <div style="display:flex;gap:8px;align-items:flex-end;">
-      <textarea id="ftc-input" placeholder="재무 고민을 편하게 입력하세요..." rows="2"
+      <textarea id="ftc-input" placeholder="재무 고민을 편하게 입력해 주세요..." rows="2"
         style="flex:1;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;color:#fff;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:none;outline:none;line-height:1.5;"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ftcSend();}"></textarea>
       <button onclick="ftcSend()" style="background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:10px;padding:10px 14px;color:#0B1D3A;font-weight:900;font-size:13px;cursor:pointer;flex-shrink:0;font-family:'Noto Sans KR',sans-serif;">전송</button>
@@ -6688,18 +6714,89 @@ function mpCompletePurchase() {
 
 // MVP: CTA 버튼 클릭 → develop은 결제 건너뛰고 바로 진입
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   미니 로그인 오버레이 제어
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var _miniLoginCallback = null;
+
+function showMiniLogin(msg, callback) {
+  var overlay = document.getElementById('miniLoginOverlay');
+  var msgEl = document.getElementById('miniLoginMsg');
+  if (!overlay) return;
+  if (msgEl && msg) msgEl.textContent = msg;
+  _miniLoginCallback = callback || null;
+  overlay.style.display = 'flex';
+  // 카드 슬라이드업 애니메이션
+  var card = document.getElementById('miniLoginCard');
+  if (card) {
+    card.style.transform = 'translateY(100%)';
+    card.style.transition = 'transform .35s cubic-bezier(.32,.72,0,1)';
+    setTimeout(function(){ card.style.transform = 'translateY(0)'; }, 10);
+  }
+}
+
+function closeMiniLogin(skipCallback) {
+  var overlay = document.getElementById('miniLoginOverlay');
+  var card = document.getElementById('miniLoginCard');
+  if (card) {
+    card.style.transform = 'translateY(100%)';
+    setTimeout(function(){
+      if (overlay) overlay.style.display = 'none';
+      // 로그인 없이 계속하기 선택 시 콜백 실행
+      if (!skipCallback && _miniLoginCallback) {
+        _miniLoginCallback();
+        _miniLoginCallback = null;
+      }
+    }, 300);
+  } else {
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+function doMiniLogin() {
+  var btn = document.getElementById('miniLoginGoogleBtn');
+  if (btn) { btn.textContent = '로그인 중...'; btn.disabled = true; }
+  if (typeof fhGoogleLogin !== 'function') {
+    showToast('로그인 기능을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+    if (btn) { btn.innerHTML = 'Google 계정으로 로그인'; btn.disabled = false; }
+    return;
+  }
+  // Firebase onAuthStateChanged가 자동으로 처리
+  // 로그인 성공 후 콜백 실행을 위해 일회성 리스너 등록
+  var unsubscribe = null;
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    unsubscribe = firebase.auth().onAuthStateChanged(function(user) {
+      if (user && unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+        closeMiniLogin(false); // 오버레이 닫고 콜백 실행
+        showToast('✅ ' + (user.displayName || '회원') + '님, 로그인 완료!');
+        if (btn) { btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google 계정으로 로그인'; btn.disabled = false; }
+      }
+    });
+  }
+  fhGoogleLogin();
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    무료 텍스트 상담 모달
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function openFreeTextChat() {
   var modal = document.getElementById('freeTextChatModal');
   if (!modal) return;
+  // Render 서버 워밍업 (슬립 방지 — 고객이 입력하는 사이에 깨어남)
+  fetch('https://moneya-server.onrender.com/api/consult-chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:'ping', history:[], systemPrompt:'pong'})
+  }).catch(function(){});
+  ftcMessages = [];
   modal.style.display = 'flex';
+  var log = document.getElementById('ftc-log');
+  if (log) log.innerHTML = '';
   var input = document.getElementById('ftc-input');
   if (input) setTimeout(function(){ input.focus(); }, 300);
-  // 원트큐브 데이터 기반 초기 안내 메시지
   var ageLabel = fnAnswers[0]==='young'?'20~30대':fnAnswers[0]==='mid'?'40~50대':'60~70대';
   var incomeLabel = fnAnswers[3]==='low'?'500만원 이하':fnAnswers[3]==='mid'?'500~1,000만원':'1,000만원 이상';
-  var welcomeMsg = '안녕하세요! 저는 AI 재무 상담사 머니야입니다 😊\n\n'
+  var welcomeMsg = '안녕하세요! AI 재무 상담사 머니야입니다 😊\n\n'
     + ageLabel + ' · ' + incomeLabel + ' 기준으로 파악되었어요.\n'
     + '재무 관련 고민이 있으시면 편하게 물어보세요!\n\n'
     + '예) "보험료가 너무 많이 나가는 것 같아요"\n예) "요즘 저축을 어떻게 해야 할지 모르겠어요"';
@@ -6775,12 +6872,16 @@ async function ftcSend() {
     var loadEl = document.getElementById(loadId);
     if (loadEl) loadEl.remove();
     ftcAddMessage('ai', reply);
-    // 3회 이상 대화 시 로그인 유도 (선택적)
+    // 3회 대화 후 로그인 유도 (미니 오버레이)
     var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
     if (userMsgCount === 3) {
-      setTimeout(function(){
-        ftcAddMessage('ai', '💡 로그인하시면 지금까지 나눈 대화가 저장되어, 다음에 오실 때 이어서 상담할 수 있어요. 카카오 또는 구글 로그인 10초면 됩니다!');
-      }, 1000);
+      var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
+      if (!isLoggedIn) {
+        setTimeout(function(){
+          ftcAddMessage('ai', '💡 지금까지 나눈 대화를 저장하려면 로그인하세요. 다음에 오실 때 이어서 상담할 수 있어요!');
+          setTimeout(function(){ showMiniLogin('대화 기록을 저장하려면 로그인이 필요해요', null); }, 800);
+        }, 800);
+      }
     }
   } catch(e) {
     var loadEl2 = document.getElementById(loadId);
@@ -7049,11 +7150,19 @@ function dsShowResult() {
 }
 
 function dsOpenCert(stageIdx) {
-  // 구글 로그인 여부 확인 — 로그인 안 되어 있으면 선택적 유도
   var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
   if (!isLoggedIn) {
-    dsShowToast('💡 로그인하면 인증이 저장됩니다! 로그인 없이도 확인은 가능해요.');
+    // 로그인 안 되어 있으면 미니 로그인 오버레이 먼저 표시
+    _dsPendingCertStage = stageIdx;
+    showMiniLogin('DESIRE 단계 인증을 저장하려면 로그인이 필요해요', function() {
+      dsOpenCertDo(stageIdx);
+    });
+    return;
   }
+  dsOpenCertDo(stageIdx);
+}
+
+function dsOpenCertDo(stageIdx) {
   var s = stageIdx < DS_STAGES.length ? DS_STAGES[stageIdx] : DS_STAGES[DS_STAGES.length-1];
   var certDiv = document.getElementById('ds-cert-overlay');
   if (!certDiv) return;
@@ -7062,6 +7171,8 @@ function dsOpenCert(stageIdx) {
   document.getElementById('ds-cert-comment').value = '';
   certDiv.style.display = 'flex';
 }
+
+var _dsPendingCertStage = null;
 
 function dsCloseCert() {
   var certDiv = document.getElementById('ds-cert-overlay');
@@ -7088,7 +7199,7 @@ function dsShowToast(msg) {
 }
 
 
-/* ━━━ 무료 재무건강점수 신청 모달 ━━━ */
+/* ━━━ 무료 재무진단점수 신청 모달 ━━━ */
 function freeScoreModalOpen() {
   var m = document.getElementById('freeScoreModal');
   if(m) m.style.display = 'flex';
@@ -7113,7 +7224,7 @@ function freeScoreSubmit() {
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
 
-  // ★ 재무건강점수 계산 (통계 중간값 기반)
+  // ★ 재무진단점수 계산 (통계 중간값 기반)
   var scoreData = calcFreeHealthScore(fnAnswers);
 
   // ★ make.com 웹훅으로만 전송 (구글시트 기록 + 카톡 + 이메일 발송 모두 make.com에서 처리)
@@ -7125,7 +7236,7 @@ function freeScoreSubmit() {
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
-      plan: '무료 재무건강점수',
+      plan: '무료 재무진단점수',
       result_title: resultTitle,
       result_sub: resultSub,
       result_d: resultD,
@@ -7172,7 +7283,7 @@ function showFreeThankYou(name, scoreData) {
 
     // 점수 카드
     + '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:20px;margin-bottom:16px;">'
-    + '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">나의 재무건강점수</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">나의 재무진단점수</div>'
     + '<div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">'
     + '<span style="font-size:48px;font-weight:900;color:' + gradeColor + ';">' + scoreData.totalScore + '</span>'
     + '<span style="font-size:18px;color:rgba(255,255,255,.4);">/ 100점</span>'
@@ -7233,7 +7344,7 @@ function closeThankYou() {
   document.getElementById('freeThankYou').style.display = 'none';
 }
 
-/* ━━━ 무료 재무건강점수 계산 (통계 중간값 기반) ━━━ */
+/* ━━━ 무료 재무진단점수 계산 (통계 중간값 기반) ━━━ */
 function calcFreeHealthScore(answers) {
   if(!answers || answers.length < 6) {
     return { totalScore: 0, grade: '측정불가', expense: 0, asset: 0, insurance: 0, retirement: 0, debt: 0,
@@ -8539,7 +8650,7 @@ let fnCurrentScreen = 's0';
 // ── D-카운터 (나이 미입력 시 ? 표시) ──
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('fn-d-landing');
-  if(el) el.textContent = 'D-25년';
+  if(el) el.textContent = 'D-3년';
 });
 
 // ── 화면 전환 ──
@@ -8702,11 +8813,11 @@ function fnShowResult() {
   const r = FN_RESULTS[fnResultKey];
 
   // D-카운터 연수 하드코딩 (연령대별)
-  const yearMap = {young:'D-35년', mid:'D-25년', senior:'D-5년'};
+  const yearMap = {young:'D-3년', mid:'D-3년', senior:'D-3년'};
   const subMap  = {young:'20~30대 기준 · 은퇴 73세', mid:'40~50대 기준 · 은퇴 73세', senior:'60~70대 기준 · 은퇴 73세'};
   const dEl = document.getElementById('fn-result-d');
   const dSub = document.getElementById('fn-result-d-sub');
-  if(dEl)  dEl.textContent  = yearMap[fnAnswers[0]] || 'D-25년';
+  if(dEl)  dEl.textContent  = yearMap[fnAnswers[0]] || 'D-3년';
   if(dSub) dSub.textContent = (subMap[fnAnswers[0]] || '40~50대 기준 · 은퇴 73세') + ' (출처: 통계청)';
 
   // 결과 내용
@@ -11491,7 +11602,7 @@ function diagBuildNotes() {
           <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">AI 재무검진결과 리포트</div>
           <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 자동 발급</div>
           <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
-            <span style="color:#C9972A">✦</span> 5대 영역 재무건강점수<br>
+            <span style="color:#C9972A">✦</span> 5대 영역 재무진단점수<br>
             <span style="color:#C9972A">✦</span> 부자지수 & 등급<br>
             <span style="color:#C9972A">✦</span> 항목별 판정 (양호/주의/위험)<br>
             <span style="color:#C9972A">✦</span> 강점 & 개선점 & 액션플랜
@@ -11879,11 +11990,11 @@ function renderHealthReport() {
     +'<td style="padding:6px 8px;text-align:center;width:16.6%"><div style="font-size:8px;color:#8896B0;">순자산</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.netAsset?nd.netAsset+'만원':'—')+'</div></td>'
     +'</tr></table>';
 
-  // ━━━ 종합 재무건강점수 3칸 ━━━
+  // ━━━ 종합 재무진단점수 3칸 ━━━
   html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
     +'<tr>'
     +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
-    +'<div style="font-size:9px;color:#8896B0;">종합 재무건강점수</div>'
+    +'<div style="font-size:9px;color:#8896B0;">종합 재무진단점수</div>'
     +'<div style="font-size:34px;font-weight:900;color:'+totalColor+';line-height:1.1;">'+sc.total+'</div>'
     +'<div style="font-size:10px;font-weight:700;color:'+totalColor+';">/ 100점 &nbsp; 판정: <strong>'+totalGrade+'</strong></div>'
     +'</td>'
@@ -12065,7 +12176,7 @@ function collectNoteData() {
   return d;
 }
 
-/* ━━━ 재무건강점수 계산 (100점 공식) ━━━ */
+/* ━━━ 재무진단점수 계산 (100점 공식) ━━━ */
 function calcHealthScore(nd) {
   var income      = nd.income      || 700;
   var age         = nd.age         || 50;
@@ -12219,7 +12330,7 @@ function shareReport() {
 
   var shareText =
     '[AI 재무검진결과표 - 금융집짓기]\n\n'
-    + nameStr + '재무건강점수: ' + sc.total + '점 ('
+    + nameStr + '재무진단점수: ' + sc.total + '점 ('
     + (sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험') + ')\n'
     + '부자지수: ' + sc.wealthIndex + '% ' + sc.wealthGrade + ' 등급\n\n'
     + '지출관리 ' + sc.expense   + '/20점\n'
@@ -12863,7 +12974,7 @@ document.addEventListener('visibilitychange', function() {
           <span style="color:#CD7F32;font-weight:700;">✓</span> 텍스트 재무진단 당일 무제한
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무건강점수 즉시 확인
+          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무진단점수 즉시 확인
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
           <span>✗</span> 정기 구독 혜택 제외
