@@ -2648,7 +2648,7 @@ html{visibility:visible !important;}
         style="text-align:center;margin-top:10px;padding:6px;
         font-size:10px;font-weight:700;color:rgba(255,255,255,0.9);
         letter-spacing:1px;cursor:pointer;user-select:none;">
-        v2.8.1-dev
+        v2.8.1
       </div>
       <div id="fh-dev-panel-s0" style="display:none;margin-top:10px;padding:14px;
         background:rgba(255,59,48,0.12);border:1.5px solid rgba(255,59,48,0.5);
@@ -2715,7 +2715,7 @@ html{visibility:visible !important;}
 <div id="freeThankYou" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;"></div>
 
 <!-- ★ 미니 로그인 오버레이 (S8 위 — 텍스트상담·DESIRE 인증 연결) -->
-<div id="miniLoginOverlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99980;align-items:flex-end;justify-content:center;padding-bottom:0;">
+<div id="miniLoginOverlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:999999;align-items:flex-end;justify-content:center;padding-bottom:0;">
   <div id="miniLoginCard" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:1px solid rgba(201,151,42,.35);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;">
     <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px;"></div>
     <div style="text-align:center;margin-bottom:20px;">
@@ -2740,7 +2740,7 @@ html{visibility:visible !important;}
   </div>
 </div>
 <!-- ★ 무료 텍스트 상담 모달 -->
-<div id="freeTextChatModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:99990;flex-direction:column;">
+<div id="freeTextChatModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:999999;flex-direction:column;">
   <style>
     @keyframes ftcFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
   </style>
@@ -2771,7 +2771,7 @@ html{visibility:visible !important;}
 </div>
 
 <!-- ★ DESIRE 시뮬레이터 모달 -->
-<div id="desireSimModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:99990;flex-direction:column;overflow-y:auto;">
+<div id="desireSimModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:999999;flex-direction:column;overflow-y:auto;">
   <!-- 헤더 -->
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;flex-shrink:0;position:sticky;top:0;z-index:10;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -6868,7 +6868,7 @@ async function ftcSend() {
       body: JSON.stringify({ message: userMsg, history: history, systemPrompt: sysPrompt })
     });
     var data = await res.json();
-    var reply = (data && data.reply) ? data.reply : '죄송해요, 잠시 후 다시 시도해주세요.';
+    var reply = (data && (data.reply || data.message)) ? (data.reply || data.message) : '죄송해요, 잠시 후 다시 시도해주세요.';
     var loadEl = document.getElementById(loadId);
     if (loadEl) loadEl.remove();
     ftcAddMessage('ai', reply);
@@ -7469,37 +7469,8 @@ function mvpStartCheckup() {
     if(funnelWrap) funnelWrap.classList.add('fn-hidden');
     mpOpen(); return;
   }
-  // ★ staging용: 결제 없이 바로 진입 (7일 체험)
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if(!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
-  }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if(daysPassed > 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
-    mpOpenSubscribe();
-    return;
-  }
-  var remaining = 7 - daysPassed;
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  localStorage.setItem('fh_plan', 'silver-month');
-  localStorage.setItem('mvp_credit_min', '20');
-  mpIsSubscribed = true;
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  mpOpen();
+  // ★ main용: 결제 필수
+  mpOpenSubscribe();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
