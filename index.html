@@ -2709,10 +2709,13 @@ html{visibility:visible !important;}
           <div id="freeScore-login-email" style="font-size:10px;color:#8896B0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
       </div>
+      <input id="free-phone" type="tel" placeholder="전화번호 (카카오 발송용) 예: 010-1234-5678"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;margin-bottom:10px;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
       <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-bottom:14px;">
         <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
         <span style="font-size:10px;color:#666;line-height:1.5;">[필수] 개인정보 수집 및 이용에 동의합니다.<br>
-          <span style="color:#999;font-size:9px;">수집항목: 이름, 이메일 | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 이메일, 전화번호(선택) | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
         </span>
       </label>
       <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,.35);">
@@ -6765,26 +6768,32 @@ function closeMiniLogin(skipCallback) {
 }
 
 function doMiniLogin() {
-  if (typeof fhGoogleLogin !== 'function') {
-    showToast('로그인 기능을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+  if (!window._fhAuth || !window._fhProvider) {
+    showToast('잠시 후 다시 시도해주세요. (Firebase 로딩 중)');
     return;
   }
-  // fhGoogleLogin 성공 후 onAuthStateChanged가 fhUpdateLoginUI·fhCheckAndAutoEnter를 처리함
-  // 추가로 미니 오버레이 닫기 + 콜백 실행만 연결
   var _once = false;
-  var _unsub = firebase.auth().onAuthStateChanged(function(user) {
+  var _unsub = window._fhAuth.onAuthStateChanged(function(user) {
     if (user && !_once) {
       _once = true;
-      _unsub();
+      try { _unsub(); } catch(e) {}
       closeMiniLogin(false);
       showToast('✅ ' + (user.displayName || '회원') + '님, 로그인 완료!');
     }
   });
-  // 팝업 실패 시 30초 후 리스너 자동 해제 (무한 대기 방지)
   setTimeout(function() {
     if (!_once) { try { _unsub(); } catch(e) {} closeMiniLogin(true); }
   }, 30000);
-  fhGoogleLogin();
+  window._fhAuth.signInWithPopup(window._fhProvider)
+    .catch(function(err) {
+      try { _unsub(); } catch(e) {}
+      if (err.code === 'auth/popup-blocked') {
+        showToast('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.');
+      } else {
+        showToast('로그인 중 오류가 발생했습니다.');
+      }
+      closeMiniLogin(true);
+    });
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -7153,10 +7162,16 @@ function dsShowResult() {
       + '<div style="font-size:15px;font-weight:700;color:'+posStage.color+';">'+posStage.letter+'단계 — '+posStage.sub+'</div>'
       + '</div>' : '')
     + '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:14px;margin-bottom:14px;">'+rows+'</div>'
-    + '<button onclick="dsOpenCert('+curPos+')" style="width:100%;padding:14px;background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:11px;color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">'
-    + (posStage ? posStage.letter+'단계 달성 인증하기' : '🏆 완주 인증하기')+'</button>'
-    + '<button onclick="dsAskAI()" style="width:100%;padding:13px;background:rgba(76,175,125,.15);border:1.5px solid rgba(76,175,125,.4);border-radius:11px;color:#81C995;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">💬 AI에게 다음 단계 질문하기</button>'
-    + '<button onclick="closeDesireSimulator()" style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">닫기</button>';
+    + '<button id="ds-cert-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:11px;color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;margin-bottom:10px;">'    + (posStage ? posStage.letter+'단계 달성 인증하기' : '🏆 완주 인증하기')+'</button>'    + '<button id="ds-askai-btn" style="width:100%;padding:13px;background:rgba(76,175,125,.15);border:1.5px solid rgba(76,175,125,.4);border-radius:11px;color:#81C995;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">💬 AI에게 다음 단계 질문하기</button>'    + '<button id="ds-close-btn" style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;">닫기</button>';
+  var _curPos = curPos;
+  setTimeout(function(){
+    var certBtn  = document.getElementById('ds-cert-btn');
+    var askBtn   = document.getElementById('ds-askai-btn');
+    var closeBtn = document.getElementById('ds-close-btn');
+    if (certBtn)  certBtn.onclick  = function(){ dsOpenCert(_curPos); };
+    if (askBtn)   askBtn.onclick   = function(){ dsAskAI(); };
+    if (closeBtn) closeBtn.onclick = function(){ closeDesireSimulator(); };
+  }, 50);
 }
 
 function dsOpenCert(stageIdx) {
@@ -7239,25 +7254,28 @@ function freeScoreShowLoggedIn(user) {
   if (e) e.textContent = user.email || '';
 }
 function freeScoreGoogleLogin() {
-  if (typeof fhGoogleLogin !== 'function') {
-    showToast('로그인 기능 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+  // window._fhAuth를 직접 사용 (fhGoogleLogin 함수 의존 제거)
+  if (!window._fhAuth || !window._fhProvider) {
+    showToast('잠시 후 다시 시도해주세요. (Firebase 로딩 중)');
     return;
   }
-  var _once = false;
-  var _unsub = firebase.auth().onAuthStateChanged(function(user) {
-    if (user && !_once) {
-      _once = true;
-      _unsub();
-      freeScoreShowLoggedIn(user);
-    }
-  });
-  setTimeout(function(){ if (!_once) { try { _unsub(); } catch(e) {} } }, 30000);
-  fhGoogleLogin();
+  window._fhAuth.signInWithPopup(window._fhProvider)
+    .then(function(result) {
+      freeScoreShowLoggedIn(result.user);
+    })
+    .catch(function(err) {
+      if (err.code === 'auth/popup-blocked') {
+        showToast('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.');
+      } else {
+        showToast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
+    });
 }
 function freeScoreSubmit() {
   var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
   var name = user ? (user.displayName || '사용자') : '';
   var email = user ? (user.email || '') : '';
+  var phone = ((document.getElementById('free-phone') || {}).value || '').trim();
   var privacy = (document.getElementById('free-privacy') || {}).checked || false;
   if (!email) { showToast('먼저 Google 로그인을 해주세요.'); return; }
   if (!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
