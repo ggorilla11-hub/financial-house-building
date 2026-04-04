@@ -2588,31 +2588,17 @@ html{visibility:visible !important;}
     <div id="fn-r-stat" style="display:flex;justify-content:center;gap:16px;background:rgba(212,168,83,.08);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
     <div id="fn-r-insights" style="display:none;"></div>
 
-    <!-- ★ AI재무진단 샘플영상 — Firebase URL 수령 후 교체 -->
+    <!-- ★ AI재무진단 샘플영상 -->
     <div id="sample-video-wrap" style="margin-bottom:16px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(201,151,42,.35);background:#000;">
       <div style="padding:10px 14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">🎬</span>
         <span style="font-size:11px;font-weight:700;color:#E8B84B;">AI 재무진단 샘플 영상</span>
         <span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:auto;">실제 상담 미리보기</span>
       </div>
-      <!-- ★★★ Firebase 영상 URL 수령 후 교체 방법 ★★★
-           1. 아래 placeholder div 삭제
-           2. video 태그 주석 해제
-           3. src="FIREBASE_VIDEO_URL_HERE" 에 URL 입력
-      -->
-      <div id="sample-video-placeholder" style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0d1b2a,#1a2940);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
-        <div style="width:60px;height:60px;border-radius:50%;background:rgba(201,151,42,.2);border:2px solid rgba(201,151,42,.5);display:flex;align-items:center;justify-content:center;">
-          <span style="font-size:24px;margin-left:5px;">▶</span>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7);">샘플 영상 준비 중</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.35);">Firebase URL 연결 예정</div>
-      </div>
-      <!-- 영상 수령 후 위 placeholder div 삭제하고 아래 주석 해제
       <video id="sample-video" controls playsinline preload="metadata"
         style="width:100%;display:block;max-height:240px;object-fit:contain;"
-        src="FIREBASE_VIDEO_URL_HERE">
+        src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EB%A8%B8%EB%8B%88%EC%95%BC%20%EC%83%81%EB%8B%B4.mp4?alt=media&token=46aea734-3bdb-4d56-bc0c-430d702b72f1">
       </video>
-      -->
     </div>
 
     <!-- 고민 연동 메시지 + CTA -->
