@@ -2,6 +2,7 @@
 <html lang="ko" style="visibility:hidden;">
 <head>
 <meta charset="UTF-8">
+<meta name="google-site-verification" content="2ZTWYgESNJ9EibuZMjc3Saah-6gdxCkj_oP7gp8xRuM" />
 
 
 <script>
@@ -5878,8 +5879,8 @@ function mpSelectPlan(plan) {
     'silver-year':   '지금 ₩99,000/년 실버 연회비 결제 →',
     'gold-month':    '지금 ₩19,900/월 골드 구독 시작 →',
     'gold-year':     '지금 ₩199,000/년 골드 연회비 결제 →',
-    'expert-month':  '지금 ₩29,900/월 전문가 구독 시작 →',
-    'expert-year':   '지금 ₩299,000/년 전문가 연회비 결제 →'
+    'expert-month':  '지금 ₩33,000/월 전문가 FC 구독 시작 →',
+    'expert-year':   '지금 ₩330,000/년 전문가 FC 연회비 결제 →'
   };
   var cta = document.getElementById('mp-sub-cta');
   if (cta) cta.textContent = ctaMap[plan] || '결제 시작하기 →';
@@ -5890,9 +5891,12 @@ function mpSelectPlan(plan) {
   var isMonthly = plan.endsWith('-month');
   if (notice) notice.style.display = isMonthly ? 'block' : 'none';
   if (amountEl && isMonthly) {
-    var amtMap = { 'silver-month':'₩9,900', 'gold-month':'₩19,900', 'expert-month':'₩29,900' };
+    var amtMap = { 'silver-month':'₩9,900', 'gold-month':'₩19,900', 'expert-month':'₩33,000' };
     amountEl.textContent = amtMap[plan] || '';
   }
+  // 전문가 플랜 선택 시 추가 정보 입력 폼 표시
+  var fcExtra = document.getElementById('fc-extra-info');
+  if (fcExtra) fcExtra.style.display = (plan.startsWith('expert')) ? 'block' : 'none';
 }
 
 function selPayMethod(el){
@@ -5908,8 +5912,8 @@ function confirmPay(plan){
     'silver-year':  { amount:99000,  name:'실버 연회비',           prefix:'SILVER_YEAR',   regular:'N' },
     'gold-month':   { amount:19900,  name:'골드 월정기구독',       prefix:'GOLD_MONTH',    regular:'Y' },
     'gold-year':    { amount:199000, name:'골드 연회비',           prefix:'GOLD_YEAR',     regular:'N' },
-    'expert-month': { amount:29900,  name:'전문가 월정기구독',     prefix:'EXPERT_MONTH',  regular:'Y' },
-    'expert-year':  { amount:299000, name:'전문가 연회비',         prefix:'EXPERT_YEAR',   regular:'N' }
+    'expert-month': { amount:33000,  name:'전문가 FC 월정기구독', prefix:'FC_MONTH',      regular:'Y' },
+    'expert-year':  { amount:330000, name:'전문가 FC 연회비',      prefix:'FC_YEAR',       regular:'N' }
   };
 
   var cfg = planConfig[plan];
@@ -6068,6 +6072,34 @@ function onPaypleResult(data){
       ? ('🎉 ' + _payerName + '님, AI머니야 회원이 되셨습니다! 환영합니다 👑')
       : '🎉 결제 완료! AI머니야 회원이 되셨습니다 👑';
     showToast(_greeting);
+
+    // ★ 전문가 플랜이면 agents 컬렉션에 추가 저장
+    if(currentPlan.startsWith('expert') && window._fhDb && _payerEmail) {
+      var _fcCompany = (document.getElementById('fc-company')||{}).value || '';
+      var _fcDept    = (document.getElementById('fc-dept')||{}).value || '';
+      var _fcTitle   = (document.getElementById('fc-title')||{}).value || '';
+      // 에이전트 코드 생성: AGT_ + 이름이니셜2자 + 랜덤3자리
+      var _prefix = _payerName.replace(/\s/g,'').substring(0,2).toUpperCase() || 'FC';
+      var _agentCode = 'AGT_' + _prefix + (Math.floor(Math.random()*900)+100);
+      var _agentDocId = _payerEmail.replace(/\./g,'_').replace(/@/g,'_at_');
+      localStorage.setItem('fh_agent_code', _agentCode);
+      localStorage.setItem('fh_is_agent', '1');
+      window._fhDb.collection('agents').doc(_agentDocId).set({
+        code:          _agentCode,
+        name:          _payerName,
+        phone:         _payerPhone,
+        email:         _payerEmail,
+        company:       _fcCompany,
+        dept:          _fcDept,
+        title:         _fcTitle,
+        plan:          currentPlan,
+        subscribeDate: new Date().toISOString(),
+        active:        true,
+        creditMin:     40,
+        stats:         { linksShared:0, clientsCompleted:0, connectRequests:0 },
+        uid:           (window._fhCurrentUser && window._fhCurrentUser.uid) || ''
+      }).catch(function(e){ console.log('[agents]', e.message); });
+    }
 
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
@@ -7658,8 +7690,8 @@ function mvpSendMakeWebhook(name, phone, email) {
     'silver-year':'실버 연회비(99,000원)',
     'gold-month':'골드 월정기구독(19,900원/월)',
     'gold-year':'골드 연회비(199,000원)',
-    'expert-month':'전문가 월정기구독(29,900원/월)',
-    'expert-year':'전문가 연회비(299,000원)'
+    'expert-month':'전문가 FC 월정기구독(33,000원/월)',
+    'expert-year':'전문가 FC 연회비(330,000원)'
   };
   var amountMap = {
     'single':9900, 'silver-month':9900, 'silver-year':99000,
@@ -8407,9 +8439,11 @@ function mpOpen() {
   // ★ 진단안내 페이지 플랜별 UI 업데이트
   setTimeout(mvpUpdateGuideUI, 100);
   mpDrawChart();
-  // MVP: 시뮬레이터 숨기기 (AI 재무검진 모드에서는 보이지 않아야 함)
+  // MVP: 시뮬레이터 숨기기
   var simWrap = document.getElementById('sim-wrap');
   if(simWrap) simWrap.style.display = 'none';
+  // ★ 전문가 FC플랜 대시보드 표시
+  setTimeout(fcDashInit, 200);
 }
 function mpClose() {
   document.getElementById('mypageOverlay').classList.remove('mp-open');
@@ -9459,6 +9493,135 @@ function mpResetLoginUI() {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    계정 관리 기능
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// ══════════════════════════════════════════
+// 전문가 FC플랜 대시보드 함수
+// ══════════════════════════════════════════
+
+// ?agent= 파라미터 처리 (페이지 로드 시 실행)
+(function(){
+  var urlParams = new URLSearchParams(window.location.search);
+  var agentCode = urlParams.get('agent');
+  if(agentCode) {
+    localStorage.setItem('fh_agent_code', agentCode);
+    console.log('[FC] 설계사 코드 저장:', agentCode);
+    // URL 파라미터 제거 (깔끔하게)
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
+
+// 대시보드 초기화 — 마이페이지 열릴 때 호출
+function fcDashInit() {
+  var plan = localStorage.getItem('fh_plan') || '';
+  var isAgent = plan.startsWith('expert') || localStorage.getItem('fh_is_agent') === '1';
+  var dashSection = document.getElementById('fc-dashboard-section');
+  if(!dashSection) return;
+
+  if(!isAgent) {
+    dashSection.style.display = 'none';
+    return;
+  }
+  dashSection.style.display = 'block';
+
+  // Firestore에서 설계사 정보 로드
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if(!user || !window._fhDb) {
+    fcDashRender({ code:'', stats:{ linksShared:0, clientsCompleted:0, connectRequests:0 } });
+    return;
+  }
+  var docId = user.email.replace(/\./g,'_').replace(/@/g,'_at_');
+  window._fhDb.collection('agents').doc(docId).get()
+    .then(function(doc) {
+      if(doc.exists) {
+        fcDashRender(doc.data());
+      } else {
+        // localStorage 코드로 fallback
+        var code = localStorage.getItem('fh_agent_code') || '';
+        fcDashRender({ code:code, company:'', dept:'', title:'',
+          stats:{ linksShared:0, clientsCompleted:0, connectRequests:0 } });
+      }
+    }).catch(function(e){ console.log('[fcDash]', e.message); });
+}
+
+// 대시보드 UI 렌더
+function fcDashRender(data) {
+  var code  = data.code || localStorage.getItem('fh_agent_code') || '';
+  var url   = 'https://financial-house-building.vercel.app?agent=' + code;
+  var stats = data.stats || { linksShared:0, clientsCompleted:0, connectRequests:0 };
+  var infoText = (data.company||'') + (data.dept?' · '+data.dept:'') + (data.title?' · '+data.title:'');
+
+  var infoEl = document.getElementById('fc-dash-info');
+  var urlEl  = document.getElementById('fc-my-url');
+  var linksEl= document.getElementById('fc-stat-links');
+  var doneEl = document.getElementById('fc-stat-done');
+  var connEl = document.getElementById('fc-stat-connect');
+
+  if(infoEl) infoEl.textContent = infoText || '설계사 정보 없음';
+  if(urlEl)  urlEl.textContent  = code ? url : '코드 발급 후 표시됩니다';
+  if(linksEl) linksEl.textContent = stats.linksShared    || 0;
+  if(doneEl)  doneEl.textContent  = stats.clientsCompleted || 0;
+  if(connEl)  connEl.textContent  = stats.connectRequests  || 0;
+
+  // 핫 리드 목록
+  var leadsEl = document.getElementById('fc-hot-leads');
+  if(leadsEl && stats.connectRequests > 0) {
+    leadsEl.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;">' +
+      '<div style="width:34px;height:34px;border-radius:50%;background:rgba(220,38,38,.1);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>' +
+      '<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--navy);">연결 요청 ' + stats.connectRequests + '건</div>' +
+      '<div style="font-size:10px;color:var(--muted);">고객이 전문가 상담을 요청했습니다</div></div>' +
+      '<span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(220,38,38,.1);color:#DC2626;">🔴 즉시연락</span>' +
+      '</div>';
+  }
+
+  // 전송용 미리보기 fc명 업데이트
+  var fcName = data.name || (window._fhAuth && window._fhAuth.currentUser ? window._fhAuth.currentUser.displayName : '') || '설계사';
+  var prevFc = document.getElementById('prev-fc');
+  if(prevFc) prevFc.textContent = fcName;
+
+  // localStorage에 코드 동기화
+  if(code) localStorage.setItem('fh_agent_code', code);
+}
+
+// 링크 복사
+function fcCopyLink() {
+  var code = localStorage.getItem('fh_agent_code') || '';
+  if(!code) { showToast('코드가 아직 발급되지 않았습니다.'); return; }
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function(){ showToast('✅ 링크 복사 완료!'); });
+  } else { showToast('✅ 링크 복사 완료!'); }
+}
+function fcShareKakao(){ showToast('💬 카카오 공유 — 추후 활성화 예정'); }
+function fcShareSMS(){   showToast('📱 문자 발송 — 추후 활성화 예정'); }
+
+// 고객에게 카톡 알림톡 발송
+function fcSendKakao() {
+  var phone = (document.getElementById('fc-send-phone')||{}).value||'';
+  if(!phone.trim()) { showToast('전화번호를 입력해주세요'); return; }
+  var code  = localStorage.getItem('fh_agent_code') || '';
+  var agentName = (window._fhAuth && window._fhAuth.currentUser) ? window._fhAuth.currentUser.displayName : '설계사';
+  var agentUrl  = 'https://financial-house-building.vercel.app?agent=' + code;
+  fetch('https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      type:'agent_link_send', agentName:agentName, agentCode:code,
+      recipientPhone:phone.trim(), agentUrl:agentUrl,
+      timestamp:new Date().toISOString()
+    })
+  }).catch(function(){});
+  showToast('💬 ' + phone + '으로 카톡 알림톡 발송 완료!');
+  var el = document.getElementById('fc-send-phone');
+  if(el) el.value = '';
+  // Firestore stats 업데이트
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if(user && window._fhDb) {
+    var docId = user.email.replace(/\./g,'_').replace(/@/g,'_at_');
+    window._fhDb.collection('agents').doc(docId).update({
+      'stats.linksShared': firebase.firestore.FieldValue.increment(1)
+    }).catch(function(){});
+  }
+}
 
 // ── 로그아웃 ──
 function mpLogout() {
@@ -10795,6 +10958,27 @@ async function diagConnectVoice(isPaid) {
       ? '【오늘 상담: ' + sessionNo + '회차 정기상담 플랜】'
       : '【오늘 상담: ' + planLabel + ' ' + planMin + '분 플랜】';
     planInject += ' 잔여크레딧: ' + remainMin + '분.';
+
+    // ★ 전문가 설계사 코드가 있으면 설계사 정보 추가 주입 (음성 불가침 유지)
+    var agentCode = localStorage.getItem('fh_agent_code') || '';
+    var agentInject = '';
+    if(agentCode) {
+      try {
+        var agentResp = await fetch('https://moneya-server.onrender.com/api/agent-info?code=' + agentCode);
+        var agentData = await agentResp.json();
+        if(agentData && agentData.success) {
+          agentInject = ' 【담당설계사: ' + agentData.name + ' (' + (agentData.company||'') + ')】'
+            + ' 상담 중 보험·연금·저축 등 전문가 도움이 필요한 상황이 오면'
+            + ' "' + agentData.name + ' 설계사님께 연결해드릴까요? 링크를 보내주신 분입니다."라고 안내하세요.'
+            + ' 고객이 동의하면 "연결 요청을 기록했습니다"라고 답하세요.';
+          console.log('[FC] 설계사 프롬프트 주입:', agentData.name);
+        }
+      } catch(e) {
+        console.log('[FC] 설계사 정보 조회 실패:', e.message);
+      }
+    }
+    planInject += agentInject;
+
     console.log('[Vapi] 플랜 주입:', planInject);
     var VapiConstructor = window.VapiClass.default || window.VapiClass;
     console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
@@ -12385,6 +12569,7 @@ function downloadReportPDF() {
   printWin.document.write(
     '<!DOCTYPE html><html lang="ko"><head>'
     +'<meta charset="UTF-8">'
+<meta name="google-site-verification" content="2ZTWYgESNJ9EibuZMjc3Saah-6gdxCkj_oP7gp8xRuM" />
     +'<meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>AI 재무검진결과표 — '+(nd.name||'고객')+'님 · '+dateStr+'</title>'
     +'<style>'
@@ -13178,46 +13363,70 @@ document.addEventListener('visibilitychange', function() {
     </div>
   </div>
 
-  <!-- ══ 전문가 플랜 패널 ══ -->
+  <!-- ══ 전문가 FC플랜 패널 ══ -->
   <div id="mp-tier-expert" class="mp-tier-panel" style="display:none;">
-    <div style="background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.05));border:1.5px solid rgba(99,102,241,.4);border-radius:14px;padding:14px;margin-bottom:10px;">
+    <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.4);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-size:11px;font-weight:900;color:#4338CA;">👔 전문가 플랜 (FC)</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
+          <div style="font-size:11px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:#4338CA;">₩29,900</div>
-          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+          <div style="font-size:22px;font-weight:900;color:var(--gold2);">₩33,000</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.4);">/ 월 정기구독</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 전용 링크 발급
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 전용 링크 발급 + 바이럴 자동화
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 재무진단 결과 대시보드
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> AI 상담 중 자동 설계사 연결 트리거
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 골드 플랜 혜택 전체 포함
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 핫 리드 카톡 즉시 알림
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> ARK-Genie 설계사 툴 연동 (예정)
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 골드플랜 40분 음성 상담 본인 이용 포함
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 전용 대시보드 (마이페이지 내 제공)
         </div>
       </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <div class="mp-plan-card mp-selected" id="mp-plan-expert-month" onclick="mpSelectPlan('expert-month')"
-        style="flex:1;padding:10px;border:2px solid #6366f1;">
-        <div style="font-size:10px;font-weight:700;color:#4338CA;">월정기구독</div>
-        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩29,900</div>
+        style="flex:1;padding:10px;border:2px solid var(--gold);">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">월정기구독</div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩33,000</div>
         <div style="font-size:8px;color:var(--muted);">/ 월</div>
       </div>
       <div class="mp-plan-card" id="mp-plan-expert-year" onclick="mpSelectPlan('expert-year')"
         style="flex:1;padding:10px;">
-        <div style="font-size:10px;font-weight:700;color:#4338CA;">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
-        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩299,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 년 (₩24,917/월)</div>
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩330,000</div>
+        <div style="font-size:8px;color:var(--muted);">/ 년 (₩27,500/월)</div>
+      </div>
+    </div>
+    <!-- 전문가 추가 정보 입력 (전문가 플랜 선택 시 표시) -->
+    <div id="fc-extra-info" style="display:none;background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
+      <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:10px;">👔 설계사 추가 정보 입력</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="fc-company" type="text" placeholder="소속 회사 (예: 삼성생명, 한화생명) *필수"
+          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
+        <div style="display:flex;gap:8px;">
+          <select id="fc-dept" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
+            <option value="">소속 선택 *필수</option>
+            <option>팀</option><option>지점</option><option>본부</option>
+            <option>지역단</option><option>FA센터</option><option>독립</option>
+          </select>
+          <select id="fc-title" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
+            <option value="">직책 선택</option>
+            <option>FC(설계사)</option><option>팀장</option><option>지점장</option>
+            <option>본부장</option><option>수석FP</option><option>대표</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -14309,6 +14518,64 @@ document.addEventListener('visibilitychange', function() {
         <div class="mp-menu-item mp-danger" onclick="mpLogout()">
           <span class="mp-menu-icon">🚪</span><span class="mp-menu-lbl">로그아웃</span>
         </div>
+
+      <!-- ══ 전문가 FC플랜 대시보드 (전문가 플랜 구독자에게만 표시) ══ -->
+      <div id="fc-dashboard-section" style="display:none;margin:12px 12px 0;">
+        <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:16px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜 대시보드</div>
+              <div id="fc-dash-info" style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">—</div>
+            </div>
+            <div style="background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:3px 10px;font-size:9px;color:var(--gold2);font-weight:700;">FC플랜</div>
+          </div>
+          <!-- 통계 3개 -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:10px;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:#fff;" id="fc-stat-links">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">링크 공유</div>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:10px;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:#fff;" id="fc-stat-done">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">검진 완료</div>
+            </div>
+            <div style="background:rgba(220,38,38,.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(220,38,38,.3);">
+              <div style="font-size:18px;font-weight:900;color:#ff6b6b;" id="fc-stat-connect">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">연결 요청</div>
+            </div>
+          </div>
+          <!-- 전용 링크 -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;">📎 나의 전용 고객 링크</div>
+            <div id="fc-my-url" style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;font-size:10px;color:rgba(255,255,255,.7);word-break:break-all;margin-bottom:8px;">
+              https://financial-house-building.vercel.app?agent=...
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+              <button onclick="fcCopyLink()" style="padding:8px 4px;border-radius:8px;border:1px solid rgba(201,151,42,.4);background:rgba(201,151,42,.15);color:var(--gold2);font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">📋 복사</button>
+              <button onclick="fcShareKakao()" style="padding:8px 4px;border-radius:8px;border:none;background:#FEE500;color:#333;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">💬 카톡</button>
+              <button onclick="fcShareSMS()" style="padding:8px 4px;border-radius:8px;border:none;background:var(--navy3);color:#fff;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">📱 문자</button>
+            </div>
+          </div>
+          <!-- 고객 발송 -->
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;">📤 고객에게 카톡 알림톡 발송</div>
+            <div style="display:flex;gap:6px;">
+              <input id="fc-send-phone" type="tel" placeholder="010-0000-0000"
+                style="flex:1;padding:10px 12px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#fff;font-size:12px;font-family:var(--fn);outline:none;">
+              <button onclick="fcSendKakao()" style="padding:10px 14px;border-radius:8px;border:none;background:var(--gold);color:var(--navy);font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;font-family:var(--fn);min-height:42px;">발송</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 핫 리드 목록 -->
+        <div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:2px solid rgba(220,38,38,.15);">
+          <div style="font-size:12px;font-weight:900;color:#DC2626;margin-bottom:3px;">🔔 연결 요청 고객 (핫 리드)</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">고객이 전문가 상담을 요청했습니다 — 빠른 연락이 계약으로 이어집니다</div>
+          <div id="fc-hot-leads">
+            <div style="text-align:center;padding:16px;font-size:11px;color:var(--muted);">아직 연결 요청이 없습니다.<br>고객에게 링크를 공유해보세요!</div>
+          </div>
+        </div>
+      </div>
         <div class="mp-menu-item" onclick="mpCancelSubscription()">
           <span class="mp-menu-icon">💳</span>
           <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소</div><div class="mp-menu-sub">취소 후 이번 달 말까지 이용 가능</div></div>
