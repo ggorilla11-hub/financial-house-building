@@ -2655,7 +2655,7 @@ html{visibility:visible !important;}
           <span style="font-size:10px;font-weight:700;color:#FEE500;">문의하기</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">카톡채널</span>
         </button>
-        <button onclick="openLectureMenu()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+        <button onclick="openLectureModal()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
           <span style="font-size:20px;">📚</span>
           <span style="font-size:10px;font-weight:700;color:#4ade80;">강의신청</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">일반/전문가</span>
@@ -13285,36 +13285,28 @@ document.addEventListener('visibilitychange', function() {
   <div class="lecture-popup-handle"></div>
   <div class="lecture-popup-title">🎓 강의 선택</div>
   <div class="lecture-options">
-    <!-- 전문가 강의 -->
-    <div style="border:1.5px solid var(--border2);border-radius:8px;overflow:hidden;background:#fff;">
-      <a class="lecture-opt" href="https://ohwant-hub.netlify.app/lecture-pro" target="_blank" onclick="closeLectureMenu()" style="border:none;border-radius:0;border-bottom:1px solid var(--border2);">
-        <span class="lecture-opt-icon">🏛️</span>
-        <div>
-          <div class="lecture-opt-title">전문가 대면강의 4주</div>
-          <div class="lecture-opt-sub">보험전문가를 위한 금융집짓기 마스터</div>
-        </div>
-        <div class="lecture-opt-price">110만원</div>
-      </a>
-      <button onclick="closeLectureMenu();window.open('https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0','_blank');"
-        style="width:100%;padding:11px;background:linear-gradient(135deg,#C9972A,#E8B84B);border:none;color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
-        💳 지금 바로 신청하기 (110만원)
-      </button>
-    </div>
-    <!-- 일반인 강의 -->
-    <div style="border:1.5px solid var(--border2);border-radius:8px;overflow:hidden;background:#fff;">
-      <a class="lecture-opt" href="https://ohwant-hub.netlify.app/lecture-gen" target="_blank" onclick="closeLectureMenu()" style="border:none;border-radius:0;border-bottom:1px solid var(--border2);">
-        <span class="lecture-opt-icon">💻</span>
-        <div>
-          <div class="lecture-opt-title">일반인 비대면강의 4주</div>
-          <div class="lecture-opt-sub">줌으로 배우는 나만의 재무설계</div>
-        </div>
-        <div class="lecture-opt-price">55만원</div>
-      </a>
-      <button onclick="closeLectureMenu();window.open('https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy','_blank');"
-        style="width:100%;padding:11px;background:linear-gradient(135deg,#C9972A,#E8B84B);border:none;color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
-        💳 지금 바로 신청하기 (55만원)
-      </button>
-    </div>
+    <a class="lecture-opt"
+       href="https://ohwant-hub.netlify.app/lecture-pro"
+       target="_blank"
+       onclick="closeLectureMenu()">
+      <span class="lecture-opt-icon">🏛️</span>
+      <div>
+        <div class="lecture-opt-title">전문가 대면강의 4주</div>
+        <div class="lecture-opt-sub">보험전문가를 위한 금융집짓기 마스터</div>
+      </div>
+      <div class="lecture-opt-price">110만원</div>
+    </a>
+    <a class="lecture-opt"
+       href="https://ohwant-hub.netlify.app/lecture-gen"
+       target="_blank"
+       onclick="closeLectureMenu()">
+      <span class="lecture-opt-icon">💻</span>
+      <div>
+        <div class="lecture-opt-title">일반인 비대면강의 4주</div>
+        <div class="lecture-opt-sub">줌으로 배우는 나만의 재무설계</div>
+      </div>
+      <div class="lecture-opt-price">55만원</div>
+    </a>
   </div>
   <button class="lecture-popup-close" onclick="closeLectureMenu()">닫기</button>
 </div>
