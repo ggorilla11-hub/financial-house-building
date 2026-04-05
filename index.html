@@ -6583,6 +6583,38 @@ function togglePause(secId, e){
 
 /* touchend 제거 — onclick만 사용 */
 
+/* ━━━ 강의 상세 패널 ━━━ */
+function openLectureDetail(type) {
+  // 강의 모달 닫기
+  var m = document.getElementById('lectureModal');
+  if(m) m.remove();
+
+  // 패널 표시
+  var bg = document.getElementById('lecture-detail-bg');
+  var panel = document.getElementById('lecture-detail-panel');
+  var gen = document.getElementById('lecture-detail-gen');
+  var pro = document.getElementById('lecture-detail-pro');
+  if(!bg || !panel) return;
+
+  // 해당 상세만 표시
+  if(gen) gen.style.display = type === 'gen' ? 'block' : 'none';
+  if(pro) pro.style.display = type === 'pro' ? 'block' : 'none';
+
+  bg.style.display = 'block';
+  panel.style.display = 'block';
+  panel.scrollTop = 0;
+  setTimeout(function(){ panel.style.transform = 'translateY(0)'; }, 30);
+}
+function closeLectureDetail() {
+  var bg = document.getElementById('lecture-detail-bg');
+  var panel = document.getElementById('lecture-detail-panel');
+  if(panel) panel.style.transform = 'translateY(100%)';
+  setTimeout(function(){
+    if(bg) bg.style.display = 'none';
+    if(panel) panel.style.display = 'none';
+  }, 320);
+}
+
 /* ━━━ 공유하기 패널 전용 오픈 함수 ━━━ */
 function openSharePanel(){
   var bg = document.getElementById('share-panel-bg');
@@ -9781,7 +9813,7 @@ function openLectureModal() {
             <div style="font-size:13px;font-weight:900;color:#4ade80;">55만원</div>
           </div>
           <div style="display:flex;border-top:1px solid rgba(22,163,74,.25);">
-            <button onclick="window.open('https://ohwant-hub.netlify.app/lecture-gen','_blank')"
+            <button onclick="openLectureDetail('gen')"
               style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(22,163,74,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
               📄 상세 보기
             </button>
@@ -9803,7 +9835,7 @@ function openLectureModal() {
             <div style="font-size:13px;font-weight:900;color:var(--gold2);">110만원</div>
           </div>
           <div style="display:flex;border-top:1px solid rgba(201,151,42,.25);">
-            <button onclick="window.open('https://ohwant-hub.netlify.app/lecture-pro','_blank')"
+            <button onclick="openLectureDetail('pro')"
               style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(201,151,42,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
               📄 상세 보기
             </button>
@@ -13340,6 +13372,157 @@ document.addEventListener('visibilitychange', function() {
   <button class="lecture-popup-close" onclick="closeLectureMenu()">닫기</button>
 </div>
 
+
+<!-- ★ 강의 상세 패널 -->
+<div id="lecture-detail-bg" onclick="closeLectureDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99998;"></div>
+<div id="lecture-detail-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;z-index:99999;background:#fff;border-radius:20px 20px 0 0;border-top:3px solid #C9972A;overflow-y:auto;max-height:90vh;transform:translateY(100%);transition:transform .3s ease;">
+
+  <!-- 일반인 강의 상세 -->
+  <div id="lecture-detail-gen" style="display:none;">
+    <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);padding:28px 20px 24px;text-align:center;">
+      <div style="display:inline-block;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);color:#E8B84B;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:12px;">💻 일반인 전용 · 비대면(Zoom) 4주</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.4;margin-bottom:8px;">나만의 <span style="color:#E8B84B;">금융집</span>을<br>직접 지어보세요!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6);">재테크 초보도 4주면 흔들리지 않는 재정 기초를 만듭니다</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">📅 3/9 개강</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">⏰ 매주 일 2시간</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">💻 Zoom</span>
+      </div>
+    </div>
+    <div style="padding:20px;">
+      <!-- 추천 대상 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎯 이런 분께 추천합니다</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:13px;color:#333;">✅ 재테크 <strong>어디서부터 시작해야 할지</strong> 모르는 분</div>
+          <div style="font-size:13px;color:#333;">✅ 보험·연금·투자·부동산을 <strong>체계적으로 정리</strong>하고 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>노후 준비</strong>가 막막하고 불안한 분</div>
+          <div style="font-size:13px;color:#333;">✅ 지방/해외 거주로 <strong>비대면 수강</strong>을 원하는 분</div>
+        </div>
+      </div>
+      <!-- 커리큘럼 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">📚 4주 커리큘럼</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">1주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">나의 금융집 진단 — 현재 위치 파악</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">재무 자가진단 · 부자지수 계산 · 7개 영역 이해</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">2주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">기초공사 — 보험 & 비상예비자금</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">보험 점검법 · 필요보장 계산 · 위험관리 전략</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">3주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">기둥공사 — 부채상환 & 저축 & 은퇴</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">대출 최적 상환법 · 연금저축/IRP · 은퇴 설계</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">4주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">지붕공사 — 투자 & 절세 & 부동산</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">자산배분 · ETF 기초 · 절세 · 나의 금융집 완성</div>
+          </div>
+        </div>
+      </div>
+      <!-- 수강료 + 결제 -->
+      <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;">💰 수강료</div>
+        <button onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy','_blank')"
+          style="font-size:32px;font-weight:900;color:#E8B84B;background:none;border:none;cursor:pointer;font-family:var(--fn);display:block;width:100%;text-align:center;margin-bottom:4px;">
+          55만원 →
+        </button>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;">4주 과정 (주 1회 2시간 · Zoom) · 교재+워크시트 포함</div>
+        <a href="https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy" target="_blank"
+          style="display:block;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:8px;">
+          💳 카드로 바로 신청하기
+        </a>
+        <a href="http://pf.kakao.com/_vxfmfxj" target="_blank"
+          style="display:block;background:#FEE500;color:#3A1D1D;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:10px;">
+          💬 카카오톡으로 신청하기
+        </a>
+        <button onclick="closeLectureDetail()"
+          style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;">
+          ← 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전문가 강의 상세 -->
+  <div id="lecture-detail-pro" style="display:none;">
+    <div style="background:linear-gradient(135deg,#1a0a2e,#2d1060);padding:28px 20px 24px;text-align:center;">
+      <div style="display:inline-block;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);color:#E8B84B;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:12px;">🏛️ 보험전문가 전용 · 대면 4주 과정</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.4;margin-bottom:8px;">금융집짓기 <span style="color:#E8B84B;">마스터과정</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6);">FP가 먼저 완벽한 금융집을 지어야<br>고객의 금융집도 지어줄 수 있습니다</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">📅 3/7 개강</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">⏰ 매주 금 4시간</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">👥 소수정예 15명</span>
+      </div>
+    </div>
+    <div style="padding:20px;">
+      <!-- 추천 대상 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎯 이런 분께 추천합니다</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:13px;color:#333;">✅ 보험만 팔다가 <strong>종합 재무설계 전문가</strong>로 도약하고 싶은 FP</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>금융집짓기® 방법론</strong>을 고객에게 제안하고 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ 상담 퀄리티를 높여 <strong>관리자산을 늘리고</strong> 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>나 자신의 금융집</strong>부터 완벽하게 짓고 싶은 전문가</div>
+        </div>
+      </div>
+      <!-- 커리큘럼 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">📚 4주 커리큘럼</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">1주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">FP의 금융집 기초공사 & 자가진단</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">금융집짓기® 방법론 · 7개 영역 분석 프레임워크</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">2주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">고객 상담 실전 — 진단분석 & 설계견적</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">고객 재무 진단 실습 · 맞춤 설계안 작성법</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">3주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">시공관리 & 포트폴리오 구축</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">보험·연금·투자 통합 포트폴리오 · 케이스 스터디</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">4주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">금융집짓기 전문가 인증 & 실전 배치</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">롤플레이 실습 · 전문가 인증 시험 · 수료 후 네트워크</div>
+          </div>
+        </div>
+      </div>
+      <!-- 수강료 + 결제 -->
+      <div style="background:linear-gradient(135deg,#1a0a2e,#2d1060);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;">💰 수강료</div>
+        <button onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0','_blank')"
+          style="font-size:32px;font-weight:900;color:#E8B84B;background:none;border:none;cursor:pointer;font-family:var(--fn);display:block;width:100%;text-align:center;margin-bottom:4px;">
+          110만원 →
+        </button>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;">소수정예 15명 한정 · 교재+인증+네트워크 포함</div>
+        <a href="https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0" target="_blank"
+          style="display:block;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:8px;">
+          💳 카드로 바로 신청하기
+        </a>
+        <a href="http://pf.kakao.com/_vxfmfxj" target="_blank"
+          style="display:block;background:#FEE500;color:#3A1D1D;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:10px;">
+          💬 카카오톡으로 신청하기
+        </a>
+        <button onclick="closeLectureDetail()"
+          style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;">
+          ← 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ★ 문의하기 패널 -->
 <div id="inquiry-panel-bg" onclick="hidePanel('inquiry-panel-bg','inquiry-panel')" style="display:none;"></div>
