@@ -7847,7 +7847,7 @@ function openLecturePay(type) {
       </label>
 
       <!-- 버튼 -->
-      <button onclick="submitLecturePay('${type}','${url}','${plan}')"
+      <button id="lecturePaySubmitBtn"
         style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
         💳 결제 페이지로 이동
       </button>
@@ -7857,6 +7857,11 @@ function openLecturePay(type) {
       </button>
     </div>`;
   document.body.appendChild(popup);
+
+  // 버튼에 이벤트 직접 연결 (onclick 따옴표 충돌 방지)
+  document.getElementById('lecturePaySubmitBtn').addEventListener('click', function() {
+    submitLecturePay(type, url, plan);
+  });
 
   // 로그인 정보 자동 입력
   var user  = window._fhAuth ? window._fhAuth.currentUser : null;
