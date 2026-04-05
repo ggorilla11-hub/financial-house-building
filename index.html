@@ -2650,17 +2650,17 @@ html{visibility:visible !important;}
 
       <!-- ★ 서비스 링크 버튼 -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;margin-bottom:4px;">
-        <button onclick="window.open('https://pf.kakao.com/_xjxkxixb','_blank')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(254,229,0,.15);border:1px solid rgba(254,229,0,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+        <button onclick="showPanel('inquiry-panel-bg','inquiry-panel')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(254,229,0,.15);border:1px solid rgba(254,229,0,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
           <span style="font-size:20px;">💬</span>
           <span style="font-size:10px;font-weight:700;color:#FEE500;">문의하기</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">카톡채널</span>
         </button>
-        <button onclick="openLectureModal()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:10px;border:1px solid rgba(22,163,74,.3);cursor:pointer;">
+        <button onclick="openLectureMenu()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
           <span style="font-size:20px;">📚</span>
           <span style="font-size:10px;font-weight:700;color:#4ade80;">강의신청</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">일반/전문가</span>
         </button>
-        <button onclick="mpShareApp()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:10px;cursor:pointer;">
+        <button onclick="showPanel('share-panel-bg','share-panel')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
           <span style="font-size:20px;">📤</span>
           <span style="font-size:10px;font-weight:700;color:var(--gold2);">공유하기</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">링크 공유</span>
@@ -9756,7 +9756,7 @@ function openLectureModal() {
               style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(22,163,74,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
               📄 상세 보기
             </button>
-            <button onclick="window.open('https://link.payple.kr/NzcxOjc2ODQ3NzcyMjc4MzY3','_blank')"
+            <button onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy','_blank')"
               style="flex:1;padding:11px;background:rgba(22,163,74,.2);border:none;color:#4ade80;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
               💳 바로 신청하기
             </button>
@@ -9778,7 +9778,7 @@ function openLectureModal() {
               style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(201,151,42,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
               📄 상세 보기
             </button>
-            <button onclick="window.open('https://link.payple.kr/NzcxOjc3MDA2MDc4OTM1OTgz','_blank')"
+            <button onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0','_blank')"
               style="flex:1;padding:11px;background:rgba(201,151,42,.2);border:none;color:var(--gold2);font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
               💳 바로 신청하기
             </button>
@@ -13285,32 +13285,115 @@ document.addEventListener('visibilitychange', function() {
   <div class="lecture-popup-handle"></div>
   <div class="lecture-popup-title">🎓 강의 선택</div>
   <div class="lecture-options">
-    <a class="lecture-opt"
-       href="https://ohwant-hub.netlify.app/lecture-pro"
-       target="_blank"
-       onclick="closeLectureMenu()">
-      <span class="lecture-opt-icon">🏛️</span>
-      <div>
-        <div class="lecture-opt-title">전문가 대면강의 4주</div>
-        <div class="lecture-opt-sub">보험전문가를 위한 금융집짓기 마스터</div>
-      </div>
-      <div class="lecture-opt-price">110만원</div>
-    </a>
-    <a class="lecture-opt"
-       href="https://ohwant-hub.netlify.app/lecture-gen"
-       target="_blank"
-       onclick="closeLectureMenu()">
-      <span class="lecture-opt-icon">💻</span>
-      <div>
-        <div class="lecture-opt-title">일반인 비대면강의 4주</div>
-        <div class="lecture-opt-sub">줌으로 배우는 나만의 재무설계</div>
-      </div>
-      <div class="lecture-opt-price">55만원</div>
-    </a>
+    <!-- 전문가 강의 -->
+    <div style="border:1.5px solid var(--border2);border-radius:8px;overflow:hidden;background:#fff;">
+      <a class="lecture-opt" href="https://ohwant-hub.netlify.app/lecture-pro" target="_blank" onclick="closeLectureMenu()" style="border:none;border-radius:0;border-bottom:1px solid var(--border2);">
+        <span class="lecture-opt-icon">🏛️</span>
+        <div>
+          <div class="lecture-opt-title">전문가 대면강의 4주</div>
+          <div class="lecture-opt-sub">보험전문가를 위한 금융집짓기 마스터</div>
+        </div>
+        <div class="lecture-opt-price">110만원</div>
+      </a>
+      <button onclick="closeLectureMenu();window.open('https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0','_blank');"
+        style="width:100%;padding:11px;background:linear-gradient(135deg,#C9972A,#E8B84B);border:none;color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
+        💳 지금 바로 신청하기 (110만원)
+      </button>
+    </div>
+    <!-- 일반인 강의 -->
+    <div style="border:1.5px solid var(--border2);border-radius:8px;overflow:hidden;background:#fff;">
+      <a class="lecture-opt" href="https://ohwant-hub.netlify.app/lecture-gen" target="_blank" onclick="closeLectureMenu()" style="border:none;border-radius:0;border-bottom:1px solid var(--border2);">
+        <span class="lecture-opt-icon">💻</span>
+        <div>
+          <div class="lecture-opt-title">일반인 비대면강의 4주</div>
+          <div class="lecture-opt-sub">줌으로 배우는 나만의 재무설계</div>
+        </div>
+        <div class="lecture-opt-price">55만원</div>
+      </a>
+      <button onclick="closeLectureMenu();window.open('https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy','_blank');"
+        style="width:100%;padding:11px;background:linear-gradient(135deg,#C9972A,#E8B84B);border:none;color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
+        💳 지금 바로 신청하기 (55만원)
+      </button>
+    </div>
   </div>
   <button class="lecture-popup-close" onclick="closeLectureMenu()">닫기</button>
 </div>
 
+
+<!-- ★ 문의하기 패널 -->
+<div id="inquiry-panel-bg" onclick="hidePanel('inquiry-panel-bg','inquiry-panel')" style="display:none;"></div>
+<div id="inquiry-panel" style="display:none;">
+  <div style="width:32px;height:3px;border-radius:2px;background:var(--border);margin:0 auto 16px;"></div>
+  <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:4px;">💬 문의하기</div>
+  <div style="font-size:10px;color:var(--muted);margin-bottom:16px;">금융집짓기 카카오 채널로 연결됩니다</div>
+  <a href="https://pf.kakao.com/_xjxkxixb" target="_blank"
+    onclick="hidePanel('inquiry-panel-bg','inquiry-panel')"
+    style="display:flex;align-items:center;gap:14px;padding:16px;background:#FEE500;border-radius:12px;text-decoration:none;margin-bottom:10px;">
+    <span style="font-size:28px;">💬</span>
+    <div>
+      <div style="font-size:14px;font-weight:900;color:#3C1E1E;">카카오 채널 친구추가</div>
+      <div style="font-size:10px;color:rgba(60,30,30,.6);margin-top:2px;">금융집짓기 · 오상열 CFP</div>
+    </div>
+    <span style="margin-left:auto;font-size:18px;">→</span>
+  </a>
+  <button onclick="hidePanel('inquiry-panel-bg','inquiry-panel')"
+    style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:var(--fn);cursor:pointer;margin-top:4px;">
+    닫기
+  </button>
+</div>
+
+<!-- ★ 공유하기 패널 -->
+<div id="share-panel-bg" onclick="hidePanel('share-panel-bg','share-panel')" style="display:none;"></div>
+<div id="share-panel" style="display:none;">
+  <div style="width:32px;height:3px;border-radius:2px;background:var(--border);margin:0 auto 16px;"></div>
+  <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:4px;">📤 공유하기</div>
+  <div style="font-size:10px;color:var(--muted);margin-bottom:14px;">AI재무진단서비스 머니야를 알려주세요</div>
+  <!-- URL 복사 박스 -->
+  <div style="background:#f8f9fa;border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:10px;color:var(--muted);flex:1;word-break:break-all;">financial-house-building.vercel.app</span>
+    <button id="shareCopyBtn" onclick="
+      var t=document.createElement('textarea');t.value='https://financial-house-building.vercel.app';
+      document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+      document.getElementById('shareCopyBtn').textContent='✅ 복사됨';
+      setTimeout(function(){var b=document.getElementById('shareCopyBtn');if(b)b.textContent='복사';},2000);
+    " style="padding:6px 12px;background:var(--navy);border:none;border-radius:6px;color:#fff;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;white-space:nowrap;">
+      복사
+    </button>
+  </div>
+  <!-- 공유 버튼 3개 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+    <button onclick="
+      if(navigator.share){
+        navigator.share({title:'AI재무진단서비스 머니야',text:'당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야',url:'https://financial-house-building.vercel.app'});
+      } else {
+        var t=document.createElement('textarea');t.value='https://financial-house-building.vercel.app';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+        showToast('링크가 복사되었습니다!');
+      }
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;color:#1D4ED8;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      📱<br>기기 공유
+    </button>
+    <button onclick="
+      window.open('https://story.kakao.com/share?url=https://financial-house-building.vercel.app','_blank');
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#FFFDE7;border:1px solid #FDD835;border-radius:10px;color:#B8860B;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      🟡<br>카카오 공유
+    </button>
+    <button onclick="
+      var t=document.createElement('textarea');
+      t.value='당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야\nhttps://financial-house-building.vercel.app';
+      document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+      showToast('✅ 복사 완료! 문자에 붙여넣으세요');
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#F0FFF4;border:1px solid #86EFAC;border-radius:10px;color:#16A34A;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      💬<br>문자 발송
+    </button>
+  </div>
+  <button onclick="hidePanel('share-panel-bg','share-panel')"
+    style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:var(--fn);cursor:pointer;">
+    닫기
+  </button>
+</div>
 
 <div class="consult-panel-bg" id="consult-panel-bg" onclick="closeConsultPanel(event)"></div>
 <div class="consult-panel" id="consult-panel">
@@ -14584,12 +14667,12 @@ document.addEventListener('visibilitychange', function() {
         <div class="mpc-bd">
           <div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:6px">📚 강의</div>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
-            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc3MDA2MDc4OTM1OTgz','_blank')">
+            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0','_blank')">
               <span style="font-size:18px">🎓</span>
               <div style="flex:1"><div style="font-size:11px;font-weight:700">전문가 강의</div><div style="font-size:9px;color:var(--muted)">대면+비대면 · 월 4회 · 1년 과정</div></div>
               <span style="font-size:11px;font-weight:700;color:var(--gold)">110만원</span>
             </div>
-            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc2ODQ3NzcyMjc4MzY3','_blank')">
+            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy','_blank')">
               <span style="font-size:18px">📚</span>
               <div style="flex:1"><div style="font-size:11px;font-weight:700">일반인 강의</div><div style="font-size:9px;color:var(--muted)">비대면 · 월 4회 · 연간 일정표 제공</div></div>
               <span style="font-size:11px;font-weight:700;color:var(--gold)">55만원</span>
