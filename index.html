@@ -2673,7 +2673,7 @@ html{visibility:visible !important;}
           <span style="font-size:10px;font-weight:700;color:#4ade80;">강의신청</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">일반/전문가</span>
         </button>
-        <button onclick="showPanel('share-panel-bg','share-panel')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+        <button onclick="openSharePanel()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
           <span style="font-size:20px;">📤</span>
           <span style="font-size:10px;font-weight:700;color:var(--gold2);">공유하기</span>
           <span style="font-size:8px;color:rgba(255,255,255,.4);">링크 공유</span>
@@ -6582,6 +6582,22 @@ function togglePause(secId, e){
 /* toggleSec PAUSE 로직은 원본 함수에 통합됨 */
 
 /* touchend 제거 — onclick만 사용 */
+
+/* ━━━ 공유하기 패널 전용 오픈 함수 ━━━ */
+function openSharePanel(){
+  var bg = document.getElementById('share-panel-bg');
+  var panel = document.getElementById('share-panel');
+  if(!bg || !panel) return;
+  bg.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9998;';
+  panel.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;z-index:9999;transform:translateY(100%);transition:transform .3s ease;';
+  panel.style.background = '#0B1D3A';
+  panel.style.borderRadius = '20px 20px 0 0';
+  panel.style.borderTop = '3px solid #C9972A';
+  panel.style.padding = '20px 18px 36px';
+  panel.style.overflowY = 'auto';
+  panel.style.maxHeight = '85vh';
+  setTimeout(function(){ panel.style.transform = 'translateY(0)'; }, 30);
+}
 
 /* ━━━ 패널 공통 헬퍼 (CSS 클래스 불필요) ━━━ */
 function showPanel(bgId, panelId){
