@@ -43,12 +43,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>🏠 특허받은 AI 금융집짓기® 시뮬레이터</title>
+<title>AI재무진단서비스, 머니야 | 당신의 경제적 고민을 해결합니다</title>
 
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
-<meta property="og:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
+<meta property="og:title" content="당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야">
+<meta property="og:description" content="은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
 <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EA%B8%88%EC%9C%B5%EC%A7%91%EC%A7%93%EA%B8%B0_OG%EC%9D%B4%EB%AF%B8%EC%A7%80.png?alt=media&token=be92047c-ff02-4112-a374-5279c32f9a03">
 <meta property="og:image:width" content="800">
 <meta property="og:image:height" content="400">
@@ -56,8 +56,8 @@
 <meta property="og:site_name" content="오원트금융연구소">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="🏠 특허받은 AI 금융집짓기® 시뮬레이터 | 내 재무설계 5분완성">
-<meta name="twitter:description" content="세계최초 은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
+<meta name="twitter:title" content="당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야">
+<meta name="twitter:description" content="은퇴,부채,저축,투자,세금,부동산,보험을 한눈에">
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet"></noscript>
@@ -2457,6 +2457,19 @@ html{visibility:visible !important;}
   })();
   </script>
 
+  <!-- Kakao SDK (공유하기) -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+    integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+    crossorigin="anonymous"></script>
+  <script>
+    // Kakao SDK 초기화 (AI머니야 앱 키 — JavaScript 키)
+    window.addEventListener('load', function() {
+      if(window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init('97b8ff67fce6e9b52985c6da425c617d');
+      }
+    });
+  </script>
+
 </head>
 <body>
 
@@ -2468,10 +2481,16 @@ html{visibility:visible !important;}
 ═══════════════════════════════════════ -->
 <div id="fn-s0" class="fn-screen active" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;overflow:hidden;position:fixed;inset:0;max-width:430px;margin:0 auto;z-index:999;">
 
+  <!-- AI머니야 로고 -->
+  <div style="margin-bottom:16px;">
+    <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%EB%A1%9C%EA%B3%A0%ED%99%95%EC%A0%95%EC%95%88.png?alt=media&token=f1902fc0-5594-4916-bf7e-ed81d00ce39f"
+      style="height:50px;object-fit:contain;" alt="AI머니야" onerror="this.style.display='none'">
+  </div>
+
   <!-- 은퇴 D-카운터 (최상단 강조) -->
   <div style="background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:12px;padding:10px 20px;margin-bottom:20px;">
     <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;">만약 은퇴까지 남은 기간이 </span>
-    <span id="fn-d-landing" style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#E8B84B;">D-25년</span>
+    <span id="fn-d-landing" style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#E8B84B;">D-3년</span>
     <span style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;"> 이라면</span>
   </div>
 
@@ -2479,10 +2498,10 @@ html{visibility:visible !important;}
   <div style="font-size:13px;background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.25);color:#D4A853;padding:7px 16px;border-radius:20px;font-weight:600;margin-bottom:18px;">⏱️ 딱 6번 클릭 · 30초 완성</div>
 
   <h1 style="font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1.4;margin-bottom:14px;color:#fff;">
-    은퇴 전<br>당신이 알아야 할<br>당신의 <span style="color:#D4A853;">재무건강점수</span>는?
+    은퇴 전<br>당신이 해결해야 할<br>당신의 <span style="color:#D4A853;">최우선 재무목표</span>는?
   </h1>
   <p style="font-size:15px;opacity:.8;line-height:1.7;margin-bottom:24px;color:#fff;max-width:320px;">
-    729가지 조합을 분석하여<br>당신의 재무건강점수를 알려드립니다
+    729가지 조합을 분석하여<br>당신의 최우선 재무목표를 알려드립니다
   </p>
 
   <!-- 신뢰 지표 -->
@@ -2502,10 +2521,13 @@ html{visibility:visible !important;}
   </div>
 
   <button onclick="fnStartCube()" style="background:linear-gradient(135deg,#D4A853,#c4993d);color:#1A1A2E;padding:16px 44px;border-radius:30px;font-size:17px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(212,168,83,.4);font-family:'Noto Sans KR',sans-serif;position:relative;z-index:1000;">
-    내 재무건강점수 확인 →
+    내 최우선 재무진단점수 확인 →
   </button>
 
-  <button onclick="fnSkipToSim()" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:8px;">
+  <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,.3);text-align:center;letter-spacing:.5px;">
+    당신의 경제적 고민을 해결하는 "AI재무진단서비스, 머니야"
+  </div>
+  <button onclick="fnSkipToSim()" style="margin-top:10px;background:rgba(255,255,255,.04);border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;padding:14px 16px;min-height:48px;width:100%;border-radius:10px;display:block;">
     이미 알고 있어요, 시뮬레이터 바로 시작 →
   </button>
 
@@ -2579,7 +2601,7 @@ html{visibility:visible !important;}
     <!-- 최우선 재무목표 -->
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px;">
       <div id="fn-r-emoji" style="font-size:56px;margin-bottom:10px;"></div>
-      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무건강점수</div>
+      <div style="font-size:11px;color:#D4A853;font-weight:600;margin-bottom:4px;">당신의 재무목표</div>
       <div id="fn-r-title" style="font-family:'Black Han Sans',sans-serif;font-size:28px;color:#fff;margin-bottom:8px;"></div>
       <div id="fn-r-sub" style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;"></div>
     </div>
@@ -2588,31 +2610,18 @@ html{visibility:visible !important;}
     <div id="fn-r-stat" style="display:flex;justify-content:center;gap:16px;background:rgba(212,168,83,.08);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
     <div id="fn-r-insights" style="display:none;"></div>
 
-    <!-- ★ AI재무진단 샘플영상 — Firebase URL 수령 후 교체 -->
+    <!-- ★ AI재무진단 샘플영상 -->
     <div id="sample-video-wrap" style="margin-bottom:16px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(201,151,42,.35);background:#000;">
       <div style="padding:10px 14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">🎬</span>
         <span style="font-size:11px;font-weight:700;color:#E8B84B;">AI 재무진단 샘플 영상</span>
-        <span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:auto;">실제 상담 미리보기</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.6);margin-left:4px;">· 수석상담사 오상열 CFP</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:auto;">실제 진단 미리보기</span>
       </div>
-      <!-- ★★★ Firebase 영상 URL 수령 후 교체 방법 ★★★
-           1. 아래 placeholder div 삭제
-           2. video 태그 주석 해제
-           3. src="FIREBASE_VIDEO_URL_HERE" 에 URL 입력
-      -->
-      <div id="sample-video-placeholder" style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0d1b2a,#1a2940);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
-        <div style="width:60px;height:60px;border-radius:50%;background:rgba(201,151,42,.2);border:2px solid rgba(201,151,42,.5);display:flex;align-items:center;justify-content:center;">
-          <span style="font-size:24px;margin-left:5px;">▶</span>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7);">샘플 영상 준비 중</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.35);">Firebase URL 연결 예정</div>
-      </div>
-      <!-- 영상 수령 후 위 placeholder div 삭제하고 아래 주석 해제
       <video id="sample-video" controls playsinline preload="metadata"
         style="width:100%;display:block;max-height:240px;object-fit:contain;"
-        src="FIREBASE_VIDEO_URL_HERE">
+        src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EB%A8%B8%EB%8B%88%EC%95%BC%EC%83%81%EB%8B%B4_1.mp4?alt=media&token=54d58906-1ec7-4e7c-8f98-415f507ba588">
       </video>
-      -->
     </div>
 
     <!-- 고민 연동 메시지 + CTA -->
@@ -2621,14 +2630,14 @@ html{visibility:visible !important;}
 
       <!-- ★ 무료 리드마그넷 버튼 (위) -->
       <button onclick="freeScoreModalOpen()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#93C5FD;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        🆓 무료 재무건강점수 확인하기
+        🆓 무료 재무진단점수 확인하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">이메일 · 카톡으로 결과 즉시 발송</span>
       </button>
 
       <!-- ★ 무료 텍스트 상담 버튼 (신규) -->
       <button onclick="openFreeTextChat()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(76,175,125,.5);background:rgba(76,175,125,.1);color:#81C995;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        💬 무료 텍스트 상담 시작하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI에게 재무 고민 바로 물어보기 · 로그인하면 기록 저장</span>
+        💬 AI재무진단 텍스트상담
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무진단 · 로그인하면 맥락 기억</span>
       </button>
 
       <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
@@ -2637,11 +2646,39 @@ html{visibility:visible !important;}
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
       </button>
 
-      <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
+      <!-- ★ 앞으로 가기 — 마이페이지에서 무료결과 다시 보기 -->
+      <button id="btn-back-to-result" onclick="backToFreeResult()" style="display:none;width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:8px;">
+        ← 무료 진단 결과 다시 보기
+      </button>
+
+      <!-- ★ 슬로건 -->
+    <div style="text-align:center;font-size:10px;color:rgba(255,255,255,.3);margin-bottom:6px;padding:0 10px;line-height:1.5;">
+      당신의 경제적 고민을 해결하는 "AI재무진단서비스, 머니야"
+    </div>
+    <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
       <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
         🏥 유료 AI 재무진단 시작하기
-        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">AI 음성 재무진단 · 금융집짓기 8대 영역 · 맞춤형 검진</span>
+        <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담</span>
       </button>
+
+      <!-- ★ 서비스 링크 버튼 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;margin-bottom:4px;">
+        <button onclick="showPanel('inquiry-panel-bg','inquiry-panel')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(254,229,0,.15);border:1px solid rgba(254,229,0,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+          <span style="font-size:20px;">💬</span>
+          <span style="font-size:10px;font-weight:700;color:#FEE500;">문의하기</span>
+          <span style="font-size:8px;color:rgba(255,255,255,.4);">카톡채널</span>
+        </button>
+        <button onclick="openLectureModal()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+          <span style="font-size:20px;">📚</span>
+          <span style="font-size:10px;font-weight:700;color:#4ade80;">강의신청</span>
+          <span style="font-size:8px;color:rgba(255,255,255,.4);">일반/전문가</span>
+        </button>
+        <button onclick="openSharePanel()" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:rgba(201,151,42,.1);border:1px solid rgba(201,151,42,.3);border-radius:10px;cursor:pointer;font-family:var(--fn);">
+          <span style="font-size:20px;">📤</span>
+          <span style="font-size:10px;font-weight:700;color:var(--gold2);">공유하기</span>
+          <span style="font-size:8px;color:rgba(255,255,255,.4);">링크 공유</span>
+        </button>
+      </div>
 
       <!-- 개발자 메뉴 트리거 -->
       <div id="fh-dev-ver-btn" onclick="fhDevTap()"
@@ -2678,44 +2715,84 @@ html{visibility:visible !important;}
 
 </div><!-- /funnel-wrap -->
 
-<!-- ★ 무료 재무건강점수 신청 모달 -->
+<!-- ★ 무료 재무진단점수 신청 모달 -->
 <div id="freeScoreModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:18px;padding:24px 20px;width:90%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:32px;margin-bottom:6px;">🆓</div>
-      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무건강점수 확인</div>
-      <div style="font-size:11px;color:#8896B0;margin-top:4px;">입력하신 정보로 결과를 이메일/카톡으로 보내드립니다</div>
+      <div style="font-size:17px;font-weight:900;color:#0B1D3A;">무료 재무진단점수 확인</div>
+      <div style="font-size:11px;color:#8896B0;margin-top:4px;">Google 로그인 후 결과를 이메일로 발송해 드립니다</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <input id="free-name" type="text" placeholder="이름 (필수)"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
+    <!-- 로그인 전 -->
+    <div id="freeScore-before-login">
+      <button onclick="freeScoreGoogleLogin()"
+        style="width:100%;padding:13px;border-radius:10px;border:1.5px solid #ddd;background:#fff;color:#3c4043;font-size:14px;font-weight:700;font-family:var(--fn);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);margin-bottom:10px;">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Google 계정으로 로그인 후 결과 받기
+      </button>
+      <div style="font-size:10px;color:#aaa;text-align:center;">🔒 Google 계정 정보 외 별도 입력 불필요</div>
+    </div>
+    <!-- 로그인 후 -->
+    <div id="freeScore-after-login" style="display:none;">
+      <div style="background:#f0f9f0;border-radius:10px;padding:12px;border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:#166534;font-weight:700;margin-bottom:1px;">✅ 로그인 완료</div>
+          <div id="freeScore-login-name" style="font-size:13px;font-weight:900;color:#0B1D3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="freeScore-login-email" style="font-size:10px;color:#8896B0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+      </div>
+      <input id="free-phone" type="tel" placeholder="전화번호 (카카오 발송용) 예: 010-1234-5678"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;margin-bottom:10px;"
         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <input id="free-phone" type="tel" placeholder="전화번호 (필수) 예: 010-1234-5678"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <input id="free-email" type="email" placeholder="이메일 (필수) 예: name@email.com"
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#ddd'">
-      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-top:2px;">
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;margin-bottom:14px;">
         <input id="free-privacy" type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#3b82f6;flex-shrink:0;">
-        <span style="font-size:10px;color:#666;line-height:1.5;">
-          [필수] 개인정보 수집 및 이용에 동의합니다.<br>
-          <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일 | 목적: 재무건강점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
+        <span style="font-size:10px;color:#666;line-height:1.5;">[필수] 개인정보 수집 및 이용에 동의합니다.<br>
+          <span style="color:#999;font-size:9px;">수집항목: 이름, 이메일, 전화번호(선택) | 목적: 재무진단점수 발송 | 보유기간: 서비스 이용 종료 시까지</span>
         </span>
       </label>
+      <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,.35);">
+        무료 재무진단점수 받기
+      </button>
     </div>
-    <button onclick="freeScoreSubmit()" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-top:14px;box-shadow:0 4px 16px rgba(59,130,246,.35);">
-      무료 재무건강점수 받기
-    </button>
-    <button onclick="freeScoreModalClose()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;margin-top:6px;">닫기</button>
+    <button onclick="freeScoreModalClose()" style="width:100%;padding:16px 10px;min-height:48px;border:none;background:rgba(0,0,0,.04);border-radius:10px;color:#888;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;display:block;font-family:var(--fn);">닫기</button>
   </div>
 </div>
 
 <!-- ★ 무료 신청 감사 화면 (Thank You Screen) -->
-<div id="freeThankYou" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;"></div>
+<div id="freeThankYou" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;"></div>
 
+<!-- ★ 미니 로그인 오버레이 (S8 위 — 텍스트상담·DESIRE 인증 연결) -->
+<div id="miniLoginOverlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:999999;align-items:flex-end;justify-content:center;padding-bottom:0;">
+  <div id="miniLoginCard" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border:1px solid rgba(201,151,42,.35);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;">
+    <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:28px;margin-bottom:10px;">🔐</div>
+      <div id="miniLoginMsg" style="font-size:15px;font-weight:700;color:#E8B84B;margin-bottom:6px;">로그인이 필요해요</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.5;">한 번 로그인하면 유료 진단 시에도<br>자동으로 로그인 상태가 유지됩니다</div>
+    </div>
+    <button id="miniLoginGoogleBtn" onclick="doMiniLogin()"
+      style="width:100%;padding:14px;border-radius:12px;border:1.5px solid #ddd;background:#fff;color:#3c4043;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Google 계정으로 로그인
+    </button>
+    <button onclick="closeMiniLogin(true)"
+      style="width:100%;padding:16px;min-height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;">
+      로그인 없이 계속하기
+    </button>
+  </div>
+</div>
 <!-- ★ 무료 텍스트 상담 모달 -->
-<div id="freeTextChatModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:99990;flex-direction:column;">
+<div id="freeTextChatModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:999999;flex-direction:column;">
   <style>
     @keyframes ftcFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
   </style>
@@ -2723,17 +2800,17 @@ html{visibility:visible !important;}
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
     <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8B6914,#C9972A);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
     <div style="flex:1;">
-      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI 머니야 무료 상담</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.4);">텍스트로 재무 고민 바로 물어보기 · AI 학습 미사용</div>
+      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 텍스트상담</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);">AI 재무 상담 · AI 학습 미사용</div>
     </div>
-    <button onclick="closeFreeTextChat()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:32px;height:32px;border-radius:8px;cursor:pointer;line-height:1;">×</button>
+    <button onclick="closeFreeTextChat()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;line-height:1;flex-shrink:0;">×</button>
   </div>
   <!-- 대화 로그 -->
   <div id="ftc-log" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px;"></div>
   <!-- 입력 -->
   <div style="border-top:1px solid rgba(255,255,255,.08);padding:12px 14px;background:rgba(11,29,58,.98);flex-shrink:0;">
     <div style="display:flex;gap:8px;align-items:flex-end;">
-      <textarea id="ftc-input" placeholder="재무 고민을 편하게 입력하세요..." rows="2"
+      <textarea id="ftc-input" placeholder="재무 고민을 편하게 입력해 주세요..." rows="2"
         style="flex:1;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;color:#fff;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:none;outline:none;line-height:1.5;"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ftcSend();}"></textarea>
       <button onclick="ftcSend()" style="background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:10px;padding:10px 14px;color:#0B1D3A;font-weight:900;font-size:13px;cursor:pointer;flex-shrink:0;font-family:'Noto Sans KR',sans-serif;">전송</button>
@@ -2746,7 +2823,7 @@ html{visibility:visible !important;}
 </div>
 
 <!-- ★ DESIRE 시뮬레이터 모달 -->
-<div id="desireSimModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:99990;flex-direction:column;overflow-y:auto;">
+<div id="desireSimModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(11,29,58,.97);z-index:999999;flex-direction:column;overflow-y:auto;">
   <!-- 헤더 -->
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;flex-shrink:0;position:sticky;top:0;z-index:10;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -2754,7 +2831,7 @@ html{visibility:visible !important;}
         <div style="font-size:14px;font-weight:900;color:#E8B84B;">🗺️ DESIRE 단계 파악</div>
         <div style="font-size:10px;color:rgba(255,255,255,.4);" id="ds-stage-label">재무 여정 6단계 진단</div>
       </div>
-      <button onclick="closeDesireSimulator()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:32px;height:32px;border-radius:8px;cursor:pointer;line-height:1;">×</button>
+      <button onclick="closeDesireSimulator()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;line-height:1;flex-shrink:0;">×</button>
     </div>
     <!-- 진행바 -->
     <div id="ds-bar" style="display:flex;gap:5px;"></div>
@@ -2764,7 +2841,7 @@ html{visibility:visible !important;}
   <!-- 토스트 -->
   <div id="ds-toast" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(201,151,42,.9);color:#0B1D3A;font-size:12px;font-weight:700;padding:10px 18px;border-radius:20px;opacity:0;transition:opacity .3s;z-index:99999;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;"></div>
   <!-- 인증 오버레이 -->
-  <div id="ds-cert-overlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:99995;align-items:center;justify-content:center;padding:20px;">
+  <div id="ds-cert-overlay" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:9999999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#1a2940;border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:24px;width:100%;max-width:360px;text-align:center;">
       <div style="font-size:48px;margin-bottom:12px;">🏆</div>
       <div id="ds-cert-title" style="font-size:18px;font-weight:900;color:#E8B84B;margin-bottom:4px;"></div>
@@ -2778,14 +2855,19 @@ html{visibility:visible !important;}
 </div>
 
 
+
 <div class="app">
 
 
 <div class="header">
   <div class="header-row">
-    <div>
-      <div class="logo">금융집짓기®</div>
-      <div class="logo-sub">AI 재무설계 시뮬레이터 · 특허등록 · 오원트금융연구소</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%EB%A1%9C%EA%B3%A0%ED%99%95%EC%A0%95%EC%95%88.png?alt=media&token=f1902fc0-5594-4916-bf7e-ed81d00ce39f"
+        style="height:30px;object-fit:contain;" alt="AI머니야" onerror="this.style.display='none'">
+      <div>
+        <div class="logo">금융집짓기®</div>
+        <div class="logo-sub">AI재무진단서비스 머니야 · 오원트금융연구소</div>
+      </div>
     </div>
     <div class="hbtns">
       <button class="hbtn hbtn-subscribe" id="btn-header-main" onclick="headerMainAction()">💳 구독하기</button>
@@ -5854,8 +5936,8 @@ function mpSelectPlan(plan) {
     'silver-year':   '지금 ₩99,000/년 실버 연회비 결제 →',
     'gold-month':    '지금 ₩19,900/월 골드 구독 시작 →',
     'gold-year':     '지금 ₩199,000/년 골드 연회비 결제 →',
-    'expert-month':  '지금 ₩29,900/월 전문가 구독 시작 →',
-    'expert-year':   '지금 ₩299,000/년 전문가 연회비 결제 →'
+    'expert-month':  '지금 ₩33,000/월 전문가 FC 구독 시작 →',
+    'expert-year':   '지금 ₩330,000/년 전문가 FC 연회비 결제 →'
   };
   var cta = document.getElementById('mp-sub-cta');
   if (cta) cta.textContent = ctaMap[plan] || '결제 시작하기 →';
@@ -5866,9 +5948,12 @@ function mpSelectPlan(plan) {
   var isMonthly = plan.endsWith('-month');
   if (notice) notice.style.display = isMonthly ? 'block' : 'none';
   if (amountEl && isMonthly) {
-    var amtMap = { 'silver-month':'₩9,900', 'gold-month':'₩19,900', 'expert-month':'₩29,900' };
+    var amtMap = { 'silver-month':'₩9,900', 'gold-month':'₩19,900', 'expert-month':'₩33,000' };
     amountEl.textContent = amtMap[plan] || '';
   }
+  // 전문가 플랜 숨김 처리 중 — 추가정보 폼 비활성화
+  var fcExtra = document.getElementById('fc-extra-info');
+  if (fcExtra) fcExtra.style.display = 'none'; // 전문가 플랜 출시 전 숨김
 }
 
 function selPayMethod(el){
@@ -5884,8 +5969,8 @@ function confirmPay(plan){
     'silver-year':  { amount:99000,  name:'실버 연회비',           prefix:'SILVER_YEAR',   regular:'N' },
     'gold-month':   { amount:19900,  name:'골드 월정기구독',       prefix:'GOLD_MONTH',    regular:'Y' },
     'gold-year':    { amount:199000, name:'골드 연회비',           prefix:'GOLD_YEAR',     regular:'N' },
-    'expert-month': { amount:29900,  name:'전문가 월정기구독',     prefix:'EXPERT_MONTH',  regular:'Y' },
-    'expert-year':  { amount:299000, name:'전문가 연회비',         prefix:'EXPERT_YEAR',   regular:'N' }
+    'expert-month': { amount:33000,  name:'전문가 FC 월정기구독', prefix:'FC_MONTH',      regular:'Y' },
+    'expert-year':  { amount:330000, name:'전문가 FC 연회비',      prefix:'FC_YEAR',       regular:'N' }
   };
 
   var cfg = planConfig[plan];
@@ -6006,7 +6091,15 @@ function onPaypleResult(data){
     mvpSendMakeWebhook(_payerName, _payerPhone, _payerEmail);
     if(window._fhDb && _payerEmail) {
       var _docId = _payerEmail.replace(/\./g, '_').replace(/@/g, '_at_');
-      var _exp = new Date(); _exp.setMonth(_exp.getMonth()+1);
+      var _exp = new Date();
+      // 플랜별 만료일 계산
+      if(currentPlan === 'single') {
+        _exp.setDate(_exp.getDate() + 1); // 단일진단: 당일
+      } else if(currentPlan.indexOf('year') > -1) {
+        _exp.setFullYear(_exp.getFullYear() + 1); // 연간: 1년
+      } else {
+        _exp.setMonth(_exp.getMonth() + 1); // 월간: 1개월
+      }
       window._fhDb.collection('subscribers').doc(_docId).set({
         email:_payerEmail, name:_payerName, plan:currentPlan,
         creditMin:credit, active:true, expiry:_exp.toISOString(),
@@ -6037,14 +6130,42 @@ function onPaypleResult(data){
       : '🎉 결제 완료! AI머니야 회원이 되셨습니다 👑';
     showToast(_greeting);
 
+    // ★ 전문가 플랜이면 agents 컬렉션에 추가 저장
+    if(currentPlan.startsWith('expert') && window._fhDb && _payerEmail) {
+      var _fcCompany = (document.getElementById('fc-company')||{}).value || '';
+      var _fcDept    = (document.getElementById('fc-dept')||{}).value || '';
+      var _fcTitle   = (document.getElementById('fc-title')||{}).value || '';
+      // 에이전트 코드 생성: AGT_ + 이름이니셜2자 + 랜덤3자리
+      var _prefix = _payerName.replace(/\s/g,'').substring(0,2).toUpperCase() || 'FC';
+      var _agentCode = 'AGT_' + _prefix + (Math.floor(Math.random()*900)+100);
+      var _agentDocId = _payerEmail.replace(/\./g,'_').replace(/@/g,'_at_');
+      localStorage.setItem('fh_agent_code', _agentCode);
+      localStorage.setItem('fh_is_agent', '1');
+      window._fhDb.collection('agents').doc(_agentDocId).set({
+        code:          _agentCode,
+        name:          _payerName,
+        phone:         _payerPhone,
+        email:         _payerEmail,
+        company:       _fcCompany,
+        dept:          _fcDept,
+        title:         _fcTitle,
+        plan:          currentPlan,
+        subscribeDate: new Date().toISOString(),
+        active:        true,
+        creditMin:     40,
+        stats:         { linksShared:0, clientsCompleted:0, connectRequests:0 },
+        uid:           (window._fhCurrentUser && window._fhCurrentUser.uid) || ''
+      }).catch(function(e){ console.log('[agents]', e.message); });
+    }
+
     const payBtn = document.querySelector('.hbtn-pay');
     if(payBtn){
       payBtn.textContent = '👑 회원전용';
-      payBtn.onclick = () => mpOpen();
+      payBtn.onclick = () => mvpStartCheckup();
       payBtn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
       payBtn.style.animation = 'none';
     }
-    setTimeout(() => mpOpen(), 300);
+    setTimeout(() => mpOpen(), 300); // 결제 직후 최초 1회는 바로 열기
   } else {
     showToast('❌ 결제 실패: ' + (data.PCD_PAY_MSG || '다시 시도해 주세요'));
   }
@@ -6136,7 +6257,7 @@ function requestCFP(channel){
       '→ 오상열 CFP에게 전문 상담 요청합니다'
     );
     // 카카오톡 링크 (실제 구현 시 kakao.co.kr/o/profile/오원트)
-    window.open('https://open.kakao.com/o/sXXXXXXX', '_blank');
+    window.open('https://pf.kakao.com/_vxfmfxj', '_blank');
     showToast('💛 카카오톡으로 상담 요청을 보냈습니다!');
   } else {
     // 전화 연결
@@ -6465,6 +6586,54 @@ function togglePause(secId, e){
 
 /* touchend 제거 — onclick만 사용 */
 
+/* ━━━ 강의 상세 패널 ━━━ */
+function openLectureDetail(type) {
+  // 강의 모달 닫기
+  var m = document.getElementById('lectureModal');
+  if(m) m.remove();
+
+  // 패널 표시
+  var bg = document.getElementById('lecture-detail-bg');
+  var panel = document.getElementById('lecture-detail-panel');
+  var gen = document.getElementById('lecture-detail-gen');
+  var pro = document.getElementById('lecture-detail-pro');
+  if(!bg || !panel) return;
+
+  // 해당 상세만 표시
+  if(gen) gen.style.display = type === 'gen' ? 'block' : 'none';
+  if(pro) pro.style.display = type === 'pro' ? 'block' : 'none';
+
+  bg.style.display = 'block';
+  panel.style.display = 'block';
+  panel.scrollTop = 0;
+  setTimeout(function(){ panel.style.transform = 'translateY(0)'; }, 30);
+}
+function closeLectureDetail() {
+  var bg = document.getElementById('lecture-detail-bg');
+  var panel = document.getElementById('lecture-detail-panel');
+  if(panel) panel.style.transform = 'translateY(100%)';
+  setTimeout(function(){
+    if(bg) bg.style.display = 'none';
+    if(panel) panel.style.display = 'none';
+  }, 320);
+}
+
+/* ━━━ 공유하기 패널 전용 오픈 함수 ━━━ */
+function openSharePanel(){
+  var bg = document.getElementById('share-panel-bg');
+  var panel = document.getElementById('share-panel');
+  if(!bg || !panel) return;
+  bg.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9998;';
+  panel.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;z-index:9999;transform:translateY(100%);transition:transform .3s ease;';
+  panel.style.background = '#0B1D3A';
+  panel.style.borderRadius = '20px 20px 0 0';
+  panel.style.borderTop = '3px solid #C9972A';
+  panel.style.padding = '20px 18px 36px';
+  panel.style.overflowY = 'auto';
+  panel.style.maxHeight = '85vh';
+  setTimeout(function(){ panel.style.transform = 'translateY(0)'; }, 30);
+}
+
 /* ━━━ 패널 공통 헬퍼 (CSS 클래스 불필요) ━━━ */
 function showPanel(bgId, panelId){
   const bg = document.getElementById(bgId);
@@ -6637,14 +6806,13 @@ const FH_VERSION_KEY    = 'fh_schema_ver';
   }
 })();
 
-// 앱 로드 시 구독 상태 복원 (버전 검증 통과 후 실행)
+// 앱 로드 시 버튼 UI만 복원 (구독 진입은 항상 Firestore 확인 후)
 (function(){
   const saved = localStorage.getItem(MP_MEMBER_KEY)
              || localStorage.getItem('fh_subscribed');
   if(saved) {
-    mpIsSubscribed = true;
+    // mpIsSubscribed는 세팅하지 않음 — mvpStartCheckup에서 Firestore 확인 후 결정
     mpSetMemberButton();
-    // ※ 자동 오픈 제거 — 버튼만 업데이트, 고객이 직접 클릭해서 진입
   }
 })();
 
@@ -6653,12 +6821,11 @@ function mpSetMemberButton() {
   if(!btn) return;
   btn.className = 'hbtn hbtn-member';
   btn.textContent = '👑 회원전용';
-  btn.onclick = mpOpen;
+  btn.onclick = mvpStartCheckup; // 항상 Firestore 확인 후 진입
 }
 
 function headerMainAction() {
-  if(mpIsSubscribed) mpOpen();
-  else mpOpenSubscribe();
+  mvpStartCheckup();
 }
 
 /* ── 구독 모달 ── */
@@ -6691,18 +6858,117 @@ function mpCompletePurchase() {
 
 // MVP: CTA 버튼 클릭 → develop은 결제 건너뛰고 바로 진입
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   미니 로그인 오버레이 제어
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var _miniLoginCallback = null;
+
+function showMiniLogin(msg, callback) {
+  var overlay = document.getElementById('miniLoginOverlay');
+  var msgEl = document.getElementById('miniLoginMsg');
+  if (!overlay) return;
+  if (msgEl && msg) msgEl.textContent = msg;
+  _miniLoginCallback = callback || null;
+  overlay.style.display = 'flex';
+  // 카드 슬라이드업 애니메이션
+  var card = document.getElementById('miniLoginCard');
+  if (card) {
+    card.style.transform = 'translateY(100%)';
+    card.style.transition = 'transform .35s cubic-bezier(.32,.72,0,1)';
+    setTimeout(function(){ card.style.transform = 'translateY(0)'; }, 10);
+  }
+}
+
+function closeMiniLogin(skipCallback) {
+  var overlay = document.getElementById('miniLoginOverlay');
+  var card = document.getElementById('miniLoginCard');
+  if (card) {
+    card.style.transform = 'translateY(100%)';
+    setTimeout(function(){
+      if (overlay) overlay.style.display = 'none';
+      // 로그인 없이 계속하기 선택 시 콜백 실행
+      if (!skipCallback && _miniLoginCallback) {
+        _miniLoginCallback();
+        _miniLoginCallback = null;
+      }
+    }, 300);
+  } else {
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+function doMiniLogin() {
+  if (!window._fhAuth || !window._fhProvider) {
+    showToast('잠시 후 다시 시도해주세요. (Firebase 로딩 중)');
+    return;
+  }
+  var _once = false;
+  var _unsub = window._fhAuth.onAuthStateChanged(function(user) {
+    if (user && !_once) {
+      _once = true;
+      try { _unsub(); } catch(e) {}
+      closeMiniLogin(false);
+      showToast('✅ ' + (user.displayName || '회원') + '님, 로그인 완료!');
+    }
+  });
+  setTimeout(function() {
+    if (!_once) { try { _unsub(); } catch(e) {} closeMiniLogin(true); }
+  }, 30000);
+  window._fhAuth.signInWithPopup(window._fhProvider)
+    .catch(function(err) {
+      try { _unsub(); } catch(e) {}
+      if (err.code === 'auth/popup-blocked') {
+        showToast('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.');
+      } else {
+        showToast('로그인 중 오류가 발생했습니다.');
+      }
+      closeMiniLogin(true);
+    });
+}
+
+/* ━━━ DESIRE 버튼 → 마이페이지 DESIRE 탭 연결 ━━━ */
+function openDesireViaMypage() {
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if (!user) {
+    // 비로그인 → 미니 로그인 오버레이
+    showMiniLogin('DESIRE 로드맵은 로그인 후 이용할 수 있어요', function() {
+      _openDesireTab();
+    });
+    return;
+  }
+  _openDesireTab();
+}
+function _openDesireTab() {
+  // 퍼널 숨기고 마이페이지 열기
+  var funnelWrap = document.getElementById('funnel-wrap');
+  if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+  mpOpen();
+  // DESIRE 탭(4번)으로 이동
+  setTimeout(function() {
+    var tabs = document.querySelectorAll('.mp-tab-btn');
+    if (tabs[4]) mpTab(4, tabs[4]);
+  }, 200);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    무료 텍스트 상담 모달
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function openFreeTextChat() {
   var modal = document.getElementById('freeTextChatModal');
   if (!modal) return;
+  // Render 서버 워밍업 (슬립 방지 — 고객이 입력하는 사이에 깨어남)
+  fetch('https://moneya-server.onrender.com/api/consult-chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:'ping', history:[], systemPrompt:'pong'})
+  }).catch(function(){});
+  ftcMessages = [];
   modal.style.display = 'flex';
+  var log = document.getElementById('ftc-log');
+  if (log) log.innerHTML = '';
   var input = document.getElementById('ftc-input');
   if (input) setTimeout(function(){ input.focus(); }, 300);
-  // 원트큐브 데이터 기반 초기 안내 메시지
   var ageLabel = fnAnswers[0]==='young'?'20~30대':fnAnswers[0]==='mid'?'40~50대':'60~70대';
   var incomeLabel = fnAnswers[3]==='low'?'500만원 이하':fnAnswers[3]==='mid'?'500~1,000만원':'1,000만원 이상';
-  var welcomeMsg = '안녕하세요! 저는 AI 재무 상담사 머니야입니다 😊\n\n'
+  var welcomeMsg = '안녕하세요! AI재무진단서비스의 머니야입니다 😊\n\n'
     + ageLabel + ' · ' + incomeLabel + ' 기준으로 파악되었어요.\n'
     + '재무 관련 고민이 있으시면 편하게 물어보세요!\n\n'
     + '예) "보험료가 너무 많이 나가는 것 같아요"\n예) "요즘 저축을 어떻게 해야 할지 모르겠어요"';
@@ -6712,6 +6978,10 @@ function openFreeTextChat() {
 function closeFreeTextChat() {
   var modal = document.getElementById('freeTextChatModal');
   if (modal) modal.style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
 var ftcMessages = [];
@@ -6740,11 +7010,20 @@ function ftcAddMessage(role, text) {
 async function ftcSend() {
   var input = document.getElementById('ftc-input');
   if (!input || !input.value.trim() || ftcIsLoading) return;
+
+  // ── 비로그인 3회 제한, 로그인 후 무제한 ──
+  var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
+  var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
+  if (!isLoggedIn && userMsgCount >= 3) {
+    ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 더 정밀한 AI재무진단이 가능합니다. 10초면 됩니다!');
+    setTimeout(function(){ showMiniLogin('계속 상담하려면 로그인이 필요해요', null); }, 500);
+    return;
+  }
+
   var userMsg = input.value.trim();
   input.value = '';
   ftcAddMessage('user', userMsg);
   ftcIsLoading = true;
-  // 로딩 표시
   var loadId = 'ftc-load-' + Date.now();
   var log = document.getElementById('ftc-log');
   if (log) {
@@ -6757,33 +7036,33 @@ async function ftcSend() {
     log.scrollTop = log.scrollHeight;
   }
   try {
-    // 대화 히스토리 구성
     var history = ftcMessages.slice(-8).map(function(m) {
       return { role: m.role === 'ai' ? 'assistant' : 'user', content: m.text };
     });
     var ageLabel = fnAnswers[0]==='young'?'20~30대':fnAnswers[0]==='mid'?'40~50대':'60~70대';
     var incomeLabel = fnAnswers[3]==='low'?'저소득':fnAnswers[3]==='mid'?'중소득':'고소득';
-    var sysPrompt = '당신은 오상열 CFP의 AI 재무 상담사 머니야입니다. '
-      + '20년 2,000건 상담 경험을 바탕으로 따뜻하고 전문적으로 상담합니다. '
+    var sysPrompt = '당신은 오상열 CFP의 AI재무진단서비스 머니야입니다. '
+      + '20년 2,000건 진단 경험을 바탕으로 따뜻하고 전문적으로 재무진단을 합니다. '
       + '고객 정보: ' + ageLabel + ', ' + incomeLabel + ' 수준. '
-      + '텍스트로 대화 중이며, 문제 발견에 집중합니다. 해결책의 구체적 실행은 음성 유료 진단에서 깊이 다룬다고 자연스럽게 안내하세요. '
-      + '답변은 3~5문장으로 간결하게, 공감 먼저, 질문으로 마무리합니다. 판매 강요 없음. AI학습에 대화내용 미사용.';
+      + '텍스트로 대화 중이며, 문제 발견에 집중합니다. 해결책의 구체적 실행은 음성 유료 AI재무진단에서 깊이 다룬다고 자연스럽게 안내하세요. '
+      + '답변은 3~5문장으로 간결하게, 공감 먼저, 질문으로 마무리합니다. 특정 금융상품 권유 없음. AI학습에 대화내용 미사용.';
     var res = await fetch('https://moneya-server.onrender.com/api/consult-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: userMsg, history: history, systemPrompt: sysPrompt })
     });
     var data = await res.json();
-    var reply = (data && data.reply) ? data.reply : '죄송해요, 잠시 후 다시 시도해주세요.';
+    var reply = (data && (data.reply || data.message)) ? (data.reply || data.message) : '죄송해요, 잠시 후 다시 시도해주세요.';
     var loadEl = document.getElementById(loadId);
     if (loadEl) loadEl.remove();
     ftcAddMessage('ai', reply);
-    // 3회 이상 대화 시 로그인 유도 (선택적)
-    var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
-    if (userMsgCount === 3) {
+    // 3회 완료 후 — 비로그인이면 로그인 유도 안내
+    var newCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
+    if (!isLoggedIn && newCount === 3) {
       setTimeout(function(){
-        ftcAddMessage('ai', '💡 로그인하시면 지금까지 나눈 대화가 저장되어, 다음에 오실 때 이어서 상담할 수 있어요. 카카오 또는 구글 로그인 10초면 됩니다!');
-      }, 1000);
+        ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 다음 AI재무진단이 더 정밀해집니다. 로그인 없이는 3회까지 무료로 이용하실 수 있어요.');
+        setTimeout(function(){ showMiniLogin('대화 맥락을 기억하려면 로그인이 필요해요', null); }, 800);
+      }, 800);
     }
   } catch(e) {
     var loadEl2 = document.getElementById(loadId);
@@ -6886,6 +7165,10 @@ function openDesireSimulator() {
 function closeDesireSimulator() {
   var modal = document.getElementById('desireSimModal');
   if (modal) modal.style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
 function dsRender() {
@@ -7045,18 +7328,32 @@ function dsShowResult() {
       + '<div style="font-size:15px;font-weight:700;color:'+posStage.color+';">'+posStage.letter+'단계 — '+posStage.sub+'</div>'
       + '</div>' : '')
     + '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:14px;margin-bottom:14px;">'+rows+'</div>'
-    + '<button onclick="dsOpenCert('+curPos+')" style="width:100%;padding:14px;background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:11px;color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">'
-    + (posStage ? posStage.letter+'단계 달성 인증하기' : '🏆 완주 인증하기')+'</button>'
-    + '<button onclick="dsAskAI()" style="width:100%;padding:13px;background:rgba(76,175,125,.15);border:1.5px solid rgba(76,175,125,.4);border-radius:11px;color:#81C995;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">💬 AI에게 다음 단계 질문하기</button>'
-    + '<button onclick="closeDesireSimulator()" style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">닫기</button>';
+    + '<button id="ds-cert-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#8B6914,#C9972A);border:none;border-radius:11px;color:#0B1D3A;font-size:13px;font-weight:900;cursor:pointer;margin-bottom:10px;">'    + (posStage ? posStage.letter+'단계 달성 인증하기' : '🏆 완주 인증하기')+'</button>'    + '<button id="ds-askai-btn" style="width:100%;padding:13px;background:rgba(76,175,125,.15);border:1.5px solid rgba(76,175,125,.4);border-radius:11px;color:#81C995;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">💬 AI에게 다음 단계 질문하기</button>'    + '<button id="ds-close-btn" style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;">닫기</button>';
+  var _curPos = curPos;
+  setTimeout(function(){
+    var certBtn  = document.getElementById('ds-cert-btn');
+    var askBtn   = document.getElementById('ds-askai-btn');
+    var closeBtn = document.getElementById('ds-close-btn');
+    if (certBtn)  certBtn.onclick  = function(){ dsOpenCert(_curPos); };
+    if (askBtn)   askBtn.onclick   = function(){ dsAskAI(); };
+    if (closeBtn) closeBtn.onclick = function(){ closeDesireSimulator(); };
+  }, 50);
 }
 
 function dsOpenCert(stageIdx) {
-  // 구글 로그인 여부 확인 — 로그인 안 되어 있으면 선택적 유도
   var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
   if (!isLoggedIn) {
-    dsShowToast('💡 로그인하면 인증이 저장됩니다! 로그인 없이도 확인은 가능해요.');
+    // 로그인 안 되어 있으면 미니 로그인 오버레이 먼저 표시
+    _dsPendingCertStage = stageIdx;
+    showMiniLogin('DESIRE 단계 인증을 저장하려면 로그인이 필요해요', function() {
+      dsOpenCertDo(stageIdx);
+    });
+    return;
   }
+  dsOpenCertDo(stageIdx);
+}
+
+function dsOpenCertDo(stageIdx) {
   var s = stageIdx < DS_STAGES.length ? DS_STAGES[stageIdx] : DS_STAGES[DS_STAGES.length-1];
   var certDiv = document.getElementById('ds-cert-overlay');
   if (!certDiv) return;
@@ -7065,6 +7362,8 @@ function dsOpenCert(stageIdx) {
   document.getElementById('ds-cert-comment').value = '';
   certDiv.style.display = 'flex';
 }
+
+var _dsPendingCertStage = null;
 
 function dsCloseCert() {
   var certDiv = document.getElementById('ds-cert-overlay');
@@ -7090,71 +7389,89 @@ function dsShowToast(msg) {
   setTimeout(function(){ t.style.opacity='0'; }, 2800);
 }
 
-/* ━━━ 무료 재무건강점수 신청 모달 ━━━ */
+
+/* ━━━ 무료 재무진단점수 신청 모달 ━━━ */
 function freeScoreModalOpen() {
   var m = document.getElementById('freeScoreModal');
-  if(m) m.style.display = 'flex';
+  if (m) m.style.display = 'flex';
+  // 이미 로그인 상태면 바로 after-login 표시
+  var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  if (user) {
+    freeScoreShowLoggedIn(user);
+  } else {
+    var b = document.getElementById('freeScore-before-login');
+    var a = document.getElementById('freeScore-after-login');
+    if (b) b.style.display = 'block';
+    if (a) a.style.display = 'none';
+  }
 }
 function freeScoreModalClose() {
   var m = document.getElementById('freeScoreModal');
-  if(m) m.style.display = 'none';
+  if (m) m.style.display = 'none';
+}
+function freeScoreShowLoggedIn(user) {
+  var b = document.getElementById('freeScore-before-login');
+  var a = document.getElementById('freeScore-after-login');
+  var n = document.getElementById('freeScore-login-name');
+  var e = document.getElementById('freeScore-login-email');
+  if (b) b.style.display = 'none';
+  if (a) a.style.display = 'block';
+  if (n) n.textContent = user.displayName || '사용자';
+  if (e) e.textContent = user.email || '';
+}
+function freeScoreGoogleLogin() {
+  // window._fhAuth를 직접 사용 (fhGoogleLogin 함수 의존 제거)
+  if (!window._fhAuth || !window._fhProvider) {
+    showToast('잠시 후 다시 시도해주세요. (Firebase 로딩 중)');
+    return;
+  }
+  window._fhAuth.signInWithPopup(window._fhProvider)
+    .then(function(result) {
+      freeScoreShowLoggedIn(result.user);
+    })
+    .catch(function(err) {
+      if (err.code === 'auth/popup-blocked') {
+        showToast('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.');
+      } else {
+        showToast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
+    });
 }
 function freeScoreSubmit() {
-  var name = (document.getElementById('free-name') || {}).value || '';
-  var phone = (document.getElementById('free-phone') || {}).value || '';
-  var email = (document.getElementById('free-email') || {}).value || '';
+  var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  var name = user ? (user.displayName || '사용자') : '';
+  var email = user ? (user.email || '') : '';
+  var phone = ((document.getElementById('free-phone') || {}).value || '').trim();
   var privacy = (document.getElementById('free-privacy') || {}).checked || false;
-
-  if(!name.trim()) { showToast('이름을 입력해 주세요.'); return; }
-  if(!phone.trim()) { showToast('전화번호를 입력해 주세요.'); return; }
-  if(!email.trim() || email.indexOf('@') < 0) { showToast('올바른 이메일을 입력해 주세요.'); return; }
-  if(!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
-
-  // 원트큐브 결과 데이터 수집
+  if (!email) { showToast('먼저 Google 로그인을 해주세요.'); return; }
+  if (!phone) { showToast('전화번호를 입력해 주세요. (카카오 발송에 필요합니다)'); return; }
+  if (phone.replace(/[^0-9]/g,'').length < 10) { showToast('올바른 전화번호를 입력해 주세요.'); return; }
+  if (!privacy) { showToast('개인정보 수집 동의에 체크해 주세요.'); return; }
   var resultTitle = (document.getElementById('fn-r-title') || {}).textContent || '';
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
-
-  // ★ 재무건강점수 계산 (통계 중간값 기반)
   var scoreData = calcFreeHealthScore(fnAnswers);
-
-  // ★ make.com 웹훅으로만 전송 (구글시트 기록 + 카톡 + 이메일 발송 모두 make.com에서 처리)
-  fetch('https://hook.eu1.make.com/slpo33bjiux7xs821r1deb5f67c1va28', {
+  fetch('https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type: 'free_score',
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      plan: '무료 재무건강점수',
-      result_title: resultTitle,
-      result_sub: resultSub,
-      result_d: resultD,
-      // ★ 재무검진결과표 데이터
-      health_score: scoreData.totalScore,
-      score_grade: scoreData.grade,
-      score_expense: scoreData.expense,
-      score_asset: scoreData.asset,
-      score_insurance: scoreData.insurance,
-      score_retirement: scoreData.retirement,
-      score_debt: scoreData.debt,
-      wealth_index: scoreData.wealthIndex,
-      wealth_grade: scoreData.wealthGrade,
-      age_label: scoreData.ageLabel,
-      income_label: scoreData.incomeLabel,
-      estimated_age: scoreData.estimatedAge,
-      estimated_income: scoreData.estimatedIncome,
-      estimated_asset: scoreData.estimatedAsset,
+      type: 'free_score', name: name, phone: phone, email: email,
+      plan: '무료 재무건강점수', result_title: resultTitle,
+      result_sub: resultSub, result_d: resultD,
+      health_score: scoreData.totalScore, score_grade: scoreData.grade,
+      score_expense: scoreData.expense, score_asset: scoreData.asset,
+      score_insurance: scoreData.insurance, score_retirement: scoreData.retirement,
+      score_debt: scoreData.debt, wealth_index: scoreData.wealthIndex,
+      wealth_grade: scoreData.wealthGrade, age_label: scoreData.ageLabel,
+      income_label: scoreData.incomeLabel, estimated_age: scoreData.estimatedAge,
+      estimated_income: scoreData.estimatedIncome, estimated_asset: scoreData.estimatedAsset,
       checkup_url: 'https://financial-house-building.vercel.app',
       timestamp: new Date().toISOString()
     })
-  }).then(function(r) { console.log('[무료점수] make.com 웹훅:', r.status); })
-    .catch(function(e) { console.log('[무료점수] make.com 오류:', e); });
-
-  // 모달 → 감사 화면(Thank You Screen)으로 전환
+  }).then(function(r){ console.log('[무료점수] make.com:', r.status); })
+    .catch(function(e){ console.log('[무료점수] 오류:', e); });
   freeScoreModalClose();
-  showFreeThankYou(name.trim(), scoreData);
+  showFreeThankYou(name, scoreData);
 }
 
 /* ━━━ 무료 신청 감사 화면 (Thank You Screen) ━━━ */
@@ -7167,14 +7484,14 @@ function showFreeThankYou(name, scoreData) {
   var thankDiv = document.getElementById('freeThankYou');
   if(!thankDiv) return;
 
-  thankDiv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 22px;width:92%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;">'
+  thankDiv.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;overflow-y:auto;max-height:90vh;box-sizing:border-box;">'
     + '<div style="font-size:42px;margin-bottom:8px;">🎉</div>'
     + '<div style="font-size:20px;font-weight:900;color:#0B1D3A;margin-bottom:4px;">' + name + '님, 신청 완료!</div>'
     + '<div style="font-size:12px;color:#8896B0;margin-bottom:20px;">이메일과 카톡으로 재무건강검진결과를 보내드립니다</div>'
 
     // 점수 카드
     + '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:20px;margin-bottom:16px;">'
-    + '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">나의 재무건강점수</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">나의 재무진단점수</div>'
     + '<div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">'
     + '<span style="font-size:48px;font-weight:900;color:' + gradeColor + ';">' + scoreData.totalScore + '</span>'
     + '<span style="font-size:18px;color:rgba(255,255,255,.4);">/ 100점</span>'
@@ -7209,7 +7526,7 @@ function showFreeThankYou(name, scoreData) {
     + '</button>'
 
     // 홈으로
-    + '<button onclick="closeThankYou()" style="width:100%;padding:10px;border:none;background:none;color:#999;font-size:12px;cursor:pointer;">홈으로 돌아가기</button>'
+    + '<button onclick="closeThankYou()" style="width:100%;padding:16px 10px;min-height:48px;border:none;background:rgba(0,0,0,.04);border-radius:10px;color:#888;font-size:13px;font-weight:600;cursor:pointer;display:block;margin-top:4px;font-family:var(--fn);">← 홈으로 돌아가기</button>'
     + '</div>';
 
   thankDiv.style.display = 'flex';
@@ -7233,9 +7550,13 @@ function thankYouToCheckup() {
 
 function closeThankYou() {
   document.getElementById('freeThankYou').style.display = 'none';
+  // S8 결과화면으로 복귀
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
 }
 
-/* ━━━ 무료 재무건강점수 계산 (통계 중간값 기반) ━━━ */
+/* ━━━ 무료 재무진단점수 계산 (통계 중간값 기반) ━━━ */
 function calcFreeHealthScore(answers) {
   if(!answers || answers.length < 6) {
     return { totalScore: 0, grade: '측정불가', expense: 0, asset: 0, insurance: 0, retirement: 0, debt: 0,
@@ -7349,48 +7670,53 @@ function calcFreeHealthScore(answers) {
 }
 
 function mvpStartCheckup() {
-  var isSubscribed = mpIsSubscribed
-    || localStorage.getItem('fh_member_v1') === '1'
-    || localStorage.getItem('fh_subscribed') === '1';
-  if(isSubscribed) {
-    if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
-    var simWrap = document.getElementById('sim-wrap');
-    if(simWrap) simWrap.style.display = 'none';
-    var funnelWrap = document.getElementById('funnel-wrap');
-    if(funnelWrap) funnelWrap.classList.add('fn-hidden');
-    mpOpen(); return;
-  }
-  mpOpenSubscribe(); return;
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if(!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
-  }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if(daysPassed > 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  // 로그인 안 된 경우 → 결제 모달
+  if (!user) {
     mpOpenSubscribe();
     return;
   }
-  var remaining = 7 - daysPassed;
-  var simWrap = document.getElementById('sim-wrap');
-  if(simWrap) simWrap.style.display = 'none';
-  document.getElementById('funnel-wrap').classList.add('fn-hidden');
-  localStorage.setItem('fh_subscribed', '1');
-  localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', new Date().toISOString());
-  localStorage.setItem('fh_plan', 'silver-month');
-  localStorage.setItem('mvp_credit_min', '20');
-  mpIsSubscribed = true;
-  var btn = document.getElementById('btn-header-main');
-  if(btn){
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
+  // 로그인된 경우 → Firestore에서 구독 확인
+  if (window._fhDb) {
+    var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+    window._fhDb.collection('subscribers').doc(docId).get()
+      .then(function(doc) {
+        var isValid = false;
+        if (doc.exists) {
+          var d = doc.data();
+          if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
+            isValid = true;
+            // localStorage 동기화
+            localStorage.setItem('fh_member_v1', '1');
+            localStorage.setItem('fh_subscribed', '1');
+            localStorage.setItem('fh_plan', d.plan || 'silver-month');
+            localStorage.setItem('mvp_credit_min', String(d.creditMin || 20));
+            mpIsSubscribed = true;
+          }
+        }
+        if (isValid) {
+          if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+          var simWrap = document.getElementById('sim-wrap');
+          if (simWrap) simWrap.style.display = 'none';
+          var funnelWrap = document.getElementById('funnel-wrap');
+          if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+          mpOpen();
+        } else {
+          // Firestore에 구독 없음 → localStorage 초기화 후 결제 모달
+          ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+          mpIsSubscribed = false;
+          mpOpenSubscribe();
+        }
+      })
+      .catch(function(e) {
+        console.log('[구독확인 오류]', e.message);
+        // Firestore 오류 시 결제 모달로 안전하게 처리
+        mpOpenSubscribe();
+      });
+  } else {
+    // Firestore 미연결 → 결제 모달
+    mpOpenSubscribe();
   }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
-  mpOpen();
 }
 
 // MVP: 간단 입력폼 기반 결제 (Google 로그인 대신)
@@ -7460,6 +7786,149 @@ function mvpSaveToSheet(name, phone, email) {
   });
 }
 
+// ★ 강의 결제 클릭 — 구글시트 기록 후 페이플로 이동
+function openLecturePay(type) {
+  var url   = type === 'gen'
+    ? 'https://link.payple.kr/NzcxOjc3NTQwNTcxNzMzMTMy'
+    : 'https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0';
+  var plan  = type === 'gen' ? '일반인강의(55만원)' : '전문가강의(110만원)';
+  var price = type === 'gen' ? '55만원' : '110만원';
+  // 일반인/전문가 각각 다른 웹훅
+  var webhookUrl = type === 'gen'
+    ? 'https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e'
+    : 'https://hook.eu1.make.com/ej6eipjsogwmlnniv7re7sznsfah7y28';
+
+  // 기존 팝업 제거
+  var old = document.getElementById('lecturePayPopup');
+  if(old) old.remove();
+
+  // 전화번호 + 개인정보동의 팝업 생성
+  var popup = document.createElement('div');
+  popup.id = 'lecturePayPopup';
+  popup.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  popup.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:24px 20px;width:100%;max-width:380px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:24px;margin-bottom:8px;">💳</div>
+        <div style="font-size:16px;font-weight:900;color:#0B1D3A;">강의 신청</div>
+        <div style="font-size:12px;color:#888;margin-top:4px;">${plan}</div>
+        <div style="font-size:22px;font-weight:900;color:#C9972A;margin-top:6px;">${price}</div>
+      </div>
+
+      <!-- 이름 -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:6px;">이름 <span style="color:#e53e3e;">*</span></div>
+        <input id="lecturePayName" type="text" placeholder="홍길동"
+          style="width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <!-- 전화번호 -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:6px;">전화번호 <span style="color:#e53e3e;">*</span></div>
+        <input id="lecturePayPhone" type="tel" placeholder="010-1234-5678"
+          style="width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <!-- 이메일 -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:6px;">이메일 <span style="color:#888;font-weight:400;">(선택)</span></div>
+        <input id="lecturePayEmail" type="email" placeholder="example@gmail.com"
+          style="width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <!-- 개인정보동의 -->
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#f8f9fa;border-radius:10px;cursor:pointer;margin-bottom:16px;">
+        <input type="checkbox" id="lecturePayPrivacy"
+          style="width:18px;height:18px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;cursor:pointer;">
+        <div style="font-size:11px;color:#555;line-height:1.6;">
+          <strong style="color:#0B1D3A;">[필수] 개인정보 수집 및 이용에 동의합니다</strong><br>
+          수집항목: 이름, 연락처, 이메일 | 목적: 강의 신청 및 안내 발송 | 보유기간: 강의 종료 후 1년
+        </div>
+      </label>
+
+      <!-- 버튼 -->
+      <button id="lecturePaySubmitBtn"
+        style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+        💳 결제 페이지로 이동
+      </button>
+      <button onclick="document.getElementById('lecturePayPopup').remove()"
+        style="width:100%;padding:13px;border-radius:10px;border:1px solid #e2e8f0;background:transparent;color:#888;font-size:13px;font-family:var(--fn);cursor:pointer;">
+        취소
+      </button>
+    </div>`;
+  document.body.appendChild(popup);
+
+  // 버튼에 이벤트 직접 연결 (onclick 따옴표 충돌 방지)
+  document.getElementById('lecturePaySubmitBtn').addEventListener('click', function() {
+    submitLecturePay(type, url, plan);
+  });
+
+  // 로그인 정보 자동 입력
+  var user  = window._fhAuth ? window._fhAuth.currentUser : null;
+  var uName  = (user && user.displayName) || localStorage.getItem('fh_payer_name') || '';
+  var uEmail = (user && user.email)       || localStorage.getItem('fh_payer_email') || '';
+  var uPhone = localStorage.getItem('fh_payer_phone') || '';
+  if(uName)  document.getElementById('lecturePayName').value  = uName;
+  if(uEmail) document.getElementById('lecturePayEmail').value = uEmail;
+  if(uPhone) document.getElementById('lecturePayPhone').value = uPhone;
+}
+
+// 강의 결제 팝업 확인 → 구글시트 기록 → 결제 이동
+function submitLecturePay(type, url, plan) {
+  var name    = (document.getElementById('lecturePayName')  ||{}).value||'';
+  var phone   = (document.getElementById('lecturePayPhone') ||{}).value||'';
+  var email   = (document.getElementById('lecturePayEmail') ||{}).value||'';
+  var privacy = (document.getElementById('lecturePayPrivacy')||{}).checked;
+
+  // 유효성 검사
+  if(!name.trim()) {
+    showToast('이름을 입력해 주세요.');
+    document.getElementById('lecturePayName').focus();
+    return;
+  }
+  var phoneClean = phone.replace(/[^0-9]/g,'');
+  if(phoneClean.length < 10 || phoneClean.length > 11) {
+    showToast('올바른 전화번호를 입력해 주세요. (예: 010-1234-5678)');
+    document.getElementById('lecturePayPhone').focus();
+    return;
+  }
+  if(!privacy) {
+    showToast('개인정보 수집 및 이용에 동의해 주세요.');
+    return;
+  }
+
+  // 구글시트 기록 (일반인/전문가 각각 다른 시트로)
+  var webhookUrl = type === 'gen'
+    ? 'https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e'
+    : 'https://hook.eu1.make.com/ej6eipjsogwmlnniv7re7sznsfah7y28';
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:      name.trim(),
+      email:     email.trim(),
+      phone:     phone.trim(),
+      plan:      plan,
+      source:    'lecture-payment-form',
+      timestamp: new Date().toISOString()
+    })
+  }).catch(function(){});
+
+  // localStorage 저장
+  localStorage.setItem('fh_payer_name',  name.trim());
+  localStorage.setItem('fh_payer_phone', phone.trim());
+  if(email.trim()) localStorage.setItem('fh_payer_email', email.trim());
+
+  // 팝업 닫고 결제 이동
+  var p = document.getElementById('lecturePayPopup');
+  if(p) p.remove();
+  window.open(url, '_blank');
+  showToast('✅ 정보가 저장되었습니다. 결제 페이지로 이동합니다.');
+}
+
 // ★ make.com 웹훅 → 땡큐 카톡 + 땡큐 이메일 자동발송
 function mvpSendMakeWebhook(name, phone, email) {
   var currentPlan = window._fhCurrentPlan || selectedPlan || 'single';
@@ -7469,8 +7938,8 @@ function mvpSendMakeWebhook(name, phone, email) {
     'silver-year':'실버 연회비(99,000원)',
     'gold-month':'골드 월정기구독(19,900원/월)',
     'gold-year':'골드 연회비(199,000원)',
-    'expert-month':'전문가 월정기구독(29,900원/월)',
-    'expert-year':'전문가 연회비(299,000원)'
+    'expert-month':'전문가 FC 월정기구독(33,000원/월)',
+    'expert-year':'전문가 FC 연회비(330,000원)'
   };
   var amountMap = {
     'single':9900, 'silver-month':9900, 'silver-year':99000,
@@ -8218,9 +8687,11 @@ function mpOpen() {
   // ★ 진단안내 페이지 플랜별 UI 업데이트
   setTimeout(mvpUpdateGuideUI, 100);
   mpDrawChart();
-  // MVP: 시뮬레이터 숨기기 (AI 재무검진 모드에서는 보이지 않아야 함)
+  // MVP: 시뮬레이터 숨기기
   var simWrap = document.getElementById('sim-wrap');
   if(simWrap) simWrap.style.display = 'none';
+  // ★ 전문가 FC플랜 대시보드 표시
+  setTimeout(fcDashInit, 200);
 }
 function mpClose() {
   document.getElementById('mypageOverlay').classList.remove('mp-open');
@@ -8541,7 +9012,7 @@ let fnCurrentScreen = 's0';
 // ── D-카운터 (나이 미입력 시 ? 표시) ──
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('fn-d-landing');
-  if(el) el.textContent = 'D-25년';
+  if(el) el.textContent = 'D-3년';
 });
 
 // ── 화면 전환 ──
@@ -8704,11 +9175,11 @@ function fnShowResult() {
   const r = FN_RESULTS[fnResultKey];
 
   // D-카운터 연수 하드코딩 (연령대별)
-  const yearMap = {young:'D-35년', mid:'D-25년', senior:'D-5년'};
+  const yearMap = {young:'D-3년', mid:'D-3년', senior:'D-3년'};
   const subMap  = {young:'20~30대 기준 · 은퇴 73세', mid:'40~50대 기준 · 은퇴 73세', senior:'60~70대 기준 · 은퇴 73세'};
   const dEl = document.getElementById('fn-result-d');
   const dSub = document.getElementById('fn-result-d-sub');
-  if(dEl)  dEl.textContent  = yearMap[fnAnswers[0]] || 'D-25년';
+  if(dEl)  dEl.textContent  = yearMap[fnAnswers[0]] || 'D-3년';
   if(dSub) dSub.textContent = (subMap[fnAnswers[0]] || '40~50대 기준 · 은퇴 73세') + ' (출처: 통계청)';
 
   // 결과 내용
@@ -8738,7 +9209,7 @@ function fnShowResult() {
   // 고민 연동 메시지
   const worryEl = document.getElementById('fn-r-worry-msg');
   if(worryEl) worryEl.innerHTML =
-    `<b style="color:#E8B84B;">${r.title}</b>을 해결하려면<br>먼저 정확한 재무 현황 파악이 필요합니다.<br>금융집짓기 시뮬레이터로 지금 바로 확인하세요.`;
+    `<b style="color:#E8B84B;">${r.title}</b>을 해결하려면<br>먼저 정확한 재무 현황 파악이 필요합니다.<br>유료 AI재무진단으로 지금 바로 확인하세요.`;
 }
 
 /* ── 퍼널 공유 함수 ── */
@@ -8960,12 +9431,66 @@ function mpFaqToggle(idx) {
 
 // ── 공유 ──
 function mpShareApp() {
-  const url = 'https://financial-house-building.vercel.app';
-  if(navigator.share) {
-    navigator.share({ title:'금융집짓기® AI 재무설계', text:'금융집짓기® 시뮬레이터로 내 재무 상태를 진단해보세요!', url });
-  } else {
-    navigator.clipboard.writeText(url).then(() => showToast('링크가 복사되었습니다!'));
-  }
+  var url = 'https://financial-house-building.vercel.app';
+  var text = '당신의 경제적 고민을 해결하는 "AI재무진단서비스, 머니야"\n\n재무건강점수를 30초 만에 확인해보세요!\n' + url;
+
+  // 공유 모달 생성
+  var modal = document.createElement('div');
+  modal.id = 'shareModal';
+  modal.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:9999999;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--navy);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;border-top:1px solid rgba(201,151,42,.3);">
+      <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px;"></div>
+      <div style="font-size:14px;font-weight:900;color:var(--gold2);margin-bottom:4px;">📤 공유하기</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:16px;">AI재무진단서비스 머니야를 공유하세요</div>
+
+      <!-- URL 박스 -->
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:11px;color:rgba(255,255,255,.5);flex:1;word-break:break-all;">${url}</span>
+        <button id="shareModalCopyBtn" onclick="
+          var t=document.createElement('textarea');t.value='${url}';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+          this.textContent='✅ 복사됨';this.style.color='#4ade80';
+          setTimeout(function(){var b=document.getElementById('shareModalCopyBtn');if(b){b.textContent='복사';b.style.color='var(--gold2)';}},2000);
+        " style="padding:6px 12px;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:6px;color:var(--gold2);font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;white-space:nowrap;">
+          복사
+        </button>
+      </div>
+
+      <!-- 공유 버튼들 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+        <button onclick="
+          if(navigator.share){navigator.share({title:'AI재무진단서비스 머니야',text:'${text}',url:'${url}'});}
+          else{showToast('브라우저가 공유를 지원하지 않습니다');}
+        " style="padding:12px 6px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:10px;color:#60a5fa;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;">
+          📱<br>기기 공유
+        </button>
+        <button onclick="
+          var t=document.createElement('textarea');t.value='${text}';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+          showToast('✅ 문자 내용이 복사되었습니다! SMS에 붙여넣으세요');
+          document.getElementById('shareModal').remove();
+        " style="padding:12px 6px;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);border-radius:10px;color:#4ade80;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;">
+          💬<br>문자 발송
+        </button>
+        <button onclick="
+          window.open('https://story.kakao.com/share?url=${url}','_blank');
+          document.getElementById('shareModal').remove();
+        " style="padding:12px 6px;background:rgba(254,229,0,.12);border:1px solid rgba(254,229,0,.3);border-radius:10px;color:#FEE500;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;">
+          🟡<br>카카오 공유
+        </button>
+      </div>
+
+      <button onclick="document.getElementById('shareModal').remove()"
+        style="width:100%;padding:13px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.4);font-size:13px;font-family:var(--fn);cursor:pointer;min-height:48px;">
+        닫기
+      </button>
+    </div>`;
+
+  // 기존 모달 제거 후 추가
+  var old = document.getElementById('shareModal');
+  if(old) old.remove();
+  document.body.appendChild(modal);
+  // 바깥 클릭 시 닫기
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 }
 
 // ── 구독 일수 계산 ──
@@ -9271,6 +9796,211 @@ function mpResetLoginUI() {
    계정 관리 기능
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
+// ══════════════════════════════════════════
+// 전문가 FC플랜 대시보드 함수
+// ══════════════════════════════════════════
+
+// ?agent= 파라미터 처리 (페이지 로드 시 실행)
+(function(){
+  var urlParams = new URLSearchParams(window.location.search);
+  var agentCode = urlParams.get('agent');
+  if(agentCode) {
+    localStorage.setItem('fh_agent_code', agentCode);
+    console.log('[FC] 설계사 코드 저장:', agentCode);
+    // URL 파라미터 제거 (깔끔하게)
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
+
+// 대시보드 초기화 — 마이페이지 열릴 때 호출
+function fcDashInit() {
+  var plan = localStorage.getItem('fh_plan') || '';
+  var isAgent = plan.startsWith('expert') || localStorage.getItem('fh_is_agent') === '1';
+  var dashSection = document.getElementById('fc-dashboard-section');
+  if(!dashSection) return;
+
+  if(!isAgent) {
+    dashSection.style.display = 'none';
+    return;
+  }
+  dashSection.style.display = 'block';
+
+  // Firestore에서 설계사 정보 로드
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if(!user || !window._fhDb) {
+    fcDashRender({ code:'', stats:{ linksShared:0, clientsCompleted:0, connectRequests:0 } });
+    return;
+  }
+  var docId = user.email.replace(/\./g,'_').replace(/@/g,'_at_');
+  window._fhDb.collection('agents').doc(docId).get()
+    .then(function(doc) {
+      if(doc.exists) {
+        fcDashRender(doc.data());
+      } else {
+        // localStorage 코드로 fallback
+        var code = localStorage.getItem('fh_agent_code') || '';
+        fcDashRender({ code:code, company:'', dept:'', title:'',
+          stats:{ linksShared:0, clientsCompleted:0, connectRequests:0 } });
+      }
+    }).catch(function(e){ console.log('[fcDash]', e.message); });
+}
+
+// 대시보드 UI 렌더
+function fcDashRender(data) {
+  var code  = data.code || localStorage.getItem('fh_agent_code') || '';
+  var url   = 'https://financial-house-building.vercel.app?agent=' + code;
+  var stats = data.stats || { linksShared:0, clientsCompleted:0, connectRequests:0 };
+  var infoText = (data.company||'') + (data.dept?' · '+data.dept:'') + (data.title?' · '+data.title:'');
+
+  var infoEl = document.getElementById('fc-dash-info');
+  var urlEl  = document.getElementById('fc-my-url');
+  var linksEl= document.getElementById('fc-stat-links');
+  var doneEl = document.getElementById('fc-stat-done');
+  var connEl = document.getElementById('fc-stat-connect');
+
+  if(infoEl) infoEl.textContent = infoText || '설계사 정보 없음';
+  if(urlEl)  urlEl.textContent  = code ? url : '코드 발급 후 표시됩니다';
+  if(linksEl) linksEl.textContent = stats.linksShared    || 0;
+  if(doneEl)  doneEl.textContent  = stats.clientsCompleted || 0;
+  if(connEl)  connEl.textContent  = stats.connectRequests  || 0;
+
+  // 핫 리드 목록
+  var leadsEl = document.getElementById('fc-hot-leads');
+  if(leadsEl && stats.connectRequests > 0) {
+    leadsEl.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;">' +
+      '<div style="width:34px;height:34px;border-radius:50%;background:rgba(220,38,38,.1);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>' +
+      '<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--navy);">연결 요청 ' + stats.connectRequests + '건</div>' +
+      '<div style="font-size:10px;color:var(--muted);">고객이 전문가 상담을 요청했습니다</div></div>' +
+      '<span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(220,38,38,.1);color:#DC2626;">🔴 즉시연락</span>' +
+      '</div>';
+  }
+
+  // 전송용 미리보기 fc명 업데이트
+  var fcName = data.name || (window._fhAuth && window._fhAuth.currentUser ? window._fhAuth.currentUser.displayName : '') || '설계사';
+  var prevFc = document.getElementById('prev-fc');
+  if(prevFc) prevFc.textContent = fcName;
+
+  // localStorage에 코드 동기화
+  if(code) localStorage.setItem('fh_agent_code', code);
+}
+
+// 링크 복사
+function fcCopyLink() {
+  var code = localStorage.getItem('fh_agent_code') || '';
+  if(!code) { showToast('코드가 아직 발급되지 않았습니다.'); return; }
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function(){ showToast('✅ 링크 복사 완료!'); });
+  } else { showToast('✅ 링크 복사 완료!'); }
+}
+function fcShareKakao(){ showToast('💬 카카오 공유 — 추후 활성화 예정'); }
+function fcShareSMS(){   showToast('📱 문자 발송 — 추후 활성화 예정'); }
+
+// 고객에게 카톡 알림톡 발송
+function fcSendKakao() {
+  var phone = (document.getElementById('fc-send-phone')||{}).value||'';
+  if(!phone.trim()) { showToast('전화번호를 입력해주세요'); return; }
+  var code  = localStorage.getItem('fh_agent_code') || '';
+  var agentName = (window._fhAuth && window._fhAuth.currentUser) ? window._fhAuth.currentUser.displayName : '설계사';
+  var agentUrl  = 'https://financial-house-building.vercel.app?agent=' + code;
+  fetch('https://hook.eu1.make.com/gqxc1xxpz1x61pxfk996ollf00r0oiu9', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      type:'agent_link_send', agentName:agentName, agentCode:code,
+      recipientPhone:phone.trim(), agentUrl:agentUrl,
+      timestamp:new Date().toISOString()
+    })
+  }).catch(function(){});
+  showToast('💬 ' + phone + '으로 카톡 알림톡 발송 완료!');
+  var el = document.getElementById('fc-send-phone');
+  if(el) el.value = '';
+  // Firestore stats 업데이트
+  var user = window._fhAuth ? window._fhAuth.currentUser : null;
+  if(user && window._fhDb) {
+    var docId = user.email.replace(/\./g,'_').replace(/@/g,'_at_');
+    window._fhDb.collection('agents').doc(docId).update({
+      'stats.linksShared': firebase.firestore.FieldValue.increment(1)
+    }).catch(function(){});
+  }
+}
+
+// ── 무료 진단 결과 앞으로 가기 ──
+function backToFreeResult() {
+  // 마이페이지 닫고 S8 결과화면으로
+  try { mpClose(); } catch(e) {}
+  var fw = document.getElementById('funnel-wrap');
+  if (fw) fw.classList.remove('fn-hidden');
+  if (typeof fnGoTo === 'function') fnGoTo('s8');
+}
+
+// ── 강의신청 모달 ──
+function openLectureModal() {
+  var modal = document.createElement('div');
+  modal.id = 'lectureModal';
+  modal.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--navy);border-radius:18px;padding:24px 20px;width:100%;max-width:380px;border:1px solid rgba(201,151,42,.3);">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:28px;margin-bottom:8px;">📚</div>
+        <div style="font-size:16px;font-weight:900;color:var(--gold2);">강의 신청</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;">오상열 CFP · 금융집짓기® 세미나</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+
+        <!-- 일반인 강의 -->
+        <div style="background:rgba(22,163,74,.12);border:1.5px solid rgba(22,163,74,.4);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;">
+            <span style="font-size:24px;">👨‍👩‍👧‍👦</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:#4ade80;">일반인 강의</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.45);">재테크 세미나 · 금융집짓기® 기초</div>
+            </div>
+            <div style="font-size:13px;font-weight:900;color:#4ade80;">55만원</div>
+          </div>
+          <div style="display:flex;border-top:1px solid rgba(22,163,74,.25);">
+            <button onclick="openLectureDetail('gen')"
+              style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(22,163,74,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
+              📄 상세 보기
+            </button>
+            <button onclick="openLecturePay('gen')"
+              style="flex:1;padding:11px;background:rgba(22,163,74,.2);border:none;color:#4ade80;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
+              💳 바로 신청하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 전문가 강의 -->
+        <div style="background:rgba(201,151,42,.12);border:1.5px solid rgba(201,151,42,.4);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;">
+            <span style="font-size:24px;">👔</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--gold2);">전문가 강의</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.45);">설계사 · FP · 금융전문가 심화과정</div>
+            </div>
+            <div style="font-size:13px;font-weight:900;color:var(--gold2);">110만원</div>
+          </div>
+          <div style="display:flex;border-top:1px solid rgba(201,151,42,.25);">
+            <button onclick="openLectureDetail('pro')"
+              style="flex:1;padding:11px;background:transparent;border:none;border-right:1px solid rgba(201,151,42,.25);color:rgba(255,255,255,.5);font-size:11px;font-family:var(--fn);cursor:pointer;">
+              📄 상세 보기
+            </button>
+            <button onclick="openLecturePay('pro')"
+              style="flex:1;padding:11px;background:rgba(201,151,42,.2);border:none;color:var(--gold2);font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer;">
+              💳 바로 신청하기
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <button onclick="document.getElementById('lectureModal').remove()"
+        style="width:100%;padding:13px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;min-height:48px;">
+        닫기
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
 // ── 로그아웃 ──
 function mpLogout() {
   const modal = document.createElement('div');
@@ -9510,13 +10240,7 @@ function mpDoWithdraw() {
 
     function fhCheckAndAutoEnter(user) {
       if(!user || !user.email) return;
-      var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
-      if(localSub) {
-        mpIsSubscribed = true; mpSetMemberButton();
-        if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
-        showToast('✅ ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!');
-        return;
-      }
+      // Firestore를 항상 먼저 확인 (localStorage만 믿지 않음)
       if(window._fhDb) {
         var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
         window._fhDb.collection('subscribers').doc(docId).get()
@@ -9524,15 +10248,31 @@ function mpDoWithdraw() {
             if(doc.exists) {
               var d = doc.data();
               if(d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
-                localStorage.setItem('fh_member_v1','1'); localStorage.setItem('fh_subscribed','1');
+                localStorage.setItem('fh_member_v1','1');
+                localStorage.setItem('fh_subscribed','1');
                 localStorage.setItem('fh_plan', d.plan||'silver-month');
                 localStorage.setItem('mvp_credit_min', String(d.creditMin||20));
                 mpIsSubscribed = true; mpSetMemberButton();
                 if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
                 showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
+              } else {
+                ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+                mpIsSubscribed = false;
+                showToast('\uD83D\uDC4B ' + (user.displayName||'회원') + '님, 로그인되었습니다.');
               }
+            } else {
+              ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
+              mpIsSubscribed = false;
+              showToast('\uD83D\uDC4B ' + (user.displayName||'회원') + '님, 로그인되었습니다.');
             }
-          }).catch(function(e){ console.log('[Firestore]', e.message); });
+          }).catch(function(e){
+            console.log('[Firestore]', e.message);
+            var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+            if(localSub) { mpIsSubscribed = true; mpSetMemberButton(); showToast('\u2705 ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!'); }
+          });
+      } else {
+        var localSub = localStorage.getItem('fh_member_v1') || localStorage.getItem('fh_subscribed');
+        if(localSub) { mpIsSubscribed = true; mpSetMemberButton(); showToast('\u2705 ' + (user.displayName||'회원') + '님, 재방문을 환영합니다!'); }
       }
     }
 
@@ -10596,6 +11336,27 @@ async function diagConnectVoice(isPaid) {
       ? '【오늘 상담: ' + sessionNo + '회차 정기상담 플랜】'
       : '【오늘 상담: ' + planLabel + ' ' + planMin + '분 플랜】';
     planInject += ' 잔여크레딧: ' + remainMin + '분.';
+
+    // ★ 전문가 설계사 코드가 있으면 설계사 정보 추가 주입 (음성 불가침 유지)
+    var agentCode = localStorage.getItem('fh_agent_code') || '';
+    var agentInject = '';
+    if(agentCode) {
+      try {
+        var agentResp = await fetch('https://moneya-server.onrender.com/api/agent-info?code=' + agentCode);
+        var agentData = await agentResp.json();
+        if(agentData && agentData.success) {
+          agentInject = ' 【담당설계사: ' + agentData.name + ' (' + (agentData.company||'') + ')】'
+            + ' 상담 중 보험·연금·저축 등 전문가 도움이 필요한 상황이 오면'
+            + ' "' + agentData.name + ' 설계사님께 연결해드릴까요? 링크를 보내주신 분입니다."라고 안내하세요.'
+            + ' 고객이 동의하면 "연결 요청을 기록했습니다"라고 답하세요.';
+          console.log('[FC] 설계사 프롬프트 주입:', agentData.name);
+        }
+      } catch(e) {
+        console.log('[FC] 설계사 정보 조회 실패:', e.message);
+      }
+    }
+    planInject += agentInject;
+
     console.log('[Vapi] 플랜 주입:', planInject);
     var VapiConstructor = window.VapiClass.default || window.VapiClass;
     console.log('[DEBUG] VapiConstructor:', typeof VapiConstructor);
@@ -11493,7 +12254,7 @@ function diagBuildNotes() {
           <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">AI 재무검진결과 리포트</div>
           <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 자동 발급</div>
           <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
-            <span style="color:#C9972A">✦</span> 5대 영역 재무건강점수<br>
+            <span style="color:#C9972A">✦</span> 5대 영역 재무진단점수<br>
             <span style="color:#C9972A">✦</span> 부자지수 & 등급<br>
             <span style="color:#C9972A">✦</span> 항목별 판정 (양호/주의/위험)<br>
             <span style="color:#C9972A">✦</span> 강점 & 개선점 & 액션플랜
@@ -11891,11 +12652,11 @@ function renderHealthReport() {
     +'<td style="padding:6px 8px;text-align:center;width:16.6%"><div style="font-size:8px;color:#8896B0;">순자산</div><div style="font-size:11px;font-weight:700;color:#0B1D3A;">'+(nd.netAsset?nd.netAsset+'만원':'—')+'</div></td>'
     +'</tr></table>';
 
-  // ━━━ 종합 재무건강점수 3칸 ━━━
+  // ━━━ 종합 재무진단점수 3칸 ━━━
   html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;">'
     +'<tr>'
     +'<td style="padding:12px;text-align:center;border-right:1px solid #ddd;width:33.3%">'
-    +'<div style="font-size:9px;color:#8896B0;">종합 재무건강점수</div>'
+    +'<div style="font-size:9px;color:#8896B0;">종합 재무진단점수</div>'
     +'<div style="font-size:34px;font-weight:900;color:'+totalColor+';line-height:1.1;">'+sc.total+'</div>'
     +'<div style="font-size:10px;font-weight:700;color:'+totalColor+';">/ 100점 &nbsp; 판정: <strong>'+totalGrade+'</strong></div>'
     +'</td>'
@@ -12077,7 +12838,7 @@ function collectNoteData() {
   return d;
 }
 
-/* ━━━ 재무건강점수 계산 (100점 공식) ━━━ */
+/* ━━━ 재무진단점수 계산 (100점 공식) ━━━ */
 function calcHealthScore(nd) {
   var income      = nd.income      || 700;
   var age         = nd.age         || 50;
@@ -12231,7 +12992,7 @@ function shareReport() {
 
   var shareText =
     '[AI 재무검진결과표 - 금융집짓기]\n\n'
-    + nameStr + '재무건강점수: ' + sc.total + '점 ('
+    + nameStr + '재무진단점수: ' + sc.total + '점 ('
     + (sc.total>=80?'양호':sc.total>=60?'보통':sc.total>=40?'주의':'위험') + ')\n'
     + '부자지수: ' + sc.wealthIndex + '% ' + sc.wealthGrade + ' 등급\n\n'
     + '지출관리 ' + sc.expense   + '/20점\n'
@@ -12925,6 +13686,255 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 </div>
 
 
+<!-- ★ 강의 상세 패널 -->
+<div id="lecture-detail-bg" onclick="closeLectureDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99998;"></div>
+<div id="lecture-detail-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;z-index:99999;background:#fff;border-radius:20px 20px 0 0;border-top:3px solid #C9972A;overflow-y:auto;max-height:90vh;transform:translateY(100%);transition:transform .3s ease;">
+
+  <!-- 일반인 강의 상세 -->
+  <div id="lecture-detail-gen" style="display:none;">
+    <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);padding:28px 20px 24px;text-align:center;">
+      <div style="display:inline-block;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);color:#E8B84B;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:12px;">💻 일반인 전용 · 비대면(Zoom) 4주</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.4;margin-bottom:8px;">나만의 <span style="color:#E8B84B;">금융집</span>을<br>직접 지어보세요!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6);">재테크 초보도 4주면 흔들리지 않는 재정 기초를 만듭니다</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">📅 3/9 개강</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">⏰ 매주 일 2시간</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">💻 Zoom</span>
+      </div>
+    </div>
+    <div style="padding:20px;">
+      <!-- 추천 대상 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎯 이런 분께 추천합니다</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:13px;color:#333;">✅ 재테크 <strong>어디서부터 시작해야 할지</strong> 모르는 분</div>
+          <div style="font-size:13px;color:#333;">✅ 보험·연금·투자·부동산을 <strong>체계적으로 정리</strong>하고 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>노후 준비</strong>가 막막하고 불안한 분</div>
+          <div style="font-size:13px;color:#333;">✅ 지방/해외 거주로 <strong>비대면 수강</strong>을 원하는 분</div>
+        </div>
+      </div>
+      <!-- 커리큘럼 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">📚 4주 커리큘럼</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">1주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">나의 금융집 진단 — 현재 위치 파악</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">재무 자가진단 · 부자지수 계산 · 7개 영역 이해</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">2주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">기초공사 — 보험 & 비상예비자금</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">보험 점검법 · 필요보장 계산 · 위험관리 전략</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">3주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">기둥공사 — 부채상환 & 저축 & 은퇴</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">대출 최적 상환법 · 연금저축/IRP · 은퇴 설계</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #0B1D3A;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">4주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">지붕공사 — 투자 & 절세 & 부동산</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">자산배분 · ETF 기초 · 절세 · 나의 금융집 완성</div>
+          </div>
+        </div>
+      </div>
+      <!-- 수강료 + 결제 -->
+      <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;">💰 수강료</div>
+        <button onclick="openLecturePay('gen')"
+          style="font-size:32px;font-weight:900;color:#E8B84B;background:none;border:none;cursor:pointer;font-family:var(--fn);display:block;width:100%;text-align:center;margin-bottom:4px;">
+          55만원 →
+        </button>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;">4주 과정 (주 1회 2시간 · Zoom) · 교재+워크시트 포함</div>
+        <a href="javascript:void(0)" onclick="openLecturePay('gen')"
+          style="display:block;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:8px;">
+          💳 카드로 바로 신청하기
+        </a>
+        <a href="http://pf.kakao.com/_vxfmfxj" target="_blank"
+          style="display:block;background:#FEE500;color:#3A1D1D;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:10px;">
+          💬 카카오톡으로 신청하기
+        </a>
+        <button onclick="closeLectureDetail()"
+          style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;">
+          ← 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전문가 강의 상세 -->
+  <div id="lecture-detail-pro" style="display:none;">
+    <div style="background:linear-gradient(135deg,#1a0a2e,#2d1060);padding:28px 20px 24px;text-align:center;">
+      <div style="display:inline-block;background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);color:#E8B84B;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:12px;">🏛️ 보험전문가 전용 · 대면 4주 과정</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.4;margin-bottom:8px;">금융집짓기 <span style="color:#E8B84B;">마스터과정</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6);">FP가 먼저 완벽한 금융집을 지어야<br>고객의 금융집도 지어줄 수 있습니다</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">📅 3/7 개강</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">⏰ 매주 금 4시간</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.7);">👥 소수정예 15명</span>
+      </div>
+    </div>
+    <div style="padding:20px;">
+      <!-- 추천 대상 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎯 이런 분께 추천합니다</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:13px;color:#333;">✅ 보험만 팔다가 <strong>종합 재무설계 전문가</strong>로 도약하고 싶은 FP</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>금융집짓기® 방법론</strong>을 고객에게 제안하고 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ 상담 퀄리티를 높여 <strong>관리자산을 늘리고</strong> 싶은 분</div>
+          <div style="font-size:13px;color:#333;">✅ <strong>나 자신의 금융집</strong>부터 완벽하게 짓고 싶은 전문가</div>
+        </div>
+      </div>
+      <!-- 커리큘럼 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">📚 4주 커리큘럼</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">1주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">FP의 금융집 기초공사 & 자가진단</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">금융집짓기® 방법론 · 7개 영역 분석 프레임워크</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">2주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">고객 상담 실전 — 진단분석 & 설계견적</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">고객 재무 진단 실습 · 맞춤 설계안 작성법</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">3주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">시공관리 & 포트폴리오 구축</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">보험·연금·투자 통합 포트폴리오 · 케이스 스터디</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:12px;border-left:3px solid #6B21A8;">
+            <div style="font-size:10px;font-weight:700;color:#C9972A;">4주</div>
+            <div style="font-size:13px;font-weight:700;color:#0B1D3A;">금융집짓기 전문가 인증 & 실전 배치</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">롤플레이 실습 · 전문가 인증 시험 · 수료 후 네트워크</div>
+          </div>
+        </div>
+      </div>
+      <!-- 수강료 + 결제 -->
+      <div style="background:linear-gradient(135deg,#1a0a2e,#2d1060);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;">💰 수강료</div>
+        <button onclick="openLecturePay('pro')"
+          style="font-size:32px;font-weight:900;color:#E8B84B;background:none;border:none;cursor:pointer;font-family:var(--fn);display:block;width:100%;text-align:center;margin-bottom:4px;">
+          110만원 →
+        </button>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;">소수정예 15명 한정 · 교재+인증+네트워크 포함</div>
+        <a href="javascript:void(0)" onclick="openLecturePay('pro')"
+          style="display:block;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:8px;">
+          💳 카드로 바로 신청하기
+        </a>
+        <a href="http://pf.kakao.com/_vxfmfxj" target="_blank"
+          style="display:block;background:#FEE500;color:#3A1D1D;text-align:center;padding:14px;border-radius:10px;font-size:14px;font-weight:900;text-decoration:none;margin-bottom:10px;">
+          💬 카카오톡으로 신청하기
+        </a>
+        <button onclick="closeLectureDetail()"
+          style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.5);font-size:13px;font-family:var(--fn);cursor:pointer;">
+          ← 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ 문의하기 패널 -->
+<div id="inquiry-panel-bg" onclick="hidePanel('inquiry-panel-bg','inquiry-panel')" style="display:none;"></div>
+<div id="inquiry-panel" style="display:none;">
+  <div style="width:32px;height:3px;border-radius:2px;background:var(--border);margin:0 auto 16px;"></div>
+  <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:4px;">💬 문의하기</div>
+  <div style="font-size:10px;color:var(--muted);margin-bottom:16px;">금융집짓기 카카오 채널로 연결됩니다</div>
+  <a href="https://pf.kakao.com/_vxfmfxj" target="_blank"
+    onclick="hidePanel('inquiry-panel-bg','inquiry-panel')"
+    style="display:flex;align-items:center;gap:14px;padding:16px;background:#FEE500;border-radius:12px;text-decoration:none;margin-bottom:10px;">
+    <span style="font-size:28px;">💬</span>
+    <div>
+      <div style="font-size:14px;font-weight:900;color:#3C1E1E;">카카오 채널 친구추가</div>
+      <div style="font-size:10px;color:rgba(60,30,30,.6);margin-top:2px;">금융집짓기 · 오상열 CFP</div>
+    </div>
+    <span style="margin-left:auto;font-size:18px;">→</span>
+  </a>
+  <button onclick="hidePanel('inquiry-panel-bg','inquiry-panel')"
+    style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:var(--fn);cursor:pointer;margin-top:4px;">
+    닫기
+  </button>
+</div>
+
+<!-- ★ 공유하기 패널 -->
+<div id="share-panel-bg" onclick="hidePanel('share-panel-bg','share-panel')" style="display:none;"></div>
+<div id="share-panel" style="display:none;">
+  <div style="width:32px;height:3px;border-radius:2px;background:var(--border);margin:0 auto 16px;"></div>
+  <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:4px;">📤 공유하기</div>
+  <div style="font-size:10px;color:var(--muted);margin-bottom:14px;">AI재무진단서비스 머니야를 알려주세요</div>
+  <!-- URL 복사 박스 -->
+  <div style="background:#f8f9fa;border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:10px;color:var(--muted);flex:1;word-break:break-all;">financial-house-building.vercel.app</span>
+    <button id="shareCopyBtn" onclick="
+      var t=document.createElement('textarea');t.value='https://financial-house-building.vercel.app';
+      document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+      document.getElementById('shareCopyBtn').textContent='✅ 복사됨';
+      setTimeout(function(){var b=document.getElementById('shareCopyBtn');if(b)b.textContent='복사';},2000);
+    " style="padding:6px 12px;background:var(--navy);border:none;border-radius:6px;color:#fff;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;white-space:nowrap;">
+      복사
+    </button>
+  </div>
+  <!-- 공유 버튼 3개 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+    <button onclick="
+      if(navigator.share){
+        navigator.share({title:'AI재무진단서비스 머니야',text:'당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야',url:'https://financial-house-building.vercel.app'});
+      } else {
+        var t=document.createElement('textarea');t.value='https://financial-house-building.vercel.app';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+        showToast('링크가 복사되었습니다!');
+      }
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;color:#1D4ED8;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      📱<br>기기 공유
+    </button>
+    <button onclick="
+      if(window.Kakao && window.Kakao.isInitialized()) {
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: 'AI재무진단서비스, 머니야',
+            description: '당신의 경제적 고민을 해결하는 AI재무진단서비스. 30초 만에 내 재무건강점수를 확인하세요!',
+            imageUrl: 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%EB%A1%9C%EA%B3%A0%ED%99%95%EC%A0%95%EC%95%88.png?alt=media&token=f1902fc0-5594-4916-bf7e-ed81d00ce39f',
+            link: {
+              mobileWebUrl: 'https://financial-house-building.vercel.app',
+              webUrl: 'https://financial-house-building.vercel.app'
+            }
+          },
+          buttons: [{
+            title: '재무진단 시작하기',
+            link: {
+              mobileWebUrl: 'https://financial-house-building.vercel.app',
+              webUrl: 'https://financial-house-building.vercel.app'
+            }
+          }]
+        });
+      } else {
+        window.open('https://financial-house-building.vercel.app','_blank');
+        showToast('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+      }
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#FFFDE7;border:1px solid #FDD835;border-radius:10px;color:#3A1D1D;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      🟡<br>카카오 공유
+    </button>
+    <button onclick="
+      var t=document.createElement('textarea');
+      t.value='당신의 경제적 고민을 해결하는 AI재무진단서비스, 머니야\nhttps://financial-house-building.vercel.app';
+      document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);
+      showToast('✅ 복사 완료! 문자에 붙여넣으세요');
+      hidePanel('share-panel-bg','share-panel');
+    " style="padding:14px 6px;background:#F0FFF4;border:1px solid #86EFAC;border-radius:10px;color:#16A34A;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      💬<br>문자 발송
+    </button>
+  </div>
+  <button onclick="hidePanel('share-panel-bg','share-panel')"
+    style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:var(--fn);cursor:pointer;">
+    닫기
+  </button>
+</div>
+
 <div class="consult-panel-bg" id="consult-panel-bg" onclick="closeConsultPanel(event)"></div>
 <div class="consult-panel" id="consult-panel">
   <div class="consult-panel-handle"></div>
@@ -13005,7 +14015,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
       🥇 골드
     </button>
-    <button onclick="mpSelectTier('expert')" id="mp-tab-expert"
+    <button onclick="mpSelectTier('expert')" id="mp-tab-expert" style="display:none;"
       style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
       👔 전문가
     </button>
@@ -13032,7 +14042,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
           <span style="color:#CD7F32;font-weight:700;">✓</span> 텍스트 재무진단 당일 무제한
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무건강점수 즉시 확인
+          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무진단점수 즉시 확인
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
           <span>✗</span> 정기 구독 혜택 제외
@@ -13075,10 +14085,13 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
           <span style="color:#475569;font-weight:700;">✓</span> PDF 재무진단 리포트
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> 금융집짓기® 시뮬레이터 전체
+          <span style="color:#475569;font-weight:700;">✓</span> 월 1회 줌 재테크세미나 초대
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:#475569;font-weight:700;">✓</span> 언제든 해지 가능
+        </div>
+        <div style="margin-top:8px;padding:8px;background:rgba(71,85,105,.08);border-radius:8px;font-size:10px;color:#475569;line-height:1.7;">
+          📋 <strong>진행프로세스</strong><br>1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담
         </div>
       </div>
     </div>
@@ -13123,10 +14136,13 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
           <span style="color:var(--gold);font-weight:700;">✓</span> PDF 재무진단 리포트 + 히스토리
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> 금융집짓기® 시뮬레이터 전체
+          <span style="color:var(--gold);font-weight:700;">✓</span> 월 1회 줌 재테크세미나 초대
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:var(--gold);font-weight:700;">✓</span> 오상열 CFP 직접 상담 우선 예약
+        </div>
+        <div style="margin-top:8px;padding:8px;background:rgba(201,151,42,.08);border-radius:8px;font-size:10px;color:var(--gold);line-height:1.7;">
+          📋 <strong>진행프로세스</strong><br>1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담
         </div>
       </div>
     </div>
@@ -13146,46 +14162,70 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
     </div>
   </div>
 
-  <!-- ══ 전문가 플랜 패널 ══ -->
+  <!-- ══ 전문가 FC플랜 패널 ══ -->
   <div id="mp-tier-expert" class="mp-tier-panel" style="display:none;">
-    <div style="background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.05));border:1.5px solid rgba(99,102,241,.4);border-radius:14px;padding:14px;margin-bottom:10px;">
+    <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.4);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-size:11px;font-weight:900;color:#4338CA;">👔 전문가 플랜 (FC)</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
+          <div style="font-size:11px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:#4338CA;">₩29,900</div>
-          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+          <div style="font-size:22px;font-weight:900;color:var(--gold2);">₩33,000</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.4);">/ 월 정기구독</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 전용 링크 발급
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 전용 링크 발급 + 바이럴 자동화
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 고객 재무진단 결과 대시보드
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> AI 상담 중 자동 설계사 연결 트리거
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> 골드 플랜 혜택 전체 포함
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 핫 리드 카톡 즉시 알림
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#4338CA;font-weight:700;">✓</span> ARK-Genie 설계사 툴 연동 (예정)
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 골드플랜 40분 음성 상담 본인 이용 포함
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 전용 대시보드 (마이페이지 내 제공)
         </div>
       </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <div class="mp-plan-card mp-selected" id="mp-plan-expert-month" onclick="mpSelectPlan('expert-month')"
-        style="flex:1;padding:10px;border:2px solid #6366f1;">
-        <div style="font-size:10px;font-weight:700;color:#4338CA;">월정기구독</div>
-        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩29,900</div>
+        style="flex:1;padding:10px;border:2px solid var(--gold);">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">월정기구독</div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩33,000</div>
         <div style="font-size:8px;color:var(--muted);">/ 월</div>
       </div>
       <div class="mp-plan-card" id="mp-plan-expert-year" onclick="mpSelectPlan('expert-year')"
         style="flex:1;padding:10px;">
-        <div style="font-size:10px;font-weight:700;color:#4338CA;">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
-        <div style="font-size:16px;font-weight:900;color:#4338CA;">₩299,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 년 (₩24,917/월)</div>
+        <div style="font-size:10px;font-weight:700;color:var(--gold);">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩330,000</div>
+        <div style="font-size:8px;color:var(--muted);">/ 년 (₩27,500/월)</div>
+      </div>
+    </div>
+    <!-- 전문가 추가 정보 입력 (전문가 플랜 선택 시 표시) -->
+    <div id="fc-extra-info" style="display:none;background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
+      <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:10px;">👔 설계사 추가 정보 입력</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="fc-company" type="text" placeholder="소속 회사 (예: 삼성생명, 한화생명) *필수"
+          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
+        <div style="display:flex;gap:8px;">
+          <select id="fc-dept" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
+            <option value="">소속 선택 *필수</option>
+            <option>팀</option><option>지점</option><option>본부</option>
+            <option>지역단</option><option>FA센터</option><option>독립</option>
+          </select>
+          <select id="fc-title" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
+            <option value="">직책 선택</option>
+            <option>FC(설계사)</option><option>팀장</option><option>지점장</option>
+            <option>본부장</option><option>수석FP</option><option>대표</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -14167,12 +15207,12 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div class="mpc-bd">
           <div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:6px">📚 강의</div>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
-            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc3MDA2MDc4OTM1OTgz','_blank')">
+            <div class="mp-service-item" onclick="openLecturePay('pro')">
               <span style="font-size:18px">🎓</span>
               <div style="flex:1"><div style="font-size:11px;font-weight:700">전문가 강의</div><div style="font-size:9px;color:var(--muted)">대면+비대면 · 월 4회 · 1년 과정</div></div>
               <span style="font-size:11px;font-weight:700;color:var(--gold)">110만원</span>
             </div>
-            <div class="mp-service-item" onclick="window.open('https://link.payple.kr/NzcxOjc2ODQ3NzcyMjc4MzY3','_blank')">
+            <div class="mp-service-item" onclick="openLecturePay('gen')">
               <span style="font-size:18px">📚</span>
               <div style="flex:1"><div style="font-size:11px;font-weight:700">일반인 강의</div><div style="font-size:9px;color:var(--muted)">비대면 · 월 4회 · 연간 일정표 제공</div></div>
               <span style="font-size:11px;font-weight:700;color:var(--gold)">55만원</span>
@@ -14277,6 +15317,64 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div class="mp-menu-item mp-danger" onclick="mpLogout()">
           <span class="mp-menu-icon">🚪</span><span class="mp-menu-lbl">로그아웃</span>
         </div>
+
+      <!-- ══ 전문가 FC플랜 대시보드 (전문가 플랜 구독자에게만 표시) ══ -->
+      <div id="fc-dashboard-section" style="display:none;margin:12px 12px 0;">
+        <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:16px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜 대시보드</div>
+              <div id="fc-dash-info" style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">—</div>
+            </div>
+            <div style="background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:3px 10px;font-size:9px;color:var(--gold2);font-weight:700;">FC플랜</div>
+          </div>
+          <!-- 통계 3개 -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:10px;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:#fff;" id="fc-stat-links">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">링크 공유</div>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:10px;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:#fff;" id="fc-stat-done">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">검진 완료</div>
+            </div>
+            <div style="background:rgba(220,38,38,.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(220,38,38,.3);">
+              <div style="font-size:18px;font-weight:900;color:#ff6b6b;" id="fc-stat-connect">0</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.4);">연결 요청</div>
+            </div>
+          </div>
+          <!-- 전용 링크 -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;">📎 나의 전용 고객 링크</div>
+            <div id="fc-my-url" style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;font-size:10px;color:rgba(255,255,255,.7);word-break:break-all;margin-bottom:8px;">
+              https://financial-house-building.vercel.app?agent=...
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+              <button onclick="fcCopyLink()" style="padding:8px 4px;border-radius:8px;border:1px solid rgba(201,151,42,.4);background:rgba(201,151,42,.15);color:var(--gold2);font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">📋 복사</button>
+              <button onclick="fcShareKakao()" style="padding:8px 4px;border-radius:8px;border:none;background:#FEE500;color:#333;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">💬 카톡</button>
+              <button onclick="fcShareSMS()" style="padding:8px 4px;border-radius:8px;border:none;background:var(--navy3);color:#fff;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);min-height:36px;">📱 문자</button>
+            </div>
+          </div>
+          <!-- 고객 발송 -->
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;">📤 고객에게 카톡 알림톡 발송</div>
+            <div style="display:flex;gap:6px;">
+              <input id="fc-send-phone" type="tel" placeholder="010-0000-0000"
+                style="flex:1;padding:10px 12px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#fff;font-size:12px;font-family:var(--fn);outline:none;">
+              <button onclick="fcSendKakao()" style="padding:10px 14px;border-radius:8px;border:none;background:var(--gold);color:var(--navy);font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;font-family:var(--fn);min-height:42px;">발송</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 핫 리드 목록 -->
+        <div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:2px solid rgba(220,38,38,.15);">
+          <div style="font-size:12px;font-weight:900;color:#DC2626;margin-bottom:3px;">🔔 연결 요청 고객 (핫 리드)</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">고객이 전문가 상담을 요청했습니다 — 빠른 연락이 계약으로 이어집니다</div>
+          <div id="fc-hot-leads">
+            <div style="text-align:center;padding:16px;font-size:11px;color:var(--muted);">아직 연결 요청이 없습니다.<br>고객에게 링크를 공유해보세요!</div>
+          </div>
+        </div>
+      </div>
         <div class="mp-menu-item" onclick="mpCancelSubscription()">
           <span class="mp-menu-icon">💳</span>
           <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소</div><div class="mp-menu-sub">취소 후 이번 달 말까지 이용 가능</div></div>
