@@ -2457,6 +2457,19 @@ html{visibility:visible !important;}
   })();
   </script>
 
+  <!-- Kakao SDK (공유하기) -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+    integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+    crossorigin="anonymous"></script>
+  <script>
+    // Kakao SDK 초기화 (AI머니야 앱 키 — JavaScript 키)
+    window.addEventListener('load', function() {
+      if(window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init('97b8ff67fce6e9b52985c6da425c617d');
+      }
+    });
+  </script>
+
 </head>
 <body>
 
@@ -13366,10 +13379,33 @@ document.addEventListener('visibilitychange', function() {
       📱<br>기기 공유
     </button>
     <button onclick="
-      window.open('https://pf.kakao.com/_vxfmfxj','_blank');
+      if(window.Kakao && window.Kakao.isInitialized()) {
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: 'AI재무진단서비스, 머니야',
+            description: '당신의 경제적 고민을 해결하는 AI재무진단서비스. 30초 만에 내 재무건강점수를 확인하세요!',
+            imageUrl: 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%EB%A1%9C%EA%B3%A0%ED%99%95%EC%A0%95%EC%95%88.png?alt=media&token=f1902fc0-5594-4916-bf7e-ed81d00ce39f',
+            link: {
+              mobileWebUrl: 'https://financial-house-building.vercel.app',
+              webUrl: 'https://financial-house-building.vercel.app'
+            }
+          },
+          buttons: [{
+            title: '재무진단 시작하기',
+            link: {
+              mobileWebUrl: 'https://financial-house-building.vercel.app',
+              webUrl: 'https://financial-house-building.vercel.app'
+            }
+          }]
+        });
+      } else {
+        window.open('https://financial-house-building.vercel.app','_blank');
+        showToast('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+      }
       hidePanel('share-panel-bg','share-panel');
-    " style="padding:14px 6px;background:#FFFDE7;border:1px solid #FDD835;border-radius:10px;color:#B8860B;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
-      🟡<br>카카오 채널
+    " style="padding:14px 6px;background:#FFFDE7;border:1px solid #FDD835;border-radius:10px;color:#3A1D1D;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;line-height:1.6;">
+      🟡<br>카카오 공유
     </button>
     <button onclick="
       var t=document.createElement('textarea');
