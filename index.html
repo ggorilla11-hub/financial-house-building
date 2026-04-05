@@ -7448,7 +7448,7 @@ function freeScoreSubmit() {
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
   var scoreData = calcFreeHealthScore(fnAnswers);
-  fetch('https://hook.eu1.make.com/hpi5ufspz45g3i4s5lmik1iodt4lt4jm', {
+  fetch('https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -7790,6 +7790,10 @@ function openLecturePay(type) {
     : 'https://link.payple.kr/NzcxOjc3NTQwNTc0OTgzOTg0';
   var plan  = type === 'gen' ? '일반인강의(55만원)' : '전문가강의(110만원)';
   var price = type === 'gen' ? '55만원' : '110만원';
+  // 일반인/전문가 각각 다른 웹훅
+  var webhookUrl = type === 'gen'
+    ? 'https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e'
+    : 'https://hook.eu1.make.com/ej6eipjsogwmlnniv7re7sznsfah7y28';
 
   // 기존 팝업 제거
   var old = document.getElementById('lecturePayPopup');
@@ -7888,8 +7892,11 @@ function submitLecturePay(type, url, plan) {
     return;
   }
 
-  // 구글시트 기록
-  fetch('https://hook.eu1.make.com/hpi5ufspz45g3i4s5lmik1iodt4lt4jm', {
+  // 구글시트 기록 (일반인/전문가 각각 다른 시트로)
+  var webhookUrl = type === 'gen'
+    ? 'https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e'
+    : 'https://hook.eu1.make.com/ej6eipjsogwmlnniv7re7sznsfah7y28';
+  fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
