@@ -14018,202 +14018,270 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 
 <div class="mp-sub-modal" id="mp-sub-modal">
   <div class="mp-sub-handle"></div>
-
   <div class="mp-sub-title">🏥 AI 재무진단 플랜 선택</div>
   <div class="mp-sub-desc">오상열 CFP(20년) × AI 머니야 · 금융집짓기® 8대 영역 종합 진단</div>
 
-  <!-- ══ 플랜 탭 (실버/골드/크레딧) ══ -->
-  <div id="mp-plan-tabs" style="display:flex;gap:4px;margin-bottom:14px;background:rgba(11,29,58,.06);border-radius:10px;padding:4px;">
+  <!-- ══ 플랜 탭 ══ -->
+  <div style="display:flex;gap:4px;margin-bottom:14px;background:rgba(11,29,58,.07);border-radius:10px;padding:4px;">
     <button onclick="mpSelectTier('silver')" id="mp-tab-silver"
-      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:#64748b;color:#fff;">
+      style="flex:1;padding:9px 4px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:#475569;color:#fff;">
       🥈 실버
     </button>
     <button onclick="mpSelectTier('gold')" id="mp-tab-gold"
-      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      style="flex:1;padding:9px 4px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.06);color:#888;">
       🥇 골드
     </button>
     <button onclick="mpSelectTier('credit')" id="mp-tab-credit"
-      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      style="flex:1;padding:9px 4px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.06);color:#888;">
       ⚡ 크레딧
     </button>
   </div>
 
   <!-- ══ 실버 플랜 패널 ══ -->
-  <div id="mp-tier-silver" class="mp-tier-panel">
-    <div id="mp-plan-silver" onclick="mpSelectPlan('silver')"
-      style="background:linear-gradient(135deg,rgba(100,116,139,.12),rgba(100,116,139,.05));border:2px solid #94a3b8;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+  <div id="mp-tier-silver" class="mp-tier-panel" style="display:block;">
+
+    <!-- 가격 헤더 -->
+    <div style="background:linear-gradient(135deg,#f1f5f9,#e2e8f0);border-radius:14px;padding:16px;margin-bottom:12px;border:2px solid #94a3b8;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div>
-          <div style="font-size:12px;font-weight:900;color:#475569;">🥈 실버 플랜</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">단일결제 · 30일 이용</div>
-          <div style="display:inline-block;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">추천</div>
+          <span style="font-size:13px;font-weight:900;color:#334155;">🥈 실버 플랜</span>
+          <span style="margin-left:7px;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">추천</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:26px;font-weight:900;color:#475569;">₩9,900</div>
-          <div style="font-size:9px;color:var(--muted);">단일결제</div>
+          <div style="font-size:28px;font-weight:900;color:#334155;line-height:1;">₩9,900</div>
+          <div style="font-size:9px;color:#64748b;">단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#475569;font-weight:900;">✓</span> AI 음성 재무진단 <strong>20분</strong>
+      <div style="font-size:10px;color:#64748b;">AI 음성 재무진단 첫 시작 · 30일 이용권</div>
+    </div>
+
+    <!-- 혜택 목록 -->
+    <div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #e2e8f0;">
+      <div style="font-size:10px;font-weight:900;color:#334155;margin-bottom:10px;letter-spacing:.5px;">✦ 포함 혜택</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🎙️</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">AI 음성 재무진단 20분</div><div style="font-size:9px;color:#94a3b8;">DESIRE 6단계 맞춤 진단</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#475569;font-weight:900;">✓</span> 텍스트 AI 상담 <strong>30일</strong> 무제한
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">💬</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">텍스트 AI 상담 30일 무제한</div><div style="font-size:9px;color:#94a3b8;">결제일부터 30일간 자유롭게</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#475569;font-weight:900;">✓</span> 재무진단 리포트 PDF
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📄</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">재무진단 리포트 PDF</div><div style="font-size:9px;color:#94a3b8;">8대 영역 점수 + 액션플랜</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#475569;font-weight:900;">✓</span> 전문가 1차 안내 포함
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">👨‍💼</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">전문가 1차 안내 포함</div><div style="font-size:9px;color:#94a3b8;">오상열 CFP 진단 결과 안내</div></div>
         </div>
       </div>
-      <div style="margin-top:10px;padding:9px 12px;background:rgba(71,85,105,.08);border-radius:8px;font-size:10px;color:#475569;line-height:1.7;">
-        📋 <strong>진행 프로세스</strong><br>
-        1차 전문가 진단안내 → 2차 AI 음성재무진단 → 3차 전문가 상담
+    </div>
+
+    <!-- 진행 프로세스 -->
+    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:14px;border-left:3px solid #475569;">
+      <div style="font-size:10px;font-weight:900;color:#334155;margin-bottom:6px;">📋 진행 프로세스</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:9.5px;color:#64748b;flex-wrap:wrap;">
+        <span style="background:#e2e8f0;border-radius:4px;padding:2px 7px;font-weight:700;">1차</span>
+        <span>전문가 진단안내</span>
+        <span style="color:#cbd5e1;">→</span>
+        <span style="background:#e2e8f0;border-radius:4px;padding:2px 7px;font-weight:700;">2차</span>
+        <span>AI 음성 재무진단</span>
+        <span style="color:#cbd5e1;">→</span>
+        <span style="background:#e2e8f0;border-radius:4px;padding:2px 7px;font-weight:700;">3차</span>
+        <span>전문가 상담</span>
       </div>
     </div>
   </div>
 
   <!-- ══ 골드 플랜 패널 ══ -->
   <div id="mp-tier-gold" class="mp-tier-panel" style="display:none;">
-    <div id="mp-plan-gold" onclick="mpSelectPlan('gold')"
-      style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:2px solid #C9972A;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+
+    <!-- 가격 헤더 -->
+    <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:14px;padding:16px;margin-bottom:12px;border:2px solid #C9972A;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div>
-          <div style="font-size:12px;font-weight:900;color:var(--gold);">🥇 골드 플랜</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">단일결제 · 90일 이용</div>
-          <div style="display:inline-block;background:var(--gold);color:var(--navy);font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">PREMIUM</div>
+          <span style="font-size:13px;font-weight:900;color:#92400e;">🥇 골드 플랜</span>
+          <span style="margin-left:7px;background:#C9972A;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">PREMIUM</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:26px;font-weight:900;color:var(--gold);">₩99,000</div>
-          <div style="font-size:9px;color:var(--muted);">단일결제</div>
+          <div style="font-size:28px;font-weight:900;color:#92400e;line-height:1;">₩99,000</div>
+          <div style="font-size:9px;color:#b45309;">단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:var(--gold);font-weight:900;">✓</span> AI 음성 재무진단 <strong>50분</strong>
+      <div style="font-size:10px;color:#b45309;">프리미엄 AI 음성 재무진단 · 90일 이용권</div>
+    </div>
+
+    <!-- 혜택 목록 -->
+    <div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #fde68a;">
+      <div style="font-size:10px;font-weight:900;color:#92400e;margin-bottom:10px;letter-spacing:.5px;">✦ 포함 혜택</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🎙️</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">AI 음성 재무진단 50분</div><div style="font-size:9px;color:#94a3b8;">실버 대비 2.5배 · 심층 진단</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:var(--gold);font-weight:900;">✓</span> 텍스트 AI 상담 <strong>90일</strong> 무제한
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">💬</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">텍스트 AI 상담 90일 무제한</div><div style="font-size:9px;color:#94a3b8;">결제일부터 90일간 자유롭게</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:var(--gold);font-weight:900;">✓</span> 재무진단 리포트 PDF + 히스토리
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📊</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">재무진단 리포트 PDF + 히스토리</div><div style="font-size:9px;color:#94a3b8;">기간별 변화 추적 기능 포함</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:var(--gold);font-weight:900;">✓</span> 전문가 1차 안내 포함
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">👨‍💼</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">전문가 1차 안내 포함</div><div style="font-size:9px;color:#94a3b8;">오상열 CFP 진단 결과 안내</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:var(--gold);font-weight:900;">✓</span> <strong>오상열 CFP 정규상담 1회</strong> 포함
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fef9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">⭐</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#92400e;">오상열 CFP 정규상담 1회 포함</div>
+            <div style="font-size:9px;color:#b45309;">1:1 맞춤 재무설계 상담 (유료 상당)</div>
+          </div>
         </div>
       </div>
-      <div style="margin-top:10px;padding:9px 12px;background:rgba(201,151,42,.08);border-radius:8px;font-size:10px;color:var(--gold);line-height:1.7;">
-        📋 <strong>진행 프로세스</strong><br>
-        1차 전문가 진단안내 → 2차 AI 음성재무진단 → 3차 전문가 정규상담(1회 포함)
+    </div>
+
+    <!-- 진행 프로세스 -->
+    <div style="background:#fffbeb;border-radius:10px;padding:12px;margin-bottom:14px;border-left:3px solid #C9972A;">
+      <div style="font-size:10px;font-weight:900;color:#92400e;margin-bottom:6px;">📋 진행 프로세스</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:9.5px;color:#b45309;flex-wrap:wrap;">
+        <span style="background:#fde68a;border-radius:4px;padding:2px 7px;font-weight:700;">1차</span>
+        <span>전문가 진단안내</span>
+        <span style="color:#fcd34d;">→</span>
+        <span style="background:#fde68a;border-radius:4px;padding:2px 7px;font-weight:700;">2차</span>
+        <span>AI 음성 재무진단</span>
+        <span style="color:#fcd34d;">→</span>
+        <span style="background:#fde68a;border-radius:4px;padding:2px 7px;font-weight:700;">3차</span>
+        <span>전문가 정규상담(1회 포함)</span>
       </div>
     </div>
   </div>
 
   <!-- ══ 크레딧 충전 패널 ══ -->
   <div id="mp-tier-credit" class="mp-tier-panel" style="display:none;">
-    <div id="mp-plan-credit" onclick="mpSelectPlan('credit')"
-      style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(124,58,237,.04));border:2px solid #7c3aed;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+
+    <!-- 가격 헤더 -->
+    <div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:14px;padding:16px;margin-bottom:12px;border:2px solid #7c3aed;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div>
-          <div style="font-size:12px;font-weight:900;color:#7c3aed;">⚡ 크레딧 충전</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">음성 크레딧 추가 충전</div>
-          <div style="display:inline-block;background:#7c3aed;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">추가충전</div>
+          <span style="font-size:13px;font-weight:900;color:#5b21b6;">⚡ 크레딧 충전</span>
+          <span style="margin-left:7px;background:#7c3aed;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">추가충전</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:26px;font-weight:900;color:#7c3aed;">₩9,900</div>
-          <div style="font-size:9px;color:var(--muted);">1회 단일결제</div>
+          <div style="font-size:28px;font-weight:900;color:#5b21b6;line-height:1;">₩9,900</div>
+          <div style="font-size:9px;color:#7c3aed;">1회 단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#7c3aed;font-weight:900;">✓</span> AI 음성 재무진단 <strong>20분</strong> 추가
+      <div style="font-size:10px;color:#7c3aed;">기존 이용자 음성 크레딧 추가 충전</div>
+    </div>
+
+    <!-- 혜택 목록 -->
+    <div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #ddd6fe;">
+      <div style="font-size:10px;font-weight:900;color:#5b21b6;margin-bottom:10px;letter-spacing:.5px;">✦ 충전 내역</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🎙️</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">AI 음성 진단 크레딧 20분 추가</div><div style="font-size:9px;color:#94a3b8;">기존 잔여 크레딧에 합산됩니다</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#7c3aed;font-weight:900;">✓</span> 텍스트 AI 상담 <strong>30일</strong> 연장
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">💬</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">텍스트 AI 상담 30일 연장</div><div style="font-size:9px;color:#94a3b8;">기존 만료일에서 30일 추가</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
-          <span style="color:#7c3aed;font-weight:900;">✓</span> 기존 대화 히스토리 유지
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📁</div>
+          <div><div style="font-size:11px;font-weight:700;color:#1e293b;">기존 대화 히스토리 유지</div><div style="font-size:9px;color:#94a3b8;">이전 상담 내용 그대로 이어집니다</div></div>
         </div>
       </div>
-      <div style="margin-top:10px;padding:9px 12px;background:rgba(124,58,237,.06);border-radius:8px;font-size:10px;color:#7c3aed;line-height:1.7;">
-        💡 기존 실버/골드 이용자가 크레딧 소진 후 추가 충전할 때 사용하세요
+    </div>
+
+    <!-- 안내 -->
+    <div style="background:#f5f3ff;border-radius:10px;padding:12px;margin-bottom:14px;border-left:3px solid #7c3aed;">
+      <div style="font-size:10px;color:#5b21b6;line-height:1.7;">
+        💡 <strong>이런 분께 추천합니다</strong><br>
+        실버/골드 이용 후 크레딧이 소진된 경우<br>
+        추가 상담이 필요한 경우 부담 없이 충전하세요
       </div>
     </div>
   </div>
 
-  <!-- ══ 구글 로그인 (결제화면 하단 고정) ══ -->
-  <div style="margin-bottom:10px;">
-    <div style="border-top:1px solid rgba(11,29,58,.1);padding-top:12px;margin-bottom:8px;">
-      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-align:center;">
-        📋 결제 정보 입력
-      </div>
+  <!-- ══ 구분선 ══ -->
+  <div style="border-top:1px solid #e8edf2;margin-bottom:14px;"></div>
+
+  <!-- ══ 결제 정보 입력 ══ -->
+  <div style="margin-bottom:4px;">
+    <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px;text-align:center;">
+      📋 결제 정보 입력
     </div>
 
-    <!-- ★ 구글 로그인 전 -->
+    <!-- 구글 로그인 전 -->
     <div id="fh-before-login">
       <button onclick="fhSignInGoogle()"
-        style="width:100%;padding:14px;border-radius:10px;border:1.5px solid #ddd;
-        background:#fff;color:#3c4043;font-size:14px;font-weight:700;
+        style="width:100%;padding:14px;border-radius:10px;border:1.5px solid #e2e8f0;
+        background:#fff;color:#3c4043;font-size:13px;font-weight:700;
         font-family:var(--fn);cursor:pointer;display:flex;align-items:center;
-        justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);"
-        onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.18)'"
-        onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.1)'">
+        justify-content:center;gap:8px;box-shadow:0 1px 6px rgba(0,0,0,.08);transition:box-shadow .2s;"
+        onmouseover="this.style.boxShadow='0 3px 12px rgba(0,0,0,.15)'"
+        onmouseout="this.style.boxShadow='0 1px 6px rgba(0,0,0,.08)'">
         <svg width="20" height="20" viewBox="0 0 48 48">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        Google 계정으로 로그인
+        Google 계정으로 로그인 후 결제하기
       </button>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">
+      <div style="font-size:9.5px;color:#aaa;text-align:center;margin-top:7px;">
         🔒 Google 계정으로 본인 인증 후 결제가 진행됩니다
       </div>
     </div>
 
-    <!-- ★ 구글 로그인 후: 계정 확인 + 전화번호 + 개인정보동의 -->
+    <!-- 구글 로그인 후 -->
     <div id="fh-after-login" style="display:none;">
-      <div style="background:#f0f9f0;border-radius:10px;padding:12px;
+      <!-- 로그인 계정 표시 -->
+      <div style="background:#f0fdf4;border-radius:10px;padding:11px 14px;
         border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <img id="fh-login-photo" src="" style="width:38px;height:38px;border-radius:50%;
+        <img id="fh-login-photo" src="" style="width:36px;height:36px;border-radius:50%;
           display:none;border:2px solid var(--gold);flex-shrink:0;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;color:#166534;font-weight:700;margin-bottom:1px;">✅ 로그인 완료</div>
+          <div style="font-size:10px;color:#16a34a;font-weight:700;margin-bottom:1px;">✅ 로그인 완료</div>
           <div id="fh-login-name" style="font-size:13px;font-weight:900;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-          <div id="fh-login-email" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="fh-login-email" style="font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
         <button onclick="fhSignOut()"
-          style="padding:6px 10px;border-radius:6px;border:1px solid #ddd;flex-shrink:0;
+          style="padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0;
           background:#fff;color:#666;font-size:10px;font-family:var(--fn);cursor:pointer;">
           변경
         </button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <input id="mvp-phone-google" type="tel"
-          placeholder="전화번호 (필수) 예: 010-1234-5678"
-          style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid #ddd;
-          font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
-          onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;
-          background:#fff8e6;border-radius:8px;padding:10px;border:1px solid rgba(201,151,42,.25);">
-          <input id="mvp-privacy-google" type="checkbox"
-            style="width:17px;height:17px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;">
-          <span style="font-size:10px;color:#555;line-height:1.6;">
-            <strong style="color:var(--navy);">[필수]</strong> 개인정보 수집 및 이용에 동의합니다.<br>
-            <span style="color:#999;font-size:9px;">
-              수집항목: 이름, 전화번호, 이메일<br>
-              목적: AI 재무진단 서비스 제공 및 안내<br>
-              보유기간: 서비스 이용 종료 시까지
-            </span>
+
+      <!-- 전화번호 입력 -->
+      <input id="mvp-phone-google" type="tel"
+        placeholder="📱 전화번호 입력 (필수) 예: 010-1234-5678"
+        style="width:100%;padding:12px 14px;border-radius:9px;border:1.5px solid #e2e8f0;
+        font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;margin-bottom:10px;
+        background:#fff;"
+        onfocus="this.style.borderColor='#C9972A';this.style.background='#fffbeb';"
+        onblur="this.style.borderColor='#e2e8f0';this.style.background='#fff';">
+
+      <!-- 개인정보 동의 -->
+      <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;
+        background:#fffbeb;border-radius:9px;padding:11px 13px;
+        border:1.5px solid rgba(201,151,42,.3);margin-bottom:8px;">
+        <input id="mvp-privacy-google" type="checkbox"
+          style="width:17px;height:17px;margin-top:1px;accent-color:#C9972A;flex-shrink:0;">
+        <span style="font-size:10px;color:#555;line-height:1.7;">
+          <strong style="color:var(--navy);">[필수]</strong> 개인정보 수집 및 이용에 동의합니다<br>
+          <span style="color:#aaa;font-size:9px;">
+            수집항목: 이름·전화번호·이메일 &nbsp;|&nbsp;
+            목적: AI 재무진단 서비스 제공<br>
+            보유기간: 서비스 이용 종료 시까지
           </span>
-        </label>
-      </div>
+        </span>
+      </label>
     </div>
-    <div style="font-size:9px;color:#bbb;text-align:center;margin-top:8px;">
+
+    <div style="font-size:9px;color:#ccc;text-align:center;margin-top:4px;">
       🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
     </div>
   </div>
@@ -14221,7 +14289,8 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   <!-- 월정기 안내 (단일결제 전용이므로 숨김) -->
   <div id="mp-cert-notice" style="display:none;"></div>
 
-  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
+  <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()"
+    style="margin-top:10px;">
     지금 ₩9,900 실버 단일결제 시작 →
   </button>
 
