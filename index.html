@@ -5909,24 +5909,24 @@ function initSimV2(){
 ══════════════════════════════════════ */
 
 /* ─ 결제 모달 ─ */
-let selectedPlan = 'single';   // 현재 선택된 결제 방식 (single/silver-month/silver-year/gold-month/gold-year/expert-month/expert-year)
-let selectedTier = 'bronze';   // 현재 선택된 티어 (bronze/silver/gold/expert)
+let selectedPlan = 'silver';   // 현재 선택된 결제 방식 (silver/gold/credit)
+let selectedTier = 'silver';   // 현재 선택된 티어 (silver/gold/credit)
 
 // ── 티어 탭 전환 ──
 function mpSelectTier(tier) {
   selectedTier = tier;
   // 탭 스타일 초기화
-  ['bronze','silver','gold','expert'].forEach(function(t) {
+  ['silver','gold','credit'].forEach(function(t) {
     var tab = document.getElementById('mp-tab-' + t);
     if (!tab) return;
     tab.style.background = 'rgba(11,29,58,.08)';
     tab.style.color = 'var(--muted)';
   });
   // 선택 탭 활성화
-  var colors = { bronze:'#CD7F32', silver:'#64748b', gold:'#C9972A', expert:'#6366f1' };
+  var colors = { silver:'#64748b', gold:'#C9972A', credit:'#7c3aed' };
   var activeTab = document.getElementById('mp-tab-' + tier);
   if (activeTab) {
-    activeTab.style.background = colors[tier];
+    activeTab.style.background = colors[tier] || '#64748b';
     activeTab.style.color = '#fff';
   }
   // 패널 전환
@@ -5934,8 +5934,8 @@ function mpSelectTier(tier) {
   var panel = document.getElementById('mp-tier-' + tier);
   if (panel) panel.style.display = 'block';
   // 기본 선택 및 CTA 업데이트
-  var defaults = { bronze:'single', silver:'silver-month', gold:'gold-month', expert:'expert-month' };
-  mpSelectPlan(defaults[tier]);
+  var defaults = { silver:'silver', gold:'gold', credit:'credit' };
+  mpSelectPlan(defaults[tier] || tier);
 }
 
 function selectPlan(plan){ mpSelectPlan(plan); } // 하위호환
@@ -5995,13 +5995,9 @@ function selPayMethod(el){
 function confirmPay(plan){
   // ── 금액/플랜명/주문ID 매핑 ──
   var planConfig = {
-    'single':       { amount:9900,   name:'브론즈 단일진단 1회',  prefix:'BRONZE_SINGLE', regular:'N' },
-    'silver-month': { amount:9900,   name:'실버 월정기구독',       prefix:'SILVER_MONTH',  regular:'Y' },
-    'silver-year':  { amount:99000,  name:'실버 연회비',           prefix:'SILVER_YEAR',   regular:'N' },
-    'gold-month':   { amount:19900,  name:'골드 월정기구독',       prefix:'GOLD_MONTH',    regular:'Y' },
-    'gold-year':    { amount:199000, name:'골드 연회비',           prefix:'GOLD_YEAR',     regular:'N' },
-    'expert-month': { amount:33000,  name:'전문가 FC 월정기구독', prefix:'FC_MONTH',      regular:'Y' },
-    'expert-year':  { amount:330000, name:'전문가 FC 연회비',      prefix:'FC_YEAR',       regular:'N' }
+    'silver': { amount:9900,  name:'실버 플랜 단일결제',  prefix:'SILVER_SINGLE', regular:'N', credit:20, textDays:30 },
+    'gold':   { amount:99000, name:'골드 플랜 단일결제',  prefix:'GOLD_SINGLE',   regular:'N', credit:50, textDays:90 },
+    'credit': { amount:9900,  name:'크레딧 충전 1회',     prefix:'CREDIT_SINGLE', regular:'N', credit:20, textDays:30 }
   };
 
   var cfg = planConfig[plan];
@@ -6124,12 +6120,10 @@ function onPaypleResult(data){
       var _docId = _payerEmail.replace(/\./g, '_').replace(/@/g, '_at_');
       var _exp = new Date();
       // 플랜별 만료일 계산
-      if(currentPlan === 'single') {
-        _exp.setDate(_exp.getDate() + 1); // 단일진단: 당일
-      } else if(currentPlan.indexOf('year') > -1) {
-        _exp.setFullYear(_exp.getFullYear() + 1); // 연간: 1년
+      if(currentPlan === 'gold') {
+        _exp.setDate(_exp.getDate() + 90); // 골드: 90일
       } else {
-        _exp.setMonth(_exp.getMonth() + 1); // 월간: 1개월
+        _exp.setDate(_exp.getDate() + 30); // 실버/크레딧: 30일
       }
       window._fhDb.collection('subscribers').doc(_docId).set({
         email:_payerEmail, name:_payerName, plan:currentPlan,
@@ -8381,7 +8375,7 @@ function handleVoiceError(err) {
   }
   var usedMin = Math.ceil((diagSec || 0) / 60);
   var _planName   = localStorage.getItem('fh_plan') || 'single';
-  var _creditMap  = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _creditMap  = {'silver':20,'gold':50,'credit':20};
   var totalCredit = _creditMap[_planName] || 20;
   var remaining   = Math.max(0, totalCredit - usedMin);
   localStorage.setItem('mvp_credit_min', String(remaining));
@@ -8601,7 +8595,7 @@ function manualReturnToVoice() {
   // 타이머 재시작
   if(!diagInt) {
     var _planR = localStorage.getItem('fh_plan') || 'single';
-    var _credR = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+    var _credR = {'silver':20,'gold':50,'credit':20};
     var _secR  = (_credR[_planR]||20)*60;
     diagInt = setInterval(function(){
       if(diagPaused) return;
@@ -8648,7 +8642,7 @@ function manualSwitchToText() {
   if(diagInt) { clearInterval(diagInt); diagInt = null; }
   var usedMin = Math.ceil((diagSec || 0) / 60);
   var _planName  = localStorage.getItem('fh_plan') || 'single';
-  var _creditMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _creditMap = {'silver':20,'gold':50,'credit':20};
   var totalCredit = _creditMap[_planName] || 20;
   localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
   switchToTextMode();
@@ -8701,7 +8695,7 @@ function mvpVoiceTimeUp() {
   // STT 영역에 안내 메시지 (플랜별 크레딧 표시)
   var _planCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
   var _planName   = localStorage.getItem('fh_plan') || 'single';
-  var _creditMap  = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _creditMap  = {'silver':20,'gold':50,'credit':20};
   var _totalMin   = _creditMap[_planName] || 20;
   diagAddSTT('ai', '⏰ 음성 크레딧 ' + _totalMin + '분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
 
@@ -8742,7 +8736,7 @@ function mpRefreshData() {
     'expert-month': '👔 전문가 · 40분/월',
     'expert-year':  '👔 전문가 · 40분/월 (연회비)'
   };
-  var _planCreditMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _planCreditMap = {'silver':20,'gold':50,'credit':20};
   var _planLabel  = _planLabelMap[_planKey] || '🥉 브론즈';
   var _planCredit = _planCreditMap[_planKey] || 10;
   var _remainCredit = parseInt(localStorage.getItem('mvp_credit_min') || String(_planCredit));
@@ -11262,7 +11256,7 @@ function diagStartConsult() {
 
   // 플랜별 크레딧 분 가져오기
   var _timerPlan    = localStorage.getItem('fh_plan') || 'single';
-  var _timerCredMap = {'single':10,'silver-month':20,'silver-year':20,'gold-month':40,'gold-year':40,'expert-month':40,'expert-year':40};
+  var _timerCredMap = {'silver':20,'gold':50,'credit':20};
   var _creditMin    = _timerCredMap[_timerPlan] || 20;
   var _creditSec    = _creditMin * 60;
   var _warnSec      = (_creditMin - 1) * 60; // 1분 전 경고
@@ -14028,231 +14022,125 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   <div class="mp-sub-title">🏥 AI 재무진단 플랜 선택</div>
   <div class="mp-sub-desc">오상열 CFP(20년) × AI 머니야 · 금융집짓기® 8대 영역 종합 진단</div>
 
-  <!-- ══ 플랜 탭 (브론즈/실버/골드/전문가) ══ -->
-  <div id="mp-plan-tabs" style="display:flex;gap:4px;margin-bottom:10px;background:rgba(11,29,58,.06);border-radius:10px;padding:4px;">
-    <button onclick="mpSelectTier('bronze')" id="mp-tab-bronze"
-      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:#CD7F32;color:#fff;">
-      🥉 브론즈
-    </button>
+  <!-- ══ 플랜 탭 (실버/골드/크레딧) ══ -->
+  <div id="mp-plan-tabs" style="display:flex;gap:4px;margin-bottom:14px;background:rgba(11,29,58,.06);border-radius:10px;padding:4px;">
     <button onclick="mpSelectTier('silver')" id="mp-tab-silver"
-      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:#64748b;color:#fff;">
       🥈 실버
     </button>
     <button onclick="mpSelectTier('gold')" id="mp-tab-gold"
-      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
       🥇 골드
     </button>
-    <button onclick="mpSelectTier('expert')" id="mp-tab-expert" style="display:none;"
-      style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:10px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
-      👔 전문가
+    <button onclick="mpSelectTier('credit')" id="mp-tab-credit"
+      style="flex:1;padding:8px 2px;border-radius:7px;border:none;font-size:11px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+      ⚡ 크레딧
     </button>
-  </div>
-
-  <!-- ══ 브론즈 플랜 패널 ══ -->
-  <div id="mp-tier-bronze" class="mp-tier-panel">
-    <div style="background:linear-gradient(135deg,rgba(205,127,50,.12),rgba(205,127,50,.05));border:1.5px solid rgba(205,127,50,.4);border-radius:14px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-        <div>
-          <div style="font-size:11px;font-weight:900;color:#92400E;">🥉 브론즈 플랜</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">AI 음성 재무진단 1회 체험</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:#92400E;">₩9,900</div>
-          <div style="font-size:9px;color:var(--muted);">당일 1회 단일결제</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#CD7F32;font-weight:700;">✓</span> AI 음성 재무진단 <strong>10분</strong>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#CD7F32;font-weight:700;">✓</span> 텍스트 재무진단 당일 무제한
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#CD7F32;font-weight:700;">✓</span> 재무진단점수 즉시 확인
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
-          <span>✗</span> 정기 구독 혜택 제외
-        </div>
-      </div>
-    </div>
-    <!-- 결제 방식 선택 (브론즈는 단일결제만) -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <div class="mp-plan-card mp-selected" id="mp-plan-single" onclick="mpSelectPlan('single')"
-        style="flex:1;padding:10px;border:2px solid #CD7F32;">
-        <div style="font-size:10px;font-weight:700;color:#92400E;">단일결제</div>
-        <div style="font-size:16px;font-weight:900;color:#92400E;">₩9,900</div>
-        <div style="font-size:8px;color:var(--muted);">1회 (당일)</div>
-      </div>
-    </div>
   </div>
 
   <!-- ══ 실버 플랜 패널 ══ -->
-  <div id="mp-tier-silver" class="mp-tier-panel" style="display:none;">
-    <div style="background:linear-gradient(135deg,rgba(148,163,184,.12),rgba(148,163,184,.05));border:1.5px solid rgba(148,163,184,.5);border-radius:14px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+  <div id="mp-tier-silver" class="mp-tier-panel">
+    <div id="mp-plan-silver" onclick="mpSelectPlan('silver')"
+      style="background:linear-gradient(135deg,rgba(100,116,139,.12),rgba(100,116,139,.05));border:2px solid #94a3b8;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
-          <div style="font-size:11px;font-weight:900;color:#475569;">🥈 실버 플랜</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">매월 AI 재무진단 구독</div>
-          <div style="display:inline-block;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:4px;">추천</div>
+          <div style="font-size:12px;font-weight:900;color:#475569;">🥈 실버 플랜</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">단일결제 · 30일 이용</div>
+          <div style="display:inline-block;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">추천</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:#475569;">₩9,900</div>
-          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+          <div style="font-size:26px;font-weight:900;color:#475569;">₩9,900</div>
+          <div style="font-size:9px;color:var(--muted);">단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> AI 음성 재무진단 <strong>월 20분</strong>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#475569;font-weight:900;">✓</span> AI 음성 재무진단 <strong>20분</strong>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> 텍스트 재무진단 무제한
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#475569;font-weight:900;">✓</span> 텍스트 AI 상담 <strong>30일</strong> 무제한
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> PDF 재무진단 리포트
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#475569;font-weight:900;">✓</span> 재무진단 리포트 PDF
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> 월 1회 줌 재테크세미나 초대
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:#475569;font-weight:700;">✓</span> 언제든 해지 가능
-        </div>
-        <div style="margin-top:8px;padding:8px;background:rgba(71,85,105,.08);border-radius:8px;font-size:10px;color:#475569;line-height:1.7;">
-          📋 <strong>진행프로세스</strong><br>1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#475569;font-weight:900;">✓</span> 전문가 1차 안내 포함
         </div>
       </div>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <div class="mp-plan-card mp-selected" id="mp-plan-silver-month" onclick="mpSelectPlan('silver-month')"
-        style="flex:1;padding:10px;border:2px solid #94a3b8;">
-        <div style="font-size:10px;font-weight:700;color:#475569;">월정기구독</div>
-        <div style="font-size:16px;font-weight:900;color:#475569;">₩9,900</div>
-        <div style="font-size:8px;color:var(--muted);">/ 월</div>
-      </div>
-      <div class="mp-plan-card" id="mp-plan-silver-year" onclick="mpSelectPlan('silver-year')"
-        style="flex:1;padding:10px;">
-        <div style="font-size:10px;font-weight:700;color:#475569;">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
-        <div style="font-size:16px;font-weight:900;color:#475569;">₩99,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 년 (₩8,250/월)</div>
+      <div style="margin-top:10px;padding:9px 12px;background:rgba(71,85,105,.08);border-radius:8px;font-size:10px;color:#475569;line-height:1.7;">
+        📋 <strong>진행 프로세스</strong><br>
+        1차 전문가 진단안내 → 2차 AI 음성재무진단 → 3차 전문가 상담
       </div>
     </div>
   </div>
 
   <!-- ══ 골드 플랜 패널 ══ -->
   <div id="mp-tier-gold" class="mp-tier-panel" style="display:none;">
-    <div style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:1.5px solid rgba(201,151,42,.5);border-radius:14px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+    <div id="mp-plan-gold" onclick="mpSelectPlan('gold')"
+      style="background:linear-gradient(135deg,rgba(201,151,42,.15),rgba(201,151,42,.05));border:2px solid #C9972A;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
-          <div style="font-size:11px;font-weight:900;color:var(--gold);">🥇 골드 플랜</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">프리미엄 AI 재무진단</div>
-          <div style="display:inline-block;background:var(--gold);color:var(--navy);font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:4px;">PREMIUM</div>
+          <div style="font-size:12px;font-weight:900;color:var(--gold);">🥇 골드 플랜</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">단일결제 · 90일 이용</div>
+          <div style="display:inline-block;background:var(--gold);color:var(--navy);font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">PREMIUM</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:var(--gold);">₩19,900</div>
-          <div style="font-size:9px;color:var(--muted);">/ 월 정기구독</div>
+          <div style="font-size:26px;font-weight:900;color:var(--gold);">₩99,000</div>
+          <div style="font-size:9px;color:var(--muted);">단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> AI 음성 재무진단 <strong>월 40분</strong>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:var(--gold);font-weight:900;">✓</span> AI 음성 재무진단 <strong>50분</strong>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> 텍스트 재무진단 무제한
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:var(--gold);font-weight:900;">✓</span> 텍스트 AI 상담 <strong>90일</strong> 무제한
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> PDF 재무진단 리포트 + 히스토리
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:var(--gold);font-weight:900;">✓</span> 재무진단 리포트 PDF + 히스토리
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> 월 1회 줌 재테크세미나 초대
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:var(--gold);font-weight:900;">✓</span> 전문가 1차 안내 포함
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
-          <span style="color:var(--gold);font-weight:700;">✓</span> 오상열 CFP 직접 상담 우선 예약
-        </div>
-        <div style="margin-top:8px;padding:8px;background:rgba(201,151,42,.08);border-radius:8px;font-size:10px;color:var(--gold);line-height:1.7;">
-          📋 <strong>진행프로세스</strong><br>1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:var(--gold);font-weight:900;">✓</span> <strong>오상열 CFP 정규상담 1회</strong> 포함
         </div>
       </div>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <div class="mp-plan-card mp-selected" id="mp-plan-gold-month" onclick="mpSelectPlan('gold-month')"
-        style="flex:1;padding:10px;border:2px solid var(--gold);">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);">월정기구독</div>
-        <div style="font-size:16px;font-weight:900;color:var(--gold);">₩19,900</div>
-        <div style="font-size:8px;color:var(--muted);">/ 월</div>
-      </div>
-      <div class="mp-plan-card" id="mp-plan-gold-year" onclick="mpSelectPlan('gold-year')"
-        style="flex:1;padding:10px;">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
-        <div style="font-size:16px;font-weight:900;color:var(--gold);">₩199,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 년 (₩16,583/월)</div>
+      <div style="margin-top:10px;padding:9px 12px;background:rgba(201,151,42,.08);border-radius:8px;font-size:10px;color:var(--gold);line-height:1.7;">
+        📋 <strong>진행 프로세스</strong><br>
+        1차 전문가 진단안내 → 2차 AI 음성재무진단 → 3차 전문가 정규상담(1회 포함)
       </div>
     </div>
   </div>
 
-  <!-- ══ 전문가 FC플랜 패널 ══ -->
-  <div id="mp-tier-expert" class="mp-tier-panel" style="display:none;">
-    <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.4);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+  <!-- ══ 크레딧 충전 패널 ══ -->
+  <div id="mp-tier-credit" class="mp-tier-panel" style="display:none;">
+    <div id="mp-plan-credit" onclick="mpSelectPlan('credit')"
+      style="background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(124,58,237,.04));border:2px solid #7c3aed;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
-          <div style="font-size:11px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;">보험설계사 전용 · 고객 발굴 자동화</div>
+          <div style="font-size:12px;font-weight:900;color:#7c3aed;">⚡ 크레딧 충전</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">음성 크레딧 추가 충전</div>
+          <div style="display:inline-block;background:#7c3aed;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px;">추가충전</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:var(--gold2);">₩33,000</div>
-          <div style="font-size:9px;color:rgba(255,255,255,.4);">/ 월 정기구독</div>
+          <div style="font-size:26px;font-weight:900;color:#7c3aed;">₩9,900</div>
+          <div style="font-size:9px;color:var(--muted);">1회 단일결제</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 전용 링크 발급 + 바이럴 자동화
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#7c3aed;font-weight:900;">✓</span> AI 음성 재무진단 <strong>20분</strong> 추가
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> AI 상담 중 자동 설계사 연결 트리거
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#7c3aed;font-weight:900;">✓</span> 텍스트 AI 상담 <strong>30일</strong> 연장
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 핫 리드 카톡 즉시 알림
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 골드플랜 40분 음성 상담 본인 이용 포함
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 전용 대시보드 (마이페이지 내 제공)
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#444;">
+          <span style="color:#7c3aed;font-weight:900;">✓</span> 기존 대화 히스토리 유지
         </div>
       </div>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <div class="mp-plan-card mp-selected" id="mp-plan-expert-month" onclick="mpSelectPlan('expert-month')"
-        style="flex:1;padding:10px;border:2px solid var(--gold);">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);">월정기구독</div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩33,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 월</div>
-      </div>
-      <div class="mp-plan-card" id="mp-plan-expert-year" onclick="mpSelectPlan('expert-year')"
-        style="flex:1;padding:10px;">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);">연회비 <span style="color:#22c55e;font-size:8px;">2개월↓</span></div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy);">₩330,000</div>
-        <div style="font-size:8px;color:var(--muted);">/ 년 (₩27,500/월)</div>
-      </div>
-    </div>
-    <!-- 전문가 추가 정보 입력 (전문가 플랜 선택 시 표시) -->
-    <div id="fc-extra-info" style="display:none;background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
-      <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:10px;">👔 설계사 추가 정보 입력</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <input id="fc-company" type="text" placeholder="소속 회사 (예: 삼성생명, 한화생명) *필수"
-          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
-          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
-        <div style="display:flex;gap:8px;">
-          <select id="fc-dept" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
-            <option value="">소속 선택 *필수</option>
-            <option>팀</option><option>지점</option><option>본부</option>
-            <option>지역단</option><option>FA센터</option><option>독립</option>
-          </select>
-          <select id="fc-title" style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;background:#fff;">
-            <option value="">직책 선택</option>
-            <option>FC(설계사)</option><option>팀장</option><option>지점장</option>
-            <option>본부장</option><option>수석FP</option><option>대표</option>
-          </select>
-        </div>
+      <div style="margin-top:10px;padding:9px 12px;background:rgba(124,58,237,.06);border-radius:8px;font-size:10px;color:#7c3aed;line-height:1.7;">
+        💡 기존 실버/골드 이용자가 크레딧 소진 후 추가 충전할 때 사용하세요
       </div>
     </div>
   </div>
@@ -14265,14 +14153,13 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       </div>
     </div>
 
-    <!-- ★ 구글 로그인 전 (로그인 버튼만) -->
+    <!-- ★ 구글 로그인 전 -->
     <div id="fh-before-login">
       <button onclick="fhSignInGoogle()"
         style="width:100%;padding:14px;border-radius:10px;border:1.5px solid #ddd;
         background:#fff;color:#3c4043;font-size:14px;font-weight:700;
         font-family:var(--fn);cursor:pointer;display:flex;align-items:center;
-        justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);
-        transition:box-shadow .2s;"
+        justify-content:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);"
         onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.18)'"
         onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.1)'">
         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -14290,7 +14177,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 
     <!-- ★ 구글 로그인 후: 계정 확인 + 전화번호 + 개인정보동의 -->
     <div id="fh-after-login" style="display:none;">
-      <!-- 로그인된 계정 표시 -->
       <div style="background:#f0f9f0;border-radius:10px;padding:12px;
         border:1.5px solid #86efac;display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <img id="fh-login-photo" src="" style="width:38px;height:38px;border-radius:50%;
@@ -14306,16 +14192,12 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
           변경
         </button>
       </div>
-
-      <!-- 전화번호 입력 (Google 계정에 없으므로 직접 입력) -->
       <div style="display:flex;flex-direction:column;gap:8px;">
         <input id="mvp-phone-google" type="tel"
           placeholder="전화번호 (필수) 예: 010-1234-5678"
           style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid #ddd;
           font-size:13px;font-family:var(--fn);outline:none;box-sizing:border-box;"
           onfocus="this.style.borderColor='#C9972A'" onblur="this.style.borderColor='#ddd'">
-
-        <!-- 개인정보 동의 -->
         <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;
           background:#fff8e6;border-radius:8px;padding:10px;border:1px solid rgba(201,151,42,.25);">
           <input id="mvp-privacy-google" type="checkbox"
@@ -14331,27 +14213,16 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         </label>
       </div>
     </div>
-
     <div style="font-size:9px;color:#bbb;text-align:center;margin-top:8px;">
       🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
     </div>
   </div>
 
-  <!-- 월정기구독 안내 (월정기 플랜 선택 시만 표시) -->
-  <div id="mp-cert-notice" style="display:none;background:rgba(59,130,246,.08);
-    border:1px solid rgba(59,130,246,.25);border-radius:8px;
-    padding:8px 12px;margin-bottom:8px;">
-    <div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-bottom:3px;">
-      📋 월정기구독 결제 안내
-    </div>
-    <div style="font-size:9px;color:#3b5fc0;line-height:1.6;">
-      카드 인증 1회 → 매월 <span id="mp-cert-amount">₩9,900</span> 자동 청구<br>
-      언제든지 마이페이지에서 해지 가능합니다
-    </div>
-  </div>
+  <!-- 월정기 안내 (단일결제 전용이므로 숨김) -->
+  <div id="mp-cert-notice" style="display:none;"></div>
 
   <button class="mp-sub-cta" id="mp-sub-cta" onclick="mvpCompletePurchase()">
-    지금 ₩9,900 단일결제 시작하기 →
+    지금 ₩9,900 실버 단일결제 시작 →
   </button>
 
 </div><!-- /mp-sub-modal -->
