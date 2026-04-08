@@ -10762,7 +10762,48 @@ function fhDocUpload(key) {
   if (inp) inp.click();
 }
 function fhDocDownload(key) {
-  showToast('📥 상담신청서 양식 다운로드 준비 중입니다 (xlsx)');
+  /* v3.16.7: Firebase Storage에서 양식 파일 다운로드 */
+  var formUrl = 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/forms%2Ffinancial_consultation_form.xls.xls?alt=media&token=cb0a6b32-7d34-42cc-8efa-bf5b66ee7efa';
+  var fileName = '재정상담_신청서_양식.xls';
+  
+  try {
+    /* fetch로 받아서 blob 다운로드 (파일명 강제 지정) */
+    showToast('📥 양식 파일 다운로드 중...');
+    fetch(formUrl)
+      .then(function(r) {
+        if(!r.ok) throw new Error('다운로드 실패: ' + r.status);
+        return r.blob();
+      })
+      .then(function(blob) {
+        var url = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
+        showToast('✅ ' + fileName + ' 다운로드 완료!');
+      })
+      .catch(function(err) {
+        console.error('[양식다운] 에러:', err);
+        /* fetch 실패 시 직접 링크 열기 (fallback) */
+        var a = document.createElement('a');
+        a.href = formUrl;
+        a.download = fileName;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('📥 양식 파일 다운로드 시작');
+      });
+  } catch(e) {
+    console.error('[양식다운] 예외:', e);
+    showToast('⚠️ 다운로드 실패. 잠시 후 다시 시도해 주세요');
+  }
 }
 function fhDocFileSelected(input) {
   var file = input.files[0];
@@ -15112,6 +15153,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
                 <div id="mvpDateTax" style="padding:0 14px 4px;font-size:8.5px;color:var(--muted);display:none;"></div>
               </div>
               <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
+              <div style="margin-top:6px;padding:8px 10px;background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24;border-radius:6px;font-size:9.5px;color:#92400e;line-height:1.55;">
+                <strong>📷 파일 형식 안내</strong><br>
+                현재는 <strong>이미지 파일(JPG, PNG)</strong>만 지원됩니다. PDF는 화면을 캡처하거나 사진으로 촬영해서 올려주세요.
+              </div>
             </div>
           </div>
         </div>
@@ -15396,6 +15441,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
                 </div>
               </div>
               <div class="doc-upload-hint">💡 상담신청서를 먼저 업로드하면 AI가 자동으로 고객 정보를 인식하여 더 정확한 진단을 제공합니다</div>
+              <div style="margin-top:6px;padding:8px 10px;background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24;border-radius:6px;font-size:9.5px;color:#92400e;line-height:1.55;">
+                <strong>📷 파일 형식 안내</strong><br>
+                현재는 <strong>이미지 파일(JPG, PNG)</strong>만 지원됩니다. PDF는 화면을 캡처하거나 사진으로 촬영해서 올려주세요.
+              </div>
             </div>
           </div>
         </div>
