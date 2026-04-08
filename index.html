@@ -11377,6 +11377,56 @@ function diagCloseOverlay() {
   document.body.style.overflow = '';
 }
 
+/* 분석 결과를 어코디언 안에 영구 카드로 고정 */
+function diagPinResultToAccordion(docType, fname, data) {
+  console.log('[MVP사전서류] diagPinResultToAccordion:', docType);
+  
+  /* 대상 어코디언 본문 찾기: mvpDocBody (검진안내 탭) 또는 diagDocBody (AI진단 탭) */
+  var target = document.getElementById('mvpDocBody') || document.getElementById('diagDocBody');
+  if(!target) { console.log('[MVP사전서류] 어코디언 본문 못찾음'); return; }
+  
+  /* 기존 고정 카드가 있으면 제거 (같은 docType만) */
+  var existing = document.getElementById('pinnedResult_' + docType);
+  if(existing) { existing.remove(); }
+  
+  var titleMap = {
+    application: '상담신청서 분석 결과',
+    insurance: '보험증권 8대 보장 진단',
+    pension: '연금가입내역 분석',
+    tax: '원천징수영수증 절세 진단'
+  };
+  var title = titleMap[docType] || '서류 분석';
+  
+  /* 고정 카드 생성 */
+  var pinned = document.createElement('div');
+  pinned.id = 'pinnedResult_' + docType;
+  pinned.style.cssText = 'margin:12px 14px;background:#fff;border:1.5px solid #C9972A;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(201,151,42,0.15);';
+  
+  var header = '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px;">'
+    + '<span style="width:18px;height:18px;background:#1a6b3c;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:900;">✓</span>'
+    + '<span style="font-size:12px;font-weight:900;color:#fff;flex:1;">' + escapeHtml(title) + '</span>'
+    + '<button onclick="diagOpenOverlay(\''+docType+'\', \''+escapeHtml(fname).replace(/\x27/g,"\\x27")+'\', \'result\', window.diagDocAnalysis && window.diagDocAnalysis[\''+docType+'\'])" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:inherit;font-weight:700;">크게 보기</button>'
+    + '<button onclick="diagRemovePinnedResult(\''+docType+'\')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:11px;font-family:inherit;font-weight:900;">✕</button>'
+    + '</div>';
+  
+  var body = diagBuildResultBody(docType, data);
+  
+  pinned.innerHTML = header + body;
+  target.appendChild(pinned);
+  
+  console.log('[MVP사전서류] 어코디언 안에 영구 카드 고정 완료');
+  
+  /* 부드럽게 스크롤 */
+  setTimeout(function(){
+    try { pinned.scrollIntoView({behavior:'smooth', block:'nearest'}); } catch(e){}
+  }, 200);
+}
+
+function diagRemovePinnedResult(docType) {
+  var el = document.getElementById('pinnedResult_' + docType);
+  if(el) el.remove();
+}
+
 function diagOpenOverlay(docType, fname, state, data) {
   console.log('[사전서류] diagOpenOverlay:', docType, state);
   
@@ -11441,6 +11491,8 @@ function diagOpenOverlay(docType, fname, state, data) {
       + '<div style="background:#f0fdf4;border:1px solid #86efac;color:#1a6b3c;border-radius:8px;padding:10px;font-size:11px;font-weight:700;text-align:center;margin-bottom:10px;">✓ 진단 시작 시 머니야가 자동으로 참고합니다</div>'
       + '<button onclick="diagCloseOverlay()" style="width:100%;padding:12px;border:none;background:#0B1D3A;color:#fff;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:900;">확인</button>'
       + '</div>';
+    /* 어코디언 안에도 영구적으로 결과 카드 고정 */
+    setTimeout(function(){ diagPinResultToAccordion(docType, fname, data); }, 100);
   }
   
   card.innerHTML = headerHtml + bodyHtml;
