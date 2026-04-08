@@ -11198,19 +11198,21 @@ function diagDoUpload(method) {
   else document.getElementById('diagFileDoc').click();
 }
 function diagHandleFile(input) {
-  if(!input.files[0]) return;
+  console.log('[사전서류] diagHandleFile 시작, files:', input.files);
+  if(!input.files[0]) { console.log('[사전서류] 파일 없음'); return; }
   const file = input.files[0];
   const fname = file.name;
-  const docType = diagUpKey; // 'application' | 'ins' | 'pen' | 'tax'
+  const docType = diagUpKey;
+  console.log('[사전서류] 파일:', fname, '/ docType:', docType, '/ 크기:', file.size);
 
-  /* docType 매핑: ins → insurance, pen → pension */
   const apiDocType = docType==='application' ? 'application'
                     : docType==='ins' ? 'insurance'
                     : docType==='pen' ? 'pension'
                     : docType==='tax' ? 'tax'
                     : 'unknown';
+  console.log('[사전서류] apiDocType:', apiDocType);
 
-  /* 1) UI 즉시 업데이트 (분석 중 표시) */
+  /* 1) UI 즉시 업데이트 */
   if(docType==='application') {
     const s=document.getElementById('diagAppStat'); if(s) s.textContent='⏳';
     const b=document.getElementById('diagAppBadge'); if(b){b.textContent='분석중...';b.style.background='rgba(59,130,246,.1)';b.style.color='#1d4ed8';b.style.borderColor='rgba(59,130,246,.25)';}
@@ -11219,25 +11221,35 @@ function diagHandleFile(input) {
     const statMap={ins:'diagStatIns',pen:'diagStatPen',tax:'diagStatTax'};
     const el=document.getElementById(statMap[docType]||''); if(el) el.textContent='⏳';
   }
-  showToast('⏳ '+fname+' 분석 중... (10~20초 소요)');
+  if(typeof showToast==='function') showToast('⏳ '+fname+' 분석 중... (10~20초)');
 
-  /* 2) 분석 결과 영역 미리 표시 (로딩 상태) */
+  /* 2) 분석 결과 영역 미리 표시 */
+  console.log('[사전서류] 로딩 카드 표시 시도');
   diagShowAnalysisLoading(apiDocType, fname);
 
-  /* 3) 백엔드 API 호출 (v3.16 신규 엔드포인트) */
+  /* 3) 백엔드 API 호출 */
+  console.log('[사전서류] FormData 준비');
   const formData = new FormData();
   formData.append('file', file);
   formData.append('docType', apiDocType);
   formData.append('fileName', fname);
 
+  console.log('[사전서류] fetch 호출 시작: /api/analyze-document');
   fetch('https://moneya-server.onrender.com/api/analyze-document', {
     method: 'POST',
     body: formData
   })
-  .then(r => r.json())
-  .then(data => {
+  .then(function(r) {
+    console.log('[사전서류] fetch 응답 수신, status:', r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    console.log('[사전서류] 응답 데이터:', data);
+    window.diagDocAnalysis = window.diagDocAnalysis || {};
+    window.diagDocAnalysis[apiDocType] = data;
+
     if(data.success) {
-      /* 성공: 상태 아이콘 + 분석 결과 표시 */
+      console.log('[사전서류] 분석 성공, 카드 표시 시도');
       if(docType==='application') {
         const s=document.getElementById('diagAppStat'); if(s) s.textContent='✅';
         const b=document.getElementById('diagAppBadge'); if(b){b.textContent='제출 완료';b.style.background='rgba(22,163,74,.1)';b.style.color='#16a34a';b.style.borderColor='rgba(22,163,74,.25)';}
@@ -11255,18 +11267,12 @@ function diagHandleFile(input) {
         const el=document.getElementById(statMap[docType]||''); if(el) el.textContent='✅';
       }
 
-      /* 분석 결과 카드 렌더링 */
       diagShowAnalysisResult(apiDocType, fname, data);
-
-      /* 분석 결과를 윈도우에 보관 (1차에서는 단순 보관, 2차에서 상담노트 연동) */
-      window.diagDocAnalysis = window.diagDocAnalysis || {};
-      window.diagDocAnalysis[apiDocType] = data;
-
-      showToast('🎉 '+fname+' 분석 완료!');
+      if(typeof showToast==='function') showToast('🎉 '+fname+' 분석 완료!');
     } else {
-      /* 실패: 친절한 안내 */
-      diagShowAnalysisError(apiDocType, fname, data.error || '분석에 실패했어요');
-      showToast('⚠️ '+fname+' 분석에 실패했어요. 다시 시도해 주세요.');
+      console.log('[사전서류] 분석 실패:', data.error);
+      diagShowAnalysisError(apiDocType, fname, data.error || '분석 실패');
+      if(typeof showToast==='function') showToast('⚠️ 분석에 실패했어요');
       if(docType==='application') {
         const s=document.getElementById('diagAppStat'); if(s) s.textContent='⬜';
       } else {
@@ -11275,10 +11281,10 @@ function diagHandleFile(input) {
       }
     }
   })
-  .catch(err => {
-    console.error('[사전서류] 분석 에러:', err);
-    diagShowAnalysisError(apiDocType, fname, '서버 연결 오류');
-    showToast('⚠️ 서버 연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.');
+  .catch(function(err) {
+    console.error('[사전서류] fetch 에러:', err);
+    diagShowAnalysisError(apiDocType, fname, '서버 연결 오류: '+err.message);
+    if(typeof showToast==='function') showToast('⚠️ 서버 연결 오류');
     if(docType==='application') {
       const s=document.getElementById('diagAppStat'); if(s) s.textContent='⬜';
     } else {
@@ -11291,32 +11297,40 @@ function diagHandleFile(input) {
 }
 
 /* ════════════════════════════════════════════════
-   v3.16: 사전 서류 분석 결과 렌더링 함수들 (신규)
-   - diagShowAnalysisLoading: 분석 중 로딩 상태
-   - diagShowAnalysisResult: 분석 결과 카드 (4종 서류)
-   - diagShowAnalysisError: 분석 실패 시 친절한 안내
-   - diagCloseAnalysis: 결과 카드 닫기
+   v3.16: 사전 서류 분석 결과 렌더링 (강화된 디버깅)
    ════════════════════════════════════════════════ */
 
-/* 결과 영역 컨테이너 보장 (없으면 생성) */
+/* 결과 영역 컨테이너 보장 */
 function diagEnsureAnalysisContainer() {
+  console.log('[사전서류] diagEnsureAnalysisContainer 호출');
   let area = document.getElementById('diagAnalysisArea');
-  if(area) return area;
+  if(area) {
+    console.log('[사전서류] 기존 area 발견');
+    return area;
+  }
 
-  /* diagDocBody 어코디언 본문 안에 추가 */
-  const docBody = document.getElementById('diagDocBody');
-  if(!docBody) return null;
+  /* 어코디언 본문 안에 추가 시도 */
+  let parent = document.getElementById('diagDocBody');
+  console.log('[사전서류] diagDocBody:', parent);
+  
+  if(!parent) {
+    /* fallback: body에 추가 */
+    console.log('[사전서류] diagDocBody 없음, body에 추가');
+    parent = document.body;
+  }
 
   area = document.createElement('div');
   area.id = 'diagAnalysisArea';
-  area.style.cssText = 'margin:10px 14px 14px;display:none;';
-  docBody.appendChild(area);
+  area.style.cssText = 'margin:10px 14px 14px;display:none;clear:both;position:relative;z-index:10;';
+  parent.appendChild(area);
+  console.log('[사전서류] area 생성 완료, 부모:', parent.id || parent.tagName);
   return area;
 }
 
 function diagShowAnalysisLoading(docType, fname) {
+  console.log('[사전서류] diagShowAnalysisLoading:', docType, fname);
   const area = diagEnsureAnalysisContainer();
-  if(!area) return;
+  if(!area) { console.error('[사전서류] area 생성 실패'); return; }
 
   const titleMap = {
     application: '상담신청서 분석',
@@ -11327,34 +11341,36 @@ function diagShowAnalysisLoading(docType, fname) {
   const title = titleMap[docType] || '서류 분석';
 
   area.style.display = 'block';
-  area.innerHTML = '<div style="background:#fff;border:1.5px solid #C9972A;border-radius:12px;padding:14px;">'
-    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">'
-    + '<div style="width:24px;height:24px;border:3px solid #f0ece4;border-top-color:#C9972A;border-radius:50%;animation:diagSpin 0.8s linear infinite;"></div>'
-    + '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">'+title+'</span>'
-    + '<span style="color:#6b7280;font-size:10px;margin-left:auto;">'+fname+'</span>'
-    + '</div>'
-    + '<div style="font-size:11px;color:#6b7280;line-height:1.7;text-align:center;padding:14px 0;">머니야가 서류를 꼼꼼히 읽고 있어요...<br><span style="font-size:10px;color:#888;">10~20초 정도 걸려요</span></div>'
-    + '</div>'
-    + '<style>@keyframes diagSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>';
+  area.innerHTML = '<div style="background:#fff;border:1.5px solid #C9972A;border-radius:12px;padding:14px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">' +
+    '<div style="width:24px;height:24px;border:3px solid #f0ece4;border-top-color:#C9972A;border-radius:50%;animation:diagSpin 0.8s linear infinite;"></div>' +
+    '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">' + title + '</span>' +
+    '<span style="color:#6b7280;font-size:10px;margin-left:auto;">' + fname + '</span>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#6b7280;line-height:1.7;text-align:center;padding:14px 0;">머니야가 서류를 꼼꼼히 읽고 있어요...<br><span style="font-size:10px;color:#888;">10~20초 정도 걸려요</span></div>' +
+    '</div>' +
+    '<style>@keyframes diagSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>';
+  console.log('[사전서류] 로딩 카드 그리기 완료');
 }
 
 function diagShowAnalysisError(docType, fname, errMsg) {
+  console.log('[사전서류] diagShowAnalysisError:', errMsg);
   const area = diagEnsureAnalysisContainer();
   if(!area) return;
 
   area.style.display = 'block';
-  area.innerHTML = '<div style="background:#fff;border:1.5px solid #d97706;border-radius:12px;padding:14px;">'
-    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">'
-    + '<span style="width:24px;height:24px;background:#fef3c7;color:#d97706;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;">!</span>'
-    + '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">분석에 어려움이 있어요</span>'
-    + '<span style="color:#6b7280;font-size:10px;margin-left:auto;">'+fname+'</span>'
-    + '</div>'
-    + '<div style="font-size:11px;color:#444;line-height:1.7;padding:6px 0;">'
-    + '머니야가 서류를 읽으려고 했는데 잠깐 어려움이 있었어요. 잠시 후에 다시 시도해 주시거나, 사진을 더 선명하게 찍어서 올려 주세요.'
-    + '</div>'
-    + '<div style="font-size:9px;color:#888;margin-top:8px;padding-top:8px;border-top:1px solid #f0ece4;">오류: '+errMsg+'</div>'
-    + '<button onclick="diagCloseAnalysis()" style="margin-top:10px;width:100%;padding:9px;border:1px solid #e5dcc0;background:#fff;color:#6b7280;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">닫기</button>'
-    + '</div>';
+  area.innerHTML = '<div style="background:#fff;border:1.5px solid #d97706;border-radius:12px;padding:14px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">' +
+    '<span style="width:24px;height:24px;background:#fef3c7;color:#d97706;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;">!</span>' +
+    '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">분석에 어려움이 있어요</span>' +
+    '<span style="color:#6b7280;font-size:10px;margin-left:auto;">' + fname + '</span>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#444;line-height:1.7;padding:6px 0;">' +
+    '머니야가 서류를 읽으려고 했는데 잠깐 어려움이 있었어요. 잠시 후 다시 시도해 주시거나, 사진을 더 선명하게 찍어서 올려 주세요.' +
+    '</div>' +
+    '<div style="font-size:9px;color:#888;margin-top:8px;padding-top:8px;border-top:1px solid #f0ece4;">오류: ' + escapeHtml(errMsg) + '</div>' +
+    '<button onclick="diagCloseAnalysis()" style="margin-top:10px;width:100%;padding:9px;border:1px solid #e5dcc0;background:#fff;color:#6b7280;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">닫기</button>' +
+    '</div>';
 }
 
 function diagCloseAnalysis() {
@@ -11363,10 +11379,13 @@ function diagCloseAnalysis() {
 }
 
 function diagShowAnalysisResult(docType, fname, data) {
+  console.log('[사전서류] diagShowAnalysisResult:', docType, fname, data);
   const area = diagEnsureAnalysisContainer();
-  if(!area) return;
+  if(!area) { console.error('[사전서류] area 생성 실패'); return; }
 
   const sd = data.structuredData;
+  console.log('[사전서류] structuredData:', sd);
+  
   const titleMap = {
     application: '상담신청서 분석',
     insurance: '보험증권 분석 — 8대 보장 진단',
@@ -11386,42 +11405,36 @@ function diagShowAnalysisResult(docType, fname, data) {
     const expenses = sd.expenses || {};
     const surplus = sd.surplus || 0;
 
-    bodyHtml = '';
-    
-    /* 가족 정보 */
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 가족 정보</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">성명 / 나이</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(fam.name||'-')+' / '+(fam.age||'-')+'세</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">직업</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(fam.job||'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">예상 은퇴</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(fam.retireAge||'-')+'세</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">경제적 고민</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(fam.concern||'-')+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 가족 정보</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">성명 / 나이</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(fam.name||'-') + ' / ' + escapeHtml(String(fam.age||'-')) + '세</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">직업</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(fam.job||'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">예상 은퇴</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(String(fam.retireAge||'-')) + '세</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">경제적 고민</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(fam.concern||'-') + '</td></tr>' +
+      '</table></div>';
 
-    /* 자산 / 부채 */
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 자산 / 부채 (단위: 천원)</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">자산 총계</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">'+Number(assets.total||0).toLocaleString()+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">부채 총계</td><td style="text-align:right;color:#c0392b;font-weight:900;">'+Number(debts.total||0).toLocaleString()+'</td></tr>'
-      + '<tr><td style="color:#0B1D3A;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">순자산</td><td style="text-align:right;color:#0B1D3A;font-weight:900;border-top:1px solid #e5dcc0;">'+Number((assets.total||0)-(debts.total||0)).toLocaleString()+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 자산 / 부채 (단위: 천원)</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">자산 총계</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">' + Number(assets.total||0).toLocaleString() + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">부채 총계</td><td style="text-align:right;color:#c0392b;font-weight:900;">' + Number(debts.total||0).toLocaleString() + '</td></tr>' +
+      '<tr><td style="color:#0B1D3A;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">순자산</td><td style="text-align:right;color:#0B1D3A;font-weight:900;border-top:1px solid #e5dcc0;">' + Number((assets.total||0)-(debts.total||0)).toLocaleString() + '</td></tr>' +
+      '</table></div>';
 
-    /* 월 현금흐름 */
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 월 현금흐름 (단위: 천원)</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">총 소득</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">'+Number(income.total||0).toLocaleString()+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">총 지출</td><td style="text-align:right;color:#c0392b;font-weight:900;">'+Number(expenses.total||0).toLocaleString()+'</td></tr>'
-      + '<tr><td style="color:#0B1D3A;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">잉여 자금</td><td style="text-align:right;color:#1a6b3c;font-weight:900;border-top:1px solid #e5dcc0;">'+Number(surplus||0).toLocaleString()+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 월 현금흐름 (단위: 천원)</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">총 소득</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">' + Number(income.total||0).toLocaleString() + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">총 지출</td><td style="text-align:right;color:#c0392b;font-weight:900;">' + Number(expenses.total||0).toLocaleString() + '</td></tr>' +
+      '<tr><td style="color:#0B1D3A;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">잉여 자금</td><td style="text-align:right;color:#1a6b3c;font-weight:900;border-top:1px solid #e5dcc0;">' + Number(surplus||0).toLocaleString() + '</td></tr>' +
+      '</table></div>';
 
-    /* 머니야 코멘트 */
     if(sd.moneyaComment) {
-      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">'
-        + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>'
-        + '<div style="font-size:10.5px;color:#444;line-height:1.7;">'+escapeHtml(sd.moneyaComment)+'</div>'
-        + '</div>';
+      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">' +
+        '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>' +
+        '<div style="font-size:10.5px;color:#444;line-height:1.7;">' + escapeHtml(sd.moneyaComment) + '</div>' +
+        '</div>';
     }
   }
 
@@ -11430,16 +11443,14 @@ function diagShowAnalysisResult(docType, fname, data) {
     const policy = sd.policy || {};
     const cov = sd.coverage || {};
 
-    /* 가입 정보 */
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 가입 정보</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">보험사 / 상품</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(policy.company||'-')+' / '+(policy.productName||'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">계약자 / 피보험자</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(policy.contractor||'-')+' / '+(policy.insured||'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">월 보험료</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(policy.monthlyPremium?Number(policy.monthlyPremium).toLocaleString()+'원':'-')+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 가입 정보</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">보험사 / 상품</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(policy.company||'-') + ' / ' + escapeHtml(policy.productName||'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">계약자 / 피보험자</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(policy.contractor||'-') + ' / ' + escapeHtml(policy.insured||'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">월 보험료</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (policy.monthlyPremium?Number(policy.monthlyPremium).toLocaleString()+'원':'-') + '</td></tr>' +
+      '</table></div>';
 
-    /* 8대 보장 분석 */
     const covRows = [
       ['일반사망 (질병사망)', cov.death_general],
       ['질병후유장해', cov.disability],
@@ -11451,16 +11462,17 @@ function diagShowAnalysisResult(docType, fname, data) {
       ['치매/간병 특약', cov.dementia_care]
     ];
 
-    let covHtml = '<div style="background:#f8f5ee;border-radius:8px;padding:10px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 8대 보장 진단</div>'
-      + '<table style="width:100%;font-size:10.5px;">';
-    covRows.forEach(function(r) {
+    let covHtml = '<div style="background:#f8f5ee;border-radius:8px;padding:10px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 8대 보장 진단</div>' +
+      '<table style="width:100%;font-size:10.5px;">';
+    for(let i=0;i<covRows.length;i++) {
+      const r = covRows[i];
       const c = r[1] || {};
       let valStr = '-';
       let statStr = '미가입';
       let statColor = '#c0392b';
       if(c.current && Number(c.current)>0) {
-        valStr = Number(c.current).toLocaleString()+(c.unit||'만원');
+        valStr = Number(c.current).toLocaleString() + (c.unit||'만원');
         statStr = '가입';
         statColor = '#1a6b3c';
       } else if(c.covered) {
@@ -11468,18 +11480,18 @@ function diagShowAnalysisResult(docType, fname, data) {
         statStr = '가입';
         statColor = '#1a6b3c';
       }
-      covHtml += '<tr><td style="color:#0B1D3A;padding:4px 0;font-weight:700;">'+r[0]+'</td>'
-        + '<td style="text-align:right;color:#444;padding:4px 0;">'+valStr+'</td>'
-        + '<td style="text-align:right;color:'+statColor+';padding:4px 0;font-weight:700;width:50px;">'+statStr+'</td></tr>';
-    });
+      covHtml += '<tr><td style="color:#0B1D3A;padding:4px 0;font-weight:700;">' + r[0] + '</td>' +
+        '<td style="text-align:right;color:#444;padding:4px 0;">' + valStr + '</td>' +
+        '<td style="text-align:right;color:' + statColor + ';padding:4px 0;font-weight:700;width:50px;">' + statStr + '</td></tr>';
+    }
     covHtml += '</table></div>';
     bodyHtml += covHtml;
 
     if(sd.moneyaComment) {
-      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">'
-        + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>'
-        + '<div style="font-size:10.5px;color:#444;line-height:1.7;">'+escapeHtml(sd.moneyaComment)+'</div>'
-        + '</div>';
+      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">' +
+        '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>' +
+        '<div style="font-size:10.5px;color:#444;line-height:1.7;">' + escapeHtml(sd.moneyaComment) + '</div>' +
+        '</div>';
     }
   }
 
@@ -11489,22 +11501,22 @@ function diagShowAnalysisResult(docType, fname, data) {
     const subs = sd.subscription || {};
     const pay = sd.expectedPayout || {};
 
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ '+(sd.pensionType||'연금')+' 가입 현황</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">가입자명</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(sub.name||'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">가입 기간</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(subs.totalMonths?Math.floor(subs.totalMonths/12)+'년 '+(subs.totalMonths%12)+'개월':'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">총 납부액</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(subs.totalPaid?Number(subs.totalPaid).toLocaleString()+'원':'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">최근 월 납부액</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(subs.recentMonthly?Number(subs.recentMonthly).toLocaleString()+'원':'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">수령 개시</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(pay.startAge||'-')+'세'+(pay.startYear?' ('+pay.startYear+'년)':'')+'</td></tr>'
-      + '<tr><td style="color:#1a6b3c;padding:2px 0;font-weight:900;">예상 월 수령액</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">'+(pay.monthlyAmount?Number(pay.monthlyAmount).toLocaleString()+'원':'-')+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ ' + escapeHtml(sd.pensionType||'연금') + ' 가입 현황</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">가입자명</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + escapeHtml(sub.name||'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">가입 기간</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (subs.totalMonths?Math.floor(subs.totalMonths/12)+'년 '+(subs.totalMonths%12)+'개월':'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">총 납부액</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (subs.totalPaid?Number(subs.totalPaid).toLocaleString()+'원':'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">최근 월 납부액</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (subs.recentMonthly?Number(subs.recentMonthly).toLocaleString()+'원':'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">수령 개시</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (pay.startAge||'-') + '세' + (pay.startYear?' ('+pay.startYear+'년)':'') + '</td></tr>' +
+      '<tr><td style="color:#1a6b3c;padding:2px 0;font-weight:900;">예상 월 수령액</td><td style="text-align:right;color:#1a6b3c;font-weight:900;">' + (pay.monthlyAmount?Number(pay.monthlyAmount).toLocaleString()+'원':'-') + '</td></tr>' +
+      '</table></div>';
 
     if(sd.moneyaComment) {
-      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">'
-        + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>'
-        + '<div style="font-size:10.5px;color:#444;line-height:1.7;">'+escapeHtml(sd.moneyaComment)+'</div>'
-        + '</div>';
+      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">' +
+        '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>' +
+        '<div style="font-size:10.5px;color:#444;line-height:1.7;">' + escapeHtml(sd.moneyaComment) + '</div>' +
+        '</div>';
     }
   }
 
@@ -11514,19 +11526,18 @@ function diagShowAnalysisResult(docType, fname, data) {
     const tr = sd.taxResult || {};
     const sp = sd.savingsProducts || {};
 
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 소득 / 세액 요약</div>'
-      + '<table style="width:100%;font-size:11px;">'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">총 급여</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">'+(inc.totalSalary?Number(inc.totalSalary).toLocaleString()+'원':'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">결정세액</td><td style="text-align:right;color:#c0392b;font-weight:700;">'+(tr.determinedTax?Number(tr.determinedTax).toLocaleString()+'원':'-')+'</td></tr>'
-      + '<tr><td style="color:#6b7280;padding:2px 0;">기납부세액</td><td style="text-align:right;color:#444;">'+(tr.prepaidTax?Number(tr.prepaidTax).toLocaleString()+'원':'-')+'</td></tr>'
-      + '<tr><td style="color:#1a6b3c;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">환급세액</td><td style="text-align:right;color:#1a6b3c;font-weight:900;border-top:1px solid #e5dcc0;">'+(tr.refundTax?Number(tr.refundTax).toLocaleString()+'원':'-')+'</td></tr>'
-      + '</table></div>';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:12px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 소득 / 세액 요약</div>' +
+      '<table style="width:100%;font-size:11px;">' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">총 급여</td><td style="text-align:right;color:#0B1D3A;font-weight:700;">' + (inc.totalSalary?Number(inc.totalSalary).toLocaleString()+'원':'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">결정세액</td><td style="text-align:right;color:#c0392b;font-weight:700;">' + (tr.determinedTax?Number(tr.determinedTax).toLocaleString()+'원':'-') + '</td></tr>' +
+      '<tr><td style="color:#6b7280;padding:2px 0;">기납부세액</td><td style="text-align:right;color:#444;">' + (tr.prepaidTax?Number(tr.prepaidTax).toLocaleString()+'원':'-') + '</td></tr>' +
+      '<tr><td style="color:#1a6b3c;padding:2px 0;font-weight:900;border-top:1px solid #e5dcc0;">환급세액</td><td style="text-align:right;color:#1a6b3c;font-weight:900;border-top:1px solid #e5dcc0;">' + (tr.refundTax?Number(tr.refundTax).toLocaleString()+'원':'-') + '</td></tr>' +
+      '</table></div>';
 
-    /* 절세 상품 가입 현황 */
-    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:10px;margin-bottom:10px;">'
-      + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 절세 상품 가입 현황</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px;">';
+    bodyHtml += '<div style="background:#f8f5ee;border-radius:8px;padding:10px;margin-bottom:10px;">' +
+      '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:6px;">▼ 절세 상품 가입 현황</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px;">';
     const spRows = [
       ['연금저축', sp.pensionSaving],
       ['IRP', sp.irp],
@@ -11534,54 +11545,62 @@ function diagShowAnalysisResult(docType, fname, data) {
       ['청약통장', sp.housingSubscription],
       ['신용카드 공제', sp.creditCard]
     ];
-    spRows.forEach(function(r) {
+    for(let i=0;i<spRows.length;i++) {
+      const r = spRows[i];
       const ok = r[1];
       const bg = ok ? '#f0fdf4' : '#fef2f2';
       const bd = ok ? '#86efac' : '#fca5a5';
       const col = ok ? '#1a6b3c' : '#c0392b';
       const mark = ok ? '✓' : '✗';
       const stat = ok ? '가입' : '미가입';
-      bodyHtml += '<div style="background:'+bg+';padding:6px 8px;border-radius:4px;border:1px solid '+bd+';"><span style="color:'+col+';font-weight:900;">'+mark+' '+r[0]+'</span> '+stat+'</div>';
-    });
+      bodyHtml += '<div style="background:' + bg + ';padding:6px 8px;border-radius:4px;border:1px solid ' + bd + ';"><span style="color:' + col + ';font-weight:900;">' + mark + ' ' + r[0] + '</span> ' + stat + '</div>';
+    }
     bodyHtml += '</div></div>';
 
     if(sd.savingsRecommendation) {
-      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;margin-bottom:8px;">'
-        + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💡 절세 추천</div>'
-        + '<div style="font-size:10.5px;color:#444;line-height:1.7;">'+escapeHtml(sd.savingsRecommendation)+'</div>'
-        + '</div>';
+      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;margin-bottom:8px;">' +
+        '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💡 절세 추천</div>' +
+        '<div style="font-size:10.5px;color:#444;line-height:1.7;">' + escapeHtml(sd.savingsRecommendation) + '</div>' +
+        '</div>';
     }
 
     if(sd.moneyaComment) {
-      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">'
-        + '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>'
-        + '<div style="font-size:10.5px;color:#444;line-height:1.7;">'+escapeHtml(sd.moneyaComment)+'</div>'
-        + '</div>';
+      bodyHtml += '<div style="background:#fff8e6;border-left:3px solid #C9972A;border-radius:4px;padding:10px 12px;">' +
+        '<div style="font-size:10px;color:#C9972A;font-weight:900;margin-bottom:4px;">💬 머니야 코멘트</div>' +
+        '<div style="font-size:10.5px;color:#444;line-height:1.7;">' + escapeHtml(sd.moneyaComment) + '</div>' +
+        '</div>';
     }
   }
 
-  /* ── 구조화 실패 시 raw 텍스트 표시 ── */
+  /* 구조화 실패 시 raw 텍스트 */
   if(!bodyHtml) {
-    const raw = (data.rawText||'분석 결과를 표시할 수 없어요').substring(0, 800);
-    bodyHtml = '<div style="background:#f8f5ee;border-radius:8px;padding:12px;font-size:11px;color:#444;line-height:1.7;white-space:pre-wrap;">'+escapeHtml(raw)+'</div>';
+    console.log('[사전서류] structuredData 없음, rawText 표시');
+    const raw = (data.rawText||'분석 결과를 표시할 수 없어요').substring(0, 1500);
+    bodyHtml = '<div style="background:#f8f5ee;border-radius:8px;padding:12px;font-size:11px;color:#444;line-height:1.7;white-space:pre-wrap;">' + escapeHtml(raw) + '</div>';
   }
 
   area.style.display = 'block';
-  area.innerHTML = '<div style="background:#fff;border:1.5px solid #C9972A;border-radius:12px;padding:14px;">'
-    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">'
-    + '<span style="width:22px;height:22px;background:#1a6b3c;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:900;">✓</span>'
-    + '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">'+title+'</span>'
-    + '<span style="color:#888;font-size:10px;margin-left:auto;">'+fname+'</span>'
-    + '</div>'
-    + bodyHtml
-    + '<div style="margin-top:12px;display:flex;gap:6px;">'
-    + '<div style="flex:1;background:#f0fdf4;border:1px solid #86efac;color:#1a6b3c;border-radius:6px;padding:9px;font-size:10px;font-weight:700;text-align:center;">✓ 진단 시작 시 머니야가 자동으로 참고합니다</div>'
-    + '<button onclick="diagCloseAnalysis()" style="background:#fff;color:#6b7280;border:1px solid #e5dcc0;border-radius:6px;padding:9px 12px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">닫기</button>'
-    + '</div>'
-    + '</div>';
+  area.innerHTML = '<div style="background:#fff;border:1.5px solid #C9972A;border-radius:12px;padding:14px;">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f0ece4;">' +
+    '<span style="width:22px;height:22px;background:#1a6b3c;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:900;">✓</span>' +
+    '<span style="color:#0B1D3A;font-size:13px;font-weight:900;">' + title + '</span>' +
+    '<span style="color:#888;font-size:10px;margin-left:auto;">' + escapeHtml(fname) + '</span>' +
+    '</div>' +
+    bodyHtml +
+    '<div style="margin-top:12px;display:flex;gap:6px;">' +
+    '<div style="flex:1;background:#f0fdf4;border:1px solid #86efac;color:#1a6b3c;border-radius:6px;padding:9px;font-size:10px;font-weight:700;text-align:center;">✓ 진단 시작 시 머니야가 자동으로 참고합니다</div>' +
+    '<button onclick="diagCloseAnalysis()" style="background:#fff;color:#6b7280;border:1px solid #e5dcc0;border-radius:6px;padding:9px 12px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">닫기</button>' +
+    '</div>' +
+    '</div>';
+  console.log('[사전서류] 결과 카드 그리기 완료, area 내부 길이:', area.innerHTML.length);
+  
+  /* 스크롤 */
+  setTimeout(function(){
+    try { area.scrollIntoView({behavior:'smooth', block:'nearest'}); } catch(e){}
+  }, 100);
 }
 
-/* HTML 이스케이프 헬퍼 (XSS 방지) */
+/* HTML 이스케이프 헬퍼 */
 function escapeHtml(str) {
   if(str==null) return '';
   return String(str).replace(/[&<>"']/g, function(c){
