@@ -8235,8 +8235,10 @@ function mvpHandleUpload(input) {
     window.diagDocAnalysis[apiDocType] = data;
 
     if(data && data.success) {
-      /* 성공: UI 업데이트 */
-      if(statEl) statEl.textContent = '✅';
+      /* 성공: UI 업데이트 — ✅ 아이콘을 🗑️ 삭제 버튼으로 교체 */
+      if(statEl) {
+        statEl.innerHTML = '<button onclick="diagDeleteDocument(\''+cat+'\')" title="업로드한 파일 삭제 (고객 개인정보 보호)" style="background:rgba(220,38,38,0.08);color:#dc2626;border:1px solid rgba(220,38,38,0.3);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:700;display:inline-flex;align-items:center;gap:3px;">🗑️ 삭제</button>';
+      }
       if(dateEl) dateEl.textContent = '📅 ' + dateStr + ' · ' + fname;
       if(badgeEl) { badgeEl.textContent = '제출완료'; badgeEl.style.background = 'rgba(34,197,94,.1)'; badgeEl.style.color = '#16a34a'; }
       
@@ -11377,7 +11379,7 @@ function diagCloseOverlay() {
   document.body.style.overflow = '';
 }
 
-/* 분석 결과를 어코디언 안에 영구 카드로 고정 */
+/* 분석 결과를 어코디언 안에 영구 카드로 고정 (접기/펼치기 지원) */
 function diagPinResultToAccordion(docType, fname, data) {
   console.log('[MVP사전서류] diagPinResultToAccordion:', docType);
   
@@ -11402,14 +11404,20 @@ function diagPinResultToAccordion(docType, fname, data) {
   pinned.id = 'pinnedResult_' + docType;
   pinned.style.cssText = 'margin:12px 14px;background:#fff;border:1.5px solid #C9972A;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(201,151,42,0.15);';
   
-  var header = '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px;">'
-    + '<span style="width:18px;height:18px;background:#1a6b3c;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:900;">✓</span>'
+  /* 헤더: 클릭하면 본문 토글 */
+  var bodyId = 'pinnedBody_' + docType;
+  var chevId = 'pinnedChev_' + docType;
+  
+  var header = '<div onclick="diagTogglePinnedResult(\''+docType+'\')" style="background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">'
+    + '<span style="width:18px;height:18px;background:#1a6b3c;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:900;flex-shrink:0;">✓</span>'
     + '<span style="font-size:12px;font-weight:900;color:#fff;flex:1;">' + escapeHtml(title) + '</span>'
-    + '<button onclick="diagOpenOverlay(\''+docType+'\', \''+escapeHtml(fname).replace(/\x27/g,"\\x27")+'\', \'result\', window.diagDocAnalysis && window.diagDocAnalysis[\''+docType+'\'])" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:inherit;font-weight:700;">크게 보기</button>'
-    + '<button onclick="diagRemovePinnedResult(\''+docType+'\')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:11px;font-family:inherit;font-weight:900;">✕</button>'
+    + '<button onclick="event.stopPropagation();diagOpenOverlay(\''+docType+'\', \''+escapeHtml(fname).replace(/\x27/g,"\\x27")+'\', \'result\', window.diagDocAnalysis && window.diagDocAnalysis[\''+docType+'\'])" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:inherit;font-weight:700;">크게 보기</button>'
+    + '<button onclick="event.stopPropagation();diagRemovePinnedResult(\''+docType+'\')" style="background:rgba(255,255,255,0.1);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:11px;font-family:inherit;font-weight:900;">✕</button>'
+    + '<span id="' + chevId + '" style="color:rgba(255,255,255,0.7);font-size:14px;margin-left:4px;transition:transform 0.2s;display:inline-block;">▾</span>'
     + '</div>';
   
-  var body = diagBuildResultBody(docType, data);
+  var bodyContent = diagBuildResultBody(docType, data);
+  var body = '<div id="' + bodyId + '" style="max-height:2000px;overflow:hidden;transition:max-height 0.3s ease;">' + bodyContent + '</div>';
   
   pinned.innerHTML = header + body;
   target.appendChild(pinned);
@@ -11422,9 +11430,136 @@ function diagPinResultToAccordion(docType, fname, data) {
   }, 200);
 }
 
+/* 고정 카드 본문 접기/펼치기 */
+function diagTogglePinnedResult(docType) {
+  var body = document.getElementById('pinnedBody_' + docType);
+  var chev = document.getElementById('pinnedChev_' + docType);
+  if(!body || !chev) return;
+  
+  var isCollapsed = body.style.maxHeight === '0px';
+  if(isCollapsed) {
+    body.style.maxHeight = '2000px';
+    chev.style.transform = 'rotate(0deg)';
+    chev.textContent = '▾';
+  } else {
+    body.style.maxHeight = '0px';
+    chev.style.transform = 'rotate(-90deg)';
+    chev.textContent = '▾';
+  }
+}
+
 function diagRemovePinnedResult(docType) {
   var el = document.getElementById('pinnedResult_' + docType);
   if(el) el.remove();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   v3.16.6: 업로드한 서류 완전 삭제 (개인정보 보호)
+   - 고객 신뢰를 위해 업로드한 파일과 분석 결과를 즉시 삭제
+   - mvp 접두사 (검진안내 탭) + diag 접두사 (AI진단 탭) 양쪽 대응
+   ════════════════════════════════════════════════════════════════ */
+function diagDeleteDocument(cat) {
+  /* cat: 'application' | 'ins' | 'pen' | 'tax' */
+  var labelMap = {
+    application: '상담신청서',
+    ins: '보험증권',
+    pen: '연금가입내역',
+    tax: '원천징수영수증'
+  };
+  var label = labelMap[cat] || '서류';
+  
+  /* 확인 모달 */
+  if(!confirm('⚠️ ' + label + ' 업로드 파일과 분석 결과를 완전히 삭제하시겠어요?\n\n고객님의 개인정보 보호를 위해 즉시 삭제됩니다.\n\n(삭제 후에는 되돌릴 수 없습니다)')) {
+    return;
+  }
+  
+  console.log('[사전서류] 삭제 시작:', cat);
+  
+  /* docType 매핑 */
+  var apiDocType = cat==='application' ? 'application'
+                 : cat==='ins' ? 'insurance'
+                 : cat==='pen' ? 'pension'
+                 : cat==='tax' ? 'tax'
+                 : 'unknown';
+  
+  /* 1) mvp 어코디언 UI 초기화 (검진안내 탭) */
+  var mvpStatMap = { application:'mvpAppStat', ins:'mvpStatIns', pen:'mvpStatPen', tax:'mvpStatTax' };
+  var mvpDateMap = { application:'mvpAppDate', ins:'mvpDateIns', pen:'mvpDatePen', tax:'mvpDateTax' };
+  var mvpBadgeMap = { application:'mvpAppBadge' };
+  
+  var mvpStatEl = document.getElementById(mvpStatMap[cat]);
+  if(mvpStatEl) mvpStatEl.innerHTML = '⬜';
+  
+  var mvpDateEl = document.getElementById(mvpDateMap[cat]);
+  if(mvpDateEl) { mvpDateEl.style.display = 'none'; mvpDateEl.textContent = ''; }
+  
+  var mvpBadgeEl = document.getElementById(mvpBadgeMap[cat]);
+  if(mvpBadgeEl) { 
+    mvpBadgeEl.textContent = '미제출'; 
+    mvpBadgeEl.style.background = 'rgba(220,38,38,.1)'; 
+    mvpBadgeEl.style.color = 'var(--red)'; 
+    mvpBadgeEl.style.borderColor = 'rgba(220,38,38,.25)';
+  }
+  
+  /* 2) 어코디언 상단 뱃지 원복 (상담신청서 삭제 시) */
+  if(cat === 'application') {
+    var mvpDocBadge = document.getElementById('mvpDocBadge');
+    if(mvpDocBadge) {
+      mvpDocBadge.textContent = '필수 미완료';
+      mvpDocBadge.style.background = '';
+      mvpDocBadge.style.color = '';
+    }
+  }
+  
+  /* 3) diag 어코디언 UI 초기화 (AI진단 탭 — 있다면) */
+  var diagStatMap = { application:'diagAppStat', ins:'diagStatIns', pen:'diagStatPen', tax:'diagStatTax' };
+  var diagBadgeMap = { application:'diagAppBadge' };
+  
+  var diagStatEl = document.getElementById(diagStatMap[cat]);
+  if(diagStatEl) diagStatEl.innerHTML = '⬜';
+  
+  var diagBadgeEl = document.getElementById(diagBadgeMap[cat]);
+  if(diagBadgeEl) { 
+    diagBadgeEl.textContent = '미제출'; 
+    diagBadgeEl.style.background = 'rgba(220,38,38,.1)'; 
+    diagBadgeEl.style.color = 'var(--red)'; 
+    diagBadgeEl.style.borderColor = 'rgba(220,38,38,.25)';
+  }
+  
+  if(cat === 'application') {
+    var diagDocBadge = document.getElementById('diagDocBadge');
+    if(diagDocBadge) {
+      diagDocBadge.textContent = '필수 미완료';
+      diagDocBadge.style.background = '';
+      diagDocBadge.style.color = '';
+    }
+    var diagStartNote = document.getElementById('diagStartNote');
+    if(diagStartNote) {
+      diagStartNote.textContent = '업로드 후 AI가 자동으로 고객 정보를 분석합니다';
+      diagStartNote.style.color = '';
+    }
+  }
+  
+  /* 4) 하단 영구 고정 분석 결과 카드 제거 */
+  var pinned = document.getElementById('pinnedResult_' + apiDocType);
+  if(pinned) pinned.remove();
+  
+  /* 5) 메모리에 저장된 분석 데이터 제거 */
+  if(window.diagDocAnalysis && window.diagDocAnalysis[apiDocType]) {
+    delete window.diagDocAnalysis[apiDocType];
+  }
+  
+  /* 6) 오버레이가 열려있으면 닫기 */
+  var overlay = document.getElementById('diagDocOverlay');
+  if(overlay) overlay.remove();
+  document.body.style.overflow = '';
+  
+  /* 7) 성공 토스트 */
+  if(typeof showToast === 'function') {
+    showToast('🗑️ ' + label + ' 완전 삭제 완료');
+  }
+  
+  console.log('[사전서류] 삭제 완료:', cat);
 }
 
 function diagOpenOverlay(docType, fname, state, data) {
