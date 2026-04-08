@@ -8178,31 +8178,109 @@ function mvpDocUpload(category) {
   if(fileInput) fileInput.click();
 }
 function mvpHandleUpload(input) {
+  console.log('[MVP사전서류] === mvpHandleUpload 시작 ===');
   if(!input.files || !input.files[0]) return;
   var file = input.files[0];
   var cat = _mvpUploadTarget;
+  var fname = file.name;
+  console.log('[MVP사전서류] 파일:', fname, '/ cat:', cat);
+  
   var now = new Date();
   var dateStr = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 
-  // 상태 아이콘 업데이트
+  /* docType 매핑 */
+  var apiDocType = cat==='application' ? 'application'
+                 : cat==='ins' ? 'insurance'
+                 : cat==='pen' ? 'pension'
+                 : cat==='tax' ? 'tax'
+                 : 'unknown';
+
+  /* UI 분석중 표시 */
   var statMap = { application:'mvpAppStat', ins:'mvpStatIns', pen:'mvpStatPen', tax:'mvpStatTax', etc:'mvpStatEtc' };
   var dateMap = { application:'mvpAppDate', ins:'mvpDateIns', pen:'mvpDatePen', tax:'mvpDateTax', etc:'mvpDateEtc' };
   var badgeMap = { application:'mvpAppBadge' };
 
   var statEl = document.getElementById(statMap[cat]);
-  if(statEl) statEl.textContent = '✅';
+  if(statEl) statEl.textContent = '⏳';
   var dateEl = document.getElementById(dateMap[cat]);
-  if(dateEl) { dateEl.style.display = 'block'; dateEl.textContent = '📅 ' + dateStr + ' · ' + file.name; }
+  if(dateEl) { dateEl.style.display = 'block'; dateEl.textContent = '📅 ' + dateStr + ' · ' + fname + ' (분석중...)'; }
   var badgeEl = document.getElementById(badgeMap[cat]);
-  if(badgeEl) { badgeEl.textContent = '제출완료'; badgeEl.style.background = 'rgba(34,197,94,.1)'; badgeEl.style.color = '#16a34a'; badgeEl.style.borderColor = 'rgba(34,197,94,.25)'; }
+  if(badgeEl) { badgeEl.textContent = '분석중...'; badgeEl.style.background = 'rgba(59,130,246,.1)'; badgeEl.style.color = '#1d4ed8'; }
+  
+  showToast('⏳ ' + fname + ' 분석 중... (10~20초 소요)');
 
-  // 기존 diagOpenUpload도 호출 (AI진단 탭과 연동)
-  if(typeof diagOpenUpload === 'function') {
-    try { diagOpenUpload(cat); } catch(e){}
+  /* 풀스크린 오버레이로 로딩 표시 */
+  if(typeof diagOpenOverlay === 'function') {
+    diagOpenOverlay(apiDocType, fname, 'loading', null);
   }
 
-  showToast('✅ ' + file.name + ' 업로드 완료 (' + dateStr + ')');
-  input.value = ''; // 리셋
+  /* 백엔드 API 호출 */
+  console.log('[MVP사전서류] fetch 호출');
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('docType', apiDocType);
+  formData.append('fileName', fname);
+
+  fetch('https://moneya-server.onrender.com/api/analyze-document', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(r) {
+    console.log('[MVP사전서류] 응답 status:', r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    console.log('[MVP사전서류] 응답 수신');
+    window.diagDocAnalysis = window.diagDocAnalysis || {};
+    window.diagDocAnalysis[apiDocType] = data;
+
+    if(data && data.success) {
+      /* 성공: UI 업데이트 */
+      if(statEl) statEl.textContent = '✅';
+      if(dateEl) dateEl.textContent = '📅 ' + dateStr + ' · ' + fname;
+      if(badgeEl) { badgeEl.textContent = '제출완료'; badgeEl.style.background = 'rgba(34,197,94,.1)'; badgeEl.style.color = '#16a34a'; }
+      
+      /* 어코디언 상단 뱃지도 업데이트 */
+      var docBadge = document.getElementById('mvpDocBadge');
+      if(docBadge && cat === 'application') { 
+        docBadge.textContent = '필수 완료'; 
+        docBadge.style.background = 'rgba(34,197,94,.1)'; 
+        docBadge.style.color = '#16a34a'; 
+      }
+      
+      /* 풀스크린 오버레이에 결과 표시 */
+      if(typeof diagOpenOverlay === 'function') {
+        diagOpenOverlay(apiDocType, fname, 'result', data);
+      }
+      
+      showToast('🎉 ' + fname + ' 분석 완료!');
+    } else {
+      /* 실패 */
+      var errMsg = (data && data.error) || '분석 실패';
+      console.log('[MVP사전서류] 실패:', errMsg);
+      if(statEl) statEl.textContent = '⬜';
+      if(dateEl) dateEl.style.display = 'none';
+      if(badgeEl) { badgeEl.textContent = '미제출'; badgeEl.style.background = 'rgba(220,38,38,.1)'; badgeEl.style.color = 'var(--red)'; }
+      
+      if(typeof diagOpenOverlay === 'function') {
+        diagOpenOverlay(apiDocType, fname, 'error', {errMsg: errMsg});
+      }
+      showToast('⚠️ 분석 실패');
+    }
+  })
+  .catch(function(err) {
+    console.error('[MVP사전서류] fetch 에러:', err);
+    if(statEl) statEl.textContent = '⬜';
+    if(dateEl) dateEl.style.display = 'none';
+    if(badgeEl) { badgeEl.textContent = '미제출'; badgeEl.style.background = 'rgba(220,38,38,.1)'; badgeEl.style.color = 'var(--red)'; }
+    
+    if(typeof diagOpenOverlay === 'function') {
+      diagOpenOverlay(apiDocType, fname, 'error', {errMsg: '서버 연결 오류: ' + err.message});
+    }
+    showToast('⚠️ 서버 연결 오류');
+  });
+
+  input.value = '';
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
