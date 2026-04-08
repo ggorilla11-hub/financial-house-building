@@ -11931,7 +11931,7 @@ function diagStartConsult() {
    ══════════════════════════════════════════════════════════ */
 const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
 const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
-const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9'; // AI머니야 (Phase 0에서 update_note + 새 프롬프트 적용됨)
+const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9'; // AI머니야
 let vapi = null;
 let vapiCallActive = false;
 
@@ -12134,9 +12134,6 @@ async function diagConnectVoice(isPaid) {
 /* [DEV-002] Tool Call 핸들러 — 상담노트 실시간 업데이트 */
 function handleVapiToolCall(toolCallList) {
   if(!toolCallList || !toolCallList.length) return;
-  /* [Phase A] Plan A 작동 플래그 — Plan B 비활성화 신호 */
-  window._toolCallActive = true;
-  window._toolCallLastTime = Date.now();
   toolCallList.forEach(function(toolCall) {
     if(toolCall.function && toolCall.function.name === 'update_note') {
       var args = toolCall.function.arguments;
@@ -12147,21 +12144,6 @@ function handleVapiToolCall(toolCallList) {
 }
 
 function updateNoteField(tab, field, value, label) {
-  /* [Phase A] 파라미터 검증 — undefined/null 방어 */
-  if(tab === undefined || tab === null || field === undefined || field === null) {
-    console.warn('[노트 업데이트 차단] 잘못된 파라미터 — tab:', tab, 'field:', field, 'value:', value);
-    return;
-  }
-  if(value === undefined || value === null || value === '') {
-    console.warn('[노트 업데이트 차단] 값 없음 — field:', field, 'label:', label);
-    return;
-  }
-  /* tab, field를 문자열로 강제 변환 */
-  tab = String(tab);
-  field = String(field);
-  value = String(value);
-  label = label ? String(label) : field;
-
   /* 해당 탭으로 자동 이동 */
   var tabIdx = parseInt(tab) || 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
@@ -12172,8 +12154,6 @@ function updateNoteField(tab, field, value, label) {
     dnFill(el, value);
     el.style.background = '#FFF8E6';
     setTimeout(function(){ el.style.background = ''; }, 1000);
-  } else {
-    console.warn('[노트 업데이트] 필드 없음 — ID: f' + tab + '_' + field + ', label:', label);
   }
 
   /* 금융집짓기 설계도 업데이트 */
@@ -13886,12 +13866,6 @@ function diagParseAiSpeech(aiText) {
     { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
     { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
   ]
-  /* [Phase A] Plan A (Tool Call) 작동 중이면 Plan B (키워드 매칭) 스킵
-     Tool Call이 최근 60초 이내에 호출됐으면 Plan A가 활성 상태로 판단 */
-  if(window._toolCallActive && window._toolCallLastTime && 
-     (Date.now() - window._toolCallLastTime) < 60000) {
-    return; /* Plan A 작동 중 — 키워드 매칭 스킵 */
-  }
   for(var j=0; j<patterns.length; j++) {
     var p = patterns[j];
     var m = t.match(p.regex);
