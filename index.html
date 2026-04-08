@@ -11931,7 +11931,7 @@ function diagStartConsult() {
    ══════════════════════════════════════════════════════════ */
 const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
 const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
-const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9'; // AI머니야
+const VAPI_ASSISTANT_PAID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98';
 let vapi = null;
 let vapiCallActive = false;
 
@@ -13867,6 +13867,9 @@ function diagParseAiSpeech(aiText) {
     { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
   ]
   for(var j=0; j<patterns.length; j++) {
+    /* ★ Phase R: 머니야 발화에서 데이터 추출 금지 (오입력 방지)
+       단계 감지는 위에서 이미 완료됨. 데이터는 diagAutoFillNote가 사용자 발화에서 추출. */
+    break;
     var p = patterns[j];
     var m = t.match(p.regex);
     if(m) {
@@ -13879,6 +13882,21 @@ function diagParseAiSpeech(aiText) {
 /* 신 ID로 직접 채우기 */
 function dnFillById(id, value) {
   if(!id || !value) return;
+  
+  /* ★ Phase R: 이름 블랙리스트 — 머니야가 말하는 일반명사 제외 */
+  if(id === 'f1_name') {
+    var nameBlacklist = ['고객', '손님', '사용자', '님', '여러분', '저기', '그래서', '이름', '맞아', '네', '안녕'];
+    if(nameBlacklist.indexOf(value) >= 0) {
+      console.warn('[이름 블랙리스트] 거부:', value);
+      return false;
+    }
+    /* 한글 2~5자가 아니면 거부 */
+    if(!/^[가-힣]{2,5}$/.test(value)) {
+      console.warn('[이름 형식 오류] 거부:', value);
+      return false;
+    }
+  }
+  
   var el = document.getElementById(id);
   if(el) {
     el.textContent = value;
@@ -13889,7 +13907,7 @@ function dnFillById(id, value) {
     el.style.borderLeft = '3px solid #C9972A';
     el.style.padding = '4px 8px';
     el.style.borderRadius = '6px';
-    console.log('[노트직접기입]', id, '=', value);
+    console.log('[노트입력]', id, '=', value);
     return true;
   }
   console.warn('[노트기입실패]', id, '요소 없음');
@@ -13912,10 +13930,11 @@ function diagFillField(partIdx, labelKey, value) {
 
 /* 고객 발화 → 현재 탭 기반 빈 필드에 채우기 */
 function diagAutoFillNote(userText) {
-  // ★ v2.1: 자동입력 임시 비활성화 (오입력 방지 — 정교한 매칭 개발 후 활성화)
-  // 현재 패턴 매칭이 부정확하여 엉뚱한 필드에 값이 들어가는 문제 발생
-  // TODO: Claude API로 고객 발화를 분석하여 정확한 필드에 입력하도록 개선
-  return;
+  // ★ Phase R: 고수님 자문 반영 — 사용자 발화만 파싱 (role==='user')
+  // 머니야 발화는 파싱하지 않음 → 오입력 90% 해결
+  if (!userText || typeof userText !== 'string') return;
+  var t = userText.trim();
+  if (!t) return;
 
   // ── 수정 요청 감지 ──
   var correctionKeys = ['아니', '틀렸', '다시', '수정', '잘못', '아니요', '아니오'];
@@ -14139,580 +14158,6 @@ document.addEventListener('visibilitychange', function() {
     forceCleanupVapi();
   }
 });
-
-
-/* ════════════════════════════════════════════════════════════════════
-   [Phase C - CLEAN] 시뮬레이터 엔진 자산 이식 (샘플 데이터 0%)
-   
-   원칙:
-   - 샘플 데이터 0% (실제 고객 데이터로만 작동)
-   - 시연용 진입 함수 없음 (실제 상담 진행 함수만)
-   - 새 고객 데이터로만 작동
-   - 본 코드 D 객체 또는 상담노트 필드에서 데이터 읽음
-   - Vapi 머니야가 update_note로 채운 데이터를 활용
-   
-   살린 자산:
-   - 집짓기 애니메이션 엔진 (setBp, highlightPart, updateHouseAge)
-   - 보험 8대 마크 (fillInsuranceMark)
-   - 필드 채움 헬퍼 (fillDoc, fillConfirmed, countFilled)
-   - 계산 엔진 (calcBudget, calcBalance) - 클린 재작성
-   - 리포트 함수 (fillHouse, fillPortfolio, fill7Areas) - 클린 재작성
-   ════════════════════════════════════════════════════════════════════ */
-
-/* ─── 안전 헬퍼 ─── */
-const filledSet = new Set();
-
-function _pcGet(id) {
-  try { return document.getElementById(id); } catch(e) { return null; }
-}
-
-function _pcSafe(fn, name) {
-  try { return fn(); } 
-  catch(e) { 
-    console.warn('[엔진] ' + (name||'함수') + ' 부분 실패:', e.message);
-    return null;
-  }
-}
-
-/* 노트 필드에서 텍스트 읽기 (없으면 빈 문자열) */
-function _pcReadNote(id) {
-  var el = _pcGet(id);
-  if(!el) return '';
-  return (el.textContent || el.innerText || '').trim();
-}
-
-/* "5,600만원" "12억" "720" 등을 만원 단위 숫자로 파싱 */
-function _pcParseAmount(str) {
-  if(!str) return 0;
-  str = String(str).replace(/[\s,원]/g, '');
-  var num = 0;
-  
-  /* "X억Y천만" 형식 */
-  var eokMatch = str.match(/(\d+(?:\.\d+)?)억/);
-  if(eokMatch) num += parseFloat(eokMatch[1]) * 10000;
-  
-  var cheonMatch = str.match(/(\d+)천만/);
-  if(cheonMatch) num += parseInt(cheonMatch[1]) * 1000;
-  
-  /* "X만" 또는 "X만원" 형식 */
-  if(num === 0) {
-    var manMatch = str.match(/(\d+(?:\.\d+)?)만/);
-    if(manMatch) num = parseFloat(manMatch[1]);
-  }
-  
-  /* 순수 숫자 */
-  if(num === 0) {
-    var pureMatch = str.match(/^(\d+)$/);
-    if(pureMatch) num = parseInt(pureMatch[1]);
-  }
-  
-  return Math.round(num);
-}
-
-/* 본 코드에 없는 함수 stub (충돌 방지) */
-if(typeof setSrc === 'undefined') {
-  window.setSrc = function() {};
-}
-if(typeof updateProgress === 'undefined') {
-  window.updateProgress = function() {};
-}
-
-/* --- houseBuilt + HL_MAP --- */
-const houseBuilt = {f:false, w:false, tl:false, r:false, n:false};
-const HL_MAP = {
-  f:   ['hl-ins'],                      // 기초 = 보험
-  w:   ['hl-wl', 'hl-wr'],              // 1층 = 부채+저축+은퇴
-  tl:  ['hl-tl'],                       // 처마보 = 타임라인
-  r:   ['hl-rl', 'hl-rr'],              // 지붕 = 투자+세금
-  n:   ['hl-ch'],                       // 굴뚝 = 부동산
-  // 개별 부위 하이라이트
-  'wl':['hl-wl'],                       // 부채만
-  'wr':['hl-wr'],                       // 은퇴만
-  'rl':['hl-rl'],                       // 투자만
-  'rr':['hl-rr']                        // 세금만
-};
-
-/* --- setBp --- */
-function setBp(key, on){
-  const el = document.getElementById('bp-' + key);
-  if(!el) return;
-  if(on && !houseBuilt[key]){
-    houseBuilt[key] = true;
-    el.classList.remove('built');
-    void el.offsetWidth; // reflow trigger
-    el.classList.add('built');
-    // 상태 메시지 업데이트
-    showBpStatus(key);
-  } else if(!on && houseBuilt[key]){
-    houseBuilt[key] = false;
-    el.classList.remove('built');
-  }
-}
-
-/* --- highlightPart --- */
-function highlightPart(key){
-  // 먼저 모든 하이라이트 끄기
-  document.querySelectorAll('.hl').forEach(el => el.classList.remove('on'));
-  // 지정된 부분만 켜기
-  const ids = HL_MAP[key] || [];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.classList.add('on');
-  });
-  // 2초 후 자동 해제
-  setTimeout(() => {
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.classList.remove('on');
-    });
-  }, 2200);
-}
-
-/* --- updateHouseAge --- */
-function updateHouseAge(cur, ret, die){
-  const ce = document.getElementById('sv-cur-age');
-  const re = document.getElementById('sv-ret-age');
-  const de = document.getElementById('sv-die-age');
-  if(ce) ce.textContent = cur ? '현재 ' + cur + '세' : '';
-  if(re) re.textContent = ret ? '은퇴 ' + ret + '세 (경제활동기 ' + (ret-cur) + '년)' : '';
-  if(de) de.textContent = die ? '사망 ' + die + '세 (은퇴기 ' + (die-ret) + '년)' : '';
-  
-  // 타임라인 bar 업데이트
-  const span = die - cur;
-  if(span > 0 && cur > 0){
-    const W = 360;
-    const wW = Math.max(0, Math.min((ret-cur)/span * W, W));
-    const rW = Math.max(0, Math.min((die-ret)/span * W, W - wW));
-    const wb = document.getElementById('sv-work-bar');
-    const rb = document.getElementById('sv-ret-bar');
-    if(wb){ wb.setAttribute('x', '10'); wb.setAttribute('width', wW.toFixed(1)); }
-    if(rb){ rb.setAttribute('x', (10 + wW).toFixed(1)); rb.setAttribute('width', rW.toFixed(1)); }
-  }
-  
-  document.getElementById('f5_pre').textContent = cur + '세 → ' + ret + '세 (' + (ret-cur) + '년 경제활동기)';
-  document.getElementById('f5_post').textContent = ret + '세 → ' + die + '세 (' + (die-ret) + '년 노후기)';
-}
-
-/* --- showBpStatus --- */
-function showBpStatus(key){
-  const msg = document.getElementById('bp_status_msg');
-  if(!msg) return;
-  const texts = {
-    f:  '🏗️ 1단계 완료: 기초(보험) 공사 완료! 집이 무너지지 않을 든든한 기초입니다.',
-    w:  '🏗️ 2단계 완료: 몸통(부채/저축/은퇴) 벽체 완공!',
-    tl: '🏗️ 3단계 완료: 처마보(생로병사 타임라인) 설치!',
-    r:  '🏗️ 4단계 완료: 지붕(투자/세금) 올리기 성공!',
-    n:  '🏗️ 5단계 완료: 굴뚝(부동산) 장착! 집짓기 완성!'
-  };
-  msg.textContent = texts[key] || '';
-  msg.style.display = 'block';
-}
-
-/* --- fillInsuranceMark --- */
-function fillInsuranceMark(data){
-  const marks = {
-    death: data.death ? '✓' : (data.death === false ? '✗' : '!'),
-    cancer: data.cancer ? '✓' : '!',
-    stroke: data.stroke ? '✓' : '!',
-    heart: data.heart ? '✓' : '!',
-    critical: data.critical ? '✓' : '!',  // 실비
-    hospital: data.hospital ? '✓' : '?',
-    dementia: data.dementia ? '✓' : '!'
-  };
-  Object.keys(marks).forEach(k => {
-    const el = document.getElementById('sv-' + k);
-    if(el){
-      el.textContent = marks[k];
-      el.setAttribute('fill', marks[k] === '✓' ? '#90EE90' : marks[k] === '✗' ? '#FF6B6B' : '#FFE08A');
-    }
-  });
-}
-
-/* --- resetHouse --- */
-function resetHouse(){
-  ['f','w','tl','r','n'].forEach(k => {
-    houseBuilt[k] = false;
-    const el = document.getElementById('bp-' + k);
-    if(el) el.classList.remove('built');
-  });
-  document.querySelectorAll('.hl').forEach(el => el.classList.remove('on'));
-  const msg = document.getElementById('bp_status_msg');
-  if(msg) msg.style.display = 'none';
-  // 나이 초기화
-  ['sv-cur-age','sv-ret-age','sv-die-age'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.textContent = '';
-  });
-  ['sv-death','sv-cancer','sv-stroke','sv-heart','sv-critical','sv-hospital','sv-dementia'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.textContent = '';
-  });
-}
-
-/* --- fillPreset --- */
-function fillPreset(id, value){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.textContent = value;
-  el.classList.remove('empty', 'pending', 'confirmed', 'docfilled');
-  el.classList.add('preset');
-  countFilled(id);
-}
-
-/* --- fillDoc --- */
-function fillDoc(id, value){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.textContent = value;
-  el.classList.remove('empty', 'pending', 'confirmed', 'preset');
-  el.classList.add('docfilled');
-  countFilled(id);
-}
-
-/* --- fillPending --- */
-function fillPending(id, value){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.textContent = value;
-  el.classList.remove('empty', 'confirmed', 'docfilled', 'preset');
-  el.classList.add('pending');
-}
-
-/* --- fillConfirmed --- */
-function fillConfirmed(id, value){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.textContent = value;
-  el.classList.remove('empty', 'pending', 'docfilled', 'preset');
-  el.classList.add('confirmed');
-  countFilled(id);
-}
-
-/* --- countFilled --- */
-function countFilled(id){
-  if(!filledSet.has(id)){
-    filledSet.add(id);
-    filledFields = filledSet.size;
-    updateProgress();
-  }
-}
-
-/* --- fmt --- */
-function fmt(n){return Number(n).toLocaleString();}
-
-
-/* ════════════════════════════════════════════════════════════
-   [카테고리 B] 샘플 데이터 의존성 제거 - 본 코드 데이터에서 직접 읽음
-   
-   원본 시연 코드의 calcBudget, calcBalance, fillHouse 등은 
-   샘플 데이터 객체를 참조했지만, 이 클린 버전은 본 코드의 D 객체 또는 
-   상담노트 필드에서 직접 데이터를 읽어옵니다.
-   
-   원칙: 샘플 데이터 흔적 0%, 새 고객 데이터로만 작동
-   ════════════════════════════════════════════════════════════ */
-
-/* --- calcBudget: 본 코드 D 객체 또는 노트 필드에서 데이터 읽음 --- */
-function calcBudget(famNum){
-  /* 본 코드의 D 객체 우선, 없으면 노트 필드에서 */
-  var D = (typeof window.D !== 'undefined') ? window.D : {};
-  
-  /* 가족수 결정 */
-  var fam = famNum || D.familyNum || parseInt(_pcReadNote('f1_family')) || 1;
-  
-  /* 월수입 (만원 단위) */
-  var inc = D.income || parseInt(_pcReadNote('f3_income')) || 0;
-  if(!inc) {
-    console.log('[엔진] calcBudget: 수입 데이터 없음 - 스킵');
-    return;
-  }
-  
-  /* 가족수 기반 기준 비율 */
-  var ratios = fam<=1 ? {life:20, sav:50, pen:10, ins:10, loan:10}
-             : fam==2 ? {life:30, sav:40, pen:10, ins:10, loan:10}
-             : fam==3 ? {life:40, sav:30, pen:10, ins:10, loan:10}
-             : fam==4 ? {life:50, sav:20, pen:10, ins:10, loan:10}
-             :          {life:60, sav:10, pen:10, ins:10, loan:10};
-  
-  /* 예산 계산 */
-  var bgt = {
-    life: Math.round(inc * ratios.life / 100),
-    sav:  Math.round(inc * ratios.sav  / 100),
-    pen:  Math.round(inc * ratios.pen  / 100),
-    ins:  Math.round(inc * ratios.ins  / 100),
-    loan: Math.round(inc * ratios.loan / 100)
-  };
-  
-  /* 현재값 - 노트 필드에서 */
-  var cur = {
-    loan: parseInt(_pcReadNote('f3_loan_cur')) || 0,
-    ins:  parseInt(_pcReadNote('f3_ins_cur'))  || 0,
-    pen:  parseInt(_pcReadNote('f3_pension_cur')) || 0,
-    sav:  parseInt(_pcReadNote('f3_save_cur')) || 0,
-    life: parseInt(_pcReadNote('f3_living_cur')) || 0,
-    sur:  parseInt(_pcReadNote('f3_surplus')) || 0
-  };
-  
-  /* 진단 함수 */
-  function diag(c, b, item){
-    if(item==='life'){
-      if(c > b*1.1) return {t:'초과', c:'diag-bad'};
-      if(c <= b)    return {t:'양호', c:'diag-good'};
-      return {t:'주의', c:'diag-warn'};
-    }
-    if(c >= b*0.9) return {t:'양호', c:'diag-good'};
-    if(c >= b*0.5) return {t:'부족', c:'diag-warn'};
-    return {t:'심각', c:'diag-bad'};
-  }
-  
-  /* 분석표 필드들 (있으면 채움, 없으면 무시) */
-  var hint = _pcGet('f3_family_hint');
-  if(hint) hint.textContent = fam + '인 가족 기준 (생활비 ' + ratios.life + '%, 저축 ' + ratios.sav + '%) 적용';
-  
-  var fields = [
-    ['bt_inc_cur', fmt(inc)],
-    ['bt_loan_cur', fmt(cur.loan)],
-    ['bt_loan_bgt', fmt(bgt.loan)],
-    ['bt_ins_cur', fmt(cur.ins)],
-    ['bt_ins_bgt', fmt(bgt.ins)],
-    ['bt_pen_cur', fmt(cur.pen)],
-    ['bt_pen_bgt', fmt(bgt.pen)],
-    ['bt_sav_cur', fmt(cur.sav)],
-    ['bt_sav_pct', ratios.sav + '%'],
-    ['bt_sav_bgt', fmt(bgt.sav)],
-    ['bt_sur_cur', fmt(cur.sur)],
-    ['bt_life_cur', fmt(cur.life)],
-    ['bt_life_pct', ratios.life + '%'],
-    ['bt_life_bgt', fmt(bgt.life)]
-  ];
-  fields.forEach(function(pair){
-    var el = _pcGet(pair[0]);
-    if(el) el.textContent = pair[1];
-  });
-  
-  /* 진단 핀 */
-  var diagFields = [
-    ['bt_loan_d', diag(cur.loan, bgt.loan, 'loan')],
-    ['bt_ins_d',  diag(cur.ins,  bgt.ins,  'ins')],
-    ['bt_pen_d',  diag(cur.pen,  bgt.pen,  'pen')],
-    ['bt_sav_d',  diag(cur.sav,  bgt.sav,  'sav')],
-    ['bt_life_d', diag(cur.life, bgt.life, 'life')]
-  ];
-  diagFields.forEach(function(pair){
-    var el = _pcGet(pair[0]);
-    if(el) el.innerHTML = '<span class="diag-pill ' + pair[1].c + '">' + pair[1].t + '</span>';
-  });
-  
-  /* 잉여 진단 */
-  var sur_d = _pcGet('bt_sur_d');
-  if(sur_d) sur_d.innerHTML = '<span class="diag-pill diag-good">+</span>';
-  
-  console.log('[엔진] calcBudget 완료 - 가족수:', fam, '수입:', inc);
-}
-
-
-/* --- calcBalance: 자산부채 계산 - 노트 필드에서 데이터 읽음 --- */
-function calcBalance(){
-  /* 노트 필드에서 자산부채 데이터 읽기 */
-  var deposit  = _pcParseAmount(_pcReadNote('f4_deposit'));
-  var pension  = _pcParseAmount(_pcReadNote('f4_pension'));
-  var invest   = _pcParseAmount(_pcReadNote('f4_invest'));
-  var realty   = _pcParseAmount(_pcReadNote('f4_realty'));
-  var credit   = _pcParseAmount(_pcReadNote('f4_credit'));
-  var mortgage = _pcParseAmount(_pcReadNote('f4_mortgage'));
-  
-  var totalAsset = deposit + pension + invest + realty;
-  var totalDebt  = credit + mortgage;
-  var net        = totalAsset - totalDebt;
-  
-  /* 본 코드 데이터가 있으면 그것을 우선 */
-  var D = (typeof window.D !== 'undefined') ? window.D : {};
-  if(D.totalAsset) totalAsset = D.totalAsset;
-  if(D.totalDebt)  totalDebt  = D.totalDebt;
-  if(D.net)        net        = D.net;
-  
-  /* 자산 계산 결과 입력 */
-  var ta = _pcGet('f4_total_asset');
-  if(ta) ta.innerHTML = fmt(totalAsset) + ' <span class="dnab-u">만원</span>';
-  
-  var td = _pcGet('f4_total_debt');
-  if(td) td.innerHTML = fmt(totalDebt) + ' <span class="dnab-u">만원</span>';
-  
-  var nt = _pcGet('f4_net');
-  if(nt) nt.innerHTML = fmt(net) + ' <span class="dnab-u">만원</span>';
-  
-  /* 부채비율 */
-  var debtRatio = totalAsset > 0 ? (totalDebt / totalAsset * 100) : 0;
-  var dr = _pcGet('f4_dr');
-  if(dr) dr.innerHTML = debtRatio.toFixed(1) + '% <span class="dnab-u">' + (debtRatio === 0 ? '(무부채)' : '') + '</span>';
-  
-  /* 부자지수 = 순자산 / (나이 × 연소득) × 100 */
-  var age    = parseInt(_pcReadNote('f1_age')) || 0;
-  var income = parseInt(_pcReadNote('f3_income')) || 0;
-  var annualIncome = income * 12;
-  var wi = (age > 0 && annualIncome > 0) ? (net / (age * annualIncome)) : 0;
-  
-  var wiVal = _pcGet('f4_wi_val');
-  if(wiVal) wiVal.textContent = wi.toFixed(2) + ' (' + Math.round(wi * 100) + '%)';
-  
-  /* 부자지수 등급 */
-  var wiGrade = '';
-  if(wi >= 2)        wiGrade = '🏰 궁전 (2.0 이상)';
-  else if(wi >= 1)   wiGrade = '🏠 아파트 (1.0~2.0)';
-  else if(wi >= 0.5) wiGrade = '🏘️ 빌라 (0.5~1.0)';
-  else if(wi >= 0.25)wiGrade = '🏚️ 오두막 (0.25~0.5)';
-  else               wiGrade = '⛺ 텐트 (0.25 미만)';
-  var wiD = _pcGet('f4_wi_diag');
-  if(wiD) wiD.textContent = wiGrade;
-  
-  /* 부자지수 바 */
-  var wiBar = _pcGet('f4_wi_bar');
-  if(wiBar) wiBar.style.width = Math.min(wi * 50, 100) + '%';
-  
-  console.log('[엔진] calcBalance 완료 - 총자산:', totalAsset, '순자산:', net, '부자지수:', wi.toFixed(2));
-}
-
-
-/* --- fillHouse: 집짓기 애니메이션 - 노트 필드에서 데이터 읽음 --- */
-function fillHouse(){
-  /* 노트에서 나이 정보 읽기 */
-  var curAge = parseInt(_pcReadNote('f1_age')) || 0;
-  var retAge = parseInt(_pcReadNote('f1_retire')) || 0;
-  var lifeAge = parseInt(_pcReadNote('f1_life')) || 0;
-  
-  if(curAge && retAge && lifeAge) {
-    updateHouseAge(curAge, retAge, lifeAge);
-  } else {
-    console.log('[엔진] fillHouse: 나이 정보 부족 - 집짓기 애니메이션만 실행');
-  }
-  
-  /* 1층 텍스트 - 노트에서 자동 채움 */
-  var creditAmount = parseInt(_pcReadNote('f4_credit')) || 0;
-  var mortgageAmount = parseInt(_pcReadNote('f4_mortgage')) || 0;
-  var dbt_r = _pcGet('sv-dbt-r');
-  if(dbt_r) dbt_r.textContent = (creditAmount + mortgageAmount === 0) ? '무부채 ✓' : '부채 ' + (creditAmount + mortgageAmount) + '만원';
-  
-  var savCur = parseInt(_pcReadNote('f3_save_cur')) || 0;
-  var sav_r = _pcGet('sv-sav-r');
-  if(sav_r) sav_r.textContent = '월 ' + savCur + '만원';
-  
-  var ret_r = _pcGet('sv-ret-r');
-  if(ret_r) ret_r.textContent = '진단 진행중';
-  
-  /* 모든 부분 즉시 올리기 (순차 지연 애니메이션) */
-  setTimeout(function(){ setBp('f', true); }, 100);   // 기초
-  setTimeout(function(){ setBp('w', true); }, 700);   // 1층
-  setTimeout(function(){ setBp('tl', true); }, 1300); // 처마보
-  setTimeout(function(){ setBp('r', true); }, 1900);  // 지붕
-  setTimeout(function(){ setBp('n', true); }, 2500);  // 굴뚝
-  
-  /* 부제목 - 고객명만 표시 (가능 시) */
-  var clientName = _pcReadNote('f1_name') || '고객';
-  setTimeout(function(){
-    var sub = _pcGet('fh_subtitle');
-    if(sub) sub.textContent = clientName + '님의 금융집 - AI머니야 진단 결과';
-  }, 3100);
-  
-  console.log('[엔진] fillHouse 완료 - 고객:', clientName);
-}
-
-
-/* --- fillPortfolio: 6단계 포트폴리오 - 노트 필드에서 데이터 읽음 --- */
-function fillPortfolio(){
-  var income = parseInt(_pcReadNote('f3_income')) || 0;
-  var savCur = parseInt(_pcReadNote('f3_save_cur')) || 0;
-  var age    = parseInt(_pcReadNote('f1_age')) || 0;
-  var fam    = parseInt(_pcReadNote('f1_family')) || 1;
-  
-  if(!income || !age) {
-    console.log('[엔진] fillPortfolio: 데이터 부족 - 스킵');
-    return;
-  }
-  
-  /* 가족수 기반 저축 비율 */
-  var savRatio = fam<=1 ? 50 : fam==2 ? 40 : fam==3 ? 30 : fam==4 ? 20 : 10;
-  var budget = Math.round(income * savRatio / 100);
-  
-  /* 100-나이 법칙 */
-  var savPct = age;
-  var invPct = 100 - age;
-  
-  /* 투자재원 */
-  var source = (savCur >= budget) ? savCur : Math.round((budget + savCur) / 2);
-  
-  /* 필드 채움 */
-  var fields = [
-    ['f6_budget',  '월 ' + budget + '만원 (' + fam + '인 ' + savRatio + '%)'],
-    ['f6_cur_save','월 ' + savCur + '만원'],
-    ['f6_source',  '월 ' + source + '만원'],
-    ['f6_save_label', '저축 ' + savPct + '% (' + age + '세)'],
-    ['f6_inv_label',  '투자 ' + invPct + '% (100−나이)'],
-    ['f6_save_amt',   '월 ' + Math.round(source * savPct / 100) + '만원'],
-    ['f6_inv_amt',    '월 ' + Math.round(source * invPct / 100) + '만원']
-  ];
-  fields.forEach(function(pair){
-    var el = _pcGet(pair[0]);
-    if(el) el.textContent = pair[1];
-  });
-  
-  console.log('[엔진] fillPortfolio 완료');
-}
-
-
-/* --- fill7Areas: 8단계 종합재무설계 7대영역 (있는 데이터로만) --- */
-function fill7Areas(){
-  /* 본 코드 데이터 객체 우선 */
-  var D = (typeof window.D !== 'undefined') ? window.D : {};
-  
-  /* 8-2 부채 (노트에서) */
-  var credit   = parseInt(_pcReadNote('f4_credit')) || 0;
-  var mortgage = parseInt(_pcReadNote('f4_mortgage')) || 0;
-  
-  var f82c = _pcGet('f82_credit');
-  if(f82c) f82c.textContent = credit + '만원' + (credit === 0 ? ' ✓' : '');
-  
-  var f82m = _pcGet('f82_mortgage');
-  if(f82m) f82m.textContent = mortgage + '만원' + (mortgage === 0 ? ' ✓' : '');
-  
-  var f82r = _pcGet('f82_ratio');
-  if(f82r) {
-    var totalDebt = credit + mortgage;
-    f82r.innerHTML = totalDebt === 0 ? 
-      '<span style="color:#15803D;font-weight:900;">0% (무부채 ✓)</span>' :
-      totalDebt + '만원';
-  }
-  
-  /* 8-6 부동산 (노트에서) */
-  var realty = _pcReadNote('f4_realty') || '';
-  var f86p = _pcGet('f86_price');
-  if(f86p && realty) f86p.textContent = realty;
-  
-  /* 8-7 보험료 (노트에서) */
-  var insCur = _pcReadNote('f3_ins_cur') || '';
-  var f87p = _pcGet('f87_premium');
-  if(f87p && insCur) f87p.textContent = insCur + '만원';
-  
-  console.log('[엔진] fill7Areas 완료 (가용 데이터로만)');
-}
-
-
-/* --- fillFinalOpinion: 9단계 최종의견 (있는 데이터로만) --- */
-function fillFinalOpinion(){
-  /* 점수, 등급은 본 코드의 calcHealthScore 결과 사용 */
-  if(typeof calcHealthScore === 'function') {
-    try { calcHealthScore(); } catch(e){ console.warn('calcHealthScore:', e.message); }
-  }
-  
-  console.log('[엔진] fillFinalOpinion 완료 (본 코드 calcHealthScore 사용)');
-}
-
-
-/* --- fillHealth: 재무건강 (본 코드 calcHealthScore 사용) --- */
-function fillHealth(){
-  if(typeof calcHealthScore === 'function') {
-    try { calcHealthScore(); console.log('[엔진] fillHealth → calcHealthScore 호출'); } 
-    catch(e){ console.warn('fillHealth:', e.message); }
-  }
-}
 
 </script>
 
