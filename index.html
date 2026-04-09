@@ -14030,10 +14030,14 @@ function diagSendText() {
   if(mvpTextOnlyMode) {
     // ★ 텍스트 모드: 채팅 표시 → Render /api/consult-chat 전송
     diagAddSTT('user', txt, null);
+    /* ★ [단계3] 텍스트 입력도 diagAutoFillNote로 파싱 → 새 노트 입력 */
+    setTimeout(function(){ diagAutoFillNote(txt); }, 100);
     sendTextConsultMessage(txt);
   } else {
     // 기존 음성 모드: Vapi로 전송 (수정 없음!)
     diagAddSTT('user', txt, null);
+    /* ★ [단계3] 음성 모드에서도 텍스트 입력 시 바로 파싱 */
+    setTimeout(function(){ diagAutoFillNote(txt); }, 100);
     if(vapi && vapiCallActive) {
       try{ vapi.send({ type: 'add-message', message: { role: 'user', content: txt } }); }
       catch(e){ console.error('[Vapi 텍스트 전송 오류]', e); }
