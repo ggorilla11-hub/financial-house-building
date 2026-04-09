@@ -14106,6 +14106,121 @@ const DIAG_STEP4_FIELDS = [
 /* 거주형태 저장 변수 (Q1 답변) */
 let diagHousingType = '';
 
+/* ═══════════════════════════════════════════════════════════
+   [단계3 v10] 자산부채 자동 계산
+   입력: f4_deposit, f4_pension, f4_invest, f4_realty, f4_other, f4_credit, f4_mortgage
+   출력: f4_total_asset, f4_total_debt, f4_net, f4_dr, f4_wi_val, f4_wi_bar, f4_wi_diag, f4_emerg
+   ═══════════════════════════════════════════════════════════ */
+function diagRecalcAssets() {
+  // 필드에서 숫자 추출 (만원 단위)
+  function _parseAmt(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var txt = el.textContent || '';
+    // "5,000만원" → 5000
+    var m = txt.match(/([\d,]+)/);
+    if (!m) return 0;
+    var n = parseInt(m[1].replace(/,/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+  
+  // 숫자를 "X,XXX만원" 또는 "X.X억" 형식으로 포맷
+  function _fmtMan(n) {
+    if (!n || n === 0) return '0만원';
+    if (n >= 10000) {
+      // 1억 이상은 "X.X억"
+      var ok = (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1);
+      return ok + '억';
+    }
+    return n.toLocaleString() + '만원';
+  }
+  
+  var deposit  = _parseAmt('f4_deposit');
+  var pension  = _parseAmt('f4_pension');
+  var invest   = _parseAmt('f4_invest');
+  var realty   = _parseAmt('f4_realty');
+  var other    = _parseAmt('f4_other');
+  var credit   = _parseAmt('f4_credit');
+  var mortgage = _parseAmt('f4_mortgage');
+  
+  var totalAsset = deposit + pension + invest + realty + other;
+  var totalDebt  = credit + mortgage;
+  var netWorth   = totalAsset - totalDebt;
+  var debtRatio  = totalAsset > 0 ? Math.round((totalDebt / totalAsset) * 100) : 0;
+  
+  console.log('[자산계산]', {
+    deposit: deposit, pension: pension, invest: invest, 
+    realty: realty, other: other, credit: credit, mortgage: mortgage,
+    총자산: totalAsset, 총부채: totalDebt, 순자산: netWorth, 부채비율: debtRatio
+  });
+  
+  // 화면 업데이트
+  var _set = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  _set('f4_total_asset', _fmtMan(totalAsset));
+  _set('f4_total_debt', _fmtMan(totalDebt));
+  _set('f4_net', _fmtMan(netWorth));
+  _set('f4_dr', debtRatio + '%');
+  
+  // 부자지수 계산 (나이 × 연소득 기준)
+  var ageEl = document.getElementById('f1_age');
+  var age = 0;
+  if (ageEl) {
+    var am = (ageEl.textContent || '').match(/(\d+)/);
+    if (am) age = parseInt(am[1]);
+  }
+  
+  // 월 소득 → 연소득 (만원)
+  var incEl = document.getElementById('bt_inc_cur') || document.getElementById('f3_income');
+  var monthlyInc = 0;
+  if (incEl) {
+    var im = (incEl.textContent || '').match(/([\d,]+)/);
+    if (im) monthlyInc = parseInt(im[1].replace(/,/g, ''));
+  }
+  var yearlyInc = monthlyInc * 12;
+  
+  if (age > 0 && yearlyInc > 0) {
+    // 부자지수 = (순자산 ÷ (나이 × 연소득)) × 100
+    var wi = Math.round((netWorth / (age * yearlyInc)) * 100);
+    _set('f4_wi_val', wi + '%');
+    
+    // 부자지수 등급 판정
+    var wiGrade, wiColor;
+    if (wi >= 200)      { wiGrade = '궁전급 (상위 5%)'; wiColor = '#15803D'; }
+    else if (wi >= 150) { wiGrade = '아파트급 (상위 15%)'; wiColor = '#16a34a'; }
+    else if (wi >= 100) { wiGrade = '빌라급 (상위 30%)'; wiColor = '#C9972A'; }
+    else if (wi >= 50)  { wiGrade = '오두막급 (상위 50%)'; wiColor = '#C2410C'; }
+    else                { wiGrade = '텐트급 (하위 50%)'; wiColor = '#B91C1C'; }
+    
+    _set('f4_wi_diag', wiGrade);
+    
+    // 진행바 (최대 200% 기준)
+    var barEl = document.getElementById('f4_wi_bar');
+    if (barEl) {
+      var pct = Math.min(100, (wi / 200) * 100);
+      barEl.style.width = pct + '%';
+    }
+    
+    console.log('[부자지수]', wi + '%', wiGrade);
+  }
+  
+  // 비상예비자금 기준 계산 (가족수 × 150만원 × 3개월)
+  var famEl = document.getElementById('f1_family');
+  var family = 1;
+  if (famEl) {
+    var fm = (famEl.textContent || '').match(/(\d+)/);
+    if (fm) family = parseInt(fm[1]);
+  }
+  var dualEl = document.getElementById('f1_dual');
+  var isDual = dualEl && /맞벌이/.test(dualEl.textContent || '');
+  var emergMonths = isDual ? 3 : 6;  // 맞벌이 3개월, 외벌이 6개월
+  var emergNeeded = family * 150 * emergMonths;
+  var emergStatus = deposit >= emergNeeded ? '충족 ✓' : '부족 ⚠';
+  _set('f4_emerg', isDual ? '맞벌이' : '외벌이' + ' ' + emergMonths + '개월 = ' + _fmtMan(emergNeeded) + ' (현금 ' + _fmtMan(deposit) + ' → ' + emergStatus + ')');
+}
+
 let diagLastFilledPartIdx = -1;
 let diagLastFilledLabel = '';
 
@@ -14517,6 +14632,14 @@ function _fillNewNote(id, displayVal) {
   if (!filled) {
     console.warn('[노트입력 실패] ID 없음:', id, '(별칭:', ids.join(','), ')');
   }
+  
+  // ★ v10: 자산 탭 필드 입력 시 자동 계산
+  if (/^f4_(deposit|pension|invest|realty|other|credit|mortgage)$/.test(id)) {
+    setTimeout(function(){ 
+      if (typeof diagRecalcAssets === 'function') diagRecalcAssets(); 
+    }, 50);
+  }
+  
   return filled;
 }
 
