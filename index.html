@@ -12352,606 +12352,910 @@ function diagBuildNotes() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container.innerHTML = `
 <style>
-#dnWrap{font-family:var(--fn);background:#F4F6FA;height:100%;overflow:hidden;display:flex;flex-direction:column;}
-#dnTabs{display:flex;flex-wrap:wrap;gap:2px;padding:6px 8px 0;background:#0B1D3A;flex-shrink:0;}
-.dnt{flex-shrink:0;padding:5px 8px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;cursor:pointer;
-  color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);font-family:var(--fn);transition:all .2s;}
-.dnt.active{background:#F4F6FA;color:#0B1D3A;}
+/* ═══════════════════════════════════════════════════════════
+   상담노트 v3 — 시뮬레이터 v3-γ2 기반 클린 버전 (샘플 데이터 0%)
+   샘플 데이터, 시뮬 전용 UI(헤더/컨트롤/사이드패널) 모두 제거
+   ═══════════════════════════════════════════════════════════ */
+
+/* CSS 변수 (본 코드의 --fn과 충돌하지 않도록 노트 전용 변수명) */
+#dnWrap{
+  --dn-navy:#0B1D3A;
+  --dn-navy2:#1a3260;
+  --dn-gold:#C9972A;
+  --dn-gold2:#E8B84B;
+  --dn-gold-dark:#8B6914;
+  --dn-gn-bg:#FFF9D6;
+  --dn-gn-bg2:#FFFCEA;
+  --dn-gn-line:#F0E5A3;
+  --dn-gn-paper:#FFFEF6;
+  --dn-pending:#9ca3af;
+  --dn-confirmed:#C9972A;
+  --dn-text:#0B1D3A;
+  --dn-text-strong:#000000;
+  --dn-muted:#4A5568;
+  --dn-green:#15803D;
+  --dn-red:#B91C1C;
+  --dn-orange:#C2410C;
+}
+
+/* === 노트 컨테이너 === */
+#dnWrap{
+  background:#fff;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 8px 32px rgba(11,29,58,.18);
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  font-family:var(--fn);
+}
+
+/* === 탭 헤더 === */
+#dnTabs{
+  display:flex;flex-wrap:wrap;gap:2px;
+  padding:7px 8px 0;background:#0B1D3A;
+  flex-shrink:0;border-bottom:2px solid #C9972A;
+}
+.dnt{
+  flex-shrink:0;padding:6px 9px;border-radius:6px 6px 0 0;
+  font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fn);
+  color:rgba(255,255,255,.4);border:none;background:rgba(255,255,255,.06);
+  transition:all .2s;
+}
+.dnt:hover{background:rgba(255,255,255,.1);color:#fff;}
+.dnt.active{background:#FFF9D6;color:#0B1D3A;}
 .dnt.done{color:#E8B84B;}
-#dnPanels{flex:1;overflow-y:auto;padding:10px 10px 30px;scrollbar-width:thin;}
-.dnp{display:none;}
+.dnt.done::before{content:'✓ ';color:#16a34a;}
+
+/* === 노트 본문 (굿노트 노란 배경) === */
+#dnPanels{
+  flex:1;overflow-y:auto;padding:14px 16px 30px;
+  background:#FFF9D6;
+  background-image:
+    repeating-linear-gradient(180deg,transparent 0,transparent 23px,#F0E5A3 23px,#F0E5A3 24px);
+  scrollbar-width:thin;
+}
+.dnp{display:none;animation:dnFade .35s;}
 .dnp.active{display:block;}
-.dncard{background:#fff;border-radius:11px;box-shadow:0 1px 8px rgba(11,29,58,.06);margin-bottom:9px;overflow:hidden;border:1px solid #D8E0EC;}
-.dnchd{background:linear-gradient(135deg,#0B1D3A,#1a3260);padding:9px 13px;display:flex;align-items:center;gap:8px;}
+@keyframes dnFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* === 노트 카드 === */
+.dncard{
+  background:rgba(255,254,246,.92);
+  border-radius:11px;
+  margin-bottom:10px;overflow:hidden;
+  border:1px solid rgba(201,151,42,.2);
+  box-shadow:0 2px 6px rgba(11,29,58,.06);
+}
+.dnchd{
+  background:linear-gradient(135deg,#0B1D3A,#1a3260);
+  padding:9px 13px;display:flex;align-items:center;gap:8px;
+}
 .dncicon{font-size:15px;}
 .dnctitle{color:#fff;font-size:12px;font-weight:900;}
-.dncsub{color:rgba(255,255,255,.5);font-size:9.5px;margin-top:1px;}
+.dncsub{color:rgba(255,255,255,.5);font-size:9px;margin-top:1px;}
 .dncbody{padding:11px 13px;}
-.dnfield{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid #D8E0EC;}
+
+/* === 필드 === */
+.dnfield{
+  display:flex;align-items:flex-start;padding:9px 0;
+  border-bottom:1px dashed rgba(201,151,42,.3);
+}
 .dnfield:last-child{border-bottom:none;}
-.dnfl{color:#8896B0;font-size:11px;font-weight:500;width:88px;flex-shrink:0;padding-top:1px;}
-.dnfv{font-size:13.5px;font-weight:700;color:#1a2340;flex:1;line-height:1.6;}
-.dnfv.empty{color:#D8E0EC;font-weight:400;font-style:italic;}
-.dnfv.hi{color:#1a3260;}
-.dnfv.warn{color:#C62828;}
-.dnfv.good{color:#2E7D32;}
-.dnfv.gold{color:#C9972A;}
-.dndiv{display:flex;align-items:center;gap:6px;padding:4px 0 7px;color:#8896B0;font-size:9.5px;font-weight:700;}
-.dndiv::before,.dndiv::after{content:'';flex:1;height:1px;background:#D8E0EC;}
-/* 예산표 */
-.dntable{width:100%;border-collapse:collapse;font-size:10px;}
-.dntable th{background:#0B1D3A;color:#fff;padding:5px 6px;text-align:center;font-weight:700;font-size:9.5px;}
-.dntable td{padding:5px 6px;border-bottom:1px solid #D8E0EC;text-align:right;}
+.dnfl{
+  color:#4A5568;font-size:12px;font-weight:900;
+  width:110px;flex-shrink:0;padding-top:2px;
+}
+.dnfv{
+  font-size:14px;font-weight:900;color:#000;flex:1;line-height:1.6;
+  font-family:'Gowun Dodum',var(--fn);
+  transition:all .35s;
+}
+.dnfv.empty{color:#9ca3af;font-weight:500;font-style:italic;}
+.dnfv.hi{color:#0B1D3A;}
+.dnfv.warn{color:#B91C1C;}
+.dnfv.good{color:#15803D;}
+.dnfv.gold{color:#8B6914;}
+
+/* === 이중 입력 시각화 === */
+.dnfv.pending{
+  background:linear-gradient(135deg,rgba(150,150,160,.18),rgba(150,150,160,.06));
+  border-left:3px solid #9ca3af;padding:5px 9px;border-radius:5px;
+  color:#6b7280;font-weight:600;
+  animation:dnPendingPulse 1.4s infinite;
+  position:relative;
+}
+.dnfv.pending::after{
+  content:'⏳ STT 임시 (머니야 확인 대기)';
+  display:block;font-size:8px;color:#9ca3af;font-style:italic;margin-top:2px;
+}
+.dnfv.confirmed{
+  background:linear-gradient(135deg,rgba(232,184,75,.22),rgba(201,151,42,.08));
+  border-left:3px solid #C9972A;padding:5px 9px;border-radius:5px;
+  color:#0B1D3A;font-weight:700;
+  animation:dnConfirmIn .55s;
+}
+.dnfv.confirmed::after{
+  content:'✓ 확정';
+  display:inline-block;font-size:8px;color:#15803d;font-weight:900;margin-left:6px;
+  background:#dcfce7;padding:1px 5px;border-radius:3px;vertical-align:middle;
+}
+.dnfv.preset{
+  background:linear-gradient(135deg,rgba(11,29,58,.08),rgba(11,29,58,.02));
+  border-left:3px solid #1a3260;padding:5px 9px;border-radius:5px;
+  color:#0B1D3A;font-weight:700;
+}
+.dnfv.preset::after{
+  content:'■ 사전 입력';
+  display:inline-block;font-size:8px;color:#1a3260;font-weight:900;margin-left:6px;
+  background:rgba(11,29,58,.08);padding:1px 5px;border-radius:3px;vertical-align:middle;
+}
+.dnfv.docfilled{
+  background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(34,197,94,.04));
+  border-left:3px solid #16a34a;padding:5px 9px;border-radius:5px;
+  color:#0B1D3A;font-weight:700;
+  animation:dnDocIn .55s;
+}
+.dnfv.docfilled::after{
+  content:'📄 신청서';
+  display:inline-block;font-size:8px;color:#15803d;font-weight:900;margin-left:6px;
+  background:#dcfce7;padding:1px 5px;border-radius:3px;vertical-align:middle;
+}
+@keyframes dnPendingPulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+@keyframes dnConfirmIn{
+  0%{background:rgba(255,235,135,.7);transform:scale(1.02);}
+  100%{background:linear-gradient(135deg,rgba(232,184,75,.22),rgba(201,151,42,.08));transform:scale(1);}
+}
+@keyframes dnDocIn{
+  0%{background:rgba(34,197,94,.45);transform:scale(1.02);}
+  100%{background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(34,197,94,.04));transform:scale(1);}
+}
+
+/* === 금융집짓기 애니메이션 === */
+@keyframes buildUp{
+  0%{opacity:0;transform:translateY(8px) scale(.95);}
+  50%{opacity:.7;}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+.bp-part{opacity:0;}
+.bp-part.built{opacity:1;animation:buildUp .7s ease forwards;}
+@keyframes hlP{0%,100%{opacity:.15;}50%{opacity:.4;}}
+.hl{opacity:0;pointer-events:none;}
+.hl.on{opacity:1;animation:hlP 1.8s ease infinite;}
+.bp-status-msg{
+  text-align:center;font-size:11px;font-weight:900;color:#8B6914;
+  padding:8px 12px;background:linear-gradient(135deg,#FFF8E1,#FEF3C7);
+  border-radius:8px;margin-top:8px;border:1.5px solid #C9972A;
+  animation:dnStatusFade .5s ease;
+}
+@keyframes dnStatusFade{
+  from{opacity:0;transform:translateY(-4px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* === 디바이더 === */
+.dndiv{display:flex;align-items:center;gap:6px;padding:5px 0 8px;color:#8896B0;font-size:9px;font-weight:700;}
+.dndiv::before,.dndiv::after{content:'';flex:1;height:1px;background:rgba(201,151,42,.25);}
+
+/* === 수입지출 표 === */
+.dntable{width:100%;border-collapse:collapse;font-size:11px;}
+.dntable th{background:#0B1D3A;color:#fff;padding:7px 5px;text-align:center;font-weight:700;font-size:10px;}
+.dntable td{padding:7px 5px;border-bottom:1px solid rgba(201,151,42,.18);text-align:right;font-family:'Gowun Dodum',var(--fn);}
 .dntable td:first-child{text-align:left;font-weight:600;color:#8896B0;}
-.dntable tr.tot td{font-weight:900;color:#0B1D3A;background:#f0f4ff;}
-.ok{color:#2E7D32;font-weight:900;font-size:9px;}
-.ng{color:#C62828;font-weight:900;font-size:9px;}
-.st{color:#C9972A;font-weight:900;font-size:9px;}
-/* 자산박스 */
+.dntable tr.tot td{font-weight:900;color:#0B1D3A;background:rgba(232,184,75,.12);}
+.diag-pill{display:inline-block;font-size:9px;font-weight:900;padding:2px 8px;border-radius:99px;}
+.diag-good{background:#dcfce7;color:#15803d;}
+.diag-warn{background:#fef3c7;color:#a16207;}
+.diag-bad{background:#fee2e2;color:#b91c1c;}
+
+/* === 자산부채 === */
 .dnag{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.dnab{background:#f8faff;border-radius:8px;padding:8px 10px;border:1px solid #D8E0EC;}
+.dnab{
+  background:rgba(11,29,58,.04);
+  border-radius:8px;padding:8px 10px;
+  border:1px solid rgba(201,151,42,.2);
+}
 .dnab-l{font-size:9px;color:#8896B0;margin-bottom:2px;}
-.dnab-v{font-size:13px;font-weight:900;color:#0B1D3A;}
-.dnab-u{font-size:8.5px;color:#8896B0;}
+.dnab-v{font-size:14px;font-weight:900;color:#0B1D3A;font-family:'Gowun Dodum',var(--fn);}
+.dnab-u{font-size:8px;color:#8896B0;margin-left:2px;}
 .dnab.red .dnab-v{color:#C62828;}
 .dnab.gold .dnab-v{color:#C9972A;}
 .dnab.green .dnab-v{color:#2E7D32;}
-/* 부자지수 */
-.wi-bg{background:#D8E0EC;border-radius:99px;height:8px;overflow:hidden;margin:4px 0;}
-.wi-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#C9972A,#E8B84B);}
-/* SVG 집 */
-.dn-house{background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border-radius:10px;padding:10px;margin-bottom:9px;}
-.dn-house-title{font-size:11px;font-weight:900;color:#0B1D3A;margin-bottom:4px;text-align:center;}
+.wi-bg{background:rgba(201,151,42,.2);border-radius:99px;height:8px;overflow:hidden;margin:4px 0;}
+.wi-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#C9972A,#E8B84B);transition:width .8s;}
+
+/* === 금융집짓기 === */
+.dn-house{background:linear-gradient(135deg,#FFF9D6,#FFEEB3);border-radius:11px;padding:12px;margin-bottom:10px;border:1px solid rgba(201,151,42,.3);}
+.dn-house-title{font-size:12px;font-weight:900;color:#0B1D3A;margin-bottom:4px;text-align:center;font-family:'Gowun Dodum',var(--fn);}
 .dn-fhsvg{width:100%;height:auto;display:block;}
-/* DESIRE */
-.desire-list{display:flex;flex-direction:column;gap:4px;}
-.dstep{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid #D8E0EC;background:#f8faff;}
+
+/* === 점수 카드 === */
+.dn-score{background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:12px;padding:18px;text-align:center;margin-bottom:10px;}
+.dn-score-num{font-size:50px;font-weight:900;color:#E8B84B;line-height:1;font-family:'Gowun Dodum',var(--fn);}
+.dn-score-lbl{color:rgba(255,255,255,.45);font-size:10px;margin-top:4px;}
+.dn-score-grade{display:inline-block;margin-top:8px;background:#C9972A;color:#0B1D3A;font-size:10px;font-weight:900;padding:3px 12px;border-radius:20px;}
+
+/* === DESIRE === */
+.desire-list{display:flex;flex-direction:column;gap:5px;}
+.dstep{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;border:1.5px solid rgba(201,151,42,.25);background:rgba(11,29,58,.03);position:relative;}
 .dstep.cur{background:linear-gradient(135deg,#fff8e1,#fff3cd);border-color:#C9972A;}
-.dstep.done{background:#f0f9f0;border-color:#2E7D32;opacity:.75;}
-.dbadge{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:900;background:#D8E0EC;color:#8896B0;}
+.dstep.done{background:#f0f9f0;border-color:#2E7D32;opacity:.8;}
+.dstep.now{
+  background:linear-gradient(135deg,#FEF2F2,#FEE2E2);
+  border:3px solid #DC2626;
+  box-shadow:0 0 0 4px rgba(220,38,38,.15),0 6px 20px rgba(220,38,38,.25);
+  animation:dnNowPulse 2s infinite;
+}
+.dstep.now::before{
+  content:'현재';
+  position:absolute;top:-10px;right:14px;
+  background:#DC2626;color:#fff;font-size:9px;font-weight:900;
+  padding:3px 9px;border-radius:12px;
+  box-shadow:0 2px 6px rgba(220,38,38,.4);
+}
+@keyframes dnNowPulse{
+  0%,100%{box-shadow:0 0 0 4px rgba(220,38,38,.15),0 6px 20px rgba(220,38,38,.25);}
+  50%{box-shadow:0 0 0 8px rgba(220,38,38,.08),0 6px 20px rgba(220,38,38,.35);}
+}
+.dstep.now .dbadge{background:#DC2626;color:#fff;border:2px solid #fff;}
+.dstep.now .dtitle{color:#DC2626;}
+.dbadge{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:#D8E0EC;color:#8896B0;}
 .dstep.cur .dbadge{background:#C9972A;color:#fff;}
 .dstep.done .dbadge{background:#2E7D32;color:#fff;}
 .dtitle{font-size:11px;font-weight:700;color:#1a2340;}
 .ddesc{font-size:9px;color:#8896B0;margin-top:1px;}
-.dstep.cur .dtitle{color:#C9972A;}
-/* 점수 */
-.dn-score{background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:16px;text-align:center;margin-bottom:9px;}
-.dn-score-num{font-size:46px;font-weight:900;color:#E8B84B;line-height:1;}
-.dn-score-lbl{color:rgba(255,255,255,.4);font-size:10px;margin-top:2px;}
-.dn-score-grade{display:inline-block;margin-top:6px;background:#C9972A;color:#0B1D3A;font-size:10.5px;font-weight:900;padding:3px 12px;border-radius:20px;}
-/* 액션 */
-.dn-actions{display:flex;flex-direction:column;gap:6px;}
-.dn-action{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f8faff;border-radius:8px;border-left:3px solid #C9972A;}
+
+/* === 액션 === */
+.dn-actions{display:flex;flex-direction:column;gap:5px;}
+.dn-action{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;background:rgba(11,29,58,.04);border-radius:7px;border-left:3px solid #C9972A;}
 .dn-action.green{border-left-color:#2E7D32;}
 .dn-action.red{border-left-color:#C62828;}
-.dn-anum{width:19px;height:19px;border-radius:50%;flex-shrink:0;background:#0B1D3A;color:#E8B84B;font-size:9.5px;font-weight:900;display:flex;align-items:center;justify-content:center;}
-.dn-anum.green{background:#2E7D32;}
-.dn-anum.red{background:#C62828;}
-.dn-atext{font-size:11px;font-weight:500;line-height:1.5;}
-/* 히스토리 BA */
-.ba-tbl{width:100%;border-collapse:collapse;font-size:9.5px;}
-.ba-tbl th{background:#0B1D3A;color:#fff;padding:5px 4px;text-align:center;font-size:9px;font-weight:700;}
-.ba-tbl th:first-child{text-align:left;padding-left:8px;}
-.ba-tbl td{padding:5px 4px;text-align:center;border-bottom:1px solid #D8E0EC;}
-.ba-tbl td:first-child{text-align:left;font-weight:700;padding-left:8px;color:#0B1D3A;}
-.v-up{color:#2E7D32;font-weight:900;}
-.v-dn{color:#C62828;font-weight:900;}
-/* 대화록 */
-.dn-chat{display:flex;flex-direction:column;gap:6px;}
-.dn-bubble{max-width:87%;padding:8px 11px;border-radius:12px;font-size:11px;line-height:1.6;}
-.dn-bubble.m{background:#0B1D3A;color:#fff;align-self:flex-start;border-bottom-left-radius:3px;}
-.dn-bubble.c{background:#e8f0fe;color:#0B1D3A;align-self:flex-end;border-bottom-right-radius:3px;}
-.dn-who{font-size:8.5px;color:#8896B0;margin-bottom:2px;}
-.dn-who.m{color:#C9972A;}
-.dn-sync{align-self:center;background:#f0f9f0;border:1px solid #2E7D32;color:#2E7D32;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;}
-/* 정보박스 */
-.dn-info{padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.6;margin-top:7px;}
-.dn-info.gold{background:#fff8e6;color:#7a5c00;}
-.dn-info.green{background:#f0f9f0;color:#1a5c24;}
-.dn-info.red{background:#fff5f5;color:#8b0000;}
-/* 계산표 */
-.dn-calc{background:#f8faff;border-radius:8px;padding:10px;}
-.dn-calc-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #D8E0EC;font-size:11px;}
-.dn-calc-row:last-child{border-bottom:none;font-weight:900;}
-.dn-calc-lbl{color:#8896B0;}
-.dn-calc-val{font-weight:700;}
-/* 보험 그리드 */
-.ins-g{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
-.ins-c{background:#f8faff;border-radius:6px;padding:6px 2px;text-align:center;border:1px solid #D8E0EC;}
+.dn-anum{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:#0B1D3A;color:#E8B84B;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.dn-anum.green{background:#2E7D32;color:#fff;}
+.dn-anum.red{background:#C62828;color:#fff;}
+.dn-atext{font-size:11px;font-weight:500;line-height:1.5;color:#1a2340;}
+
+/* === 보험 그리드 === */
+.ins-g{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.ins-c{background:rgba(11,29,58,.04);border-radius:6px;padding:6px 3px;text-align:center;border:1px solid rgba(201,151,42,.25);}
 .ins-c.ok{background:#f0f9f0;border-color:#2E7D32;}
 .ins-c.ng{background:#fff5f5;border-color:#C62828;}
 .ins-n{font-size:8px;color:#8896B0;}
-.ins-s{font-size:9px;font-weight:900;margin-top:2px;}
+.ins-s{font-size:10px;font-weight:900;margin-top:1px;}
 .ins-c.ok .ins-s{color:#2E7D32;}
 .ins-c.ng .ins-s{color:#C62828;}
+
+/* === 계산표 === */
+.dn-calc{background:rgba(11,29,58,.04);border-radius:7px;padding:9px 11px;}
+.dn-calc-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(201,151,42,.25);font-size:11px;font-family:'Gowun Dodum',var(--fn);}
+.dn-calc-row:last-child{border-bottom:none;font-weight:900;}
+.dn-calc-lbl{color:#8896B0;}
+.dn-calc-val{font-weight:700;color:#0B1D3A;}
+
+/* === 정보박스 === */
+.dn-info{padding:8px 10px;border-radius:7px;font-size:10px;line-height:1.55;margin-top:8px;}
+.dn-info.gold{background:rgba(232,184,75,.18);color:#7a5c00;border-left:3px solid #C9972A;}
+.dn-info.green{background:#f0f9f0;color:#1a5c24;border-left:3px solid #2E7D32;}
+.dn-info.red{background:#fff5f5;color:#8b0000;border-left:3px solid #C62828;}
+
+/* === 대화록 === */
+.dn-chat{display:flex;flex-direction:column;gap:6px;}
+.dn-bubble{max-width:85%;padding:8px 11px;border-radius:11px;font-size:11px;line-height:1.55;font-family:'Gowun Dodum',var(--fn);}
+.dn-bubble.m{background:#0B1D3A;color:#fff;align-self:flex-start;border-bottom-left-radius:3px;}
+.dn-bubble.c{background:#fff8e1;color:#0B1D3A;align-self:flex-end;border-bottom-right-radius:3px;border:1px solid rgba(201,151,42,.3);}
+.dn-who{font-size:8px;color:#8896B0;margin-bottom:2px;}
+.dn-who.m{color:#C9972A;}
+
 </style>
 
 <div id="dnWrap">
-  <!-- 탭 헤더 -->
   <div id="dnTabs">
     <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
-    <button class="dnt done" onclick="dnGo(1)">👤 인적</button>
-    <button class="dnt done" onclick="dnGo(2)">💭 고민</button>
-    <button class="dnt done" onclick="dnGo(3)">💰 수지</button>
-    <button class="dnt done" onclick="dnGo(4)">🏦 자산</button>
-    <button class="dnt done" onclick="dnGo(5)">🏠 집짓기</button>
-    <button class="dnt done" onclick="dnGo(6)">📈 포트폴리오</button>
-    <button class="dnt done" onclick="dnGo(7)">🎯 종합설계</button>
+    <button class="dnt" onclick="dnGo(1)">👤 인적</button>
+    <button class="dnt" onclick="dnGo(2)">💭 고민</button>
+    <button class="dnt" onclick="dnGo(3)">💰 수지</button>
+    <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
+    <button class="dnt" onclick="dnGo(5)">🏠 집짓기</button>
+    <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
+    <button class="dnt" onclick="dnGo(7)">🎯 종합재무설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
-    <button class="dnt" onclick="dnGo(9)">💬 대화록</button>
-    <button class="dnt" onclick="dnGo(10)">📄 리포트</button>
+    <button class="dnt" onclick="dnGo(9)">🩺 재무건강</button>
+    <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
+    <button class="dnt" onclick="dnGo(11)">📄 리포트</button>
+    <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
   </div>
+
   <div id="dnPanels">
 
-  <!-- 패널0: 표지 -->
-  <div class="dnp active" id="dnp0">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📋</div><div><div class="dnctitle">오프닝 / 표지</div><div class="dncsub">진단 기본 정보</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">진단 날짜</span><span class="dnfv hi" id="f0_date"></span></div>
-        <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv hi" id="f0_session"></span></div>
-        <div class="dnfield"><span class="dnfl">진단사</span><span class="dnfv">AI머니야 (오상열 CFP 대신)</span></div>
-        <div class="dnfield"><span class="dnfl">신청서</span><span class="dnfv" id="f0_app"></span></div>
-        <div class="dnfield"><span class="dnfl">특이사항</span><span class="dnfv" id="f0_note">—</span></div>
+    <!-- ━━━━━━ 패널0: 표지 (시작 전 INPUT) ━━━━━━ -->
+    <div class="dnp active" id="dnp0">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📋</div><div><div class="dnctitle">오프닝 / 표지</div><div class="dncsub">시작 전 자동 입력 (메타 정보)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">진단 일자</span><span class="dnfv preset" id="f0_date">2026.04.08</span></div>
+          <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv preset" id="f0_session">1회차 (초회 종합진단)</span></div>
+          <div class="dnfield"><span class="dnfl">상담 주체</span><span class="dnfv preset">오원트금융연구소</span></div>
+          <div class="dnfield"><span class="dnfl">상담 내용</span><span class="dnfv preset">금융집짓기® 재무설계</span></div>
+          <div class="dnfield"><span class="dnfl">담당</span><span class="dnfv preset">AI머니야</span></div>
+          <div class="dnfield"><span class="dnfl">책임</span><span class="dnfv preset">오상열 CFP 대표</span></div>
+          <div class="dnfield"><span class="dnfl">예상 시간</span><span class="dnfv preset">40분 (골드 플랜)</span></div>
 
-        <!-- ★ 오상열 CFP 프로필 카드 -->
-        <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:14px;padding:16px;border:1.5px solid rgba(201,151,42,.3);">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-            <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #C9972A;flex-shrink:0;">
-            <div>
-              <div style="font-size:14px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
-              <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">오원트금융연구소 · 금융집짓기® 창시자</div>
+          <!-- ★ 피드백 1번: 고객 동의 토글 -->
+          <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #C9972A;border-radius:10px;padding:14px 16px;margin-top:14px;">
+            <div style="font-size:13px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎙️ 대화록 기록에 동의하시나요?</div>
+            <div style="display:flex;gap:10px;">
+              <button id="cnsYes" onclick="setConsent('yes')" style="flex:1;padding:10px 14px;border-radius:8px;border:2px solid #D8E0EC;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:900;cursor:pointer;color:#15803D;">✓ 네, 동의합니다</button>
+              <button id="cnsNo" onclick="setConsent('no')" style="flex:1;padding:10px 14px;border-radius:8px;border:2px solid #D8E0EC;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:900;cursor:pointer;color:#B91C1C;">✗ 동의하지 않습니다</button>
+            </div>
+            <div style="font-size:10px;color:#4A5568;margin-top:8px;font-weight:700;line-height:1.5;">
+              대화록은 상담 품질 향상 및 재무 분석에만 사용되며, AI 학습에는 사용되지 않습니다.
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;color:rgba(255,255,255,.7);line-height:1.7;">
-            <div>🏆 국제공인 재무설계사(CFP)</div>
-            <div>📺 SBS biz 100분 머니쇼</div>
-            <div>🎓 한국금융연수원 외래교수</div>
-            <div>🏛️ 금융감독원 머니콘서트</div>
-            <div>📚 저서 「소원을 말해봐」</div>
-            <div>📚 저서 「빚부터 갚아라」</div>
-            <div>🎬 유튜브 구독자 4.5만</div>
-            <div>📋 상담 경력 20년 · 2,000건+</div>
-          </div>
-          <div style="margin-top:10px;text-align:center;font-size:8px;color:rgba(201,151,42,.6);">본 AI 재무검진은 오상열 CFP의 금융집짓기® 방법론을 기반으로 합니다</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 패널1: 인적사항 -->
-  <div class="dnp" id="dnp1">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">👤</div><div><div class="dnctitle">인적사항</div><div class="dncsub">기본 정보</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">성함</span><span class="dnfv hi" id="f1_name"></span></div>
-        <div class="dnfield"><span class="dnfl">나이</span><span class="dnfv" id="f1_age"></span></div>
-        <div class="dnfield"><span class="dnfl">결혼여부</span><span class="dnfv" id="f1_marry"></span></div>
-        <div class="dnfield"><span class="dnfl">자녀</span><span class="dnfv" id="f1_child"></span></div>
-        <div class="dnfield"><span class="dnfl">가족수</span><span class="dnfv" id="f1_family"></span></div>
-        <div class="dnfield"><span class="dnfl">직업</span><span class="dnfv" id="f1_job"></span></div>
-        <div class="dnfield"><span class="dnfl">맞벌이</span><span class="dnfv" id="f1_dual"></span></div>
-        <div class="dnfield"><span class="dnfl">은퇴예정</span><span class="dnfv" id="f1_retire"></span></div>
-        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f1_life"></span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 패널2: 경제적 고민 -->
-  <div class="dnp" id="dnp2">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">💭</div><div><div class="dnctitle">경제적 고민</div><div class="dncsub">오늘 진단의 대의명분</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">고민 1</span><span class="dnfv warn" id="f2_w1"></span></div>
-        <div class="dnfield"><span class="dnfl">고민 2</span><span class="dnfv warn" id="f2_w2"></span></div>
-        <div class="dnfield"><span class="dnfl">고민 3</span><span class="dnfv" id="f2_w3">—</span></div>
-        <div class="dnfield"><span class="dnfl">목표</span><span class="dnfv hi" id="f2_goal"></span></div>
-        <div class="dnfield"><span class="dnfl">머니야 공감</span><span class="dnfv" id="f2_ans" style="font-size:10.5px;color:#555"></span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 패널3: 수입지출 -->
-  <div class="dnp" id="dnp3">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">💰</div><div><div class="dnctitle">수입지출 분석표</div><div class="dncsub" id="f3_family_hint">가족수 확인 후 기준 적용</div></div></div>
-      <div class="dncbody">
-        <table class="dntable">
-          <thead><tr><th>항목</th><th>현재</th><th>기준%</th><th>예산</th><th>진단</th></tr></thead>
-          <tbody>
-            <tr><td>수입</td><td><strong id="f3_income">—</strong></td><td>—</td><td>—</td><td>—</td></tr>
-            <tr><td>생활비</td><td id="f3_living_cur">—</td><td id="f3_living_pct">—</td><td id="f3_living_exp">—</td><td id="f3_living_diag">—</td></tr>
-            <tr><td>저축투자</td><td id="f3_save_cur">—</td><td id="f3_save_pct">—</td><td id="f3_save_exp">—</td><td id="f3_save_diag">—</td></tr>
-            <tr><td>노후연금</td><td id="f3_pension_cur">—</td><td>10%</td><td id="f3_pension_exp">—</td><td id="f3_pension_diag">—</td></tr>
-            <tr><td>보장성보험</td><td id="f3_ins_cur">—</td><td>10%</td><td id="f3_ins_exp">—</td><td id="f3_ins_diag">—</td></tr>
-            <tr><td>대출원리금</td><td id="f3_loan_cur">—</td><td>10%</td><td id="f3_loan_exp">—</td><td id="f3_loan_diag">—</td></tr>
-            <tr><td>잉여자금</td><td id="f3_surplus">—</td><td>—</td><td>—</td><td>—</td></tr>
-            <tr class="tot"><td>합계</td><td id="f3_total">—</td><td>100%</td><td>—</td><td>—</td></tr>
-          </tbody>
-        </table>
-        <div class="dn-info gold" id="f3_diag_comment">수입지출 정보 수집 후 진단이 표시됩니다.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 패널4: 자산부채 -->
-  <div class="dnp" id="dnp4">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">자산부채 분석표</div><div class="dncsub">부자지수 · 부채비율 · 비상예비자금</div></div></div>
-      <div class="dncbody">
-        <div class="dndiv">자산</div>
-        <div class="dnag">
-          <div class="dnab"><div class="dnab-l">예적금</div><div class="dnab-v" id="f4_deposit">—<span class="dnab-u"></span></div></div>
-          <div class="dnab"><div class="dnab-l">펀드·ETF</div><div class="dnab-v" id="f4_invest">—</div></div>
-          <div class="dnab"><div class="dnab-l">연금적립</div><div class="dnab-v" id="f4_pension">—</div></div>
-          <div class="dnab"><div class="dnab-l">부동산</div><div class="dnab-v" id="f4_realty">—</div></div>
-        </div>
-        <div class="dnag" style="margin-top:5px">
-          <div class="dnab gold"><div class="dnab-l">총자산</div><div class="dnab-v" id="f4_total_asset">—</div></div>
-        </div>
-        <div class="dndiv" style="margin-top:10px">부채</div>
-        <div class="dnag">
-          <div class="dnab red"><div class="dnab-l">신용대출</div><div class="dnab-v" id="f4_credit">—</div></div>
-          <div class="dnab"><div class="dnab-l">담보대출</div><div class="dnab-v" id="f4_mortgage">—</div></div>
-        </div>
-        <div class="dnag" style="margin-top:5px">
-          <div class="dnab red"><div class="dnab-l">총부채</div><div class="dnab-v" id="f4_total_debt">—</div></div>
-          <div class="dnab green"><div class="dnab-l">순자산</div><div class="dnab-v" id="f4_net">—</div></div>
-        </div>
-        <div class="dndiv" style="margin-top:10px">진단 지표</div>
-        <div style="font-size:9px;color:#8896B0;display:flex;justify-content:space-between;margin-bottom:2px"><span>0</span><span>평균(1.0)</span><span>우량(2.0)</span></div>
-        <div class="wi-bg"><div class="wi-fill" id="f4_wi_bar" style="width:0%"></div></div>
-        <div style="text-align:center;font-size:19px;font-weight:900;color:#C9972A;margin-top:4px" id="f4_wi_val">—</div>
-        <div style="text-align:center;font-size:9.5px;color:#8896B0" id="f4_wi_diag">부자지수 계산 대기</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px">
-          <div style="background:#f0f9f0;border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:9px;color:#8896B0">부채비율</div>
-            <div style="font-size:16px;font-weight:900;color:#2E7D32" id="f4_dr_val">—</div>
-            <div style="font-size:9px;color:#2E7D32" id="f4_dr_diag">—</div>
-          </div>
-          <div style="background:#fff8e6;border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:9px;color:#8896B0">비상예비자금</div>
-            <div style="font-size:12px;font-weight:900;color:#C9972A" id="f4_emerg_need">—</div>
-            <div style="font-size:9px;color:#C9972A" id="f4_emerg_diag">—</div>
+          <!-- 오상열 CFP 프로필 카드 -->
+          <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:14px;border:1px solid rgba(201,151,42,.3);">
+            <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #E8B84B;flex-shrink:0;">👨‍💼</div>
+              <div>
+                <div style="font-size:13px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
+                <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:1px;">오원트금융연구소 · 금융집짓기® 창시자 · 25년 훈련</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:9px;color:rgba(255,255,255,.7);line-height:1.7;">
+              <div>🏆 국제공인 재무설계사(CFP)</div><div>📺 SBS biz 100분 머니쇼</div>
+              <div>🎓 한국금융연수원 외래교수</div><div>🏛️ 금융감독원 머니콘서트</div>
+              <div>📚 저서 「소원을 말해봐」</div><div>📚 저서 「빚부터 갚아라」</div>
+              <div>🎬 유튜브 구독자 4.7만</div><div>📋 상담 경력 20년 · 2,000건+</div>
+            </div>
+            <div style="margin-top:9px;text-align:center;font-size:8px;color:rgba(201,151,42,.7);">본 AI 재무진단은 오상열 CFP의 금융집짓기® 방법론 기반</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 패널5: 금융집짓기 SVG -->
-  <div class="dnp" id="dnp5">
-    <div class="dn-house">
-      <div class="dn-house-title">금융집짓기® 재무설계도</div>
-      <div style="font-size:9.5px;color:#8896B0;text-align:center;margin-bottom:7px" id="fh_subtitle">진단 진행 중...</div>
-      <svg class="dn-fhsvg" viewBox="0 0 440 300" xmlns="http://www.w3.org/2000/svg">
-        <line x1="14" y1="192" x2="426" y2="192" stroke="#6d4c41" stroke-width="3" stroke-linecap="round"/>
-        <text x="220" y="205" text-anchor="middle" font-size="8" fill="#8d6e63" font-family="'Noto Sans KR',sans-serif">인생이라는 평평한 땅</text>
-        <rect x="44" y="192" width="352" height="86" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5" rx="2"/>
-        <text x="220" y="208" text-anchor="middle" font-size="9" fill="#F57F17" font-weight="700" font-family="'Noto Sans KR',sans-serif">7. 기초 (보험)</text>
-        <line x1="88"  y1="212" x2="88"  y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="132" y1="212" x2="132" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="176" y1="212" x2="176" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="220" y1="212" x2="220" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="264" y1="212" x2="264" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="308" y1="212" x2="308" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="352" y1="212" x2="352" y2="272" stroke="#F9A825" stroke-width=".8"/>
-        <line x1="44"  y1="226" x2="396" y2="226" stroke="#F9A825" stroke-width=".8"/>
-        <text x="66"  y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">사망</text>
-        <text x="110" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">장해</text>
-        <text x="154" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">암</text>
-        <text x="198" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">뇌</text>
-        <text x="242" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">심장</text>
-        <text x="286" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">실비</text>
-        <text x="330" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">입원</text>
-        <text x="374" y="222" text-anchor="middle" font-size="8" fill="#795548" font-family="'Noto Sans KR',sans-serif">치매</text>
-        <text id="ins_death"  x="66"  y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_injury" x="110" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_cancer" x="154" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_brain"  x="198" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_heart"  x="242" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_actual" x="286" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_hosp"   x="330" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <text id="ins_dem"    x="374" y="252" text-anchor="middle" font-size="10" fill="#C62828" font-family="'Noto Sans KR',sans-serif">!</text>
-        <rect x="44" y="112" width="352" height="80" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.5" rx="2"/>
-        <line x1="300" y1="112" x2="300" y2="192" stroke="#1565C0" stroke-width=".8"/>
-        <text x="78" y="126" text-anchor="middle" font-size="8" fill="#C62828" font-weight="700" font-family="'Noto Sans KR',sans-serif">2.거실</text>
-        <text x="78" y="137" text-anchor="middle" font-size="8" fill="#C62828" font-family="'Noto Sans KR',sans-serif">부채설계</text>
-        <line x1="78" y1="143" x2="78" y2="182" stroke="#C62828" stroke-width="1.5" marker-end="url(#aRed2)"/>
-        <text id="debt_val" x="96" y="172" text-anchor="middle" font-size="7" fill="#C62828" font-family="'Noto Sans KR',sans-serif">—</text>
-        <text x="175" y="148" text-anchor="middle" font-size="8" fill="#1B5E20" font-weight="700" font-family="'Noto Sans KR',sans-serif">3.건넌방</text>
-        <text x="175" y="159" text-anchor="middle" font-size="8" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">저축설계</text>
-        <line x1="175" y1="185" x2="175" y2="164" stroke="#388E3C" stroke-width="1.5" marker-end="url(#aGreen2)"/>
-        <text id="savings_val" x="175" y="180" text-anchor="middle" font-size="7" fill="#1B5E20" font-family="'Noto Sans KR',sans-serif">—</text>
-        <text x="358" y="130" text-anchor="middle" font-size="8" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">1.안방</text>
-        <text x="358" y="141" text-anchor="middle" font-size="8" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">은퇴설계</text>
-        <text id="retire_rate" x="358" y="165" text-anchor="middle" font-size="13" fill="#1A237E" font-weight="700" font-family="'Noto Sans KR',sans-serif">—%</text>
-        <text x="358" y="178" text-anchor="middle" font-size="7" fill="#1A237E" font-family="'Noto Sans KR',sans-serif">준비율</text>
-        <rect x="20" y="76" width="400" height="36" fill="#B0BEC5" stroke="#546E7A" stroke-width="1.2" rx="2"/>
-        <line x1="153" y1="76" x2="153" y2="112" stroke="#546E7A" stroke-width=".8"/>
-        <line x1="287" y1="76" x2="287" y2="112" stroke="#546E7A" stroke-width=".8"/>
-        <text x="38"  y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">현재</text>
-        <text id="age_now" x="38" y="108" text-anchor="middle" font-size="10" fill="#1565C0" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
-        <text x="208" y="89" text-anchor="end" font-size="7" fill="#B71C1C" font-family="'Noto Sans KR',sans-serif">은퇴</text>
-        <text id="age_retire" x="226" y="108" text-anchor="start" font-size="10" fill="#E53935" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
-        <circle cx="220" cy="92" r="2" fill="#E53935" opacity=".6"/>
-        <text x="402" y="89" text-anchor="middle" font-size="7" fill="#37474F" font-family="'Noto Sans KR',sans-serif">사망예정</text>
-        <text id="age_life" x="402" y="108" text-anchor="middle" font-size="10" fill="#555" font-weight="700" font-family="'Noto Sans KR',sans-serif">—세</text>
-        <polygon points="220,18 20,76 420,76" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
-        <text x="135" y="48" text-anchor="middle" font-size="9" fill="#0D47A1" font-weight="700" font-family="'Noto Sans KR',sans-serif">4.투자설계</text>
-        <text x="135" y="60" text-anchor="middle" font-size="7" fill="#0D47A1" font-family="'Noto Sans KR',sans-serif">안전70%·위험30%</text>
-        <text x="300" y="48" text-anchor="middle" font-size="9" fill="#4A148C" font-weight="700" font-family="'Noto Sans KR',sans-serif">5.세금설계</text>
-        <text x="300" y="60" text-anchor="middle" font-size="7" fill="#4A148C" font-family="'Noto Sans KR',sans-serif">ISA·IRP·연금</text>
-        <line x1="220" y1="18" x2="220" y2="278" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,3"/>
-        <line x1="44" y1="190" x2="220" y2="114" stroke="#43A047" stroke-width="1.3" stroke-dasharray="4,3"/>
-        <text x="122" y="163" text-anchor="middle" font-size="7" fill="#2E7D32" transform="rotate(-28,122,163)" font-family="'Noto Sans KR',sans-serif">내진설계</text>
-        <rect x="308" y="8" width="30" height="30" fill="#CFD8DC" stroke="#546E7A" stroke-width="1" rx="2"/>
-        <text x="323" y="20" text-anchor="middle" font-size="7.5" fill="#37474F" font-weight="700" font-family="'Noto Sans KR',sans-serif">6.굴뚝</text>
-        <text x="323" y="33" text-anchor="middle" font-size="7.5" fill="#37474F" font-family="'Noto Sans KR',sans-serif">부동산</text>
-        <rect id="desire-hl" x="0" y="0" width="0" height="0" fill="none" stroke="#E53935" stroke-width="2.5" stroke-dasharray="6,3" rx="3"/>
-        <defs>
-          <marker id="aRed2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-            <path d="M0 0 L10 5 L0 10z" fill="#C62828"/>
-          </marker>
-          <marker id="aGreen2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10z" fill="#388E3C"/>
-          </marker>
-        </defs>
-      </svg>
-    </div>
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📐</div><div><div class="dnctitle">설계도 요약</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">현재 단계</span><span class="dnfv gold" id="f5_desire"></span></div>
-        <div class="dnfield"><span class="dnfl">다음 단계</span><span class="dnfv" id="f5_next"></span></div>
-        <div class="dnfield"><span class="dnfl">실행 전략</span><span class="dnfv" id="f5_strategy"></span></div>
+    <!-- ━━━━━━ 패널1: 인적사항 (예상은퇴/예상수명 삭제됨) ━━━━━━ -->
+    <div class="dnp" id="dnp1">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">👤</div><div><div class="dnctitle">인적사항</div><div class="dncsub">시스템 프롬프트 1단계 (6개 항목 · 자녀나이 묻지않음)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">① 성함</span><span class="dnfv empty" id="f1_name">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">② 나이</span><span class="dnfv empty" id="f1_age">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">③ 결혼 여부</span><span class="dnfv empty" id="f1_marry">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">④ 가족 수</span><span class="dnfv empty" id="f1_family">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">⑤ 직업</span><span class="dnfv empty" id="f1_job">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">⑥ 맞벌이</span><span class="dnfv empty" id="f1_dual">— 입력 대기</span></div>
+        </div>
       </div>
+      <div class="dn-info gold">💡 신청서가 업로드되어 있으면 자동 채워집니다. 없을 경우에만 머니야가 6개를 순서대로 질문합니다.</div>
     </div>
-  </div>
 
-  <!-- 패널6: 포트폴리오 -->
-  <div class="dnp" id="dnp6">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📈</div><div><div class="dnctitle">저축투자 포트폴리오</div><div class="dncsub">100-나이 법칙</div></div></div>
-      <div class="dncbody">
-        <div class="dndiv">투자재원 계산</div>
-        <div class="dn-calc">
-          <div class="dn-calc-row"><span class="dn-calc-lbl">저축투자 예산</span><span class="dn-calc-val" id="f6_budget">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">현재 저축투자</span><span class="dn-calc-val" id="f6_cur_save">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">투자재원</span><span class="dn-calc-val" id="f6_source">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 노후연금 부족</span><span class="dn-calc-val" id="f6_pen_gap" style="color:#C62828">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 보험 부족 ×½</span><span class="dn-calc-val" id="f6_ins_gap" style="color:#C62828">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl" style="font-weight:900">순투자재원</span><span class="dn-calc-val" id="f6_net" style="color:#2E7D32;font-size:13px">—</span></div>
-        </div>
-        <div class="dndiv" style="margin-top:10px">배분</div>
-        <div class="dnag">
-          <div class="dnab"><div class="dnab-l" id="f6_save_label">저축 (%)</div><div class="dnab-v" id="f6_save_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">적금·CMA·청약</div></div>
-          <div class="dnab gold"><div class="dnab-l" id="f6_inv_label">투자 (%)</div><div class="dnab-v" id="f6_inv_amt">—</div><div style="font-size:8.5px;color:#8896B0;margin-top:2px">ISA·IRP·연금저축</div></div>
+    <!-- ━━━━━━ 패널2: 경제적 고민 (걱정 1, 2만) ━━━━━━ -->
+    <div class="dnp" id="dnp2">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">💭</div><div><div class="dnctitle">경제적 고민</div><div class="dncsub">시스템 프롬프트 2단계 · 대의명분</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">주요 걱정 1</span><span class="dnfv warn" id="f2_w1"><span class="empty" style="font-style:italic;color:#bbb;font-weight:400;">— 입력 대기</span></span></div>
+          <div class="dnfield"><span class="dnfl">주요 걱정 2</span><span class="dnfv warn" id="f2_w2"><span class="empty" style="font-style:italic;color:#bbb;font-weight:400;">— 입력 대기</span></span></div>
+          <div class="dnfield"><span class="dnfl">머니야 1차 해결방향</span><span class="dnfv" id="f2_solution" style="font-size:11px;color:#555;font-style:italic;">— 머니야 응답 대기</span></div>
         </div>
       </div>
+      <div class="dn-info gold">💡 9가지 고민 유형(노후/저축/대출/내집/교육비/투자/보험/막연불안) 중 매칭되는 1차 해결 방향이 자동 표시됩니다.</div>
     </div>
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🎯</div><div><div class="dnctitle">자산배분 포트폴리오</div><div class="dncsub">오상열 CFP 기준 · 참고용</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">부동산 비중</span><span class="dnfv" id="f7_res"></span></div>
-        <div class="dnfield"><span class="dnfl">금융 비중</span><span class="dnfv" id="f7_inv"></span></div>
-        <div class="dnfield"><span class="dnfl">금융자산 합계</span><span class="dnfv hi" id="f7_fin_total"></span></div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 패널7: 종합설계 7대영역 -->
-  <div class="dnp" id="dnp7">
-    <!-- 8-1 은퇴 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🏖️</div><div><div class="dnctitle">8-1 은퇴설계</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream"></span></div>
-        <div class="dnfield"><span class="dnfl">은퇴나이</span><span class="dnfv" id="f81_age">—</span></div>
-        <div class="dnfield"><span class="dnfl">예상수명</span><span class="dnfv" id="f81_life">—</span></div>
-        <div class="dndiv">계산</div>
-        <div class="dn-calc">
-          <div class="dn-calc-row"><span class="dn-calc-lbl">월 필요자금</span><span class="dn-calc-val" id="f81_need">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">월 준비자금</span><span class="dn-calc-val" id="f81_ready">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">월 부족자금</span><span class="dn-calc-val" id="f81_short" style="color:#C62828">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">순은퇴일시금</span><span class="dn-calc-val" id="f81_net" style="color:#C62828">—</span></div>
-          <div class="dn-calc-row"><span class="dn-calc-lbl">월 추가저축</span><span class="dn-calc-val" id="f81_monthly" style="color:#C62828">—</span></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f0f4ff;border-radius:7px">
-          <span style="font-size:10px;color:#8896B0">은퇴준비율</span>
-          <span style="font-size:16px;font-weight:900;color:#1a3260" id="f81_rate">—</span>
+    <!-- ━━━━━━ 패널3: 수입지출 분석 (★ 예산 강조 + 가이드박스) ━━━━━━ -->
+    <div class="dnp" id="dnp3">
+      <!-- ★ 피드백 4번: 가이드라인 강조 박스 -->
+      <div style="background:linear-gradient(135deg,#fff8e6,#fef3c7);border:2px solid #C9972A;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:900;color:#8B6914;margin-bottom:7px;">⭐ 가족수별 예산 가이드라인 (시스템 프롬프트 기준)</div>
+        <div style="font-size:11.5px;color:#000;font-weight:800;line-height:1.7;" id="guideText">
+          <strong style="color:#8B6914;">1인:</strong> 생활 20% · 저축 50% · 노후 10% · 보험 10% · 대출 10%<br>
+          <strong style="color:#8B6914;">2인:</strong> 생활 30% · 저축 40% · 노후 10% · 보험 10% · 대출 10%<br>
+          <strong style="color:#8B6914;">3인:</strong> 생활 40% · 저축 30% · 노후 10% · 보험 10% · 대출 10%<br>
+          <strong style="color:#8B6914;">4인:</strong> 생활 50% · 저축 20% · 노후 10% · 보험 10% · 대출 10%<br>
+          <strong style="color:#8B6914;">5인+:</strong> 생활 60% · 저축 10% · 노후 10% · 보험 10% · 대출 10%
         </div>
       </div>
-    </div>
-    <!-- 8-2 부채 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">💳</div><div><div class="dnctitle">8-2 부채설계</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">주요 부채</span><span class="dnfv" id="f82_priority"></span></div>
-        <div class="dnfield"><span class="dnfl">담보대출</span><span class="dnfv" id="f82_mortgage">—</span></div>
-        <div class="dnfield"><span class="dnfl">상환 전략</span><span class="dnfv">신용: 즉시상환(소→대) · 담보: 은퇴전 완납</span></div>
-      </div>
-    </div>
-    <!-- 8-3 저축 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">8-3 저축설계</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal"></span></div>
-        <div class="dnfield"><span class="dnfl">월 가능액</span><span class="dnfv hi" id="f83_possible">—</span></div>
-        <div class="dnfield"><span class="dnfl">현재 저축</span><span class="dnfv" id="f83_current">—</span></div>
-        <div class="dnfield"><span class="dnfl">추가 필요</span><span class="dnfv warn" id="f83_gap">—</span></div>
-      </div>
-    </div>
-    <!-- 8-4 투자 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">8-4 투자설계</div><div class="dncsub">가중평균수익률</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">현재 부자지수</span><span class="dnfv hi" id="f84_wi">—</span></div>
-        <div class="dnfield"><span class="dnfl">금융자산 목표</span><span class="dnfv">10억원</span></div>
-        <div class="dnfield"><span class="dnfl">현재 금융자산</span><span class="dnfv" id="f84_current">—</span></div>
-        <div class="dnfield"><span class="dnfl">달성 필요액</span><span class="dnfv warn" id="f84_gap">—</span></div>
-        <div class="dnfield"><span class="dnfl">리밸런싱</span><span class="dnfv" id="f84_rebal">—</span></div>
-      </div>
-    </div>
-    <!-- 8-5 세금 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🧾</div><div><div class="dnctitle">8-5 세금설계</div><div class="dncsub">결정세액 0원 전략</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">연금저축펀드</span><span class="dnfv" id="f85_pension"></span></div>
-        <div class="dnfield"><span class="dnfl">IRP</span><span class="dnfv" id="f85_irp">—</span></div>
-        <div class="dnfield"><span class="dnfl">합산한도</span><span class="dnfv">연 900만원</span></div>
-        <div class="dnfield"><span class="dnfl">현재 환급 예상</span><span class="dnfv warn" id="f85_tax">—</span></div>
-        <div class="dnfield"><span class="dnfl">최대 환급 가능</span><span class="dnfv good" id="f85_refund">—</span></div>
-      </div>
-    </div>
-    <!-- 8-6 부동산 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">8-6 부동산설계</div></div></div>
-      <div class="dncbody">
-        <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own"></span></div>
-        <div class="dnfield"><span class="dnfl">현재 형태</span><span class="dnfv" id="f86_type">—</span></div>
-        <div class="dnfield"><span class="dnfl">주택 가격</span><span class="dnfv" id="f86_price">—</span></div>
-        <div class="dnfield"><span class="dnfl">향후 전략</span><span class="dnfv" id="f86_strategy">—</span></div>
-      </div>
-    </div>
-    <!-- 8-7 보험 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🛡️</div><div><div class="dnctitle">8-7 보험설계</div><div class="dncsub">8대 위험 기둥</div></div></div>
-      <div class="dncbody">
-        <div class="ins-g">
-          <div class="ins-c ng" id="ins_col_death"><div class="ins-n">사망</div><div class="ins-s" id="ins_death_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_inj"><div class="ins-n">장해</div><div class="ins-s" id="ins_inj_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_cancer"><div class="ins-n">암진단</div><div class="ins-s" id="ins_cancer_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_brain"><div class="ins-n">뇌혈관</div><div class="ins-s" id="ins_brain_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_heart"><div class="ins-n">심혈관</div><div class="ins-s" id="ins_heart_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_actual"><div class="ins-n">실비</div><div class="ins-s" id="ins_actual_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_hosp"><div class="ins-n">입원수술</div><div class="ins-s" id="ins_hosp_st">!</div></div>
-          <div class="ins-c ng" id="ins_col_dem"><div class="ins-n">치매간병</div><div class="ins-s" id="ins_dem_st">!</div></div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">💰</div><div><div class="dnctitle">수입지출 분석표</div><div class="dncsub" id="f3_family_hint">가족 수 확인 후 기준 적용</div></div></div>
+        <div class="dncbody">
+          <table class="dntable">
+            <thead><tr><th>항목</th><th>현재</th><th>기준%</th><th style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;">★ 예산</th><th>진단</th></tr></thead>
+            <tbody>
+              <tr><td>① 실수령액</td><td id="bt_inc_cur">—</td><td>100%</td><td style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td>—</td></tr>
+              <tr><td>② 대출원리금</td><td id="bt_loan_cur">—</td><td>10%</td><td id="bt_loan_bgt" style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td id="bt_loan_d">—</td></tr>
+              <tr><td>③ 보험료</td><td id="bt_ins_cur">—</td><td>10%</td><td id="bt_ins_bgt" style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td id="bt_ins_d">—</td></tr>
+              <tr><td>④ 노후연금</td><td id="bt_pen_cur">—</td><td>10%</td><td id="bt_pen_bgt" style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td id="bt_pen_d">—</td></tr>
+              <tr><td>⑤ 저축·투자</td><td id="bt_sav_cur">—</td><td id="bt_sav_pct">—</td><td id="bt_sav_bgt" style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td id="bt_sav_d">—</td></tr>
+              <tr><td>⑥ 잉여자금</td><td id="bt_sur_cur">—</td><td>—</td><td style="background:rgba(232,184,75,.2);font-weight:900;color:#8B6914;">—</td><td id="bt_sur_d">—</td></tr>
+              <tr class="tot"><td>⑦ 생활비 (역산)</td><td id="bt_life_cur">—</td><td id="bt_life_pct">—</td><td id="bt_life_bgt" style="background:rgba(232,184,75,.3);font-weight:900;color:#8B6914;">—</td><td id="bt_life_d">—</td></tr>
+            </tbody>
+          </table>
+          <div class="dn-info gold" id="bt_comment">💡 가족 수가 입력되면 시스템 프롬프트의 가족수별 예산표가 적용되고 항목별 진단이 표시됩니다.</div>
         </div>
-        <div class="dnfield" style="margin-top:8px"><span class="dnfl">현재 보험료</span><span class="dnfv" id="f87_premium">—</span></div>
-        <div class="dn-info red" style="margin-top:7px">⚠️ 보험증권 업로드 후 정확한 분석 가능합니다.</div>
       </div>
     </div>
-  </div>
 
-  <!-- 패널8: 최종의견 -->
-  <div class="dnp" id="dnp8">
-    <!-- 점수 -->
-    <div class="dn-score">
-      <div class="dn-score-num" id="f9_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
-      <div class="dn-score-lbl">종합 재무점수 (100점 만점)</div>
-      <div class="dn-score-grade" id="f9_grade">—</div>
-    </div>
-    <!-- DESIRE 로드맵 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">🗺️</div><div><div class="dnctitle">DESIRE 로드맵</div><div class="dncsub" id="desire_cur_step">현재 단계 계산 중</div></div></div>
-      <div class="dncbody">
-        <div class="desire-list" id="desire_list">
-          <div class="dstep" id="ds_D"><div class="dbadge">D</div><div><div class="dtitle">DEBT FREE — 신용대출 상환</div><div class="ddesc" id="ds_D_desc">확인 중</div></div></div>
-          <div class="dstep" id="ds_E"><div class="dbadge">E</div><div><div class="dtitle">EMERGENCY FUND — 비상예비자금</div><div class="ddesc" id="ds_E_desc">확인 중</div></div></div>
-          <div class="dstep" id="ds_S"><div class="dbadge">S</div><div><div class="dtitle">SAVINGS — 적립식 저축투자</div><div class="ddesc" id="ds_S_desc">확인 중</div></div></div>
-          <div class="dstep" id="ds_I"><div class="dbadge">I</div><div><div class="dtitle">INVESTMENT — 금융자산 10억</div><div class="ddesc" id="ds_I_desc">확인 중</div></div></div>
-          <div class="dstep" id="ds_R"><div class="dbadge">R</div><div><div class="dtitle">REPAY MORTGAGE — 담보대출 상환</div><div class="ddesc" id="ds_R_desc">확인 중</div></div></div>
-          <div class="dstep" id="ds_E2"><div class="dbadge">E</div><div><div class="dtitle">EARLY RETIREMENT — 조기은퇴</div><div class="ddesc">상속증여 플랜 완성 후 졸업</div></div></div>
+    <!-- ━━━━━━ 패널4: 자산부채 (★ "그밖에 다른 자산" 추가) ━━━━━━ -->
+    <div class="dnp" id="dnp4">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">자산부채 입력</div><div class="dncsub">①청약 ②연금 ③펀드 ④부동산 ⑤그밖에 ⑥신용 ⑦담보</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">① 예적금/청약</span><span class="dnfv empty" id="f4_deposit">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">② 연금 적립금</span><span class="dnfv empty" id="f4_pension">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">③ 펀드/ETF/주식</span><span class="dnfv empty" id="f4_invest">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">④ 부동산 (자가/거주)</span><span class="dnfv empty" id="f4_realty">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">⑤ 그밖에 자산</span><span class="dnfv empty" id="f4_other">— (혹시 그밖에 다른 자산이 있으세요?)</span></div>
+          <div class="dnfield"><span class="dnfl">⑥ 신용대출</span><span class="dnfv empty" id="f4_credit">— 입력 대기</span></div>
+          <div class="dnfield"><span class="dnfl">⑦ 담보대출</span><span class="dnfv empty" id="f4_mortgage">— 입력 대기</span></div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">자산부채 분석 (자동 계산)</div><div class="dncsub">부자지수 = (순자산 ÷ (나이 × 연소득)) × 100</div></div></div>
+        <div class="dncbody">
+          <div class="dnag">
+            <div class="dnab gold"><div class="dnab-l">총자산</div><div class="dnab-v" id="f4_total_asset">—</div></div>
+            <div class="dnab red"><div class="dnab-l">총부채</div><div class="dnab-v" id="f4_total_debt">—</div></div>
+          </div>
+          <div class="dnag" style="margin-top:5px">
+            <div class="dnab green"><div class="dnab-l">순자산</div><div class="dnab-v" id="f4_net">—</div></div>
+            <div class="dnab"><div class="dnab-l">부채비율</div><div class="dnab-v" id="f4_dr">—</div></div>
+          </div>
+          <div class="dndiv" style="margin-top:10px">부자지수</div>
+          <div style="font-size:8.5px;color:#8896B0;display:flex;justify-content:space-between;margin-bottom:2px"><span>텐트</span><span>오두막</span><span>빌라</span><span>아파트</span><span>궁전</span></div>
+          <div class="wi-bg"><div class="wi-fill" id="f4_wi_bar" style="width:0%"></div></div>
+          <div style="text-align:center;font-size:18px;font-weight:900;color:#C9972A;margin-top:4px;font-family:'Gowun Dodum',sans-serif" id="f4_wi_val">—</div>
+          <div style="text-align:center;font-size:9.5px;color:#8896B0" id="f4_wi_diag">부자지수 계산 대기</div>
+          <div class="dnfield" style="margin-top:9px"><span class="dnfl">비상예비자금</span><span class="dnfv" id="f4_emerg">—</span></div>
         </div>
       </div>
     </div>
-    <!-- 히스토리 BA -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">비포 & 에프터</div><div class="dncsub">히스토리 데이터</div></div></div>
-      <div class="dncbody">
-        <div style="overflow-x:auto">
-          <table class="ba-tbl">
-            <thead><tr><th>항목</th><th>전월</th><th>전분기</th><th>전년</th></tr></thead>
-            <tbody id="dn_ba_tbody">
-              <tr><td colspan="4" style="text-align:center;padding:12px;color:#8896B0;font-size:9.5px">2회 이상 상담 후 비교 데이터가 표시됩니다</td></tr>
+
+    <!-- ━━━━━━ 패널5: 금융집짓기 SVG (★ 본 코드 애니메이션 이식) ━━━━━━ -->
+    <div class="dnp" id="dnp5">
+      <div class="dn-house">
+        <div class="dn-house-title" id="fh_title">🏠 금융집짓기® 설계도</div>
+        <div style="font-size:10px;color:#4A5568;text-align:center;margin-bottom:8px;font-weight:800" id="fh_subtitle">머니야 발화에 따라 집이 순차적으로 완성됩니다</div>
+        <svg class="dn-fhsvg" viewBox="0 0 380 250" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="cl-l-v3"><polygon points="190,2 10,92 190,92"/></clipPath>
+            <clipPath id="cl-r-v3"><polygon points="190,2 370,92 190,92"/></clipPath>
+          </defs>
+          <!-- 잔디 (집 아래 대지) -->
+          <rect x="0" y="236" width="380" height="4" fill="#5CB85C"/>
+          <rect x="0" y="240" width="380" height="10" fill="#4A9A4A"/>
+
+          <!-- ★ 하이라이트 rect들 (머니야가 해당 부분 말할 때 펄스) -->
+          <polygon id="hl-rl" class="hl" points="190,8 10,88 190,88" fill="#E8B84B"/>
+          <polygon id="hl-rr" class="hl" points="190,8 370,88 190,88" fill="#E8B84B"/>
+          <rect id="hl-ch" class="hl" x="289" y="14" width="46" height="61" fill="#E8B84B"/>
+          <rect id="hl-tl" class="hl" x="10" y="92" width="360" height="22" fill="#E8B84B"/>
+          <rect id="hl-wl" class="hl" x="10" y="114" width="180" height="80" fill="#E8B84B"/>
+          <rect id="hl-wr" class="hl" x="190" y="114" width="180" height="80" fill="#E8B84B"/>
+          <rect id="hl-ins" class="hl" x="10" y="194" width="360" height="42" fill="#E8B84B"/>
+
+          <!-- ★ 기초 (보험) - 집 하단에 부착 - 가장 먼저 올라옴 -->
+          <g id="bp-f" class="bp-part">
+            <rect x="10" y="194" width="360" height="42" fill="#7B5230"/>
+            <line x1="10" y1="194" x2="370" y2="194" stroke="#4A2E10" stroke-width="2.5"/>
+            <!-- 보험 8대 구분선 -->
+            <line x1="55" y1="194" x2="55" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="100" y1="194" x2="100" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="145" y1="194" x2="145" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="190" y1="194" x2="190" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="235" y1="194" x2="235" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="280" y1="194" x2="280" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <line x1="325" y1="194" x2="325" y2="234" stroke="#5A3A18" stroke-width="1"/>
+            <!-- 보험 라벨 -->
+            <text x="32" y="206" text-anchor="middle" font-size="8.5" fill="#FFE8A0" font-weight="900">VII.</text>
+            <text x="32" y="218" text-anchor="middle" font-size="8.5" fill="#FFE8A0" font-weight="900">보험</text>
+            <text x="77" y="206" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">사망</text>
+            <text x="77" y="215" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">장해</text>
+            <text x="122" y="210" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">암진단</text>
+            <text x="167" y="210" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">뇌혈관</text>
+            <text x="212" y="210" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">심혈관</text>
+            <text x="257" y="210" text-anchor="middle" font-size="7" fill="#FFF0CC" font-weight="700">실비</text>
+            <text x="302" y="206" text-anchor="middle" font-size="6.5" fill="#FFF0CC" font-weight="700">입원</text>
+            <text x="302" y="215" text-anchor="middle" font-size="6.5" fill="#FFF0CC" font-weight="700">수술</text>
+            <text x="347" y="206" text-anchor="middle" font-size="6.5" fill="#FFF0CC" font-weight="700">치매</text>
+            <text x="347" y="215" text-anchor="middle" font-size="6.5" fill="#FFF0CC" font-weight="700">간병</text>
+            <text id="sv-death" x="77" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-cancer" x="122" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-stroke" x="167" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-heart" x="212" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-critical" x="257" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-hospital" x="302" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+            <text id="sv-dementia" x="347" y="228" text-anchor="middle" font-size="7" fill="#90EE90" font-weight="900"></text>
+          </g>
+
+          <!-- ★ 1층 (벽) - 부채/저축/은퇴 - 두 번째 올라옴 -->
+          <g id="bp-w" class="bp-part">
+            <polygon points="10,114 190,114 10,194" fill="#F5C518"/>
+            <polygon points="10,194 190,114 190,194" fill="#FAE06A"/>
+            <rect x="190" y="114" width="180" height="80" fill="#4A90D9"/>
+            <rect x="10" y="114" width="360" height="80" fill="none" stroke="#2C2C2A" stroke-width="2"/>
+            <line x1="190" y1="114" x2="190" y2="194" stroke="#2C2C2A" stroke-width="1.5"/>
+            <line x1="10" y1="194" x2="190" y2="114" stroke="#2C2C2A" stroke-width="2"/>
+            <text x="50" y="134" font-size="11" fill="#5A3800" font-weight="900">I. 부채</text>
+            <text id="sv-dbt-r" x="48" y="147" font-size="7.5" fill="#5A3800" font-weight="800"></text>
+            <text x="32" y="170" font-size="12" fill="#c0392b" font-weight="900">↓↓</text>
+            <text x="130" y="176" text-anchor="middle" font-size="11" fill="#3A5000" font-weight="900">II. 저축</text>
+            <text id="sv-sav-r" x="130" y="187" text-anchor="middle" font-size="7.5" fill="#3A5000" font-weight="800"></text>
+            <text x="22" y="182" font-size="12" fill="#1a6b3c" font-weight="900">↑</text>
+            <text x="280" y="144" text-anchor="middle" font-size="11" fill="#fff" font-weight="900">III. 은퇴</text>
+            <text id="sv-ret-r" x="280" y="158" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.95)" font-weight="800"></text>
+            <text id="sv-ret-r2" x="280" y="170" text-anchor="middle" font-size="7.5" fill="#FFE08A" font-weight="800"></text>
+          </g>
+
+          <!-- ★ 처마보 (타임라인) - 세 번째 올라옴 -->
+          <g id="bp-tl" class="bp-part">
+            <rect x="10" y="92" width="360" height="22" fill="#F5F5F0" stroke="#2C2C2A" stroke-width="2"/>
+            <text id="sv-cur-age" x="18" y="107" font-size="9" fill="#1a1a1a" font-weight="900">현재 —세</text>
+            <text id="sv-ret-age" x="190" y="107" text-anchor="middle" font-size="9" fill="#1a6b3c" font-weight="900">은퇴 —세</text>
+            <text id="sv-die-age" x="362" y="107" text-anchor="end" font-size="9" fill="#1a1a1a" font-weight="900">사망 —세</text>
+            <rect id="sv-work-bar" x="10" y="111" width="0" height="2" fill="#1a6b3c" rx="1"/>
+            <rect id="sv-ret-bar" x="10" y="111" width="0" height="2" fill="#C9972A" rx="1"/>
+          </g>
+
+          <!-- ★ 지붕 (투자 + 세금) - 네 번째 올라옴 -->
+          <g id="bp-r" class="bp-part">
+            <!-- 굴뚝 (주택) - 지붕에 파묻힌 형태 -->
+            <polygon points="292,18 332,18 332,75 313,75 292,53" fill="#7A4A2E"/>
+            <rect x="289" y="14" width="46" height="7" fill="#4A2E10" rx="1"/>
+            <rect x="299" y="20" width="22" height="13" fill="rgba(0,0,0,.3)" rx="2"/>
+            <text x="311" y="27" text-anchor="middle" font-size="7.5" fill="#FFDDA0" font-weight="900">VI.</text>
+            <text x="311" y="36" text-anchor="middle" font-size="7.5" fill="#FFDDA0" font-weight="900">부동산</text>
+            <text id="sv-re-r" x="311" y="46" text-anchor="middle" font-size="6.5" fill="#FFDDA0" font-weight="800"></text>
+            <!-- 지붕 좌 (투자) -->
+            <polygon points="190,2 10,92 190,92" fill="#F08050"/>
+            <!-- 지붕 우 (세금) -->
+            <polygon points="190,2 370,92 190,92" fill="#6BB86B"/>
+            <line x1="190" y1="2" x2="10" y2="92" stroke="#2C2C2A" stroke-width="2"/>
+            <line x1="190" y1="2" x2="370" y2="92" stroke="#2C2C2A" stroke-width="2"/>
+            <line x1="10" y1="92" x2="370" y2="92" stroke="#2C2C2A" stroke-width="2"/>
+            <!-- 굴뚝 선 -->
+            <line x1="292" y1="14" x2="292" y2="53" stroke="#4A2E10" stroke-width="1.5"/>
+            <line x1="332" y1="14" x2="332" y2="18" stroke="#4A2E10" stroke-width="1.5"/>
+            <line x1="292" y1="18" x2="332" y2="18" stroke="#4A2E10" stroke-width="1.5"/>
+            <!-- 지붕 좌 텍스트 (클립) -->
+            <g clip-path="url(#cl-l-v3)">
+              <text x="132" y="56" text-anchor="middle" font-size="14" fill="#fff" font-weight="900">IV. 투자</text>
+              <text id="sv-inv-r" x="132" y="72" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.95)" font-weight="800"></text>
+            </g>
+            <!-- 지붕 우 텍스트 (클립) -->
+            <g clip-path="url(#cl-r-v3)">
+              <text x="225" y="55" text-anchor="middle" font-size="14" fill="#fff" font-weight="900">V. 세금</text>
+              <text id="sv-tax-r" x="225" y="70" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.95)" font-weight="800"></text>
+            </g>
+          </g>
+
+          <!-- ★ 집주인 라벨 (인적사항 입력 시) -->
+          <g id="bp-n" class="bp-part">
+            <text id="sv-client" x="190" y="0" text-anchor="middle" font-size="9" fill="#0B1D3A" font-weight="900"></text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 현재 건설 단계 표시 -->
+      <div class="bp-status-msg" id="bp_status_msg" style="display:none">
+        🏗️ 머니야가 집을 짓고 있습니다...
+      </div>
+
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📐</div><div><div class="dnctitle">집짓기 순서 (생로병사 기반)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">1. 기초</span><span class="dnfv" id="f5_step1" style="font-size:11px">VII. 보험 (8대 위험 기둥)</span></div>
+          <div class="dnfield"><span class="dnfl">2. 몸통</span><span class="dnfv" id="f5_step2" style="font-size:11px">I. 부채 → II. 저축 → III. 은퇴</span></div>
+          <div class="dnfield"><span class="dnfl">3. 처마보</span><span class="dnfv" id="f5_step3" style="font-size:11px">현재 → 은퇴 → 사망 (생로병사)</span></div>
+          <div class="dnfield"><span class="dnfl">4. 지붕</span><span class="dnfv" id="f5_step4" style="font-size:11px">IV. 투자 / V. 세금 / VI. 부동산(굴뚝)</span></div>
+          <div class="dnfield"><span class="dnfl">현재 → 은퇴</span><span class="dnfv" id="f5_pre">—</span></div>
+          <div class="dnfield"><span class="dnfl">은퇴 → 사망</span><span class="dnfv" id="f5_post">—</span></div>
+        </div>
+      </div>
+      <div class="dn-info gold">
+        ⭐ <strong>애니메이션 활성화</strong>: 자동 상담을 시작하면 머니야의 발화에 따라 기초(보험) → 몸통(저축/은퇴) → 처마보(나이) → 지붕(투자/세금) 순으로 집이 완성됩니다.
+      </div>
+    </div>
+
+    <!-- ━━━━━━ 패널6: 저축투자 + 자산배분 포트폴리오 ━━━━━━ -->
+    <div class="dnp" id="dnp6">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📈</div><div><div class="dnctitle">저축투자 포트폴리오</div><div class="dncsub">100-나이 법칙 (시스템 프롬프트 6단계)</div></div></div>
+        <div class="dncbody">
+          <div class="dndiv">투자재원 계산</div>
+          <div class="dn-calc">
+            <div class="dn-calc-row"><span class="dn-calc-lbl">저축투자 예산</span><span class="dn-calc-val" id="f6_budget">—</span></div>
+            <div class="dn-calc-row"><span class="dn-calc-lbl">현재 저축투자</span><span class="dn-calc-val" id="f6_cur_save">—</span></div>
+            <div class="dn-calc-row"><span class="dn-calc-lbl">투자재원</span><span class="dn-calc-val" id="f6_source">—</span></div>
+            <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 노후연금 부족</span><span class="dn-calc-val" id="f6_pen_gap" style="color:#C62828">—</span></div>
+            <div class="dn-calc-row"><span class="dn-calc-lbl">(−) 보험 부족 ×½</span><span class="dn-calc-val" id="f6_ins_gap" style="color:#C62828">—</span></div>
+            <div class="dn-calc-row"><span class="dn-calc-lbl" style="font-weight:900">순투자재원</span><span class="dn-calc-val" id="f6_net" style="color:#2E7D32;font-size:13px">—</span></div>
+          </div>
+          <div class="dndiv" style="margin-top:10px">100-나이 법칙 배분</div>
+          <div class="dnag">
+            <div class="dnab"><div class="dnab-l" id="f6_save_label">저축 (—%)</div><div class="dnab-v" id="f6_save_amt">—</div><div style="font-size:8px;color:#8896B0;margin-top:2px">적금·CMA·청약·공제</div></div>
+            <div class="dnab gold"><div class="dnab-l" id="f6_inv_label">투자 (—%)</div><div class="dnab-v" id="f6_inv_amt">—</div><div style="font-size:8px;color:#8896B0;margin-top:2px">ISA(ETF)·IRP(ETF)·연금저축펀드</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">⚖️</div><div><div class="dnctitle">자산배분 포트폴리오 (원트 영역)</div><div class="dncsub">시스템 프롬프트 7단계 · 가중평균 5% 목표</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">부동산 70%</span><span class="dnfv">거주 70% / 투자 30%</span></div>
+          <div class="dnfield"><span class="dnfl">금융 30%</span><span class="dnfv">안전 70% / 위험 30%</span></div>
+          <div class="dnfield"><span class="dnfl">현재 부동산</span><span class="dnfv" id="f7_re_cur">—</span></div>
+          <div class="dnfield"><span class="dnfl">현재 금융</span><span class="dnfv" id="f7_fin_cur">—</span></div>
+          <div class="dnfield"><span class="dnfl">진단</span><span class="dnfv warn" id="f7_diag">—</span></div>
+
+          <!-- ★ 피드백 7번: 자산배분 4칸 표 -->
+          <div class="dndiv" style="margin-top:10px">금융 30% 세부 상품 배분</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;">
+            <thead>
+              <tr>
+                <th style="background:#0B1D3A;color:#fff;padding:8px 5px;text-align:center;font-weight:900;font-size:10px;border:1px solid #1a3260;">구분</th>
+                <th style="background:#0B1D3A;color:#fff;padding:8px 5px;text-align:center;font-weight:900;font-size:10px;border:1px solid #1a3260;">상품</th>
+                <th style="background:#0B1D3A;color:#fff;padding:8px 5px;text-align:center;font-weight:900;font-size:10px;border:1px solid #1a3260;">특징</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="background:#FFF9D6;font-weight:900;color:#0B1D3A;text-align:center;padding:9px 6px;border:1px solid rgba(201,151,42,.3);">
+                  유동성
+                  <div style="font-size:9px;color:#4A5568;margin-top:2px;font-weight:700;">(안전 30%)</div>
+                </td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:11px;color:#000;font-weight:800;font-family:'Gowun Dodum',sans-serif;">현금 · CMA · 금(Gold)</td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:10px;color:#4A5568;font-weight:700;">즉시 활용 가능</td>
+              </tr>
+              <tr>
+                <td style="background:#FFF9D6;font-weight:900;color:#0B1D3A;text-align:center;padding:9px 6px;border:1px solid rgba(201,151,42,.3);">
+                  안전성
+                  <div style="font-size:9px;color:#4A5568;margin-top:2px;font-weight:700;">(안전 70%)</div>
+                </td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:11px;color:#000;font-weight:800;font-family:'Gowun Dodum',sans-serif;">예금 · 채권 · 연금</td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:10px;color:#4A5568;font-weight:700;">원금보존 · 3~4%</td>
+              </tr>
+              <tr>
+                <td style="background:#FFF9D6;font-weight:900;color:#0B1D3A;text-align:center;padding:9px 6px;border:1px solid rgba(201,151,42,.3);">
+                  수익성
+                  <div style="font-size:9px;color:#4A5568;margin-top:2px;font-weight:700;">(위험 70%)</div>
+                </td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:11px;color:#000;font-weight:800;font-family:'Gowun Dodum',sans-serif;">펀드 · ETF</td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:10px;color:#4A5568;font-weight:700;">분산투자 · 5~7%</td>
+              </tr>
+              <tr>
+                <td style="background:#FFF9D6;font-weight:900;color:#0B1D3A;text-align:center;padding:9px 6px;border:1px solid rgba(201,151,42,.3);">
+                  고수익성
+                  <div style="font-size:9px;color:#4A5568;margin-top:2px;font-weight:700;">(위험 30%)</div>
+                </td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:11px;color:#000;font-weight:800;font-family:'Gowun Dodum',sans-serif;">개별 주식 · DSC</td>
+                <td style="padding:9px 6px;border:1px solid rgba(201,151,42,.3);font-size:10px;color:#4A5568;font-weight:700;">고위험 · 고수익</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-    <!-- 강점/개선/액션 -->
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">⭐</div><div><div class="dnctitle">강점 · 개선점 · 액션</div></div></div>
-      <div class="dncbody">
-        <div class="dndiv">강점</div>
-        <div class="dn-actions" style="margin-bottom:9px">
-          <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1"></div></div>
-          <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2"></div></div>
-          <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3"></div></div>
+
+    <!-- ━━━━━━ 패널7: 종합재무설계 7대영역 ━━━━━━ -->
+    <div class="dnp" id="dnp7">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🏖️</div><div><div class="dnctitle">8-1 은퇴설계 (안방)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">꿈꾸는 노후</span><span class="dnfv" id="f81_dream">—</span></div>
+          <div class="dnfield"><span class="dnfl">월 필요자금</span><span class="dnfv" id="f81_need">—</span></div>
+          <div class="dnfield"><span class="dnfl">월 준비자금</span><span class="dnfv" id="f81_ready">—</span></div>
+          <div class="dnfield"><span class="dnfl">월 부족</span><span class="dnfv warn" id="f81_short">—</span></div>
+          <div class="dnfield"><span class="dnfl">은퇴일시금</span><span class="dnfv warn" id="f81_lump">—</span></div>
+          <div class="dnfield"><span class="dnfl">월 추가저축</span><span class="dnfv warn" id="f81_monthly">—</span></div>
+          <button onclick="alert('오상열 CFP 대표님께 연락 드리겠습니다.')" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;font-size:11px;font-weight:900;padding:8px 14px;border-radius:7px;border:none;cursor:pointer;margin-top:10px;font-family:'Noto Sans KR',sans-serif;box-shadow:0 2px 6px rgba(220,38,38,.3);">💼 월 부족자금이 어려우시면? 오상열 CFP 연락</button>
         </div>
-        <div class="dndiv">개선점</div>
-        <div class="dn-actions" style="margin-bottom:9px">
-          <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1"></div></div>
-          <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2"></div></div>
-          <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3"></div></div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">💳</div><div><div class="dnctitle">8-2 부채설계 (거실의 쓰레기)</div><div class="dncsub">대출원리금 최대 30% · 적정 10%</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">신용대출</span><span class="dnfv" id="f82_credit">—</span></div>
+          <div class="dnfield"><span class="dnfl">담보대출</span><span class="dnfv" id="f82_mortgage">—</span></div>
+          <div class="dnfield"><span class="dnfl">대출원리금 비중</span><span class="dnfv" id="f82_ratio">—</span></div>
+          <div class="dnfield"><span class="dnfl">상환 전략</span><span class="dnfv" id="f82_strategy" style="font-size:11px;">신용: 즉시 (스노우볼 소→대) · 담보: 은퇴 전 완납</span></div>
+          <div class="dn-info gold" style="margin-top:8px">⭐ <strong>적정 10%</strong> / <strong>최대 30%</strong> 이내 유지. 30% 초과 시 즉시 조정 필요.</div>
         </div>
-        <div class="dndiv">이번 달 실행 액션</div>
-        <div class="dn-actions">
-          <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1"></div></div>
-          <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2"></div></div>
-          <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3"></div></div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🏦</div><div><div class="dnctitle">8-3 저축설계</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">목표 자금</span><span class="dnfv" id="f83_goal">—</span></div>
+          <div class="dnfield"><span class="dnfl">월 가능액</span><span class="dnfv hi" id="f83_possible">—</span></div>
+          <div class="dnfield"><span class="dnfl">상품 추천</span><span class="dnfv" id="f83_product" style="font-size:11px;">1년 적금 / 3년 ISA / 5년 연금저축펀드·IRP·ETF</span></div>
+          <div class="dn-info green" style="margin-top:8px">💡 <strong>청년</strong>이시면 <strong>청년미래적금</strong>, <strong>청년도약계좌</strong>, <strong>청년주택드림청약통장</strong>, <strong>청년주택드림대출</strong>을 활용하세요.</div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📊</div><div><div class="dnctitle">8-4 투자설계 (달걀이론)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">현재 부자지수</span><span class="dnfv hi" id="f84_wi">—</span></div>
+          <div class="dnfield"><span class="dnfl">금융자산 목표</span><span class="dnfv">10억원</span></div>
+          <div class="dnfield"><span class="dnfl">달성 필요액</span><span class="dnfv warn" id="f84_gap">—</span></div>
+          <div class="dnfield"><span class="dnfl">안전 70%</span><span class="dnfv" id="f84_safe">CMA · 예금 · 채권 · 금</span></div>
+          <div class="dnfield"><span class="dnfl">위험 30%</span><span class="dnfv" id="f84_risk">펀드 · ETF · 주식 · 달러스테이블</span></div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🧾</div><div><div class="dnctitle">8-5 세금설계 (결정세액 0원)</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">합산 한도</span><span class="dnfv">연 900만원 (연금저축+IRP)</span></div>
+          <div class="dnfield"><span class="dnfl">5,500만원 이하</span><span class="dnfv">16.5% 공제 → 최대 148.5만원 환급</span></div>
+          <div class="dnfield"><span class="dnfl">5,500만원 초과</span><span class="dnfv">13.2% 공제 → 최대 118.8만원 환급</span></div>
+          <div class="dnfield"><span class="dnfl">현재 환급 예상</span><span class="dnfv warn" id="f85_tax">—</span></div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">8-6 부동산설계</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">주택 보유</span><span class="dnfv" id="f86_own">—</span></div>
+          <div class="dnfield"><span class="dnfl">주택 가격</span><span class="dnfv" id="f86_price">—</span></div>
+          <div class="dnfield"><span class="dnfl">주택연금</span><span class="dnfv">55세부터, 1억당 약 25만원 (최후의 보루)</span></div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🛡️</div><div><div class="dnctitle">8-7 보험설계 (★ 회사 핵심 영역)</div><div class="dncsub">8대 위험 기둥 · 필요 / 준비 / 부족</div></div></div>
+        <div class="dncbody">
+          <!-- ★ 피드백 8번: 8대 × 필요/준비/부족 표 -->
+          <table style="width:100%;border-collapse:collapse;font-size:10.5px;">
+            <thead>
+              <tr>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;width:13%;">구분</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">사망/장해</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">암진단</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">뇌혈관</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">심혈관</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">실비</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">입수</th>
+                <th style="background:#0B1D3A;color:#fff;padding:7px 3px;text-align:center;font-size:9.5px;font-weight:900;border:1px solid #1a3260;">치/간</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:8px 3px;text-align:left;background:#FFF9D6;font-weight:900;border:1px solid rgba(201,151,42,.3);color:#0B1D3A;padding-left:8px;">필요자금</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_death">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_cancer">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_brain">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_heart">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_actual">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_hosp">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fffbeb;color:#8B6914;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_need_dem">—</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 3px;text-align:left;background:#FFF9D6;font-weight:900;border:1px solid rgba(201,151,42,.3);color:#0B1D3A;padding-left:8px;">준비자금</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_death">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_cancer">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_brain">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_heart">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_actual">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_hosp">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#f0fdf4;color:#15803D;font-weight:800;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_have_dem">—</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 3px;text-align:left;background:#FFF9D6;font-weight:900;border:1px solid rgba(201,151,42,.3);color:#0B1D3A;padding-left:8px;">부족자금</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_death">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_cancer">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_brain">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_heart">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_actual">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_hosp">—</td>
+                <td style="padding:8px 3px;text-align:center;background:#fef2f2;color:#B91C1C;font-weight:900;border:1px solid rgba(201,151,42,.3);font-family:'Gowun Dodum',sans-serif;" id="ins_lack_dem">—</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="dn-info gold" style="margin-top:8px"><strong>기준</strong>: 사망·장해=연봉×3+부채 / 암=연봉×2 / 뇌·심=연봉×1 / 실손=5천만원 / 입수·치간=특약</div>
+          <div class="dnfield" style="margin-top:8px"><span class="dnfl">현재 보험료</span><span class="dnfv" id="f87_premium">—</span></div>
+          <button onclick="alert('보험설계는 오상열 CFP 대표님의 도움이 필요합니다. 연락 드리겠습니다.')" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;font-size:11px;font-weight:900;padding:8px 14px;border-radius:7px;border:none;cursor:pointer;margin-top:10px;font-family:'Noto Sans KR',sans-serif;box-shadow:0 2px 6px rgba(220,38,38,.3);">💼 보험설계 상담 → 오상열 CFP 연락</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 패널9: 대화록 -->
-  <div class="dnp" id="dnp9">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 노트 싱크</div></div></div>
-      <div class="dncbody">
-        <div class="dn-chat" id="dn_chat_log">
-          <div style="text-align:center;font-size:10px;color:#8896B0;padding:10px">상담 시작 후 대화가 여기에 기록됩니다</div>
+    <!-- ━━━━━━ 패널8: 최종의견 (강점/개선/액션 + DESIRE A안) ━━━━━━ -->
+    <div class="dnp" id="dnp8">
+      <div class="dn-score">
+        <div class="dn-score-num" id="f9_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
+        <div class="dn-score-lbl">종합 재무점수 (100점 만점)</div>
+        <div class="dn-score-grade" id="f9_grade">—</div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🗺️</div><div><div class="dnctitle">DESIRE 로드맵 (시스템 프롬프트 9단계)</div><div class="dncsub" id="desire_cur">현재 단계 계산 중</div></div></div>
+        <div class="dncbody">
+          <div class="desire-list">
+            <div class="dstep" id="ds_D"><div class="dbadge">D</div><div><div class="dtitle">DEBT FREE — 신용대출 상환</div><div class="ddesc" id="ds_D_desc">확인 중</div></div></div>
+            <div class="dstep" id="ds_E"><div class="dbadge">E</div><div><div class="dtitle">EMERGENCY — 비상예비자금</div><div class="ddesc" id="ds_E_desc">확인 중</div></div></div>
+            <div class="dstep" id="ds_S"><div class="dbadge">S</div><div><div class="dtitle">SAVINGS — 적립식 저축투자</div><div class="ddesc" id="ds_S_desc">확인 중</div></div></div>
+            <div class="dstep" id="ds_I"><div class="dbadge">I</div><div><div class="dtitle">INVESTMENT — 금융자산 10억</div><div class="ddesc" id="ds_I_desc">확인 중</div></div></div>
+            <div class="dstep" id="ds_R"><div class="dbadge">R</div><div><div class="dtitle">REPAY MORTGAGE — 담보대출</div><div class="ddesc" id="ds_R_desc">확인 중</div></div></div>
+            <div class="dstep" id="ds_E2"><div class="dbadge">E</div><div><div class="dtitle">EARLY RETIREMENT — 상속증여 플랜</div><div class="ddesc">상속증여 완성 후 졸업</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">⭐</div><div><div class="dnctitle">강점 · 개선점 · 액션</div></div></div>
+        <div class="dncbody">
+          <div class="dndiv">강점 3가지</div>
+          <div class="dn-actions" style="margin-bottom:8px">
+            <div class="dn-action green"><div class="dn-anum green">1</div><div class="dn-atext" id="f9_s1">—</div></div>
+            <div class="dn-action green"><div class="dn-anum green">2</div><div class="dn-atext" id="f9_s2">—</div></div>
+            <div class="dn-action green"><div class="dn-anum green">3</div><div class="dn-atext" id="f9_s3">—</div></div>
+          </div>
+          <div class="dndiv">개선점 3가지</div>
+          <div class="dn-actions" style="margin-bottom:8px">
+            <div class="dn-action red"><div class="dn-anum red">1</div><div class="dn-atext" id="f9_i1">—</div></div>
+            <div class="dn-action red"><div class="dn-anum red">2</div><div class="dn-atext" id="f9_i2">—</div></div>
+            <div class="dn-action red"><div class="dn-anum red">3</div><div class="dn-atext" id="f9_i3">—</div></div>
+          </div>
+          <div class="dndiv">이번 달 실행 액션 3가지</div>
+          <div class="dn-actions">
+            <div class="dn-action"><div class="dn-anum">1</div><div class="dn-atext" id="f9_a1">—</div></div>
+            <div class="dn-action"><div class="dn-anum">2</div><div class="dn-atext" id="f9_a2">—</div></div>
+            <div class="dn-action"><div class="dn-anum">3</div><div class="dn-atext" id="f9_a3">—</div></div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 패널10: 리포트 -->
-  <div class="dnp" id="dnp10">
-    <div class="dncard">
-      <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">AI 재무검진결과 리포트</div><div class="dncsub">상담 완료 후 자동 발급</div></div></div>
-      <div class="dncbody" id="diagReportContent">
-        <!-- 상담 전: 안내 -->
-        <div id="diagReportPlaceholder" style="text-align:center;padding:16px">
-          <div style="font-size:26px;margin-bottom:7px">📄</div>
-          <div style="font-size:12px;font-weight:700;color:#0B1D3A;margin-bottom:3px">AI 재무검진결과 리포트</div>
-          <div style="font-size:9px;color:#6b7280;margin-bottom:12px">상담 완료 후 즉시 자동 발급</div>
-          <div style="font-size:9.5px;color:#0B1D3A;line-height:1.8;text-align:left;background:#fff8e6;border-radius:9px;padding:10px">
-            <span style="color:#C9972A">✦</span> 5대 영역 재무진단점수<br>
-            <span style="color:#C9972A">✦</span> 부자지수 & 등급<br>
-            <span style="color:#C9972A">✦</span> 항목별 판정 (양호/주의/위험)<br>
-            <span style="color:#C9972A">✦</span> 강점 & 개선점 & 액션플랜
+    <!-- ━━━━━━ 패널9: 재무건강결과표 (5대 영역 100점) ━━━━━━ -->
+    <div class="dnp" id="dnp9">
+      <div class="dn-score">
+        <div class="dn-score-num" id="fh_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
+        <div class="dn-score-lbl">재무건강검진 결과 (100점 만점)</div>
+        <div class="dn-score-grade" id="fh_grade">—</div>
+      </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🩺</div><div><div class="dnctitle">5대 영역별 점수 (각 20점)</div><div class="dncsub">시스템 프롬프트 재무점수 산식</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">① 지출관리</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>생활비/저축/노후/보험/대출 5×4점</span><span class="hi" id="fh_exp">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_exp_bar" style="width:0%"></div></div>
+            </div>
           </div>
-        </div>
-        <!-- 상담 후: 재무검진결과표 (JS로 채움) -->
-        <div id="diagReportReady" style="display:none">
-          <!-- 종료 안내 배너 (JS에서 삽입) -->
-          <!-- 재무검진결과표 본문 -->
-          <div id="diagReportBody"></div>
-          <!-- 다운로드 + 공유 버튼 -->
-          <div style="display:flex;gap:8px;margin:12px 0;">
-            <button onclick="downloadReportPDF()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">⬇️ 다운로드</button>
-            <button onclick="shareReport()" style="flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;font-size:12px;font-weight:900;font-family:var(--fn);cursor:pointer">📤 공유하기</button>
+          <div class="dnfield"><span class="dnfl">② 자산형성</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>부자지수/부채비율/비상예비/수익률</span><span class="hi" id="fh_asset">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_asset_bar" style="width:0%"></div></div>
+            </div>
           </div>
-          <!-- ★ 법적 면책 문구 -->
-          <div style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin-top:4px;border:1px solid #e2e8f0;">
-            <div style="font-size:9px;color:#888;line-height:1.8;text-align:left;">
-              ⚠️ <strong style="color:#555;">본 리포트는 AI가 생성한 참고자료입니다.</strong><br>
-              투자·보험·세무에 관한 전문적인 자문이 아니며, 개인의 구체적인 상황에 따라 결과가 다를 수 있습니다.<br>
-              금융 의사결정 전 반드시 공인 전문가(CFP·세무사·변호사 등)와 상담하시기 바랍니다.<br>
-              본 서비스는 금융소비자보호법상 투자자문업에 해당하지 않습니다.<br>
-              <span style="color:#aaa;">오원트금융연구소 · AI학습 미사용 · 개인정보 처리방침 적용</span>
+          <div class="dnfield"><span class="dnfl">③ 보험보장</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>8대항목(8) + 보장보험료(12)</span><span class="hi" id="fh_ins">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ins_bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="dnfield"><span class="dnfl">④ 노후준비</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>은퇴준비율(10) + 노후저축(10)</span><span class="hi" id="fh_ret">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ret_bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="dnfield"><span class="dnfl">⑤ 부채관리</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>신용/담보/원리금/부채비율 5×4점</span><span class="hi" id="fh_debt">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_debt_bar" style="width:0%"></div></div>
             </div>
           </div>
         </div>
       </div>
+      <div class="dn-info gold">💡 본 코드의 calcScore() 함수와 100% 동일한 공식으로 5대 영역 자동 채점됩니다.</div>
     </div>
-  </div>
 
-  </div><!-- /dnPanels -->
-</div><!-- /dnWrap -->
+    <!-- ━━━━━━ 패널10: 대화록 ━━━━━━ -->
+    <div class="dnp" id="dnp10">
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 노트 싱크</div></div></div>
+        <div class="dncbody">
+          <div class="dn-chat" id="dn_chat">
+            <div style="text-align:center;font-size:10px;color:#8896B0;padding:10px">상담 시작 후 대화가 여기에 기록됩니다</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 `;
 
   // ── 탭 전환 함수
@@ -12994,12 +13298,9 @@ function diagBuildNotes() {
 function diagActivatePart(idx) {
   diagCurPart = idx;
 
-  // 새 탭형 노트 전환
-  var tabIdx = idx <= 6 ? idx :
-               idx === 7 ? 7 :
-               idx === 8 ? 7 :
-               idx === 9 ? 8 :
-               idx === 10 ? 10 : idx;
+  // ★ 새 탭형 노트 — 진단 단계와 탭 번호 1:1 매핑
+  // 0표지 1인적 2고민 3수지 4자산 5집짓기 6포트폴리오 7종합재무설계 8최종의견 9재무건강 10대화록
+  var tabIdx = (idx >= 0 && idx <= 10) ? idx : 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
 
   // 프로세스 바 업데이트
