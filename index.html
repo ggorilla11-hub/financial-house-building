@@ -8615,6 +8615,7 @@ async function sendTextConsultMessage(txt) {
       _textConsultHistory.push({ role: 'assistant', content: data.message });
       /* ★ [단계3-fix] 머니야 발화 컨텍스트 저장 + 단계 전환 감지 */
       diagLastQ = data.message;
+      if(typeof diagPushQ === 'function') diagPushQ(data.message);
       setTimeout(function(){ diagParseAiSpeech(data.message); }, 300);
     } else {
       diagAddSTT('ai', '죄송합니다. 잠시 후 다시 입력해 주세요.', null);
@@ -12075,7 +12076,7 @@ async function diagConnectVoice(isPaid) {
         }
 
         if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
-        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; }
+        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; if(typeof diagPushQ==='function') diagPushQ(displayText); }
       }
 
       /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
@@ -14060,6 +14061,17 @@ let diagLastQuestion = ''; // 머니야 마지막 질문 추적
 
 /* 머니야 마지막 질문 추적 */
 let diagLastQ = '';
+/* ★ [단계3-fix v4] 머니야 발화 버퍼 (최근 5개) - 짧은 질문 뒤 숫자 답변 대응 */
+let diagQHistory = [];
+function diagPushQ(text) {
+  if (!text || typeof text !== 'string') return;
+  diagQHistory.push(text);
+  if (diagQHistory.length > 5) diagQHistory.shift();
+}
+function diagQContext() {
+  // 최근 3개 머니야 발화를 하나로 합쳐서 키워드 검색
+  return diagQHistory.slice(-3).join(' ');
+}
 let diagLastFilledPartIdx = -1;
 let diagLastFilledLabel = '';
 
@@ -14483,6 +14495,8 @@ function diagAutoFillNote(userText) {
   // ── ★ [단계3-fix] Yes/No 컨텍스트 파싱 (머니야 직전 질문 기반) ──
   // 고객이 "네", "아니요"로만 답하면 diagLastQ를 확인해서 의미 판정
   var lastQ = (typeof diagLastQ !== 'undefined' ? diagLastQ : '') || '';
+  // ★ [v4] 최근 3개 머니야 발화 합친 컨텍스트 (짧은 질문 뒤 숫자 답변 대응)
+  var qCtx = (typeof diagQContext === 'function' ? diagQContext() : lastQ) || lastQ;
   var curStep = (typeof diagCurPart !== 'undefined' ? diagCurPart : 0) || 0;
   
   // Yes 응답
@@ -14564,44 +14578,44 @@ function diagAutoFillNote(userText) {
   if (shortAmountMatch) {
     var amount = shortAmountMatch[1].replace(/,/g, '');
     var displayAmount = parseInt(amount).toLocaleString() + '만원';
-    console.log('[짧은 금액 답변]', amount, '만원 | lastQ:', lastQ);
+    console.log('[짧은 금액 답변]', amount, '만원 | qCtx:', qCtx);
     
-    // 수지 탭 (curStep 3)에서 lastQ 기반 분기
-    if (curStep === 3 || /수입|지출|소득|월급|실수령|저축|대출|보험료|연금|생활비/.test(lastQ)) {
+    // 수지 탭 (curStep 3)에서 qCtx 기반 분기 (최근 3개 머니야 발화)
+    if (curStep === 3 || /수입|지출|소득|월급|실수령|저축|대출|보험료|연금|생활비/.test(qCtx)) {
       // 수입/소득
-      if (/수입|소득|월급|실수령|세후|받으|버세요|얼마\s*벌|어떻게\s*되/.test(lastQ)) {
+      if (/수입|소득|월급|실수령|세후|받으|버세요|얼마\s*벌/.test(qCtx)) {
         _fillNewNote('f3_income', displayAmount);
         return;
       }
       // 저축
-      if (/저축|적금|모으|예금|예적금/.test(lastQ)) {
+      if (/저축|적금|모으|예금|예적금/.test(qCtx)) {
         _fillNewNote('f3_save_cur', displayAmount);
         return;
       }
       // 대출상환
-      if (/대출\s*상환|원리금|갚|이자/.test(lastQ)) {
+      if (/대출\s*상환|원리금|갚|이자|대출/.test(qCtx)) {
         _fillNewNote('f3_loan_cur', displayAmount);
         return;
       }
       // 보험료
-      if (/보험료|보험\s*(?:얼|얼마)/.test(lastQ)) {
+      if (/보험료|보험/.test(qCtx)) {
         _fillNewNote('f3_ins_cur', displayAmount);
         return;
       }
       // 노후연금
-      if (/연금|노후/.test(lastQ)) {
+      if (/연금|노후/.test(qCtx)) {
         _fillNewNote('f3_pension_cur', displayAmount);
         return;
       }
       // 생활비
-      if (/생활비|생활|쓰시|지출/.test(lastQ)) {
+      if (/생활비|생활|쓰시|지출/.test(qCtx)) {
         _fillNewNote('f3_living_cur', displayAmount);
         return;
       }
     }
     
-    // 자산 탭 (curStep 4)에서 lastQ 기반 분기
-    if (curStep === 4 || /자산|부동산|예적금|현금|투자|주식|퇴직|대출|담보|신용/.test(lastQ)) {
+    // 자산 탭 (curStep 4)에서 qCtx 기반 분기
+    if (curStep === 4 || /자산|부동산|예적금|현금|투자|주식|퇴직|대출|담보|신용/.test(qCtx)) {
       // 억 단위 변환
       var billionMatch = t.match(/^([\d.]+)\s*억[.\s]*$/);
       if (billionMatch) {
@@ -14609,37 +14623,37 @@ function diagAutoFillNote(userText) {
         displayAmount = billionVal.toLocaleString() + '만원';
       }
       
-      if (/예적금|예금|적금|현금/.test(lastQ)) {
+      if (/예적금|예금|적금|현금/.test(qCtx)) {
         _fillNewNote('f4_deposit', displayAmount);
         return;
       }
-      if (/부동산|집|아파트/.test(lastQ)) {
+      if (/부동산|집|아파트/.test(qCtx)) {
         _fillNewNote('f4_realty', displayAmount);
         return;
       }
-      if (/주식|펀드|투자/.test(lastQ)) {
+      if (/주식|펀드|투자/.test(qCtx)) {
         _fillNewNote('f4_invest', displayAmount);
         return;
       }
-      if (/퇴직\s*연금|IRP/.test(lastQ)) {
+      if (/퇴직\s*연금|IRP/.test(qCtx)) {
         _fillNewNote('f4_pension', displayAmount);
         return;
       }
-      if (/신용\s*대출|마이너스/.test(lastQ)) {
+      if (/신용\s*대출|마이너스/.test(qCtx)) {
         _fillNewNote('f4_credit', displayAmount);
         return;
       }
-      if (/담보\s*대출|주담대|전세\s*대출/.test(lastQ)) {
+      if (/담보\s*대출|주담대|전세\s*대출/.test(qCtx)) {
         _fillNewNote('f4_mortgage', displayAmount);
         return;
       }
-      if (/총\s*자산/.test(lastQ)) {
+      if (/총\s*자산/.test(qCtx)) {
         _fillNewNote('f4_total_asset', displayAmount);
         return;
       }
     }
     
-    console.log('[짧은 금액 답변 - 매칭 없음] curStep:', curStep);
+    console.log('[짧은 금액 답변 - 매칭 없음] curStep:', curStep, '| qCtx:', qCtx);
   }
 
   // ── 패턴 정의 ──
@@ -14799,8 +14813,20 @@ function diagAutoFillNote(userText) {
     ]);
   }
 
-  // ── 이름 블랙리스트 (고수님 지시) ──
-  var nameBlacklist = ['고객', '손님', '사용자', '여러분', '저기', '그래서', '이름', '안녕', '네', '아니', '맞아', '엄마', '아빠', '아들', '딸'];
+  // ── 이름 블랙리스트 (고수님 지시 + 직업명 추가) ──
+  var nameBlacklist = [
+    '고객', '손님', '사용자', '여러분', '저기', '그래서', '이름', '안녕', 
+    '네', '아니', '맞아', '엄마', '아빠', '아들', '딸',
+    // 직업명 (패턴 매칭에서 f1_job과 f1_name 충돌 방지)
+    '공무원', '직장인', '자영업', '자영업자', '프리랜서', '의사', '간호사',
+    '교사', '교수', '회사원', '사업가', '주부', '대학생', '연구원',
+    '엔지니어', '개발자', '디자이너', '변호사', '회계사', '세무사',
+    // 결혼/가족 상태
+    '기혼', '미혼', '이혼', '사별', '맞벌이', '외벌이', '싱글',
+    // 고민/경제 용어
+    '노후', '은퇴', '저축', '투자', '대출', '보험', '세금', '절세',
+    '부동산', '주식', '펀드', '연금', '자녀', '교육비', '생활비'
+  ];
 
   // ── 패턴 매칭 ──
   var filled = false;
