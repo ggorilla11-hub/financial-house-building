@@ -14759,16 +14759,21 @@ function diagAutoFillNote(userText) {
   // 자산: 예적금→연금→투자→부동산→기타→신용→담보
   
   // 숫자 단독 OR 단위 포함 금액 감지
+  // ★ v11: "10억원", "10억", "10.5억" 모두 매칭
   var numMatch = t.match(/^([\d,]+)\s*(?:만원|만|원)?[.\s]*$/);
-  var billionMatch = t.match(/^([\d.]+)\s*억[.\s]*$/);
+  var billionMatch = t.match(/^([\d.]+)\s*억\s*(?:원|정도)?[.\s]*$/);
+  
+  console.log('[숫자 감지]', t, '| numMatch:', numMatch ? numMatch[1] : 'null', '| billionMatch:', billionMatch ? billionMatch[1] : 'null');
   
   if (numMatch || billionMatch) {
     var displayAmount;
     var numValue;
     
+    // ★ 억이 있으면 항상 billionMatch 우선
     if (billionMatch) {
       numValue = Math.round(parseFloat(billionMatch[1]) * 10000);
       displayAmount = numValue.toLocaleString() + '만원';
+      console.log('[억 단위 변환]', billionMatch[1], '억 →', numValue, '만원');
     } else {
       var numStr = numMatch[1].replace(/,/g, '');
       numValue = parseInt(numStr);
