@@ -14596,7 +14596,106 @@ function diagAutoFillNote(userText) {
     }
   }
 
-  // ── ★ [단계3-fix v3] 짧은 금액 답변 컨텍스트 파싱 ──
+  // ── ★ [단계3-fix v5] 숫자 단독 입력 지원 (단위 없어도 OK) ──
+  // 고객이 "55", "1200", "3"만 입력하면 curStep + qCtx 로 스마트 해석
+  var numOnlyMatch = t.match(/^([\d,]+)[.\s]*$/);
+  if (numOnlyMatch) {
+    var numStr = numOnlyMatch[1].replace(/,/g, '');
+    var num = parseInt(numStr);
+    console.log('[숫자 단독]', num, '| curStep:', curStep, '| qCtx:', qCtx.slice(0, 100));
+    
+    if (!isNaN(num) && num > 0) {
+      // 1단계 (인적사항) — curStep 0~1
+      if (curStep <= 1) {
+        // 나이 (1~120)
+        if (num >= 1 && num <= 120 && /나이|연세|살|세[.?\s]|몇\s*살|어떻게\s*되/.test(qCtx)) {
+          _fillNewNote('f1_age', num + '세');
+          return;
+        }
+        // 가족수 (1~15)
+        if (num >= 1 && num <= 15 && /가족|식구|몇\s*명|몇\s*분/.test(qCtx)) {
+          _fillNewNote('f1_family', num + '명');
+          return;
+        }
+      }
+      
+      // 3단계 (수입지출) — curStep 2~4
+      if (curStep >= 2 && curStep <= 4) {
+        // 만원 단위 금액 (10~99999)
+        if (num >= 10 && num <= 99999) {
+          var dispAmt = num.toLocaleString() + '만원';
+          
+          // 수입/소득 → bt_inc_cur
+          if (/수입|소득|월급|실수령|세후|받으|버세요|얼마\s*벌/.test(qCtx)) {
+            _fillNewNote('bt_inc_cur', dispAmt);
+            return;
+          }
+          // 저축 → bt_sav_cur
+          if (/저축|적금|모으|예금|예적금/.test(qCtx)) {
+            _fillNewNote('bt_sav_cur', dispAmt);
+            return;
+          }
+          // 대출상환 → bt_loan_cur
+          if (/대출\s*상환|원리금|갚|이자|대출/.test(qCtx)) {
+            _fillNewNote('bt_loan_cur', dispAmt);
+            return;
+          }
+          // 보험료 → bt_ins_cur
+          if (/보험료|보험/.test(qCtx)) {
+            _fillNewNote('bt_ins_cur', dispAmt);
+            return;
+          }
+          // 노후연금 → bt_pen_cur
+          if (/연금|노후/.test(qCtx)) {
+            _fillNewNote('bt_pen_cur', dispAmt);
+            return;
+          }
+          // 생활비 → bt_life_cur
+          if (/생활비|생활|쓰시|지출/.test(qCtx)) {
+            _fillNewNote('bt_life_cur', dispAmt);
+            return;
+          }
+        }
+      }
+      
+      // 4단계 (자산부채) — curStep 3~5
+      if (curStep >= 3 && curStep <= 5) {
+        // 만원 단위 (100만~99999만 = 1억)
+        if (num >= 10 && num <= 99999) {
+          var dispAmt2 = num.toLocaleString() + '만원';
+          
+          if (/예적금|예금|적금|현금|청약/.test(qCtx)) {
+            _fillNewNote('f4_deposit', dispAmt2);
+            return;
+          }
+          if (/부동산|집|아파트/.test(qCtx)) {
+            _fillNewNote('f4_realty', dispAmt2);
+            return;
+          }
+          if (/주식|펀드|투자/.test(qCtx)) {
+            _fillNewNote('f4_invest', dispAmt2);
+            return;
+          }
+          if (/퇴직\s*연금|IRP/.test(qCtx)) {
+            _fillNewNote('f4_pension', dispAmt2);
+            return;
+          }
+          if (/신용\s*대출|마이너스/.test(qCtx)) {
+            _fillNewNote('f4_credit', dispAmt2);
+            return;
+          }
+          if (/담보\s*대출|주담대|전세\s*대출/.test(qCtx)) {
+            _fillNewNote('f4_mortgage', dispAmt2);
+            return;
+          }
+        }
+      }
+      
+      console.log('[숫자 단독 - 매칭 없음] num:', num, 'curStep:', curStep);
+    }
+  }
+
+
   // "1000만원", "100만원" 같은 짧은 금액 답변을 머니야 질문에 따라 분기
   var shortAmountMatch = t.match(/^([\d,]+)\s*(?:만원|만|원)?[.\s]*$/);
   if (shortAmountMatch) {
