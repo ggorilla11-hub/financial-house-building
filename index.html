@@ -12089,43 +12089,75 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      // ★ 에러대응: 정상종료(사용자가 직접 종료)가 아닌 경우 즉시 배너 표시
-      if(!_vapiUserEnded && !mvpTextOnlyMode) {
-        console.log('[에러대응] 비정상 call-end 감지 → 배너 즉시 표시');
-        // 즉시 배너 표시 (지연 없이)
-        handleVoiceError({ type: 'call-end', message: 'Meeting ended unexpectedly' });
-      } else {
-        showToast('📞 상담이 종료됐습니다');
-      }
+      // ★ [PATCH-2026-04-09] call-end는 비정상이어도 에러 배너 표시 안함
+      // Vapi 내부 cleanup 에러로 인한 오탐 방지
+      console.log('[call-end]', _vapiUserEnded ? '사용자 종료' : '자동 종료');
+      showToast('📞 상담이 종료됐습니다');
       _vapiUserEnded = false; // 플래그 초기화
-      /* DEV-003: 리포트 생성 — 추후 활성화 */
-      // generateFinalReport();
     });
 
     /* ── 오류 ── */
     vapi.on('error', function(e) {
       console.error('[Vapi 오류]', e);
-      // daily-error (Meeting ejection 포함) 즉시 처리
       var errType = (e && e.type) || '';
       var errMsg  = (e && e.error && e.error.msg) || (e && e.message) || '';
-      console.log('[에러대응] 타입:', errType, '메시지:', errMsg);
-      // ejection 에러: 텍스트전환으로 직접 종료한 경우 배너 표시 안함
-      if(errType === 'daily-error' || errMsg.indexOf('ejection') >= 0 || errMsg.indexOf('ended') >= 0) {
+      var errAction = (e && e.error && e.error.action) || '';
+      console.log('[에러대응] 타입:', errType, '메시지:', errMsg, '액션:', errAction);
+      
+      // ★ [PATCH-2026-04-09] 에러 필터 완화
+      // 다음 에러들은 "일시적" 또는 "비치명적"이므로 무시:
+      // - daily-error 중 fatal이 아닌 것 (네트워크 hiccup, cleanup 에러 등)
+      // - removeAllListeners 에러 (Vapi 내부 cleanup 버그)
+      // - providerfault (Vapi 서버 일시 문제, 자동 재시도 가능)
+      var nonFatalPatterns = [
+        'removeAllListeners',
+        'undefined',
+        'Cannot read properties',
+        'network',
+        'timeout'
+      ];
+      var isNonFatal = nonFatalPatterns.some(function(p) {
+        return (errMsg || '').indexOf(p) >= 0;
+      });
+      
+      if (isNonFatal) {
+        console.warn('[에러대응] 비치명적 에러 무시:', errMsg);
+        return; // ← 배너 표시 안 함
+      }
+      
+      // 정말 치명적인 에러만 배너 표시
+      if(errType === 'daily-error' && errAction === 'ejected') {
         vapiCallActive = false;
         _vapiConnecting = false;
-        if(_vapiUserEnded || mvpTextOnlyMode) return; // ★ 정상 종료 - 배너 표시 안함
+        if(_vapiUserEnded || mvpTextOnlyMode) return;
+        handleVoiceError(e);
+        return;
       }
-      handleVoiceError(e); // ★ 에러대응: 텍스트 전환 배너 표시
+      
+      // 사용자가 명시적으로 종료한 경우는 처리 안함
+      if (_vapiUserEnded || mvpTextOnlyMode) return;
+      
+      // 그 외는 로그만 남기고 배너는 표시 안함 (우선 통화 유지)
+      console.warn('[에러대응] 에러 감지되었으나 통화 유지 시도');
     });
 
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
-    // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
+    // ★ [긴급패치 2026-04-09] Vapi 대시보드의 Sonnet 4.6이 removeAllListeners 에러 유발
+    //   → 본 코드에서 assistantOverrides로 모델 강제 주입 (대시보드 무시)
+    //   → GPT-4o로 우회
     await vapi.start(assistantId, {
       variableValues: {
         planInfo: planInject,
+      },
+      model: {
+        provider: "openai",
+        model: "gpt-4o",
+        temperature: 0.7,
+        maxTokens: 500
       }
     });
+    console.log('[Vapi] 모델 강제 주입: gpt-4o (Sonnet 4.6 우회)');
     _vapiConnecting = false;
 
   } catch(e) {
