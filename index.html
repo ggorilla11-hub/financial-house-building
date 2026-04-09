@@ -13307,13 +13307,6 @@ function diagActivatePart(idx) {
   var tabIdx = (idx >= 0 && idx <= 10) ? idx : 0;
   if(typeof dnGo === 'function') dnGo(tabIdx);
 
-  // ★ [v13] 집짓기 탭(5) 진입 시 애니메이션 자동 시작
-  if (idx === 5 && typeof diagStartHouseAnimation === 'function') {
-    setTimeout(function() {
-      diagStartHouseAnimation();
-    }, 400);  // 탭 전환 애니메이션 후
-  }
-
   // 프로세스 바 업데이트
   var ps = document.getElementById('dps'+idx);
   if(ps){
@@ -14253,161 +14246,6 @@ function diagRecalcIncomeExp() {
 let diagHousingType = '';
 
 /* ═══════════════════════════════════════════════════════════
-   [단계3 v13] 금융집짓기 애니메이션 — 상담노트(dnp5) 전용
-   
-   본 코드에 이미 setBp/updateTimeline 있지만 ID가 본 코드 메인 화면과 중복됨
-   → querySelectorAll로 모든 동일 ID 요소에 적용
-   ═══════════════════════════════════════════════════════════ */
-
-/* 집짓기 단계 상태 */
-const diagHouseBuilt = {f:false, w:false, tl:false, r:false, n:false};
-
-/* 집의 한 부분을 올리기 (중복 ID 모두 적용) */
-function diagSetBp(key, on) {
-  var els = document.querySelectorAll('[id="bp-' + key + '"]');
-  if (!els.length) {
-    console.warn('[diagSetBp] 요소 없음:', 'bp-' + key);
-    return;
-  }
-  
-  if (on && !diagHouseBuilt[key]) {
-    diagHouseBuilt[key] = true;
-    els.forEach(function(el) {
-      el.classList.remove('built');
-      void el.offsetWidth; // reflow
-      el.classList.add('built');
-    });
-    console.log('[집짓기]', key, '완성');
-    diagShowBpStatus(key);
-  } else if (!on && diagHouseBuilt[key]) {
-    diagHouseBuilt[key] = false;
-    els.forEach(function(el) { el.classList.remove('built'); });
-  }
-}
-
-/* 상태 메시지 */
-function diagShowBpStatus(key) {
-  var msgs = document.querySelectorAll('[id="bp_status_msg"]');
-  if (!msgs.length) return;
-  var texts = {
-    f:  '🏗️ 1단계: 기초(보험) 공사 완료! 든든한 기초입니다.',
-    w:  '🏗️ 2단계: 몸통(부채/저축/은퇴) 벽체 완공!',
-    tl: '🏗️ 3단계: 처마보(생로병사 타임라인) 설치!',
-    r:  '🏗️ 4단계: 지붕(투자/세금) 올리기 성공!',
-    n:  '🏗️ 5단계: 굴뚝(부동산) 장착! 집짓기 완성!'
-  };
-  msgs.forEach(function(msg) {
-    msg.textContent = texts[key] || '';
-    msg.style.display = 'block';
-  });
-}
-
-/* 하이라이트 펄스 */
-function diagHighlightPart(key) {
-  var HL_MAP = {
-    f:  ['hl-ins'],
-    w:  ['hl-wl', 'hl-wr'],
-    tl: ['hl-tl'],
-    r:  ['hl-rl', 'hl-rr'],
-    n:  ['hl-ch'],
-    wl: ['hl-wl'],
-    wr: ['hl-wr'],
-    rl: ['hl-rl'],
-    rr: ['hl-rr']
-  };
-  // 모든 하이라이트 끄기
-  document.querySelectorAll('.hl').forEach(function(el) { el.classList.remove('on'); });
-  // 지정된 부분만 켜기
-  var ids = HL_MAP[key] || [];
-  ids.forEach(function(id) {
-    document.querySelectorAll('[id="' + id + '"]').forEach(function(el) {
-      el.classList.add('on');
-    });
-  });
-  // 2초 후 자동 해제
-  setTimeout(function() {
-    ids.forEach(function(id) {
-      document.querySelectorAll('[id="' + id + '"]').forEach(function(el) {
-        el.classList.remove('on');
-      });
-    });
-  }, 2200);
-}
-
-/* 나이 3개 업데이트 (현재/은퇴/사망) */
-function diagUpdateHouseAge(cur, ret, die) {
-  console.log('[집짓기 나이]', cur, ret, die);
-  
-  // 텍스트 업데이트 (중복 ID 모두)
-  document.querySelectorAll('[id="sv-cur-age"]').forEach(function(el) {
-    el.textContent = cur ? '현재 ' + cur + '세' : '';
-  });
-  document.querySelectorAll('[id="sv-ret-age"]').forEach(function(el) {
-    el.textContent = ret ? '은퇴 ' + ret + '세 (' + (ret-cur) + '년)' : '';
-  });
-  document.querySelectorAll('[id="sv-die-age"]').forEach(function(el) {
-    el.textContent = die ? '사망 ' + die + '세 (노후 ' + (die-ret) + '년)' : '';
-  });
-  
-  // 타임라인 바 업데이트
-  var span = die - cur;
-  if (span > 0 && cur > 0) {
-    var W = 360;
-    var wW = Math.max(0, Math.min((ret - cur) / span * W, W));
-    var rW = Math.max(0, Math.min((die - ret) / span * W, W - wW));
-    document.querySelectorAll('[id="sv-work-bar"]').forEach(function(wb) {
-      wb.setAttribute('x', '10');
-      wb.setAttribute('width', wW.toFixed(1));
-    });
-    document.querySelectorAll('[id="sv-ret-bar"]').forEach(function(rb) {
-      rb.setAttribute('x', (10 + wW).toFixed(1));
-      rb.setAttribute('width', rW.toFixed(1));
-    });
-  }
-  
-  // f5_pre, f5_post 필드 업데이트
-  var preEls = document.querySelectorAll('[id="f5_pre"]');
-  var postEls = document.querySelectorAll('[id="f5_post"]');
-  preEls.forEach(function(el) {
-    el.textContent = cur + '세 → ' + ret + '세 (' + (ret - cur) + '년 경제활동기)';
-  });
-  postEls.forEach(function(el) {
-    el.textContent = ret + '세 → ' + die + '세 (' + (die - ret) + '년 노후기)';
-  });
-}
-
-/* 집 제목 업데이트 (고객 이름 들어가면) */
-function diagUpdateHouseTitle() {
-  var nameEl = document.getElementById('f1_name');
-  if (!nameEl) return;
-  var name = (nameEl.textContent || '').trim();
-  if (!name || name.indexOf('입력') >= 0 || name === '—') return;
-  
-  document.querySelectorAll('[id="fh_title"]').forEach(function(el) {
-    el.textContent = '🏠 ' + name + '님의 금융집짓기® 설계도';
-  });
-}
-
-/* 집짓기 순차 애니메이션 시작 (5단계 자동 재생) */
-function diagStartHouseAnimation() {
-  console.log('[집짓기 시작] 순차 애니메이션');
-  
-  // 기존 상태 리셋
-  Object.keys(diagHouseBuilt).forEach(function(k) { diagHouseBuilt[k] = false; });
-  document.querySelectorAll('.bp-part').forEach(function(el) { el.classList.remove('built'); });
-  
-  // 집 제목 업데이트
-  diagUpdateHouseTitle();
-  
-  // 순차 실행: 기초(0) → 몸통(1.5초) → 처마보(3초) → 지붕(4.5초) → 굴뚝(6초)
-  setTimeout(function() { diagSetBp('f', true);  }, 500);   // 기초 (보험)
-  setTimeout(function() { diagSetBp('w', true);  }, 2000);  // 몸통 (저축/은퇴)
-  setTimeout(function() { diagSetBp('tl', true); }, 3500);  // 처마보 (나이)
-  setTimeout(function() { diagSetBp('r', true);  }, 5000);  // 지붕 (투자/세금)
-  setTimeout(function() { diagSetBp('n', true); }, 6500);   // 굴뚝 (부동산)
-}
-
-/* ═══════════════════════════════════════════════════════════
    [단계3 v10] 자산부채 자동 계산
    입력: f4_deposit, f4_pension, f4_invest, f4_realty, f4_other, f4_credit, f4_mortgage
    출력: f4_total_asset, f4_total_debt, f4_net, f4_dr, f4_wi_val, f4_wi_bar, f4_wi_diag, f4_emerg
@@ -14956,13 +14794,6 @@ function _fillNewNote(id, displayVal) {
     }, 50);
   }
   
-  // ★ v13: 이름 입력 시 집짓기 제목 업데이트
-  if (id === 'f1_name') {
-    setTimeout(function(){ 
-      if (typeof diagUpdateHouseTitle === 'function') diagUpdateHouseTitle(); 
-    }, 50);
-  }
-  
   return filled;
 }
 
@@ -15114,36 +14945,6 @@ function diagAutoFillNote(userText) {
       // 가족수 (1~15)
       if (numValue >= 1 && numValue <= 15 && /가족|식구|몇\s*명|몇\s*분/.test(lastQ)) {
         _fillNewNote('f1_family', numValue + '명');
-        return;
-      }
-    }
-    
-    // ── 5단계 (집짓기) — 은퇴 나이 / 사망(예상수명) 나이 처리 ──
-    if (curStep === 5 && !billionMatch) {
-      // 현재 나이 확인
-      var curAgeEl = document.getElementById('f1_age');
-      var curAge = 0;
-      if (curAgeEl) {
-        var cam = (curAgeEl.textContent || '').match(/(\d+)/);
-        if (cam) curAge = parseInt(cam[1]);
-      }
-      
-      // 머니야 질문에 "은퇴" → 은퇴 나이
-      if (numValue >= 40 && numValue <= 100 && /은퇴|퇴직/.test(lastQ)) {
-        window._diagRetireAge = numValue;
-        console.log('[집짓기 은퇴나이]', numValue);
-        // 즉시 SVG 업데이트 (사망 나이는 기본 90 또는 저장된 값)
-        var dieAge = window._diagDieAge || 90;
-        if (curAge > 0) diagUpdateHouseAge(curAge, numValue, dieAge);
-        return;
-      }
-      
-      // 머니야 질문에 "수명|사망|몇살까지" → 사망(예상수명) 나이
-      if (numValue >= 50 && numValue <= 120 && /수명|사망|몇\s*세까지|언제까지|살고\s*싶/.test(lastQ)) {
-        window._diagDieAge = numValue;
-        console.log('[집짓기 사망나이]', numValue);
-        var retAge = window._diagRetireAge || 65;
-        if (curAge > 0) diagUpdateHouseAge(curAge, retAge, numValue);
         return;
       }
     }
