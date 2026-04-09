@@ -14558,6 +14558,90 @@ function diagAutoFillNote(userText) {
     }
   }
 
+  // ── ★ [단계3-fix v3] 짧은 금액 답변 컨텍스트 파싱 ──
+  // "1000만원", "100만원" 같은 짧은 금액 답변을 머니야 질문에 따라 분기
+  var shortAmountMatch = t.match(/^([\d,]+)\s*(?:만원|만|원)?[.\s]*$/);
+  if (shortAmountMatch) {
+    var amount = shortAmountMatch[1].replace(/,/g, '');
+    var displayAmount = parseInt(amount).toLocaleString() + '만원';
+    console.log('[짧은 금액 답변]', amount, '만원 | lastQ:', lastQ);
+    
+    // 수지 탭 (curStep 3)에서 lastQ 기반 분기
+    if (curStep === 3 || /수입|지출|소득|월급|실수령|저축|대출|보험료|연금|생활비/.test(lastQ)) {
+      // 수입/소득
+      if (/수입|소득|월급|실수령|세후|받으|버세요|얼마\s*벌|어떻게\s*되/.test(lastQ)) {
+        _fillNewNote('f3_income', displayAmount);
+        return;
+      }
+      // 저축
+      if (/저축|적금|모으|예금|예적금/.test(lastQ)) {
+        _fillNewNote('f3_save_cur', displayAmount);
+        return;
+      }
+      // 대출상환
+      if (/대출\s*상환|원리금|갚|이자/.test(lastQ)) {
+        _fillNewNote('f3_loan_cur', displayAmount);
+        return;
+      }
+      // 보험료
+      if (/보험료|보험\s*(?:얼|얼마)/.test(lastQ)) {
+        _fillNewNote('f3_ins_cur', displayAmount);
+        return;
+      }
+      // 노후연금
+      if (/연금|노후/.test(lastQ)) {
+        _fillNewNote('f3_pension_cur', displayAmount);
+        return;
+      }
+      // 생활비
+      if (/생활비|생활|쓰시|지출/.test(lastQ)) {
+        _fillNewNote('f3_living_cur', displayAmount);
+        return;
+      }
+    }
+    
+    // 자산 탭 (curStep 4)에서 lastQ 기반 분기
+    if (curStep === 4 || /자산|부동산|예적금|현금|투자|주식|퇴직|대출|담보|신용/.test(lastQ)) {
+      // 억 단위 변환
+      var billionMatch = t.match(/^([\d.]+)\s*억[.\s]*$/);
+      if (billionMatch) {
+        var billionVal = Math.round(parseFloat(billionMatch[1]) * 10000);
+        displayAmount = billionVal.toLocaleString() + '만원';
+      }
+      
+      if (/예적금|예금|적금|현금/.test(lastQ)) {
+        _fillNewNote('f4_deposit', displayAmount);
+        return;
+      }
+      if (/부동산|집|아파트/.test(lastQ)) {
+        _fillNewNote('f4_realty', displayAmount);
+        return;
+      }
+      if (/주식|펀드|투자/.test(lastQ)) {
+        _fillNewNote('f4_invest', displayAmount);
+        return;
+      }
+      if (/퇴직\s*연금|IRP/.test(lastQ)) {
+        _fillNewNote('f4_pension', displayAmount);
+        return;
+      }
+      if (/신용\s*대출|마이너스/.test(lastQ)) {
+        _fillNewNote('f4_credit', displayAmount);
+        return;
+      }
+      if (/담보\s*대출|주담대|전세\s*대출/.test(lastQ)) {
+        _fillNewNote('f4_mortgage', displayAmount);
+        return;
+      }
+      if (/총\s*자산/.test(lastQ)) {
+        _fillNewNote('f4_total_asset', displayAmount);
+        return;
+      }
+    }
+    
+    console.log('[짧은 금액 답변 - 매칭 없음] curStep:', curStep);
+  }
+
   // ── 패턴 정의 ──
   var patterns = [];
 
