@@ -11935,7 +11935,7 @@ function diagStartConsult() {
    ══════════════════════════════════════════════════════════ */
 const VAPI_PUBLIC_KEY = '40b0ac9b-d60d-416d-a552-e22b68a26ad2';
 const VAPI_ASSISTANT_FREE = ''; // 무료 Assistant (추후 설정)
-const VAPI_ASSISTANT_PAID = '0406e775-0c01-495a-9abe-4b8b0ea2fc98';
+const VAPI_ASSISTANT_PAID = '46b3efa5-52cc-49c6-ad42-c157fce08da9';
 let vapi = null;
 let vapiCallActive = false;
 
@@ -12143,21 +12143,13 @@ async function diagConnectVoice(isPaid) {
 
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
-    // ★ [긴급패치 2026-04-09] Vapi 대시보드의 Sonnet 4.6이 removeAllListeners 에러 유발
-    //   → 본 코드에서 assistantOverrides로 모델 강제 주입 (대시보드 무시)
-    //   → GPT-4o로 우회
+    console.log('[DEBUG] assistantId:', assistantId);
+    // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
     await vapi.start(assistantId, {
       variableValues: {
         planInfo: planInject,
-      },
-      model: {
-        provider: "openai",
-        model: "gpt-4o",
-        temperature: 0.7,
-        maxTokens: 500
       }
     });
-    console.log('[Vapi] 모델 강제 주입: gpt-4o (Sonnet 4.6 우회)');
     _vapiConnecting = false;
 
   } catch(e) {
