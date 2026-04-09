@@ -8613,6 +8613,9 @@ async function sendTextConsultMessage(txt) {
       addToChatLog('ai', data.message);
       _textConsultHistory.push({ role: 'user', content: txt });
       _textConsultHistory.push({ role: 'assistant', content: data.message });
+      /* ★ [단계3-fix] 머니야 발화 컨텍스트 저장 + 단계 전환 감지 */
+      diagLastQ = data.message;
+      setTimeout(function(){ diagParseAiSpeech(data.message); }, 300);
     } else {
       diagAddSTT('ai', '죄송합니다. 잠시 후 다시 입력해 주세요.', null);
     }
@@ -14432,6 +14435,22 @@ function diagAutoFillNote_legacy(userText) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   [단계3] 새 노트 필드 입력 헬퍼
+   ═══════════════════════════════════════════════════════════ */
+function _fillNewNote(id, displayVal) {
+  var el = document.getElementById(id);
+  if (!el) {
+    console.warn('[노트입력 실패] ID 없음:', id);
+    return false;
+  }
+  el.textContent = displayVal;
+  el.classList.remove('empty');
+  el.classList.add('confirmed');
+  console.log('[노트입력] ' + id + ' = ' + displayVal);
+  return true;
+}
+
+/* ═══════════════════════════════════════════════════════════
    [단계 3] 새 상담노트 v3 전용 diagAutoFillNote
    
    고수님 자문 반영:
@@ -14460,14 +14479,75 @@ function diagAutoFillNote(userText) {
     return;
   }
 
+  // ── ★ [단계3-fix] Yes/No 컨텍스트 파싱 (머니야 직전 질문 기반) ──
+  // 고객이 "네", "아니요"로만 답하면 diagLastQ를 확인해서 의미 판정
+  var lastQ = (typeof diagLastQ !== 'undefined' ? diagLastQ : '') || '';
+  
+  // Yes 응답
+  if (/^(네[.\s]*|예[.\s]*|맞아요?[.\s]*|맞습니다[.\s]*|그래요[.\s]*|그렇습니다[.\s]*|응[.\s]*)$/.test(t)) {
+    console.log('[Yes 응답] lastQ:', lastQ);
+    if (/결혼/.test(lastQ) && !/안\s*했|안했|미혼/.test(lastQ)) {
+      _fillNewNote('f1_marry', '기혼');
+      return;
+    }
+    if (/맞벌이/.test(lastQ)) {
+      _fillNewNote('f1_dual', '맞벌이');
+      return;
+    }
+    // 머니야가 다른 확인 질문 한 경우는 처리 안 함 (잘못 찍힐 위험)
+    console.log('[Yes 응답 - 매칭 없음]');
+    return;
+  }
+  
+  // No 응답
+  if (/^(아니[오요]?[.\s]*|아닙니다[.\s]*|아직[.\s]*|노[.\s]*)$/.test(t)) {
+    console.log('[No 응답] lastQ:', lastQ);
+    if (/결혼/.test(lastQ)) {
+      _fillNewNote('f1_marry', '미혼');
+      return;
+    }
+    if (/맞벌이/.test(lastQ)) {
+      _fillNewNote('f1_dual', '외벌이');
+      return;
+    }
+    console.log('[No 응답 - 매칭 없음]');
+    return;
+  }
+
+  // ── ★ [단계3-fix] 짧은 키워드 답변 (고민/직업 등) ──
+  // 머니야 직전 질문이 "고민"이면 텍스트를 f2_w1/f2_w2에 그대로 넣기
+  if (/고민|걱정|관심|해결하고\s*싶/.test(lastQ)) {
+    // 이미 w1이 차있으면 w2로
+    var w1El = document.getElementById('f2_w1');
+    var w1Empty = !w1El || !w1El.textContent || w1El.textContent.trim() === '' || w1El.textContent.indexOf('입력') >= 0 || w1El.textContent === '—';
+    if (w1Empty) {
+      _fillNewNote('f2_w1', t);
+    } else {
+      var w2El = document.getElementById('f2_w2');
+      var w2Empty = !w2El || !w2El.textContent || w2El.textContent.trim() === '' || w2El.textContent.indexOf('입력') >= 0 || w2El.textContent === '—';
+      if (w2Empty) {
+        _fillNewNote('f2_w2', t);
+      }
+    }
+    return;
+  }
+  
+  // 머니야가 "직업"을 물으면 짧은 답변도 직업으로 간주
+  if (/직업|무슨\s*일|어떤\s*일|일\s*하시/.test(lastQ) && t.length <= 10) {
+    _fillNewNote('f1_job', t);
+    return;
+  }
+
   // ── 현재 활성 단계 확인 ──
   var curStep = (typeof diagCurPart !== 'undefined' ? diagCurPart : 0) || 0;
 
   // ── 패턴 정의 ──
   var patterns = [];
 
-  // [1단계] 인적사항 (curStep 0~1에서만)
-  if (curStep <= 1) {
+  // ★★ [긴급] 단계 제약 전부 제거 — 모든 패턴 항상 활성화
+  // 이유: curStep과 사용자 실제 입력 타이밍이 일치하지 않음
+  // 안전장치: 이름 블랙리스트, 한글 2-5자 필터, 숫자 유효성 검사는 유지
+  if (true) {  // 원래는 if (curStep <= 1) 이었음
     patterns = patterns.concat([
       // 이름
       { id:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고|입|이에|요)/ },
@@ -14490,10 +14570,13 @@ function diagAutoFillNote(userText) {
       
       // 결혼
       { id:'f1_marry', regex:/(기혼|미혼)/ },
-      { id:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했습|한\s*지)/, fixed:'기혼' },
-      { id:'f1_marry', regex:/결혼\s*안[\s했]/, fixed:'미혼' },
+      { id:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했습|한\s*지|한지|함)/, fixed:'기혼' },
+      { id:'f1_marry', regex:/결혼\s*안\s*(?:했|함)/, fixed:'미혼' },
+      { id:'f1_marry', regex:/결혼\s*못\s*했/, fixed:'미혼' },
+      { id:'f1_marry', regex:/(?:아직|안)\s*결혼/, fixed:'미혼' },
       { id:'f1_marry', regex:/이혼/, fixed:'이혼' },
       { id:'f1_marry', regex:/사별/, fixed:'사별' },
+      { id:'f1_marry', regex:/싱글(?:이에|입|이고|임)/, fixed:'미혼' },
       
       // 가족수
       { id:'f1_family', regex:/(\d+)\s*인\s*가족/ },
@@ -14501,19 +14584,48 @@ function diagAutoFillNote(userText) {
       { id:'f1_family', regex:/(\d+)\s*명\s*가족/ },
       { id:'f1_family', regex:/식구\D*?(\d+)/ },
       { id:'f1_family', regex:/^(\d+)\s*명[.\s]*$/ },
+      { id:'f1_family', regex:/혼자\s*(?:살|삽)/, fixed:'1명' },
+      { id:'f1_family', regex:/1인\s*가구/, fixed:'1명' },
       
       // 직업
       { id:'f1_job', regex:/(공무원|직장인|자영업자|자영업|프리랜서|의사|간호사|교사|교수|회사원|사업가|주부|대학생|연구원|엔지니어|개발자|디자이너|변호사|회계사|세무사)/ },
+      { id:'f1_job', regex:/회사\s*다(?:녀|니|님)/, fixed:'직장인' },
+      { id:'f1_job', regex:/(?:사업|장사)\s*(?:해|하고|합니)/, fixed:'자영업' },
       
       // 맞벌이
       { id:'f1_dual', regex:/(맞벌이|외벌이)/ },
-      { id:'f1_dual', regex:/둘\s*다\s*일/, fixed:'맞벌이' },
-      { id:'f1_dual', regex:/혼자\s*일/, fixed:'외벌이' },
+      { id:'f1_dual', regex:/둘\s*다\s*(?:일|벌|직장|근무)/, fixed:'맞벌이' },
+      { id:'f1_dual', regex:/아내(?:도|가)\s*(?:일|벌|직장|근무)/, fixed:'맞벌이' },
+      { id:'f1_dual', regex:/남편(?:도|이)\s*(?:일|벌|직장|근무)/, fixed:'맞벌이' },
+      { id:'f1_dual', regex:/혼자\s*(?:일|벌|직장|근무)/, fixed:'외벌이' },
+      { id:'f1_dual', regex:/저만\s*(?:일|벌)/, fixed:'외벌이' },
+      { id:'f1_dual', regex:/제가\s*(?:혼자|혼자만)\s*(?:벌|일)/, fixed:'외벌이' },
     ]);
   }
 
-  // [3단계] 수입지출 (curStep 2~3에서)
-  if (curStep >= 2 && curStep <= 4) {
+  // [2단계] 경제적 고민 — 제약 제거
+  if (true) {  // 원래는 if (curStep >= 1 && curStep <= 3) 이었음
+    patterns = patterns.concat([
+      // 고민 1 - 자주 나오는 표현들
+      { id:'f2_w1', regex:/노후\s*(?:준비|자금|걱정|대비)/, fixed:'노후 준비' },
+      { id:'f2_w1', regex:/은퇴\s*(?:준비|자금|후)/, fixed:'노후/은퇴 준비' },
+      { id:'f2_w1', regex:/내\s*집\s*(?:마련|장만|사|구입)/, fixed:'내 집 마련' },
+      { id:'f2_w1', regex:/집\s*(?:사|장만|구입)/, fixed:'내 집 마련' },
+      { id:'f2_w1', regex:/(?:대출|빚)\s*(?:갚|상환|많|부담)/, fixed:'부채 상환' },
+      { id:'f2_w1', regex:/대출.*?(?:많|부담|걱정)/, fixed:'부채 부담' },
+      { id:'f2_w1', regex:/교육비|학원비|자녀\s*교육/, fixed:'자녀 교육비' },
+      { id:'f2_w1', regex:/자녀\s*(?:결혼|독립)/, fixed:'자녀 결혼자금' },
+      { id:'f2_w1', regex:/절세|세금\s*(?:줄|환급|혜택)/, fixed:'절세' },
+      { id:'f2_w1', regex:/투자\s*(?:수익|늘|방법)/, fixed:'투자 수익' },
+      { id:'f2_w1', regex:/저축\s*(?:부족|늘려|못)/, fixed:'저축 부족' },
+      { id:'f2_w1', regex:/보험\s*(?:점검|정리|많)/, fixed:'보험 점검' },
+      { id:'f2_w1', regex:/(?:막연|불안|걱정|모르)/, fixed:'막연한 불안' },
+      { id:'f2_w1', regex:/돈\s*(?:관리|모으|늘려)/, fixed:'자산 관리' },
+    ]);
+  }
+
+  // [3단계] 수입지출 — 제약 제거
+  if (true) {  // 원래는 if (curStep >= 2 && curStep <= 4) 이었음
     patterns = patterns.concat([
       // 월수입
       { id:'f3_income', regex:/월\s*(?:급여|급|수입|소득|실수령)\D*?([\d,]+)\s*만/ },
@@ -14546,8 +14658,8 @@ function diagAutoFillNote(userText) {
     ]);
   }
 
-  // [4단계] 자산부채 (curStep 3~4에서)
-  if (curStep >= 3 && curStep <= 5) {
+  // [4단계] 자산부채 — 제약 제거
+  if (true) {  // 원래는 if (curStep >= 3 && curStep <= 5) 이었음
     patterns = patterns.concat([
       // 총자산
       { id:'f4_total_asset', regex:/총\s*자산\D*?([\d,.]+)\s*억/, mul:10000 },
@@ -14626,8 +14738,28 @@ function diagAutoFillNote(userText) {
       // 값 유효성 확인
       if (val === null || val === undefined || val === '') continue;
       
+      // ★ f2_w1 이미 채워져 있으면 f2_w2로 자동 이동 (두 번째 고민)
+      var targetId = p.id;
+      if (p.id === 'f2_w1') {
+        var w1El = document.getElementById('f2_w1');
+        if (w1El && w1El.textContent && !w1El.textContent.includes('입력 대기') && w1El.textContent.trim() !== '—') {
+          // 같은 값이면 중복 방지
+          if (w1El.textContent.trim() === val) {
+            console.log('[노트입력] f2_w1 이미 같은 값:', val);
+            continue;
+          }
+          // 다른 값이면 f2_w2에 입력
+          targetId = 'f2_w2';
+          var w2El = document.getElementById('f2_w2');
+          if (w2El && w2El.textContent && !w2El.textContent.includes('입력 대기') && w2El.textContent.trim() !== '—') {
+            console.log('[노트입력] f2_w1, f2_w2 둘 다 이미 채워짐. 스킵:', val);
+            continue;
+          }
+        }
+      }
+      
       // 새 노트 필드에 입력
-      var el = document.getElementById(p.id);
+      var el = document.getElementById(targetId);
       if (el) {
         // 표시 포맷 결정
         var displayVal = val;
@@ -14642,12 +14774,12 @@ function diagAutoFillNote(userText) {
         el.textContent = displayVal;
         el.classList.remove('empty');
         el.classList.add('confirmed');
-        console.log('[노트입력] ' + p.id + ' = ' + displayVal);
+        console.log('[노트입력] ' + targetId + ' = ' + displayVal);
         
         filled = true;
         // 같은 발화에서 여러 필드 채울 수 있음 - break 없음
       } else {
-        console.warn('[노트입력 실패] ID 없음:', p.id);
+        console.warn('[노트입력 실패] ID 없음:', targetId);
       }
     }
   }
