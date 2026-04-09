@@ -14448,18 +14448,42 @@ function diagAutoFillNote_legacy(userText) {
 
 /* ═══════════════════════════════════════════════════════════
    [단계3] 새 노트 필드 입력 헬퍼
+   ★ v5: ID 별칭 매핑 — 새 노트(bt_*)와 본 코드 호환 ID(f3_*) 양쪽에 씀
    ═══════════════════════════════════════════════════════════ */
+var _NOTE_ID_ALIASES = {
+  // 수지 탭: 본 코드는 f3_*를 쓰지만 시뮬 노트는 bt_*
+  'f3_income':      ['f3_income', 'bt_inc_cur'],
+  'f3_save_cur':    ['f3_save_cur', 'bt_sav_cur'],
+  'f3_loan_cur':    ['f3_loan_cur', 'bt_loan_cur'],
+  'f3_ins_cur':     ['f3_ins_cur', 'bt_ins_cur'],
+  'f3_pension_cur': ['f3_pension_cur', 'bt_pen_cur'],
+  'f3_living_cur':  ['f3_living_cur', 'bt_life_cur'],
+  // 역방향도
+  'bt_inc_cur':     ['bt_inc_cur', 'f3_income'],
+  'bt_sav_cur':     ['bt_sav_cur', 'f3_save_cur'],
+  'bt_loan_cur':    ['bt_loan_cur', 'f3_loan_cur'],
+  'bt_ins_cur':     ['bt_ins_cur', 'f3_ins_cur'],
+  'bt_pen_cur':     ['bt_pen_cur', 'f3_pension_cur'],
+  'bt_life_cur':    ['bt_life_cur', 'f3_living_cur'],
+};
+
 function _fillNewNote(id, displayVal) {
-  var el = document.getElementById(id);
-  if (!el) {
-    console.warn('[노트입력 실패] ID 없음:', id);
-    return false;
+  var ids = _NOTE_ID_ALIASES[id] || [id];
+  var filled = false;
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) {
+      el.textContent = displayVal;
+      el.classList.remove('empty');
+      el.classList.add('confirmed');
+      console.log('[노트입력] ' + ids[i] + ' = ' + displayVal);
+      filled = true;
+    }
   }
-  el.textContent = displayVal;
-  el.classList.remove('empty');
-  el.classList.add('confirmed');
-  console.log('[노트입력] ' + id + ' = ' + displayVal);
-  return true;
+  if (!filled) {
+    console.warn('[노트입력 실패] ID 없음:', id, '(별칭:', ids.join(','), ')');
+  }
+  return filled;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -14581,35 +14605,36 @@ function diagAutoFillNote(userText) {
     console.log('[짧은 금액 답변]', amount, '만원 | qCtx:', qCtx);
     
     // 수지 탭 (curStep 3)에서 qCtx 기반 분기 (최근 3개 머니야 발화)
+    // ★ 수지 탭 실제 ID는 bt_* (시뮬레이터 테이블 ID)
     if (curStep === 3 || /수입|지출|소득|월급|실수령|저축|대출|보험료|연금|생활비/.test(qCtx)) {
-      // 수입/소득
+      // 수입/소득 → bt_inc_cur (실수령액)
       if (/수입|소득|월급|실수령|세후|받으|버세요|얼마\s*벌/.test(qCtx)) {
-        _fillNewNote('f3_income', displayAmount);
+        _fillNewNote('bt_inc_cur', displayAmount);
         return;
       }
-      // 저축
+      // 저축 → bt_sav_cur
       if (/저축|적금|모으|예금|예적금/.test(qCtx)) {
-        _fillNewNote('f3_save_cur', displayAmount);
+        _fillNewNote('bt_sav_cur', displayAmount);
         return;
       }
-      // 대출상환
+      // 대출상환 → bt_loan_cur (대출원리금)
       if (/대출\s*상환|원리금|갚|이자|대출/.test(qCtx)) {
-        _fillNewNote('f3_loan_cur', displayAmount);
+        _fillNewNote('bt_loan_cur', displayAmount);
         return;
       }
-      // 보험료
+      // 보험료 → bt_ins_cur
       if (/보험료|보험/.test(qCtx)) {
-        _fillNewNote('f3_ins_cur', displayAmount);
+        _fillNewNote('bt_ins_cur', displayAmount);
         return;
       }
-      // 노후연금
+      // 노후연금 → bt_pen_cur
       if (/연금|노후/.test(qCtx)) {
-        _fillNewNote('f3_pension_cur', displayAmount);
+        _fillNewNote('bt_pen_cur', displayAmount);
         return;
       }
-      // 생활비
+      // 생활비 → bt_life_cur
       if (/생활비|생활|쓰시|지출/.test(qCtx)) {
-        _fillNewNote('f3_living_cur', displayAmount);
+        _fillNewNote('bt_life_cur', displayAmount);
         return;
       }
     }
