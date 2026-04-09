@@ -12172,12 +12172,30 @@ function handleVapiToolCall(toolCallList) {
 }
 
 function updateNoteField(tab, field, value, label) {
-  /* 해당 탭으로 자동 이동 */
-  var tabIdx = parseInt(tab) || 0;
-  if(typeof dnGo === 'function') dnGo(tabIdx);
+  /* ★ [PATCH 2026-04-09] tab 유효성 검증 — 잘못된 tab으로 0(표지)으로 돌아가는 문제 방지 */
+  var tabIdx = parseInt(tab);
+  var tabValid = !isNaN(tabIdx) && tabIdx >= 0 && tabIdx <= 10;
+  
+  if (!tabValid) {
+    /* tab이 유효하지 않으면 탭 이동하지 않음 (현재 탭 유지) */
+    console.warn('[updateNoteField] 유효하지 않은 tab:', tab, '→ 탭 이동 건너뜀');
+    tabIdx = diagCurPart || 0;
+  } else {
+    /* ★ 이미 같은 탭이면 이동하지 않음 (불필요한 재이동 방지) */
+    if (tabIdx !== diagCurPart) {
+      /* ★ 표지(0)로 돌아가는 것 차단 — 이미 상담 진행 중인데 0으로 돌리지 않음 */
+      if (tabIdx === 0 && diagCurPart > 0) {
+        console.warn('[updateNoteField] 0(표지) 복귀 차단 — 현재 단계 유지:', diagCurPart);
+        tabIdx = diagCurPart;
+      } else {
+        if(typeof dnGo === 'function') dnGo(tabIdx);
+        diagCurPart = tabIdx;
+      }
+    }
+  }
 
   /* 해당 필드에 값 입력 — 기존 diagHandleNote와 동일한 ID 규칙 */
-  var el = document.getElementById('f' + tab + '_' + field);
+  var el = document.getElementById('f' + tabIdx + '_' + field);
   if(el) {
     dnFill(el, value);
     el.style.background = '#FFF8E6';
@@ -12185,11 +12203,11 @@ function updateNoteField(tab, field, value, label) {
   }
 
   /* 금융집짓기 설계도 업데이트 */
-  if(tab === '5' && typeof updateHouseDiagram === 'function') {
+  if(String(tabIdx) === '5' && typeof updateHouseDiagram === 'function') {
     updateHouseDiagram(field, value);
   }
 
-  console.log('[노트 업데이트]', label + ': ' + value);
+  console.log('[노트 업데이트] tab=' + tabIdx + ' ' + (label || field) + ': ' + value);
 }
 
 // [비활성화 by DEV-001] 기존 OpenAI Realtime 함수들
