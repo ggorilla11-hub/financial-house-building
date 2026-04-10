@@ -6289,9 +6289,18 @@ function onPaypleResult(data){
         _exp.setMonth(_exp.getMonth() + 1); // 월간: 1개월
       }
       window._fhDb.collection('subscribers').doc(_docId).set({
-        email:_payerEmail, name:_payerName, plan:currentPlan,
-        creditMin:credit, active:true, expiry:_exp.toISOString(),
-        paidAt:new Date().toISOString(), orderId:data.PCD_PAY_OID||''
+        email:    _payerEmail,
+        name:     _payerName,
+        plan:     currentPlan,
+        planTier: (planInfo && planInfo.tier)     || '',  // ★ bronze/silver/gold/premium/expert
+        planType: (planInfo && planInfo.type)     || '',  // ★ single/month/year
+        voiceMin: (planInfo && planInfo.min)      || 20,  // ★ 음성 상담 시간(분)
+        textDays: (planInfo && planInfo.textDays) || 30,  // ★ 텍스트 상담 기간(일)
+        creditMin: credit,
+        active:    true,
+        expiry:    _exp.toISOString(),
+        paidAt:    new Date().toISOString(),
+        orderId:   data.PCD_PAY_OID || ''
       }).catch(function(e){ console.log('[Firestore]', e.message); });
     }
     mpIsSubscribed = true;
@@ -8314,9 +8323,13 @@ function mvpGoToDiag() {
       break;
     }
   }
-  // 준비화면(diagScreenA) 건너뛰고 바로 상담 시작
+  // ★ [2026-04-10] 음성/텍스트 선택 모달 → 선택 후 상담 시작
   setTimeout(function(){
-    diagStartConsult();
+    if(typeof cmmOpen === 'function') {
+      cmmOpen();
+    } else {
+      diagStartConsult();
+    }
   }, 500);
 }
 
@@ -8620,6 +8633,214 @@ var mvpTextOnlyMode = false;
 var _vapiUserEnded = false; // 사용자가 직접 종료버튼 눌렀을 때 true
 var _textConsultHistory = []; // 텍스트 전환 후 대화 맥락 보관
 
+/* ═══════════════════════════════════════════════════════════════
+   ★ [2026-04-10] 대화 이력 영구 저장/복원 시스템
+   
+   목적: 
+   - 음성 상담 만료 후 텍스트로 자연스럽게 이어서 진행
+   - 일주일 뒤 재진입해도 머니야가 이전 대화를 기억하고 이어서 상담
+   
+   저장 방식 (이중화):
+   1) localStorage — 즉시 저장, 비로그인도 작동
+   2) Firestore — 백그라운드 저장, 로그인 사용자만, 영구 보관 (우선 로드)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 저장: localStorage + Firestore 양쪽에 저장 ── */
+function saveChatHistoryPersistent(history) {
+  if(!Array.isArray(history)) history = [];
+  
+  var email = localStorage.getItem('fh_payer_email') || 
+              (window._fhCurrentUser && window._fhCurrentUser.email) || '';
+  var userId = email ? email.replace(/\./g, '_').replace(/@/g, '_at_') : 'guest';
+  var key = 'fh_chat_log_' + userId;
+  
+  var payload = {
+    history: history,
+    lastUpdated: new Date().toISOString(),
+    plan: localStorage.getItem('fh_plan') || 'bronze-single',
+    curStep: (typeof curStep !== 'undefined') ? curStep : 0,
+    sessionNo: parseInt(localStorage.getItem('fh_session_no') || '1'),
+    noteSnapshot: collectNoteSnapshot(),
+  };
+  
+  // localStorage (항상 성공)
+  try {
+    localStorage.setItem(key, JSON.stringify(payload));
+    console.log('[대화저장] localStorage:', history.length + '개');
+  } catch(e) {
+    console.warn('[대화저장] localStorage 실패:', e.message);
+    if(history.length > 20) {
+      payload.history = history.slice(-Math.floor(history.length / 2));
+      try { localStorage.setItem(key, JSON.stringify(payload)); } catch(e2) {}
+    }
+  }
+  
+  // Firestore (로그인 사용자만, 백그라운드)
+  if(email && window._fhDb) {
+    try {
+      window._fhDb.collection('conversations').doc(userId).set({
+        email: email,
+        history: history,
+        lastUpdated: new Date().toISOString(),
+        plan: payload.plan,
+        curStep: payload.curStep,
+        sessionNo: payload.sessionNo,
+        noteSnapshot: payload.noteSnapshot,
+      }, { merge: true }).then(function() {
+        console.log('[대화저장] Firestore OK');
+      }).catch(function(e) {
+        console.warn('[대화저장] Firestore 실패:', e.message);
+      });
+    } catch(e) {
+      console.warn('[대화저장] Firestore 접근 실패:', e.message);
+    }
+  }
+}
+
+/* ── 복원: Firestore 우선, 없으면 localStorage (멀티디바이스 싱크) ── */
+function loadChatHistoryPersistent() {
+  var email = localStorage.getItem('fh_payer_email') || 
+              (window._fhCurrentUser && window._fhCurrentUser.email) || '';
+  var userId = email ? email.replace(/\./g, '_').replace(/@/g, '_at_') : 'guest';
+  var key = 'fh_chat_log_' + userId;
+  
+  // Firestore 비동기 시도 (로그인 시)
+  if(email && window._fhDb) {
+    window._fhDb.collection('conversations').doc(userId).get()
+      .then(function(doc) {
+        if(doc.exists) {
+          var fsData = doc.data();
+          if(fsData && Array.isArray(fsData.history) && fsData.history.length > 0) {
+            console.log('[대화복원] Firestore ' + fsData.history.length + '개');
+            var lsRaw = localStorage.getItem(key);
+            var lsData = null;
+            try { lsData = lsRaw ? JSON.parse(lsRaw) : null; } catch(e) {}
+            var fsTime = new Date(fsData.lastUpdated || 0).getTime();
+            var lsTime = lsData ? new Date(lsData.lastUpdated || 0).getTime() : 0;
+            if(fsTime >= lsTime) {
+              try { localStorage.setItem(key, JSON.stringify(fsData)); } catch(e) {}
+              if(typeof restoreChatLogUI === 'function') restoreChatLogUI(fsData);
+              console.log('[대화복원] Firestore 동기화 완료');
+            }
+          }
+        }
+      })
+      .catch(function(e) { console.warn('[대화복원] Firestore 실패:', e.message); });
+  }
+  
+  // localStorage 즉시 반환
+  try {
+    var raw = localStorage.getItem(key);
+    if(raw) {
+      var data = JSON.parse(raw);
+      if(data && Array.isArray(data.history) && data.history.length > 0) {
+        console.log('[대화복원] localStorage ' + data.history.length + '개 (즉시)');
+        return data;
+      }
+    }
+  } catch(e) {
+    console.warn('[대화복원] localStorage 파싱 실패:', e.message);
+  }
+  return null;
+}
+
+/* ── 상담노트 스냅샷 수집 ── */
+function collectNoteSnapshot() {
+  var snapshot = {};
+  try {
+    var fields = [
+      'f1_name','f1_age','f1_marry','f1_family','f1_job','f1_dual',
+      'f2_w1','f2_w2','f2_w3',
+      'bt_inc_cur','bt_loan_cur','bt_ins_cur','bt_pen_cur','bt_sav_cur','bt_sur_cur',
+      'f4_deposit','f4_pension','f4_invest','f4_realty','f4_other','f4_credit','f4_mortgage',
+    ];
+    fields.forEach(function(fid) {
+      var el = document.getElementById(fid);
+      if(el) snapshot[fid] = (el.value || el.textContent || '').trim();
+    });
+  } catch(e) {
+    console.warn('[노트스냅샷] 실패:', e.message);
+  }
+  return snapshot;
+}
+
+/* ── UI 복원: 저장된 대화를 채팅 로그에 그리기 ── */
+function restoreChatLogUI(data) {
+  if(!data || !Array.isArray(data.history) || data.history.length === 0) return;
+  
+  var chatLog = document.getElementById('dn_chat_log');
+  if(!chatLog) return;
+  
+  // 재호출 시 이전 복원 메시지 제거
+  if(chatLog.getAttribute('data-restored') === '1') {
+    var restored = chatLog.querySelectorAll('[data-restored-msg="1"]');
+    restored.forEach(function(el) { el.remove(); });
+  }
+  chatLog.setAttribute('data-restored', '1');
+  
+  var lastDate = data.lastUpdated ? new Date(data.lastUpdated) : null;
+  var daysAgo = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / 86400000) : 0;
+  var timeStr = daysAgo === 0 ? '오늘' : (daysAgo === 1 ? '어제' : daysAgo + '일 전');
+  
+  diagAddSTT('system', '📚 ' + timeStr + ' 진행한 상담 내용을 불러왔습니다. 이어서 진행해드릴게요.', null);
+  setTimeout(function() {
+    var lb = chatLog.lastElementChild;
+    if(lb) lb.setAttribute('data-restored-msg', '1');
+  }, 50);
+  
+  var displayMessages = data.history.slice(-20);
+  displayMessages.forEach(function(msg) {
+    diagAddSTT(msg.role === 'assistant' ? 'ai' : 'user', msg.content, null);
+    setTimeout(function() {
+      var lb = chatLog.lastElementChild;
+      if(lb) lb.setAttribute('data-restored-msg', '1');
+    }, 50);
+  });
+  
+  _textConsultHistory = data.history.slice();
+  console.log('[UI복원]', displayMessages.length + '개 표시');
+}
+
+/* ── resumeContext 생성: Vapi 시스템 프롬프트에 주입할 요약 ── */
+function buildResumeContext() {
+  var data = loadChatHistoryPersistent();
+  if(!data || !data.history || data.history.length === 0) return '';
+  
+  var history = data.history;
+  var lastDate = data.lastUpdated ? new Date(data.lastUpdated) : new Date();
+  var daysAgo = Math.floor((Date.now() - lastDate.getTime()) / 86400000);
+  var timeStr = daysAgo === 0 ? '오늘' : (daysAgo === 1 ? '어제' : daysAgo + '일 전');
+  
+  var recent = history.slice(-15);
+  var summary = recent.map(function(m) {
+    var who = m.role === 'assistant' ? '머니야' : '고객';
+    var content = (m.content || '').replace(/\n/g, ' ').substring(0, 200);
+    return who + ': ' + content;
+  }).join('\n');
+  
+  var context = '[이전 상담 맥락 — ' + timeStr + ']\n' + summary;
+  
+  if(data.noteSnapshot && Object.keys(data.noteSnapshot).length > 0) {
+    var ns = data.noteSnapshot;
+    var noteSummary = [];
+    if(ns.f1_name)    noteSummary.push('이름: ' + ns.f1_name);
+    if(ns.f1_age)     noteSummary.push('나이: ' + ns.f1_age);
+    if(ns.f1_job)     noteSummary.push('직업: ' + ns.f1_job);
+    if(ns.bt_inc_cur) noteSummary.push('월수입: ' + ns.bt_inc_cur);
+    if(ns.f2_w1)      noteSummary.push('경제적 고민: ' + ns.f2_w1);
+    if(noteSummary.length > 0) {
+      context += '\n\n[수집된 정보]\n' + noteSummary.join(', ');
+    }
+  }
+  
+  if(typeof data.curStep === 'number' && data.curStep > 0) {
+    context += '\n\n[이전 진행 단계] ' + data.curStep + '단계까지 완료';
+  }
+  
+  context += '\n\n위 내용을 참고하여 자연스럽게 이어서 상담하세요. 이전에 이미 물어본 내용은 다시 묻지 마세요.';
+  return context;
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    음성 에러대응 & 텍스트 전환 완전 구현 (계획서 v1.0)
    ★ 음성 코드 일절 수정 없음 — 이벤트 핸들러에 분기만
@@ -8898,6 +9119,13 @@ function manualSwitchToText() {
   if(diagInt) { clearInterval(diagInt); diagInt = null; }
   // ★ 대화 맥락 수집 후 Vapi 완전 종료
   var _history = collectConversationHistory();
+  
+  // ★ [2026-04-10] 대화 이력 영구 저장
+  try {
+    saveChatHistoryPersistent(_history);
+    console.log('[수동전환] 대화 저장:', _history.length + '개');
+  } catch(e) { console.warn('[수동전환] 저장 실패:', e.message); }
+  
   _vapiUserEnded = true;
   if(vapi) {
     try { vapi.stop(); } catch(e) {}
@@ -8910,7 +9138,7 @@ function manualSwitchToText() {
   var _planName   = localStorage.getItem('fh_plan') || 'bronze-single';
   var totalCredit = fhGetPlanMin(_planName);
   localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
-  switchToTextMode();
+  switchToTextMode(_history);
 }
 
 function mvpVoiceTimeUp() {
@@ -8924,14 +9152,16 @@ function mvpVoiceTimeUp() {
   localStorage.setItem('mvp_credit_min', '0');
   localStorage.setItem('mvp_last_session_min', String(usedMin));
 
-  // ★ Vapi 음성만 음소거 (연결은 유지 → 텍스트 전송 가능)
+  // ★ [2026-04-10] 대화 이력 영구 저장 (localStorage + Firestore)
+  var history = collectConversationHistory();
+  saveChatHistoryPersistent(history);
+  console.log('[시간만료] 대화 이력 저장:', history.length + '개');
+
+  // ★ Vapi 완전 종료 (음성 세션 종료)
   if(vapi && vapiCallActive) {
-    try { vapi.setMuted(true); } catch(e) {}
-    // Vapi 오디오 출력도 음소거 (스피커에서 안 들리게)
-    try {
-      var audioEls = document.querySelectorAll('audio');
-      audioEls.forEach(function(a) { a.muted = true; a.volume = 0; });
-    } catch(e) {}
+    try { vapi.stop(); } catch(e) {}
+    try { vapi.removeAllListeners(); } catch(e) {}
+    vapi = null; vapiCallActive = false;
   }
 
   // 마이크 스트림 해제
@@ -8944,26 +9174,28 @@ function mvpVoiceTimeUp() {
 
   mvpTextOnlyMode = true;
 
-  // UI 업데이트: 마이크 아이콘 변경, 상태 표시
-  var micIco = document.getElementById('diagMicIco');
-  if(micIco) micIco.textContent = '🔇';
+  // 타이머 중지
+  if(diagInt) { clearInterval(diagInt); diagInt = null; }
 
-  // 타이머 중지 (더 이상 시간 증가 안 함)
-  clearInterval(diagInt);
+  // ★ [2026-04-10] switchToTextMode 호출 — 완전한 UI 전환
+  switchToTextMode(history);
 
-  // 상단 LIVE 표시 변경
-  var liveTxt = document.querySelector('.c-live-txt');
-  if(liveTxt) liveTxt.textContent = '텍스트 상담 중';
-  var liveDot = document.querySelector('.c-live-dot');
-  if(liveDot) liveDot.style.background = '#3b82f6';
+  // ★ 머니야가 텍스트 전환을 자연스럽게 안내
+  var _planName  = localStorage.getItem('fh_plan') || 'bronze-single';
+  var _planData  = fhGetPlan(_planName);
+  var _planMin   = _planData.min || 20;
+  var _textDays  = _planData.textDays || 30;
+  
+  setTimeout(function() {
+    diagAddSTT('ai',
+      '고객님, 오늘 ' + _planMin + '분 음성 상담이 모두 끝났습니다. 정말 수고 많으셨어요. ' +
+      '지금까지 함께 이야기 나눈 내용은 모두 저장해두었습니다. ' +
+      '앞으로 ' + _textDays + '일 동안 언제든 텍스트로 이어서 상담하실 수 있어요. ' +
+      '궁금한 점이나 이어서 하고 싶은 이야기가 있으면 아래 입력창에 편하게 적어주세요. 😊',
+      null);
+  }, 1500);
 
-  // STT 영역에 안내 메시지 (플랜별 크레딧 표시)
-  var _planCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
-  var _planName   = localStorage.getItem('fh_plan') || 'bronze-single';
-  var _totalMin   = fhGetPlanMin(_planName);
-  diagAddSTT('ai', '⏰ 음성 크레딧 ' + _totalMin + '분이 소진되었습니다. 텍스트로 계속 상담하실 수 있습니다. 아래 입력창에 질문을 입력해 주세요! 😊', null);
-
-  showToast('🔵 음성 종료 · 텍스트 무제한 상담 계속 가능');
+  showToast('💬 음성 종료 · 텍스트로 ' + _textDays + '일 상담 가능합니다');
 }
 
 function mpOpen() {
@@ -12024,6 +12256,164 @@ function escapeHtml(str) {
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ★ [2026-04-10] 상담 방식 선택 모달 + 텍스트 전용 시작
+   ═══════════════════════════════════════════════════════════════ */
+
+function cmmOpen() {
+  var modal = document.getElementById('consultModeModal');
+  if(!modal) {
+    if(typeof diagStartConsult === 'function') diagStartConsult();
+    return;
+  }
+  
+  var planKey = localStorage.getItem('fh_plan') || 'bronze-single';
+  var planData = (typeof fhGetPlan === 'function') ? fhGetPlan(planKey) : null;
+  if(planData) {
+    var tierEmoji = {bronze:'🥉', silver:'🥈', gold:'🥇', premium:'💎', expert:'👔'};
+    var emoji = tierEmoji[planData.tier] || '🥈';
+    var planLabelEl = document.getElementById('cmmPlanLabel');
+    var planTimeEl = document.getElementById('cmmPlanTime');
+    if(planLabelEl) planLabelEl.textContent = emoji + ' ' + planData.shortLabel + ' 플랜';
+    if(planTimeEl) planTimeEl.textContent = '음성 ' + planData.min + '분 + 텍스트 ' + (planData.textDays || 30) + '일';
+  }
+  
+  var lastMode = localStorage.getItem('fh_last_consult_mode') || 'voice';
+  var voiceCard = document.getElementById('cmmVoiceCard');
+  var textCard  = document.getElementById('cmmTextCard');
+  if(lastMode === 'text') {
+    if(voiceCard) { voiceCard.style.borderColor = '#cbd5e1'; voiceCard.style.background = '#f8fafc'; }
+    if(textCard)  { textCard.style.borderColor = '#3b82f6'; textCard.style.background = 'linear-gradient(135deg,rgba(59,130,246,.08),rgba(59,130,246,.02))'; }
+  }
+  
+  modal.style.display = 'flex';
+}
+
+function cmmClose() {
+  var modal = document.getElementById('consultModeModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function cmmSelectMode(mode) {
+  try { localStorage.setItem('fh_last_consult_mode', mode); } catch(e) {}
+  cmmClose();
+  console.log('[상담모드]', mode);
+  
+  if(mode === 'voice') {
+    if(typeof diagStartConsult === 'function') diagStartConsult();
+  } else if(mode === 'text') {
+    startTextOnlyConsult();
+  }
+}
+
+/* ── 텍스트 전용 상담 시작 (음성 연결 없이) ── */
+function startTextOnlyConsult() {
+  console.log('[텍스트전용] 상담 시작');
+  
+  var sa = document.getElementById('diagScreenA');
+  var sb = document.getElementById('diagScreenB');
+  if(sa) sa.style.display = 'none';
+  if(sb) {
+    sb.style.display = 'flex';
+    sb.style.flexDirection = 'column';
+    sb.style.height = '100%';
+    sb.style.overflow = 'hidden';
+  }
+  
+  if(typeof DIAG_PARTS !== 'undefined' && DIAG_PARTS[0]) {
+    DIAG_PARTS[0].fields[1][1] = (typeof DIAG_TODAY_STR !== 'undefined') ? DIAG_TODAY_STR : '';
+    DIAG_PARTS[0].fields[2][1] = (typeof DIAG_SESSION_NUM !== 'undefined' ? DIAG_SESSION_NUM : 1) 
+      + '회차 ' + (typeof DIAG_IS_FIRST !== 'undefined' && DIAG_IS_FIRST ? '(초회진단)' : '(정기상담)');
+  }
+  
+  var si = document.getElementById('diagSessionInfo');
+  if(si && typeof DIAG_TODAY_STR !== 'undefined') {
+    si.textContent = DIAG_TODAY_STR + ' · ' + 
+      (typeof DIAG_SESSION_NUM !== 'undefined' ? DIAG_SESSION_NUM : 1) + '회차 ' +
+      (typeof DIAG_IS_FIRST !== 'undefined' && DIAG_IS_FIRST ? '초회진단' : '정기상담') +
+      ' · 💬 텍스트';
+  }
+  
+  if(typeof diagBuildNotes === 'function') diagBuildNotes();
+  
+  if(diagInt) { clearInterval(diagInt); diagInt = null; }
+  diagSec = 0;
+  diagPaused = false;
+  mvpTextOnlyMode = true;
+  _vapiUserEnded = false;
+  
+  try {
+    var savedData = loadChatHistoryPersistent();
+    if(savedData && savedData.history && savedData.history.length > 0) {
+      setTimeout(function() { restoreChatLogUI(savedData); }, 500);
+    }
+  } catch(e) { console.warn('[텍스트전용] 복원 실패:', e.message); }
+  
+  setTimeout(function() {
+    var wave = document.getElementById('diagWave');
+    if(wave) wave.style.display = 'none';
+    
+    document.querySelectorAll('.c-mini-btn').forEach(function(btn) {
+      var lbl = btn.querySelector('.lbl');
+      if(lbl && (lbl.textContent.includes('마이크') || lbl.textContent.includes('카메라') || lbl.textContent.includes('녹음'))) {
+        btn.style.display = 'none';
+      }
+    });
+    
+    var liveTxt = document.querySelector('.c-live-txt');
+    if(liveTxt) liveTxt.textContent = '💬 텍스트 상담 중';
+    var liveDot = document.querySelector('.c-live-dot');
+    if(liveDot) liveDot.style.background = '#3b82f6';
+    
+    var micIco = document.getElementById('diagMicIco');
+    if(micIco) micIco.textContent = '💬';
+    
+    var inp = document.getElementById('diagTextInp');
+    if(inp) {
+      inp.placeholder = '메시지를 입력하세요...';
+      inp.style.fontSize = '14px';
+      setTimeout(function() { inp.focus(); }, 300);
+    }
+    
+    var switchBtn = document.getElementById('diagTextSwitchBtn');
+    if(switchBtn) {
+      switchBtn.textContent = '🎤 음성으로 전환';
+      switchBtn.style.background = 'rgba(34,197,94,.15)';
+      switchBtn.style.color = '#86efac';
+      switchBtn.style.border = '1px solid rgba(34,197,94,.3)';
+      switchBtn.onclick = function() { manualReturnToVoice(); };
+    }
+    
+    var savedData = loadChatHistoryPersistent();
+    var hasHistory = savedData && savedData.history && savedData.history.length > 0;
+    
+    if(!hasHistory) {
+      setTimeout(function() {
+        var planKey = localStorage.getItem('fh_plan') || 'bronze-single';
+        var planData = fhGetPlan(planKey);
+        var planLabel = planData.shortLabel || '브론즈';
+        var textDays = planData.textDays || 30;
+        
+        diagAddSTT('ai',
+          '안녕하세요! AI 금융집사 머니야예요 😊\n\n' +
+          planLabel + ' 플랜으로 텍스트 상담을 시작합니다. ' +
+          textDays + '일 동안 언제든지 이어서 진행하실 수 있어요.\n\n' +
+          '먼저 성함이 어떻게 되시나요?',
+          null);
+      }, 1000);
+    } else {
+      setTimeout(function() {
+        diagAddSTT('ai',
+          '다시 뵙게 되어 반가워요! 이전에 진행한 내용을 이어서 상담해드릴게요. 편하게 질문하시거나, 다음 단계로 진행하고 싶으시면 말씀해주세요. 😊',
+          null);
+      }, 1500);
+    }
+    
+  }, 100);
+  
+  showToast('💬 텍스트 상담으로 시작합니다');
+}
+
 /* ── 상담 시작 ── */
 function diagStartConsult() {
   const sa=document.getElementById('diagScreenA');
@@ -12052,6 +12442,14 @@ function diagStartConsult() {
   diagPaused = false;
   mvpTextOnlyMode = false;
   _vapiUserEnded = false;
+
+  /* ★ [2026-04-10] 이전 대화 자동 복원 */
+  try {
+    var savedData = loadChatHistoryPersistent();
+    if(savedData && savedData.history && savedData.history.length > 0) {
+      setTimeout(function() { restoreChatLogUI(savedData); }, 500);
+    }
+  } catch(e) { console.warn('[자동복원] 실패:', e.message); }
 
   // 플랜별 크레딧 분 가져오기
   var _timerPlan    = localStorage.getItem('fh_plan') || 'bronze-single';
@@ -12320,10 +12718,25 @@ async function diagConnectVoice(isPaid) {
     /* ── 통화 시작 ── */
     console.log('[DEBUG] start call');
     console.log('[DEBUG] assistantId:', assistantId);
-    // ★ assistantOverrides: 플랜 정보를 시스템 프롬프트 앞에 주입
+    
+    // ★ [2026-04-10] 이전 상담 맥락 생성 (일주일 후 재진입 지원)
+    var resumeCtx = '';
+    try {
+      if(typeof buildResumeContext === 'function') {
+        resumeCtx = buildResumeContext();
+        if(resumeCtx) {
+          console.log('[Vapi] resumeContext 주입:', resumeCtx.substring(0, 100) + '...');
+        }
+      }
+    } catch(e) {
+      console.warn('[Vapi] resumeContext 생성 실패:', e.message);
+    }
+    
+    // ★ assistantOverrides: 플랜 정보 + 이전 맥락을 시스템 프롬프트 앞에 주입
     await vapi.start(assistantId, {
       variableValues: {
-        planInfo: planInject,
+        planInfo:      planInject,
+        resumeContext: resumeCtx,  // ★ 시스템 프롬프트의 {{resumeContext}} 치환용
       }
     });
     _vapiConnecting = false;
@@ -16115,6 +16528,71 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 ════════════════════════════════════════ -->
 
 
+<!-- ════════════════════════════════════════
+     ★ [2026-04-10] 상담 방식 선택 모달 (음성 vs 텍스트)
+     진단 시작 직전에 표시 — 고객이 자신의 상황에 맞게 선택
+════════════════════════════════════════ -->
+<div id="consultModeModal" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(11,29,58,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:cmmSlideUp .3s ease-out;">
+    
+    <!-- 헤더 -->
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:28px;margin-bottom:6px;">🏥</div>
+      <div style="font-size:17px;font-weight:900;color:var(--navy);letter-spacing:-.3px;">어떻게 상담하시겠어요?</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">두 방식 모두 <strong>동일한 진단</strong>을 받으실 수 있습니다</div>
+    </div>
+    
+    <!-- 플랜 정보 표시 -->
+    <div id="cmmPlanInfo" style="background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(201,151,42,.04));border:1px solid rgba(201,151,42,.3);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#8B6914;text-align:center;">
+      <span id="cmmPlanLabel">🥈 실버 플랜</span> · <span id="cmmPlanTime">음성 40분 + 텍스트 30일</span>
+    </div>
+    
+    <!-- 음성 상담 카드 -->
+    <div id="cmmVoiceCard" onclick="cmmSelectMode('voice')" style="display:flex;gap:12px;padding:14px 14px;border:2px solid var(--gold);background:linear-gradient(135deg,rgba(201,151,42,.08),rgba(201,151,42,.02));border-radius:14px;margin-bottom:10px;cursor:pointer;transition:all .2s;position:relative;">
+      <div style="position:absolute;top:-8px;right:10px;background:var(--gold);color:#fff;font-size:9px;font-weight:900;padding:2px 8px;border-radius:10px;">추천</div>
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎤</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:3px;">음성 상담</div>
+        <div style="font-size:10.5px;color:#555;line-height:1.55;">실제 전문가와 대화하듯 자연스럽게 진행됩니다. 조용한 환경에서 이어폰을 준비해주세요.</div>
+      </div>
+    </div>
+    
+    <!-- 텍스트 상담 카드 -->
+    <div id="cmmTextCard" onclick="cmmSelectMode('text')" style="display:flex;gap:12px;padding:14px 14px;border:2px solid #cbd5e1;background:#f8fafc;border-radius:14px;margin-bottom:14px;cursor:pointer;transition:all .2s;">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💬</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:3px;">텍스트 상담</div>
+        <div style="font-size:10.5px;color:#555;line-height:1.55;">조용한 환경이 아니어도 괜찮아요. 지하철, 회사, 침대에서도 편하게 이용하세요.</div>
+      </div>
+    </div>
+    
+    <!-- 안내 문구 -->
+    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.65;background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+      💡 상담 중 언제든지 반대 방식으로 전환할 수 있습니다.<br>
+      내용은 모두 기록되어 일주일 후 들어오셔도 이어서 진행됩니다.
+    </div>
+    
+    <!-- 닫기 버튼 -->
+    <button onclick="cmmClose()" style="width:100%;padding:10px;background:#f1f5f9;border:none;border-radius:10px;font-size:12px;font-weight:700;color:var(--muted);font-family:var(--fn);cursor:pointer;">
+      나중에 진행하기
+    </button>
+  </div>
+</div>
+
+<style>
+  @keyframes cmmSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #cmmVoiceCard:hover, #cmmTextCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+  }
+  #cmmVoiceCard:active, #cmmTextCard:active {
+    transform: translateY(0);
+  }
+</style>
+
 <div class="mp-sub-bg" id="mp-sub-bg" onclick="mpCloseSubscribe()"></div>
 
 
@@ -17560,4 +18038,22 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div style="font-size:11px;font-weight:700;color:#FF3B30;margin-bottom:10px;">
           🛠️ 개발자 메뉴 (5회 탭으로 열림)
         </div>
-        <button onclick="fhDe
+        <button onclick="fhDevReset()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;
+          background:#FF3B30;color:#fff;font-size:13px;font-weight:700;
+          font-family:var(--fn);cursor:pointer;margin-bottom:8px;">
+          🔄 구독 상태 초기화 (테스트용)
+        </button>
+        <button onclick="fhDevClose()"
+          style="width:100%;padding:8px;border-radius:8px;
+          border:1px solid rgba(255,59,48,0.3);background:transparent;
+          color:#FF3B30;font-size:12px;font-family:var(--fn);cursor:pointer;">
+          닫기
+        </button>
+      </div>
+
+    </div><!-- /mp-scroll -->
+  </div><!-- /mp-wrap -->
+
+</body>
+</html>
