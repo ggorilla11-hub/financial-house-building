@@ -12883,13 +12883,51 @@ async function diagConnectVoice(isPaid) {
       console.warn('[Vapi] resumeContext 생성 실패:', e.message);
     }
     
-    // ★ assistantOverrides: 플랜 정보 + 이전 맥락을 시스템 프롬프트 앞에 주입
-    await vapi.start(assistantId, {
+    /* ★ [BUG-004 FIX 2026-04-10] Vapi firstMessage 동적 override
+     * Vapi 대시보드의 First Message는 "시간 괜찮으십니까?"라는 초회 인사.
+     * 재진입/음성전환 시에는 그 인사가 맥락을 끊어버림.
+     * → resumeContext가 있으면(재진입/전환) firstMessage를 이어가기 인사로 교체
+     * → 빈 상태(초회)에는 override 없음 → 기본 First Message 유지
+     */
+    var startOptions = {
       variableValues: {
         planInfo:      planInject,
-        resumeContext: resumeCtx,  // ★ 시스템 프롬프트의 {{resumeContext}} 치환용
+        resumeContext: resumeCtx,
       }
-    });
+    };
+    
+    if(resumeCtx && resumeCtx.length > 0) {
+      // 이전 대화에서 마지막 머니야 질문 찾기 (사용자가 어디서 끊겼는지 알 수 있게)
+      var lastMoneyaQ = '';
+      try {
+        var _d = loadChatHistoryPersistent();
+        if(_d && _d.history) {
+          for(var i = _d.history.length - 1; i >= 0; i--) {
+            if(_d.history[i].role === 'assistant') {
+              lastMoneyaQ = _d.history[i].content || '';
+              break;
+            }
+          }
+        }
+      } catch(e) {}
+      
+      var overrideMsg = '다시 뵙게 되어 반가워요! 이전에 진행하시던 내용을 이어서 상담해드릴게요.';
+      if(lastMoneyaQ) {
+        // 마지막 질문의 앞부분만 (너무 길면 음성이 이상함)
+        var shortQ = lastMoneyaQ.substring(0, 80).replace(/\n/g, ' ').trim();
+        overrideMsg += ' 지난번 마지막 질문이 "' + shortQ + '" 이었는데요, 이 부분부터 이어서 답변해 주시면 됩니다.';
+      } else {
+        overrideMsg += ' 어디까지 진행하셨는지 확인해볼게요. 잠시만요.';
+      }
+      
+      startOptions.firstMessage = overrideMsg;
+      console.log('[BUG-004 FIX] firstMessage override 적용:', overrideMsg.substring(0, 60) + '...');
+    } else {
+      console.log('[BUG-004 FIX] 초회 상담 — 기본 First Message 유지');
+    }
+    
+    // ★ assistantOverrides: 플랜 정보 + 이전 맥락을 시스템 프롬프트 앞에 주입
+    await vapi.start(assistantId, startOptions);
     _vapiConnecting = false;
 
   } catch(e) {
