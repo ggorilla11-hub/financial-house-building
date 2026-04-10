@@ -8752,7 +8752,7 @@ function collectNoteSnapshot() {
       'f1_name','f1_age','f1_marry','f1_family','f1_job','f1_dual',
       'f2_w1','f2_w2','f2_w3',
       'bt_inc_cur','bt_loan_cur','bt_ins_cur','bt_pen_cur','bt_sav_cur','bt_sur_cur',
-      'f4_deposit','f4_pension','f4_invest','f4_realty','f4_other','f4_credit','f4_mortgage',
+      'f4_deposit','f4_pension','f4_invest','f4_realty_type','f4_realty','f4_other','f4_credit','f4_mortgage',
     ];
     fields.forEach(function(fid) {
       var el = document.getElementById(fid);
@@ -13631,7 +13631,9 @@ function diagBuildNotes() {
           <div class="dnfield"><span class="dnfl">① 예적금/청약</span><span class="dnfv empty" id="f4_deposit">— 입력 대기</span></div>
           <div class="dnfield"><span class="dnfl">② 연금 적립금</span><span class="dnfv empty" id="f4_pension">— 입력 대기</span></div>
           <div class="dnfield"><span class="dnfl">③ 펀드/ETF/주식</span><span class="dnfv empty" id="f4_invest">— 입력 대기</span></div>
-          <div class="dnfield"><span class="dnfl">④ 부동산 (자가/거주)</span><span class="dnfv empty" id="f4_realty">— 입력 대기</span></div>
+          <!-- ★ [BUG-008 FIX 2026-04-10] 부동산 필드 분리: 거주형태 + 금액 -->
+          <div class="dnfield"><span class="dnfl">④-1 거주 형태</span><span class="dnfv empty" id="f4_realty_type">— (자가/전세/월세)</span></div>
+          <div class="dnfield"><span class="dnfl">④-2 부동산 금액</span><span class="dnfv empty" id="f4_realty">— 입력 대기</span></div>
           <div class="dnfield"><span class="dnfl">⑤ 기타 부동산</span><span class="dnfv empty" id="f4_other">— (오피스텔, 토지, 상가 등)</span></div>
           <div class="dnfield"><span class="dnfl">⑥ 신용대출</span><span class="dnfv empty" id="f4_credit">— 입력 대기</span></div>
           <div class="dnfield"><span class="dnfl">⑦ 담보대출</span><span class="dnfv empty" id="f4_mortgage">— 입력 대기</span></div>
@@ -14952,16 +14954,16 @@ const DIAG_STEP3_FIELDS = [
 ];
 
 /* 자산 탭 필드 순서 */
-/* ★ v9: Q1 거주형태 → Q2 부동산 금액 → Q3 기타 부동산 */
+/* ★ [BUG-008 FIX 2026-04-10] 거주형태를 실제 필드로 저장 (이전: __HOUSING__ 플레이스홀더) */
 const DIAG_STEP4_FIELDS = [
-  'f4_deposit',   // 1. 예적금/청약
-  'f4_pension',   // 2. 연금 적립금
-  'f4_invest',    // 3. 펀드/ETF/주식
-  '__HOUSING__',  // 4. [텍스트] 자가/전세/월세 - 카운터만 소비, 기록은 별도
-  'f4_realty',    // 5. 부동산 금액 (자가 집값 OR 전세 보증금)
-  'f4_other',     // 6. 기타 부동산
-  'f4_credit',    // 7. 신용대출
-  'f4_mortgage',  // 8. 담보대출
+  'f4_deposit',     // 1. 예적금/청약
+  'f4_pension',     // 2. 연금 적립금
+  'f4_invest',      // 3. 펀드/ETF/주식
+  'f4_realty_type', // 4. 거주 형태 (자가/전세/월세) — 텍스트 저장
+  'f4_realty',      // 5. 부동산 금액 (자가 집값 OR 전세 보증금)
+  'f4_other',       // 6. 기타 부동산
+  'f4_credit',      // 7. 신용대출
+  'f4_mortgage',    // 8. 담보대출
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -15839,10 +15841,11 @@ function diagAutoFillNote(userText) {
       if (diagStep4Counter < DIAG_STEP4_FIELDS.length) {
         var fieldId2 = DIAG_STEP4_FIELDS[diagStep4Counter];
         
-        // __HOUSING__ 슬롯은 숫자가 아닌 자가/전세/월세 텍스트여야 함
-        // 고객이 숫자를 먼저 입력했다면 이 슬롯은 건너뛰고 다음 필드(f4_realty)에 기록
-        if (fieldId2 === '__HOUSING__') {
-          console.log('[순서 입력 step4] 4번째 슬롯(거주형태)은 텍스트 전용 - 숫자 입력이므로 스킵하고 5번째로');
+        /* ★ [BUG-008 FIX 2026-04-10] f4_realty_type 슬롯은 텍스트 전용
+         * 고객이 숫자를 먼저 입력했다면 이 슬롯은 건너뛰고 f4_realty(금액)으로
+         */
+        if (fieldId2 === 'f4_realty_type') {
+          console.log('[순서 입력 step4] 거주형태 슬롯은 텍스트 전용 - 숫자 입력이므로 f4_realty로');
           diagStep4Counter++;
           fieldId2 = DIAG_STEP4_FIELDS[diagStep4Counter];
         }
@@ -15872,28 +15875,28 @@ function diagAutoFillNote(userText) {
       diagHousingType = housingVal;
       console.log('[거주형태]', housingVal);
       
-      // 거주형태 필드에 기록 (있으면)
-      _fillNewNote('f4_housing_type', housingVal);
+      /* ★ [BUG-008 FIX 2026-04-10] 실제 f4_realty_type 필드에 기록 */
+      _fillNewNote('f4_realty_type', housingVal);
       
-      // f4_realty 라벨을 "④ 부동산 (자가)" 또는 "④ 부동산 (전세 보증금)" 으로 동적 변경
+      // f4_realty 라벨을 "④-2 부동산 (자가 주택)" 또는 "④-2 부동산 (전세 보증금)" 으로 동적 변경
       var realtyLabel = document.querySelector('#f4_realty').previousElementSibling;
       if (realtyLabel && realtyLabel.className === 'dnfl') {
         if (housingVal === '자가') {
-          realtyLabel.textContent = '④ 부동산 (자가 주택)';
+          realtyLabel.textContent = '④-2 부동산 (자가 집값)';
         } else if (housingVal === '전세') {
-          realtyLabel.textContent = '④ 부동산 (전세 보증금)';
+          realtyLabel.textContent = '④-2 부동산 (전세 보증금)';
         } else if (housingVal === '월세') {
-          realtyLabel.textContent = '④ 부동산 (월세 보증금)';
+          realtyLabel.textContent = '④-2 부동산 (월세 보증금)';
         } else if (housingVal === '반전세') {
-          realtyLabel.textContent = '④ 부동산 (반전세 보증금)';
+          realtyLabel.textContent = '④-2 부동산 (반전세 보증금)';
         }
       }
       
-      // 카운터가 __HOUSING__ 슬롯에 있으면 소비
+      // 카운터가 f4_realty_type 슬롯에 있으면 소비 → f4_realty로 전진
       if (diagStep4Counter < DIAG_STEP4_FIELDS.length && 
-          DIAG_STEP4_FIELDS[diagStep4Counter] === '__HOUSING__') {
+          DIAG_STEP4_FIELDS[diagStep4Counter] === 'f4_realty_type') {
         diagStep4Counter++;
-        console.log('[카운터 소비] __HOUSING__ → step4 카운터:', diagStep4Counter);
+        console.log('[카운터 소비] f4_realty_type → step4 카운터:', diagStep4Counter);
       }
       return;
     }
@@ -15903,8 +15906,8 @@ function diagAutoFillNote(userText) {
       if (diagStep4Counter < DIAG_STEP4_FIELDS.length) {
         var emptyFieldId = DIAG_STEP4_FIELDS[diagStep4Counter];
         
-        // __HOUSING__ 슬롯이면 스킵
-        if (emptyFieldId === '__HOUSING__') {
+        // f4_realty_type 슬롯이면 스킵 (거주형태는 "없어요"로 답할 수 없음)
+        if (emptyFieldId === 'f4_realty_type') {
           diagStep4Counter++;
           emptyFieldId = DIAG_STEP4_FIELDS[diagStep4Counter];
         }
