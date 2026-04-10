@@ -15037,8 +15037,32 @@ function diagRecalcIncomeExp() {
   // 또는: 고객이 쓴 것을 빼고 남은 것이 잉여 + 생활비
   var totalSpent = loan + ins + pen + sav;
   var remaining  = inc - totalSpent;  // 남은 돈
-  var surplus    = Math.max(0, remaining - budLiv);  // 잉여 = 남은 돈 - 생활비 예산
-  var actualLiv  = Math.max(0, remaining - surplus); // 실제 생활비 = 남은 돈 - 잉여
+  
+  /* ★ [BUG-009 FIX 2026-04-10] 고객이 잉여자금을 명시적으로 입력했는지 확인
+   * bt_sur_cur 필드에 이미 값이 있으면 (고객 입력) → 그 값을 존중, 생활비는 역산
+   * 값이 없거나 "—"이면 → 기존 로직 (예산 기반 자동계산)
+   */
+  var surplus, actualLiv;
+  var surEl = document.getElementById('bt_sur_cur');
+  var customerSurplus = null;
+  if (surEl && surEl.textContent) {
+    var surText = surEl.textContent.trim().replace(/[^\d-]/g, ''); // 숫자만 추출
+    if (surText !== '' && surText !== '-') {
+      customerSurplus = parseInt(surText);
+      if (isNaN(customerSurplus)) customerSurplus = null;
+    }
+  }
+  
+  if (customerSurplus !== null) {
+    // 고객이 잉여자금을 입력했음 → 존중하고 생활비 역산
+    surplus = customerSurplus;
+    actualLiv = Math.max(0, remaining - surplus);
+    console.log('[수지계산] 고객 잉여 입력 존중:', surplus, '→ 생활비 역산:', actualLiv);
+  } else {
+    // 기존 로직: 예산 기반 자동계산
+    surplus = Math.max(0, remaining - budLiv);
+    actualLiv = Math.max(0, remaining - surplus);
+  }
   
   console.log('[수지계산]', {
     가족수: family, 수입: inc, 대출: loan, 보험: ins, 연금: pen, 저축: sav,
