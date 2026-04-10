@@ -9074,6 +9074,27 @@ async function sendTextConsultMessage(txt) {
       totalDebt:     window.D ? ((window.D.debtCredit||0)+(window.D.debtCollat||0)) : 0,
     };
 
+    /* ★ [BUG-007 FIX 2026-04-10] resumeContext + planInfo 전달
+     * 음성↔텍스트 전환 시 맥락 유지를 위해 반드시 함께 전송
+     * 백엔드는 이것들을 시스템 프롬프트에 주입하여 이어가기 처리
+     */
+    var resumeCtx = '';
+    try {
+      if(typeof buildResumeContext === 'function') {
+        resumeCtx = buildResumeContext();
+      }
+    } catch(e) { console.warn('[sendTextConsult] resumeContext 생성 실패:', e.message); }
+    
+    var planInfoStr = '';
+    try {
+      var planKey = localStorage.getItem('fh_plan') || 'bronze-single';
+      var planData = (typeof fhGetPlan === 'function') ? fhGetPlan(planKey) : null;
+      if(planData) {
+        planInfoStr = '[플랜 정보]\n플랜: ' + (planData.shortLabel || '브론즈') + 
+                      '\n텍스트 상담 기간: ' + (planData.textDays || 30) + '일';
+      }
+    } catch(e) {}
+
     var response = await fetch('https://moneya-server.onrender.com/api/consult-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -9081,7 +9102,9 @@ async function sendTextConsultMessage(txt) {
         message: txt,
         userName: userName,
         financialContext: financialContext,
-        conversationHistory: _textConsultHistory.slice(-10) // 최근 10개만
+        conversationHistory: _textConsultHistory.slice(-10), // 최근 10개만
+        resumeContext: resumeCtx,  // ★ 신규
+        planInfo: planInfoStr       // ★ 신규
       })
     });
 
