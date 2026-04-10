@@ -12523,17 +12523,39 @@ function startTextOnlyConsult() {
         var planLabel = planData.shortLabel || '브론즈';
         var textDays = planData.textDays || 30;
         
+        /* ★ [BUG-006 FIX 2026-04-10] First Message 패턴
+         * 기존: 인사 + 즉시 첫 질문 → 노트 탭 전환 트리거 늦음
+         * 수정: 인사 + 시작 동의 질문 → 고객 "네" 응답 후 백엔드가 1단계 시작
+         * 효과: 표지(0번) → 인적사항(1번) 탭 자동 이동 정상화
+         */
         diagAddSTT('ai',
           '안녕하세요! AI 금융집사 머니야예요 😊\n\n' +
+          '오상열 CFP 대표님께 25년간 2,000건 상담으로 직접 훈련받은 AI 재무진단 코치입니다.\n\n' +
           planLabel + ' 플랜으로 텍스트 상담을 시작합니다. ' +
           textDays + '일 동안 언제든지 이어서 진행하실 수 있어요.\n\n' +
-          '먼저 성함이 어떻게 되시나요?',
+          '지금 바로 재무진단을 시작해도 괜찮으실까요?',
           null);
       }, 1000);
     } else {
       setTimeout(function() {
+        /* ★ [BUG-006 FIX 2026-04-10] 재진입 인사 — 어디서 끊겼는지 명시 */
+        var lastMsg = '';
+        try {
+          var lastAssistant = null;
+          for(var i = savedData.history.length - 1; i >= 0; i--) {
+            if(savedData.history[i].role === 'assistant') {
+              lastAssistant = savedData.history[i].content;
+              break;
+            }
+          }
+          if(lastAssistant) {
+            lastMsg = '\n\n지난번 마지막 질문은 이것이었어요:\n"' + lastAssistant.substring(0, 100) + '"\n\n계속 이어서 답변해 주세요!';
+          }
+        } catch(e) {}
+        
         diagAddSTT('ai',
-          '다시 뵙게 되어 반가워요! 이전에 진행한 내용을 이어서 상담해드릴게요. 편하게 질문하시거나, 다음 단계로 진행하고 싶으시면 말씀해주세요. 😊',
+          '다시 뵙게 되어 반가워요! 😊\n' +
+          '이전에 진행한 내용을 이어서 상담해드릴게요.' + lastMsg,
           null);
       }, 1500);
     }
