@@ -8768,15 +8768,21 @@ function collectNoteSnapshot() {
 function restoreChatLogUI(data) {
   if(!data || !Array.isArray(data.history) || data.history.length === 0) return;
   
+  /* ★ [BUG-003 FIX 2026-04-10] 음성 모드(diagStt)에서도 복원되도록 가드 완화 */
+  var sttArea = document.getElementById('diagStt');
   var chatLog = document.getElementById('dn_chat_log');
-  if(!chatLog) return;
   
-  // 재호출 시 이전 복원 메시지 제거
-  if(chatLog.getAttribute('data-restored') === '1') {
-    var restored = chatLog.querySelectorAll('[data-restored-msg="1"]');
-    restored.forEach(function(el) { el.remove(); });
-  }
-  chatLog.setAttribute('data-restored', '1');
+  // 둘 다 없으면 진단 화면 미진입 — 종료
+  if(!sttArea && !chatLog) return;
+  
+  // 재호출 시 이전 복원 메시지 제거 (양쪽 모두)
+  [sttArea, chatLog].forEach(function(area) {
+    if(area && area.getAttribute('data-restored') === '1') {
+      var restored = area.querySelectorAll('[data-restored-msg="1"]');
+      restored.forEach(function(el) { el.remove(); });
+    }
+    if(area) area.setAttribute('data-restored', '1');
+  });
   
   var lastDate = data.lastUpdated ? new Date(data.lastUpdated) : null;
   var daysAgo = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / 86400000) : 0;
@@ -8784,16 +8790,20 @@ function restoreChatLogUI(data) {
   
   diagAddSTT('system', '📚 ' + timeStr + ' 진행한 상담 내용을 불러왔습니다. 이어서 진행해드릴게요.', null);
   setTimeout(function() {
-    var lb = chatLog.lastElementChild;
-    if(lb) lb.setAttribute('data-restored-msg', '1');
+    if(sttArea) {
+      var lb = sttArea.lastElementChild;
+      if(lb) lb.setAttribute('data-restored-msg', '1');
+    }
   }, 50);
   
   var displayMessages = data.history.slice(-20);
   displayMessages.forEach(function(msg) {
     diagAddSTT(msg.role === 'assistant' ? 'ai' : 'user', msg.content, null);
     setTimeout(function() {
-      var lb = chatLog.lastElementChild;
-      if(lb) lb.setAttribute('data-restored-msg', '1');
+      if(sttArea) {
+        var lb = sttArea.lastElementChild;
+        if(lb) lb.setAttribute('data-restored-msg', '1');
+      }
     }, 50);
   });
   
@@ -8880,29 +8890,70 @@ function handleVoiceError(err) {
 // ── 2. 대화 내역 수집 (채팅 로그 → 배열) ──────────────
 function collectConversationHistory() {
   var history = [];
-  var chatLog = document.getElementById('dn_chat_log');
-  if(!chatLog) return history;
-
-  var bubbles = chatLog.querySelectorAll('[data-role]');
-  bubbles.forEach(function(b) {
-    var role = b.getAttribute('data-role');
-    var textEl = b.querySelector('.dn-bubble-text') || b.querySelector('div');
-    var text = textEl ? textEl.textContent.trim() : '';
-    if(text && role && role !== 'system') {
-      history.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
-    }
-  });
-
-  // data-role 없을 때 폴백: 스타일로 구분
-  if(history.length === 0) {
-    chatLog.querySelectorAll('.dn-bubble').forEach(function(b) {
-      var isUser = b.classList.contains('dn-bubble-user');
-      var text = b.textContent.trim();
-      if(text) history.push({ role: isUser ? 'user' : 'assistant', content: text });
+  
+  /* ★ [BUG-003 FIX 2026-04-10] 음성 모드(diagStt)와 텍스트 모드(dn_chat_log) 모두 수집 */
+  
+  // 1) 음성 모드: diagStt에서 수집 (Vapi 발화)
+  var sttArea = document.getElementById('diagStt');
+  if(sttArea) {
+    var sttBubbles = sttArea.querySelectorAll(':scope > div');
+    sttBubbles.forEach(function(b) {
+      // div의 첫 자식이 이미지면 AI(머니야), 이모지면 사용자
+      var firstChild = b.firstElementChild;
+      if(!firstChild) return;
+      var isAI = firstChild.querySelector('img') !== null;
+      
+      // 텍스트 추출 — 두 번째 자식 안의 첫 div
+      var textContainer = b.children[1];
+      if(!textContainer) return;
+      var textEl = textContainer.querySelector('div') || textContainer;
+      var text = textEl ? textEl.textContent.trim() : '';
+      
+      // "💡 " 같은 태그 제거
+      text = text.replace(/^💡\s*/, '').replace(/\s*💡\s*[^\n]*$/, '').trim();
+      
+      if(text && text !== '...' && !text.startsWith('연결에 문제')) {
+        history.push({ 
+          role: isAI ? 'assistant' : 'user', 
+          content: text,
+          source: 'voice'
+        });
+      }
     });
   }
+  
+  // 2) 텍스트 모드: dn_chat_log에서 수집
+  var chatLog = document.getElementById('dn_chat_log');
+  if(chatLog) {
+    var bubbles = chatLog.querySelectorAll('[data-role]');
+    bubbles.forEach(function(b) {
+      var role = b.getAttribute('data-role');
+      var textEl = b.querySelector('.dn-bubble-text') || b.querySelector('div');
+      var text = textEl ? textEl.textContent.trim() : '';
+      if(text && role && role !== 'system') {
+        history.push({ 
+          role: role === 'ai' ? 'assistant' : 'user', 
+          content: text,
+          source: 'text'
+        });
+      }
+    });
+    
+    // data-role 없을 때 폴백: 스타일로 구분
+    if(bubbles.length === 0) {
+      chatLog.querySelectorAll('.dn-bubble').forEach(function(b) {
+        var isUser = b.classList.contains('dn-bubble-user');
+        var text = b.textContent.trim();
+        if(text) history.push({ 
+          role: isUser ? 'user' : 'assistant', 
+          content: text,
+          source: 'text'
+        });
+      });
+    }
+  }
 
-  console.log('[맥락수집] 대화 ' + history.length + '개 수집 완료');
+  console.log('[맥락수집] 대화 ' + history.length + '개 수집 완료 (voice+text 통합)');
   return history;
 }
 
@@ -8948,6 +8999,25 @@ function addToChatLog(role, text) {
   chatLog.scrollTop = chatLog.scrollHeight;
   var ph = chatLog.querySelector('div[style*="text-align:center"]');
   if(ph) ph.remove();
+  
+  /* ★ [BUG-003 FIX 2026-04-10] 발화마다 자동 누적 + 5초 debounce 저장
+   * 음성/텍스트 모두에서 호출되는 공통 함수
+   * collectConversationHistory()가 DOM에서 채팅 로그를 읽어가므로 자동 동기화됨
+   * debounce로 너무 자주 저장하지 않도록 5초 간격
+   */
+  try {
+    if(window._chatSaveTimer) clearTimeout(window._chatSaveTimer);
+    window._chatSaveTimer = setTimeout(function() {
+      if(typeof collectConversationHistory === 'function' && 
+         typeof saveChatHistoryPersistent === 'function') {
+        var history = collectConversationHistory();
+        if(history && history.length > 0) {
+          saveChatHistoryPersistent(history);
+          console.log('[BUG-003 FIX] 자동저장:', history.length + '개');
+        }
+      }
+    }, 5000);
+  } catch(e) { console.warn('[BUG-003 FIX] 저장 트리거 실패:', e.message); }
 }
 
 // ── 4. 텍스트 메시지 전송 → Render /api/consult-chat ──
@@ -13324,17 +13394,9 @@ function diagBuildNotes() {
           <div class="dnfield"><span class="dnfl">책임</span><span class="dnfv preset">오상열 CFP 대표</span></div>
           <div class="dnfield"><span class="dnfl">예상 시간</span><span class="dnfv preset">40분 (골드 플랜)</span></div>
 
-          <!-- ★ 피드백 1번: 고객 동의 토글 -->
-          <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #C9972A;border-radius:10px;padding:14px 16px;margin-top:14px;">
-            <div style="font-size:13px;font-weight:900;color:#0B1D3A;margin-bottom:10px;">🎙️ 대화록 기록에 동의하시나요?</div>
-            <div style="display:flex;gap:10px;">
-              <button id="cnsYes" onclick="setConsent('yes')" style="flex:1;padding:10px 14px;border-radius:8px;border:2px solid #D8E0EC;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:900;cursor:pointer;color:#15803D;">✓ 네, 동의합니다</button>
-              <button id="cnsNo" onclick="setConsent('no')" style="flex:1;padding:10px 14px;border-radius:8px;border:2px solid #D8E0EC;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:900;cursor:pointer;color:#B91C1C;">✗ 동의하지 않습니다</button>
-            </div>
-            <div style="font-size:10px;color:#4A5568;margin-top:8px;font-weight:700;line-height:1.5;">
-              대화록은 상담 품질 향상 및 재무 분석에만 사용되며, AI 학습에는 사용되지 않습니다.
-            </div>
-          </div>
+          <!-- ★ [BUG-001 FIX 2026-04-10] 대화록 기록 동의 모달 삭제
+               이유: 개인정보 동의는 AI진단 시작 전 체크박스로 이미 처리됨
+               중복 동의 요청은 UX 저해 + 작동 안 함 -->
 
           <!-- 오상열 CFP 프로필 카드 -->
           <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:14px;border:1px solid rgba(201,151,42,.3);">
@@ -13991,6 +14053,23 @@ function diagAddSTT(role, text, tag) {
      <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">${text}</div>`;
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
+  
+  /* ★ [BUG-003 FIX 2026-04-10] 음성 발화도 5초 debounce 자동 저장 */
+  if(text && text !== '...' && !text.startsWith('연결에 문제')) {
+    try {
+      if(window._chatSaveTimer) clearTimeout(window._chatSaveTimer);
+      window._chatSaveTimer = setTimeout(function() {
+        if(typeof collectConversationHistory === 'function' && 
+           typeof saveChatHistoryPersistent === 'function') {
+          var history = collectConversationHistory();
+          if(history && history.length > 0) {
+            saveChatHistoryPersistent(history);
+            console.log('[BUG-003 FIX] 음성 자동저장:', history.length + '개');
+          }
+        }
+      }, 5000);
+    } catch(e) { console.warn('[BUG-003 FIX] STT 저장 실패:', e.message); }
+  }
 }
 
 /* ── 컨트롤 ── */
