@@ -4802,7 +4802,7 @@ function applyDocToNote(structuredData) {
       if (collatSum > 0) { D.debtCollat = collatSum; D.loanCollat = collatSum; filled++; fields.push('담보대출'); }
     }
     
-    /* ── rAll 자동 계산 체인 발동 ── */
+    /* ── 자동 계산 체인 발동 ── */
     console.log('[applyDocToNote] 매핑 완료:', filled + '개 필드', fields);
     console.log('[applyDocToNote] D 객체 현재 상태:', {
       name: D.name, ageNum: D.ageNum, income: D.income, 
@@ -4811,11 +4811,27 @@ function applyDocToNote(structuredData) {
       debtCredit: D.debtCredit, debtCollat: D.debtCollat
     });
     
-    /* ★ [v14 FIX] rAll 한 번만 호출 (내부에서 calcSurplus, calcDebt 등 자동 호출됨)
-     * 이전 버그: rAll 여러번 + calcSurplus/calcDebt 중복 호출 → 무한 재귀
+    /* ★ [v14 FIX2] rAll 호출 금지 — 무한 재귀 발생
+     * 대신 개별 안전 함수만 호출해서 화면 업데이트
+     * rAll은 사용자 슬라이더 이벤트 전용으로 남겨둠
      */
-    if (typeof rAll === 'function') {
-      rAll('fin');  /* fin 섹션이 가장 포괄적 — calcMonthlySave/calcIncomeTable/calcScore 모두 포함 */
+    try {
+      if (typeof updateBpTitle === 'function') updateBpTitle();
+      if (typeof rebuildHouse === 'function') rebuildHouse();
+      if (typeof rProg === 'function') rProg();
+      /* 배지 수동 업데이트 */
+      if (typeof setBadge === 'function') {
+        var cf = !!(D.name || D.ageNum);
+        setBadge('who', cf ? '입력됨' : '미입력', cf ? 'bd-d' : 'bd-e');
+        var _stWho = document.getElementById('st-who');
+        if (_stWho && cf) _stWho.textContent = (D.name || '고객') + (D.ageNum ? ' · ' + D.ageNum + '세' : '');
+        
+        setBadge('fin', D.income > 0 ? '입력됨' : '미입력', D.income > 0 ? 'bd-d' : 'bd-e');
+        var _stFin = document.getElementById('st-fin');
+        if (_stFin && D.income > 0) _stFin.textContent = '월 ' + fmt(D.income) + '만원 수입';
+      }
+    } catch(renderErr) {
+      console.warn('[applyDocToNote] 렌더 일부 실패:', renderErr.message);
     }
     
     /* 성공 토스트 */
