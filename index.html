@@ -4670,6 +4670,168 @@ function rAll(sec){
   if(typeof autoSave==='function') autoSave();
 }
 function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.textContent=t;el.className='badge '+c;}}
+
+/* ═══════════════════════════════════════════════════════════
+   ★ [프로젝트 C v14 2026-04-12] applyDocToNote
+   
+   고수님 설계 v14: 사전서류 → 상담노트 자동 입력
+   
+   데이터 흐름:
+   1. 고객이 상담신청서 업로드
+   2. /api/analyze-document → Claude Vision 분석
+   3. structuredData 수신
+   4. ★ applyDocToNote() 호출 → D 객체에 값 주입
+   5. rAll() 체인 발동 → 상담노트 자동 렌더링
+   
+   ⚠️ 단위 변환:
+   백엔드: 천원 단위 (unit: "천원")
+   D 객체: 만원 단위
+   → 천원 ÷ 10 = 만원
+   
+   강용씨 예시:
+   structuredData.income.total = 13000 (천원)
+   → D.income = 1300 (만원)
+   
+   D 객체 필드 참조:
+   - 4143줄 const D = { name, ageNum, income, savings, insPay, 
+                        safeAsset, riskAsset, reHome, reInv, 
+                        debtCredit, debtCollat, ins:{...} }
+   - 단위: 만원 (단, reHome/reInv는 억)
+   ═══════════════════════════════════════════════════════════ */
+function applyDocToNote(structuredData) {
+  if (!structuredData || typeof structuredData !== 'object') {
+    console.warn('[applyDocToNote] 유효하지 않은 데이터');
+    return { filled: 0, fields: [] };
+  }
+  
+  var s = structuredData;
+  var filled = 0;
+  var fields = [];
+  
+  /* 단위 변환: 백엔드가 "천원" 단위를 쓰면 ÷10, "만원"이면 그대로 */
+  var toManwon = function(val, unit) {
+    if (val == null || val === '') return null;
+    var num = parseInt(val);
+    if (isNaN(num)) return null;
+    if (unit === '천원') return Math.round(num / 10);
+    return num;  /* 이미 만원 단위 */
+  };
+  
+  try {
+    /* ── 1단계: 인적사항 ── */
+    if (s.family) {
+      if (s.family.name) { D.name = s.family.name; filled++; fields.push('이름'); }
+      if (s.family.age) { 
+        var ageN = parseInt(s.family.age);
+        if (!isNaN(ageN)) { D.ageNum = ageN; filled++; fields.push('나이'); }
+      }
+      if (s.family.job) { D.job = s.family.job; filled++; fields.push('직업'); }
+      if (s.family.size) {
+        var famN = parseInt(s.family.size);
+        if (!isNaN(famN)) { D.familyNum = famN; filled++; fields.push('가족수'); }
+      }
+    }
+    
+    /* ── 3단계: 수입지출 (월 단위) ── */
+    if (s.income) {
+      var incomeUnit = s.income.unit || '만원';
+      if (s.income.total) {
+        var inc = toManwon(s.income.total, incomeUnit);
+        if (inc != null) { D.income = inc; filled++; fields.push('월소득'); }
+      }
+      /* 맞벌이 판단 */
+      if (s.income.spouse && parseInt(s.income.spouse) > 0) {
+        D.dualIncome = true;
+      }
+    }
+    
+    /* 월 지출 항목 */
+    if (s.expenses) {
+      var expUnit = s.expenses.unit || (s.income && s.income.unit) || '만원';
+      /* 월 보험료 */
+      if (s.expenses.insurance) {
+        var ins = toManwon(s.expenses.insurance, expUnit);
+        if (ins != null) { D.insPay = ins; filled++; fields.push('월보험료'); }
+      }
+      /* 월 대출상환 */
+      if (s.expenses.debt_payment) {
+        var dp = toManwon(s.expenses.debt_payment, expUnit);
+        if (dp != null) { D.loanPay = dp; filled++; fields.push('월대출상환'); }
+      }
+    }
+    
+    /* 월 저축 — surplus 또는 income.savings */
+    if (s.income && s.income.savings) {
+      var sv = toManwon(s.income.savings, s.income.unit || '만원');
+      if (sv != null) { D.savings = sv; filled++; fields.push('월저축'); }
+    }
+    
+    /* ── 4단계: 자산부채 ── */
+    if (s.assets) {
+      var aUnit = s.assets.unit || (s.income && s.income.unit) || '만원';
+      var safeSum = 0;
+      var riskSum = 0;
+      
+      /* 안전자산: 예적금, CMA, 청약 */
+      if (s.assets.deposit) safeSum += toManwon(s.assets.deposit, aUnit) || 0;
+      if (s.assets.cma) safeSum += toManwon(s.assets.cma, aUnit) || 0;
+      if (s.assets.subscription) safeSum += toManwon(s.assets.subscription, aUnit) || 0;
+      if (s.assets.pension) safeSum += toManwon(s.assets.pension, aUnit) || 0;
+      
+      /* 위험자산: 펀드, 주식 */
+      if (s.assets.fund) riskSum += toManwon(s.assets.fund, aUnit) || 0;
+      if (s.assets.stock) riskSum += toManwon(s.assets.stock, aUnit) || 0;
+      
+      if (safeSum > 0) { D.safeAsset = safeSum; filled++; fields.push('안전자산'); }
+      if (riskSum > 0) { D.riskAsset = riskSum; filled++; fields.push('위험자산'); }
+    }
+    
+    if (s.debts) {
+      var dUnit = s.debts.unit || (s.income && s.income.unit) || '만원';
+      /* 신용대출 = 기타대출 + 은행대출(일반) */
+      var creditSum = 0;
+      if (s.debts.credit) creditSum += toManwon(s.debts.credit, dUnit) || 0;
+      if (s.debts.bank) creditSum += toManwon(s.debts.bank, dUnit) || 0;
+      if (s.debts.other) creditSum += toManwon(s.debts.other, dUnit) || 0;
+      
+      /* 담보대출 */
+      var collatSum = 0;
+      if (s.debts.mortgage) collatSum += toManwon(s.debts.mortgage, dUnit) || 0;
+      
+      if (creditSum > 0) { D.debtCredit = creditSum; D.loanCredit = creditSum; filled++; fields.push('신용대출'); }
+      if (collatSum > 0) { D.debtCollat = collatSum; D.loanCollat = collatSum; filled++; fields.push('담보대출'); }
+    }
+    
+    /* ── rAll 자동 계산 체인 발동 ── */
+    console.log('[applyDocToNote] 매핑 완료:', filled + '개 필드', fields);
+    console.log('[applyDocToNote] D 객체 현재 상태:', {
+      name: D.name, ageNum: D.ageNum, income: D.income, 
+      savings: D.savings, insPay: D.insPay,
+      safeAsset: D.safeAsset, riskAsset: D.riskAsset,
+      debtCredit: D.debtCredit, debtCollat: D.debtCollat
+    });
+    
+    if (typeof rAll === 'function') {
+      rAll('who');
+      rAll('fin');
+      /* pillar 섹션도 리렌더 (부채, 저축 관련) */
+      if (touched) rAll('pillar');
+    }
+    if (typeof calcSurplus === 'function') calcSurplus();
+    if (typeof calcDebt === 'function') calcDebt();
+    
+    /* 성공 토스트 */
+    if (filled > 0 && typeof showToast === 'function') {
+      showToast('✅ 상담신청서가 분석되어 상담노트에 ' + filled + '개 항목 반영되었습니다');
+    }
+    
+    return { filled: filled, fields: fields };
+  } catch(e) {
+    console.error('[applyDocToNote] 실패:', e.message, e.stack);
+    return { filled: 0, fields: [], error: e.message };
+  }
+}
+
 function rProg(){
   const sc=calcScore();
   document.getElementById('prog-fill').style.width=sc+'%';
@@ -8414,6 +8576,12 @@ function mvpHandleUpload(input) {
     console.log('[MVP사전서류] 응답 수신');
     window.diagDocAnalysis = window.diagDocAnalysis || {};
     window.diagDocAnalysis[apiDocType] = data;
+    
+    /* ★ [v13.2 FIX] localStorage에 저장 (새로고침 후에도 유지) */
+    try {
+      localStorage.setItem('diag_doc_analysis', JSON.stringify(window.diagDocAnalysis));
+      console.log('[MVP사전서류] localStorage 저장 완료');
+    } catch(e) { console.warn('[MVP사전서류] localStorage 저장 실패:', e.message); }
 
     if(data && data.success) {
       /* 성공: UI 업데이트 — ✅ 아이콘을 🗑️ 삭제 버튼으로 교체 */
@@ -8923,9 +9091,21 @@ function buildResumeContext() {
    * window.diagDocAnalysis에 저장된 Claude Vision 분석 결과를
    * 머니야가 상담 시 참고할 수 있도록 context에 포함
    * 이렇게 하면 UI 상담노트 필드 매핑 버그 우회 가능
+   * ★ [v13.2 FIX] localStorage에서도 복원 (페이지 새로고침 후에도 유지)
    */
   var docContext = '';
   try {
+    /* localStorage에서 복원 시도 */
+    if (!window.diagDocAnalysis || Object.keys(window.diagDocAnalysis).length === 0) {
+      try {
+        var stored = localStorage.getItem('diag_doc_analysis');
+        if (stored) {
+          window.diagDocAnalysis = JSON.parse(stored);
+          console.log('[사전서류] localStorage에서 복원:', Object.keys(window.diagDocAnalysis || {}));
+        }
+      } catch(e) { console.warn('[사전서류] 복원 실패:', e.message); }
+    }
+    
     if (window.diagDocAnalysis && typeof window.diagDocAnalysis === 'object') {
       var docParts = [];
       var docLabels = {
@@ -8977,9 +9157,16 @@ function buildResumeContext() {
   /* 이전 대화가 없어도 사전서류는 있을 수 있음 */
   if((!data || !data.history || data.history.length === 0) && !docContext) return '';
   
-  /* 사전서류만 있고 이전 대화 없는 경우 */
+  /* ★ [v13.2 FIX 2026-04-11] 사전서류만 있고 이전 대화 없는 경우 
+   * → "초회 진단이지만 서류 정보가 있다"는 명확한 신호 전달
+   * → 머니야가 "재진입" 모드가 아니라 "초회 + 정보 파악" 모드로 응답
+   */
   if(!data || !data.history || data.history.length === 0) {
-    return docContext;
+    return '[초회 진단 — 고객 사전서류 보유]\n' +
+           '이 고객은 처음 상담받는 분입니다. 재진입이나 "이어서" 같은 말은 절대 하지 마세요.\n' +
+           '고객이 미리 제출한 사전서류가 있으니 아래 정보를 활용해서 따뜻하게 첫 인사를 건네세요.\n' +
+           '예: "안녕하세요 [이름] 고객님! 사전에 제출해주신 상담신청서 잘 봤습니다. [나이]세이시고 [가족 구성]이시네요..."\n' +
+           docContext;
   }
   
   var history = data.history;
@@ -12264,6 +12451,12 @@ function diagHandleFile(input) {
     console.log('[사전서류] 응답 수신');
     window.diagDocAnalysis = window.diagDocAnalysis || {};
     window.diagDocAnalysis[apiDocType] = data;
+    
+    /* ★ [v13.2 FIX] localStorage에 저장 (새로고침 후에도 유지) */
+    try {
+      localStorage.setItem('diag_doc_analysis', JSON.stringify(window.diagDocAnalysis));
+      console.log('[사전서류] localStorage 저장 완료');
+    } catch(e) { console.warn('[사전서류] localStorage 저장 실패:', e.message); }
 
     if(data && data.success) {
       /* 상태 아이콘 업데이트 */
