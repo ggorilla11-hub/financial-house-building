@@ -9232,25 +9232,22 @@ function manualReturnToVoice() {
     switchBtn.style.border = '1px solid rgba(59,130,246,.3)';
     switchBtn.onclick = function() { manualSwitchToText(); };
   }
-  // 타이머 재시작
-  if(!diagInt) {
-    var _planR = localStorage.getItem('fh_plan') || 'bronze-single';
-    var _secR  = fhGetPlanMin(_planR) * 60;
-    diagInt = setInterval(function(){
-      if(diagPaused) return;
-      diagSec++;
-      var mm=String(Math.floor(diagSec/60)).padStart(2,'0');
-      var ss=String(diagSec%60).padStart(2,'0');
-      var el=document.getElementById('diagTimer');
-      if(el) el.textContent=mm+':'+ss;
-      if(diagSec>=_secR) mvpVoiceTimeUp();
-    },1000);
-  }
+  
+  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용
+   * 1. 텍스트 타이머 정지
+   * 2. mvpTextOnlyMode는 위에서 이미 false로 설정됨
+   * 3. 음성 타이머 시작 (남은 크레딧부터 이어서)
+   */
+  stopTextTimer();
+  startVoiceTimer();
+  
   if(typeof mvpUpdateGuideUI==='function') mvpUpdateGuideUI();
   // Vapi 재연결 (이 시점에 buildResumeContext가 방금 저장한 텍스트 대화를 읽어서 주입)
   showToast('🎤 음성 재연결 중입니다. 잠시만 기다려 주세요...');
   diagAddSTT('ai','음성 연결 중입니다. 이전 대화를 이어서 진행해드릴게요.',null);
   if(typeof diagConnectVoice==='function') diagConnectVoice();
+  
+  console.log('[BUG-010] 텍스트→음성 전환 완료. 크레딧:', creditGetState());
 }
 
 // ── 6. 음성 다시 시도 ────────────────────────────────────
@@ -9267,8 +9264,10 @@ function retryVoice() {
 // ── 7. 수동 텍스트 전환 (하단 버튼) ─────────────────────
 function manualSwitchToText() {
   if(mvpTextOnlyMode) { showToast('이미 텍스트 상담 중입니다'); return; }
-  // ★ 타이머 정지 (텍스트 무료)
-  if(diagInt) { clearInterval(diagInt); diagInt = null; }
+  
+  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용 */
+  stopVoiceTimer();  // 음성 타이머 정지 (voice_used_sec는 이미 매초 저장됨)
+  
   // ★ 대화 맥락 수집 후 Vapi 완전 종료
   var _history = collectConversationHistory();
   
@@ -9284,13 +9283,15 @@ function manualSwitchToText() {
     try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null; vapiCallActive = false;
   }
-  // 크레딧 사용한 만큼만 차감
-  if(diagInt) { clearInterval(diagInt); diagInt = null; }
-  var usedMin = Math.ceil((diagSec || 0) / 60);
-  var _planName   = localStorage.getItem('fh_plan') || 'bronze-single';
-  var totalCredit = fhGetPlanMin(_planName);
-  localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
+  
+  /* ★ [BUG-010 FIX] UI 먼저 전환 후 텍스트 타이머 시작
+   * mvpTextOnlyMode 플래그가 switchToTextMode 안에서 true로 바뀜
+   * 그 후에 startTextTimer를 호출해야 creditUpdateDisplay가 텍스트 모드 UI 표시
+   */
   switchToTextMode(_history);
+  startTextTimer();  // 텍스트 타이머 시작 (일수 체크 + UI 업데이트)
+  
+  console.log('[BUG-010] 음성→텍스트 전환 완료. 크레딧:', creditGetState());
 }
 
 function mvpVoiceTimeUp() {
@@ -11791,6 +11792,234 @@ const DIAG_DEMO = DIAG_IS_FIRST ? [
 /* ── 상태 ── */
 let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=0, diagUpKey='';
 
+/* ═══════════════════════════════════════════════════════════
+   ★ [BUG-010 FIX 2026-04-11] 크레딧 관리 시스템 완전 재설계
+   
+   설계 원칙:
+   1. 음성은 분 단위 차감 (plan.min → voiceTotalSec)
+   2. 텍스트는 일 단위 차감 (plan.textDays → textTotalDays)
+   3. 전환 시 각자 독립적으로 추적
+   4. localStorage에 항상 최신 상태 유지
+   5. 텍스트 모드에서도 "남은 음성 + 남은 텍스트" 동시 표시
+   
+   localStorage 키:
+   - voice_used_sec    : 누적 사용된 음성 초
+   - text_start_date   : 텍스트 상담 시작일 (ISO yyyy-mm-dd)
+   - fh_plan           : 현재 플랜 (기존)
+   
+   함수 구조:
+   - creditInit()       : 초기화 (결제 시 호출)
+   - creditGetState()   : 현재 상태 조회 {voiceRemainSec, textRemainDays, ...}
+   - creditConsumeVoice(sec) : 음성 시간 차감
+   - creditConsumeText()    : 텍스트 일수 체크 (호출 시 현재 일수 계산)
+   - creditUpdateDisplay()  : UI 업데이트
+   - startVoiceTimer()  : 음성 타이머 시작
+   - stopVoiceTimer()   : 음성 타이머 정지 + 저장
+   - startTextTimer()   : 텍스트 타이머 시작 (일수 체크)
+   - stopTextTimer()    : 텍스트 타이머 정지
+   ═══════════════════════════════════════════════════════════ */
+
+/* 크레딧 상태 초기화 (결제 완료 시 호출) */
+function creditInit(planKey) {
+  localStorage.setItem('voice_used_sec', '0');
+  localStorage.setItem('text_start_date', new Date().toISOString().split('T')[0]);
+  if (planKey) localStorage.setItem('fh_plan', planKey);
+  console.log('[크레딧] 초기화:', planKey || '현재 플랜');
+}
+
+/* 현재 크레딧 상태 조회 */
+function creditGetState() {
+  var planKey = localStorage.getItem('fh_plan') || 'bronze-single';
+  var planData = (typeof fhGetPlan === 'function') ? fhGetPlan(planKey) : null;
+  
+  var voiceTotalMin = (planData && planData.min) || (typeof fhGetPlanMin === 'function' ? fhGetPlanMin(planKey) : 10);
+  var textTotalDays = (planData && planData.textDays) || 30;
+  
+  var voiceTotalSec = voiceTotalMin * 60;
+  var voiceUsedSec = parseInt(localStorage.getItem('voice_used_sec') || '0');
+  var voiceRemainSec = Math.max(0, voiceTotalSec - voiceUsedSec);
+  
+  // 텍스트 일수 계산
+  var textStartStr = localStorage.getItem('text_start_date');
+  var textUsedDays = 0;
+  var textRemainDays = textTotalDays;
+  if (textStartStr) {
+    try {
+      var startDate = new Date(textStartStr);
+      var now = new Date();
+      textUsedDays = Math.floor((now - startDate) / 86400000);
+      textRemainDays = Math.max(0, textTotalDays - textUsedDays);
+    } catch(e) {}
+  }
+  
+  return {
+    planKey: planKey,
+    planLabel: (planData && planData.shortLabel) || '브론즈',
+    voiceTotalMin: voiceTotalMin,
+    voiceTotalSec: voiceTotalSec,
+    voiceUsedSec: voiceUsedSec,
+    voiceRemainSec: voiceRemainSec,
+    voiceRemainMin: Math.floor(voiceRemainSec / 60),
+    textTotalDays: textTotalDays,
+    textUsedDays: textUsedDays,
+    textRemainDays: textRemainDays,
+    textStartDate: textStartStr
+  };
+}
+
+/* 음성 시간 차감 */
+function creditConsumeVoice(deltaSec) {
+  var used = parseInt(localStorage.getItem('voice_used_sec') || '0');
+  used += deltaSec;
+  localStorage.setItem('voice_used_sec', String(used));
+  return used;
+}
+
+/* 텍스트 상담 시작 (처음 한 번만) */
+function creditStartTextIfNeeded() {
+  var existing = localStorage.getItem('text_start_date');
+  if (!existing) {
+    var today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('text_start_date', today);
+    console.log('[크레딧] 텍스트 상담 시작일:', today);
+    return today;
+  }
+  return existing;
+}
+
+/* UI 업데이트 — 타이머 표시 */
+function creditUpdateDisplay() {
+  var state = creditGetState();
+  var el = document.getElementById('diagTimer');
+  if (!el) return;
+  
+  var voiceMM = String(Math.floor(state.voiceRemainSec / 60)).padStart(2, '0');
+  var voiceSS = String(state.voiceRemainSec % 60).padStart(2, '0');
+  
+  if (mvpTextOnlyMode) {
+    /* 텍스트 모드: "🎤 15:00 / 📅 30일" 동시 표시 */
+    el.innerHTML = '<span style="font-size:14px">🎤 ' + voiceMM + ':' + voiceSS + '</span>' +
+                   '<span style="font-size:10px;color:rgba(255,255,255,.5);margin:0 4px">/</span>' +
+                   '<span style="font-size:14px">📅 ' + state.textRemainDays + '일</span>';
+  } else {
+    /* 음성 모드: "15:00" 남은 시간 표시 */
+    el.textContent = voiceMM + ':' + voiceSS;
+  }
+  
+  // 경고 표시 (1분 남음)
+  if (!mvpTextOnlyMode && state.voiceRemainSec <= 60 && state.voiceRemainSec > 0) {
+    el.style.color = '#ff6b6b';
+    el.style.fontWeight = '900';
+  } else if (state.voiceRemainSec > 60) {
+    el.style.color = '';
+    el.style.fontWeight = '';
+  }
+}
+
+/* ★ 음성 타이머 시작 — 기존 diagInt를 관리 */
+function startVoiceTimer() {
+  if (diagInt) {
+    console.log('[크레딧타이머] 이미 실행 중, 재시작 안 함');
+    return;
+  }
+  
+  var state = creditGetState();
+  if (state.voiceRemainSec <= 0) {
+    console.log('[크레딧타이머] 음성 크레딧 소진 - 타이머 시작 안 함');
+    showToast('⚠️ 음성 크레딧이 소진되었습니다. 텍스트 상담으로 진행됩니다.');
+    if (typeof manualSwitchToText === 'function') {
+      setTimeout(manualSwitchToText, 1500);
+    }
+    return;
+  }
+  
+  console.log('[크레딧타이머] 음성 타이머 시작. 남은 시간:', state.voiceRemainSec, '초');
+  
+  diagInt = setInterval(function() {
+    if (diagPaused) return;
+    
+    diagSec++;
+    creditConsumeVoice(1);
+    creditUpdateDisplay();
+    
+    var cur = creditGetState();
+    
+    // 1분 남음 경고 (한 번만)
+    if (cur.voiceRemainSec === 60) {
+      showToast('⚠️ 음성 크레딧 1분 남았습니다. 곧 텍스트 상담으로 전환됩니다.');
+    }
+    
+    // 소진 시 텍스트 전환
+    if (cur.voiceRemainSec <= 0) {
+      console.log('[크레딧타이머] 음성 크레딧 소진');
+      if (typeof mvpVoiceTimeUp === 'function') {
+        mvpVoiceTimeUp();
+      }
+    }
+  }, 1000);
+}
+
+/* ★ 음성 타이머 정지 */
+function stopVoiceTimer() {
+  if (diagInt) {
+    clearInterval(diagInt);
+    diagInt = null;
+    console.log('[크레딧타이머] 음성 타이머 정지');
+  }
+  // 최종 상태 저장은 이미 매초 진행 중이므로 불필요
+}
+
+/* ★ 텍스트 타이머 시작 (일수 체크) */
+function startTextTimer() {
+  // 텍스트 상담 시작일 기록 (처음만)
+  creditStartTextIfNeeded();
+  
+  // 즉시 UI 업데이트
+  creditUpdateDisplay();
+  
+  if (window._textCreditTimer) {
+    console.log('[크레딧타이머] 텍스트 타이머 이미 실행 중');
+    return;
+  }
+  
+  console.log('[크레딧타이머] 텍스트 타이머 시작 (1분 주기)');
+  
+  // 1분마다 UI 업데이트 (일수가 바뀌었는지 체크)
+  window._textCreditTimer = setInterval(function() {
+    creditUpdateDisplay();
+    
+    var state = creditGetState();
+    if (state.textRemainDays <= 0) {
+      console.log('[크레딧타이머] 텍스트 일수 소진');
+      if (typeof mvpTextDaysUp === 'function') {
+        mvpTextDaysUp();
+      }
+    }
+  }, 60000); // 1분 = 60초
+}
+
+/* ★ 텍스트 타이머 정지 */
+function stopTextTimer() {
+  if (window._textCreditTimer) {
+    clearInterval(window._textCreditTimer);
+    window._textCreditTimer = null;
+    console.log('[크레딧타이머] 텍스트 타이머 정지');
+  }
+}
+
+/* ★ 텍스트 일수 소진 시 호출 */
+function mvpTextDaysUp() {
+  stopTextTimer();
+  stopVoiceTimer();
+  showToast('📅 텍스트 상담 기간이 만료되었습니다. 재결제를 진행해주세요.');
+  // 결제 페이지로 이동 로직은 기존 함수 활용
+  setTimeout(function() {
+    if (typeof cmmOpen === 'function') {
+      // 결제 모달 또는 안내
+    }
+  }, 2000);
+}
+
 /* ── DOMContentLoaded 초기화 ── */
 document.addEventListener('DOMContentLoaded', function() {
   const bi = document.getElementById('diagBannerImg');
@@ -12625,28 +12854,15 @@ function diagStartConsult() {
     }
   } catch(e) { console.warn('[자동복원] 실패:', e.message); }
 
-  // 플랜별 크레딧 분 가져오기
-  var _timerPlan    = localStorage.getItem('fh_plan') || 'bronze-single';
-  var _creditMin    = fhGetPlanMin(_timerPlan);
-  var _creditSec    = _creditMin * 60;
-  var _warnSec      = (_creditMin - 1) * 60; // 1분 전 경고
-
-  diagInt=setInterval(function(){
-    if(diagPaused) return;
-    diagSec++;
-    const m=String(Math.floor(diagSec/60)).padStart(2,'0');
-    const s=String(diagSec%60).padStart(2,'0');
-    const el=document.getElementById('diagTimer');
-    if(el) el.textContent=m+':'+s;
-    // 플랜별 경고 (크레딧-1분 전 토스트)
-    // 브론즈(10분)→9분, 실버(20분)→19분, 골드(40분)→39분
-    if(diagSec===_warnSec) showToast('⚠️ 1분 후 텍스트 상담으로 자동 전환됩니다');
-    if(diagSec>=_creditSec) {
-      // ★ 음성만 종료, 텍스트 상담은 계속 가능
-      mvpVoiceTimeUp();
-    }
-
-  },1000);
+  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용
+   * 기존: 직접 setInterval + diagSec 카운트 + _creditSec 비교
+   * 신규: startVoiceTimer() — 모든 로직이 함수 내부에 있음
+   *      - voice_used_sec 기반으로 정확한 잔여시간 계산
+   *      - UI는 "남은 시간" 표시 (경과 아님)
+   *      - 1분 남음 경고 자동
+   *      - 소진 시 자동 텍스트 전환
+   */
+  startVoiceTimer();
 
   // 실제 음성 연결 시작
   if(!_vapiConnecting) diagConnectVoice();
