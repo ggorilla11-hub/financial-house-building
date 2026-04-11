@@ -8209,15 +8209,24 @@ function mvpUpdateGuideUI() {
     desc:  planData.desc,
   };
 
-  // 잔여 크레딧 — 플랜 최대값 초과 시 최대값으로 보정
-  var storedCredit = parseInt(localStorage.getItem('mvp_credit_min') || '-1');
+  // 잔여 크레딧 — ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템에서 읽기
+  // 기존: mvp_credit_min (분 단위, 이전 시스템)
+  // 신규: voice_used_sec (초 단위, 정확한 추적) → 분으로 변환
   var remainCredit;
-  if(storedCredit < 0 || storedCredit > info.min) {
-    // localStorage 미설정이거나 플랜 최대값 초과 → 최대값으로 세팅
-    remainCredit = info.min;
+  if (typeof creditGetState === 'function') {
+    var _cs = creditGetState();
+    remainCredit = _cs.voiceRemainMin;  // 남은 분 (정수)
+    // mvp_credit_min도 동기화 (하위 호환)
     localStorage.setItem('mvp_credit_min', String(remainCredit));
   } else {
-    remainCredit = storedCredit;
+    // fallback: 기존 방식
+    var storedCredit = parseInt(localStorage.getItem('mvp_credit_min') || '-1');
+    if(storedCredit < 0 || storedCredit > info.min) {
+      remainCredit = info.min;
+      localStorage.setItem('mvp_credit_min', String(remainCredit));
+    } else {
+      remainCredit = storedCredit;
+    }
   }
 
   // ① 상담시간 표시 (플랜명 + 분 수)
