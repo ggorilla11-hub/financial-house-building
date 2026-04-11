@@ -12213,6 +12213,58 @@ function diagHandleFile(input) {
         var e2=document.getElementById(sm2[docType]||''); if(e2) e2.textContent='✅';
       }
 
+      /* ★ [프로젝트 C FIX 2026-04-11 v2] 상담노트 자동 반영
+       * diagHandleFile에서도 동일하게 처리 (진단 시작 전 체크리스트 경로)
+       */
+      try {
+        var extracted = data.extracted || data.data || {};
+        var filledCount = 0;
+        var filledFields = [];
+        
+        if (typeof _fillNewNote === 'function') {
+          /* 인적사항 (1단계) */
+          if (extracted.name) { _fillNewNote('f1_name', extracted.name); filledCount++; filledFields.push('이름'); }
+          if (extracted.age) { _fillNewNote('f1_age', extracted.age + '세'); filledCount++; filledFields.push('나이'); }
+          if (extracted.family_size) { _fillNewNote('f1_family', extracted.family_size + '명'); filledCount++; filledFields.push('가족수'); }
+          if (extracted.job) { _fillNewNote('f1_job', extracted.job); filledCount++; filledFields.push('직업'); }
+          
+          /* 수입지출 (3단계) */
+          if (extracted.monthly_income) { _fillNewNote('bt_inc_cur', extracted.monthly_income + '만원'); filledCount++; filledFields.push('월수입'); }
+          if (extracted.monthly_loan) { _fillNewNote('bt_loan_cur', extracted.monthly_loan + '만원'); filledCount++; filledFields.push('대출'); }
+          if (extracted.monthly_insurance) { _fillNewNote('bt_ins_cur', extracted.monthly_insurance + '만원'); filledCount++; filledFields.push('보험료'); }
+          if (extracted.monthly_pension) { _fillNewNote('bt_pen_cur', extracted.monthly_pension + '만원'); filledCount++; filledFields.push('연금납입'); }
+          if (extracted.monthly_savings) { _fillNewNote('bt_sav_cur', extracted.monthly_savings + '만원'); filledCount++; filledFields.push('저축투자'); }
+          
+          /* 자산부채 (4단계) */
+          if (extracted.deposit_amount) { _fillNewNote('f4_deposit', extracted.deposit_amount + '만원'); filledCount++; filledFields.push('예적금'); }
+          if (extracted.pension_amount) { _fillNewNote('f4_pension', extracted.pension_amount + '만원'); filledCount++; filledFields.push('연금적립금'); }
+          if (extracted.invest_amount) { _fillNewNote('f4_invest', extracted.invest_amount + '만원'); filledCount++; filledFields.push('투자자산'); }
+          if (extracted.realty_type) { _fillNewNote('f4_realty_type', extracted.realty_type); filledCount++; filledFields.push('거주형태'); }
+          if (extracted.realty_amount) { _fillNewNote('f4_realty', extracted.realty_amount + '만원'); filledCount++; filledFields.push('부동산금액'); }
+          if (extracted.credit_loan) { _fillNewNote('f4_credit', extracted.credit_loan + '만원'); filledCount++; filledFields.push('신용대출'); }
+          if (extracted.mortgage_loan) { _fillNewNote('f4_mortgage', extracted.mortgage_loan + '만원'); filledCount++; filledFields.push('담보대출'); }
+          
+          console.log('[사전서류→노트 v2] 반영 완료:', filledCount + '개', filledFields);
+        } else {
+          console.warn('[사전서류→노트 v2] _fillNewNote 함수 없음');
+        }
+        
+        /* 자동 계산 트리거 */
+        setTimeout(function() {
+          if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
+          if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
+        }, 200);
+        
+        /* 성공 토스트 */
+        if (filledCount > 0 && typeof showToast === 'function') {
+          setTimeout(function() {
+            showToast('📝 상담노트에 ' + filledCount + '개 항목 자동 입력됨');
+          }, 1500);
+        }
+      } catch(e) {
+        console.warn('[사전서류→노트 v2] 반영 실패:', e.message);
+      }
+
       /* 풀스크린 오버레이에 결과 표시 */
       diagOpenOverlay(apiDocType, fname, 'result', data);
     } else {
