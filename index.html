@@ -4648,7 +4648,11 @@ function tIns(k,el){
   var _el_st_ins=document.getElementById('st-ins');if(_el_st_ins)_el_st_ins.textContent=cnt>0?cnt+'종 보유':'보험 8종 보유 현황';
   rebuildHouse();rProg();
 }
+var _rAllRunning = false;  /* ★ v14: rAll 재귀 방지 */
 function rAll(sec){
+  if(_rAllRunning) return;  /* 재귀 차단 */
+  _rAllRunning = true;
+  try {
   if(sec)touched[sec]=true;
   rebuildHouse();rProg();
   updateBpTitle();
@@ -4668,6 +4672,7 @@ function rAll(sec){
   const sc=calcScore();
   setBadge('bp',sc>0?sc+'점':'진단전',sc>=80?'bd-d':sc>0?'bd-p':'bd-e');
   if(typeof autoSave==='function') autoSave();
+  } finally { _rAllRunning = false; }
 }
 function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.textContent=t;el.className='badge '+c;}}
 
@@ -4768,6 +4773,247 @@ function applyDocToNote(structuredData) {
     
     console.log('[applyDocToNote] 매핑 완료:', filled + '개', fields);
     console.log('[applyDocToNote] D:', {name:D.name, ageNum:D.ageNum, income:D.income, safeAsset:D.safeAsset, debtCredit:D.debtCredit});
+    
+    /* ═════════════════════════════════════════════
+       ★ [v14 핵심] 상담노트 필드 직접 채우기
+       상열님 요구: 신청서 업로드 → 진단 상담노트에 미리 입력
+       _fillNewNote(id, 표시값) 로 각 탭의 필드에 값 주입
+       단위: 상담노트는 사람이 읽는 형식 (만원, 세, 명 등)
+       ═════════════════════════════════════════════ */
+    try {
+      if (typeof _fillNewNote === 'function') {
+        var noteFilled = 0;
+        
+        /* ── 1단계 인적사항 ── */
+        if (s.family) {
+          if (s.family.name) { _fillNewNote('f1_name', s.family.name); noteFilled++; }
+          if (s.family.age) { _fillNewNote('f1_age', s.family.age + '세'); noteFilled++; }
+          if (s.family.job) { _fillNewNote('f1_job', s.family.job); noteFilled++; }
+          if (s.family.size) { _fillNewNote('f1_family', s.family.size + '명'); noteFilled++; }
+          if (s.family.married) { _fillNewNote('f1_marry', s.family.married); noteFilled++; }
+          if (s.income && parseInt(s.income.spouse) > 0) { _fillNewNote('f1_dual', '맞벌이'); noteFilled++; }
+        }
+        
+        /* ── 2단계 경제적 고민 ── */
+        if (s.family && s.family.concern) {
+          _fillNewNote('f2_w1', s.family.concern);
+          noteFilled++;
+        }
+        
+        /* ── 3단계 수입지출 (천원→만원 변환) ── */
+        if (s.income) {
+          var incU = s.income.unit || '만원';
+          if (s.income.total) { _fillNewNote('bt_inc_cur', toM(s.income.total, incU) + '만원'); noteFilled++; }
+        }
+        if (s.expenses) {
+          var expU = s.expenses.unit || (s.income && s.income.unit) || '만원';
+          var living = 0;
+          if (s.expenses.living_fixed) living += toM(s.expenses.living_fixed, expU) || 0;
+          if (s.expenses.living_variable) living += toM(s.expenses.living_variable, expU) || 0;
+          if (living > 0) { _fillNewNote('bt_life_cur', living + '만원'); noteFilled++; }
+          
+          if (s.expenses.insurance) { _fillNewNote('bt_ins_cur', toM(s.expenses.insurance, expU) + '만원'); noteFilled++; }
+          if (s.expenses.debt_payment) { _fillNewNote('bt_loan_cur', toM(s.expenses.debt_payment, expU) + '만원'); noteFilled++; }
+          if (s.expenses.pension) { _fillNewNote('bt_pen_cur', toM(s.expenses.pension, expU) + '만원'); noteFilled++; }
+          if (s.expenses.savings) { _fillNewNote('bt_sav_cur', toM(s.expenses.savings, expU) + '만원'); noteFilled++; }
+        }
+        if (s.surplus) {
+          var surU = (s.income && s.income.unit) || '만원';
+          _fillNewNote('bt_sur_cur', toM(s.surplus, surU) + '만원');
+          noteFilled++;
+        }
+        
+        /* ── 4단계 자산부채 ── */
+        if (s.assets) {
+          var aU = s.assets.unit || (s.income && s.income.unit) || '만원';
+          if (s.assets.deposit) { _fillNewNote('f4_deposit', toM(s.assets.deposit, aU) + '만원'); noteFilled++; }
+          if (s.assets.pension) { _fillNewNote('f4_pension', toM(s.assets.pension, aU) + '만원'); noteFilled++; }
+          
+          /* 투자 = 펀드+주식+CMA+청약 합산 */
+          var invSum = 0;
+          if (s.assets.fund) invSum += toM(s.assets.fund, aU) || 0;
+          if (s.assets.stock) invSum += toM(s.assets.stock, aU) || 0;
+          if (s.assets.cma) invSum += toM(s.assets.cma, aU) || 0;
+          if (s.assets.subscription) invSum += toM(s.assets.subscription, aU) || 0;
+          if (invSum > 0) { _fillNewNote('f4_invest', invSum + '만원'); noteFilled++; }
+          
+          if (s.assets.realty) { _fillNewNote('f4_realty', toM(s.assets.realty, aU) + '만원'); noteFilled++; }
+          if (s.assets.realty_type) { _fillNewNote('f4_realty_type', s.assets.realty_type); noteFilled++; }
+        }
+        if (s.debts) {
+          var dU = s.debts.unit || (s.income && s.income.unit) || '만원';
+          if (s.debts.credit) { _fillNewNote('f4_credit', toM(s.debts.credit, dU) + '만원'); noteFilled++; }
+          if (s.debts.mortgage) { _fillNewNote('f4_mortgage', toM(s.debts.mortgage, dU) + '만원'); noteFilled++; }
+          /* bank + other → 기타 */
+          var otherSum = 0;
+          if (s.debts.bank) otherSum += toM(s.debts.bank, dU) || 0;
+          if (s.debts.other) otherSum += toM(s.debts.other, dU) || 0;
+          if (otherSum > 0) { _fillNewNote('f4_other', otherSum + '만원'); noteFilled++; }
+        }
+        
+        console.log('[applyDocToNote→상담노트] 필드 입력:', noteFilled + '개');
+        
+        /* ═════════════════════════════════════════════
+           ★ [v14 공식] 6~9단계 자동 계산 (상열님 시스템 프롬프트 기반)
+           ═════════════════════════════════════════════ */
+        try {
+          /* 기본 값 추출 */
+          var age = D.ageNum || 0;
+          var income = D.income || 0;  /* 월수입 만원 */
+          var monthlyIncome = income;
+          var yearlyIncome = income * 12;
+          var dualIncome = !!D.dualIncome;
+          var familyN = D.familyNum || 1;
+          
+          /* 월 지출 합산 */
+          var curSave = D.savings || 0;  /* 현재 저축투자 */
+          var curIns = D.insPay || 0;
+          var curLoan = D.loanPay || 0;
+          var curPen = D.retirePension || 0;
+          
+          /* 자산 */
+          var totalAsset = (D.safeAsset || 0) + (D.riskAsset || 0);
+          var totalDebt = (D.debtCredit || 0) + (D.debtCollat || 0);
+          var netAsset = totalAsset - totalDebt;
+          
+          /* === 4단계 추가: 부자지수 & 비상자금 === */
+          if (age > 0 && yearlyIncome > 0) {
+            var wealthIdx = (netAsset * 10) / (age * yearlyIncome);
+            var wGrade = wealthIdx < 0.25 ? '텐트 ⛺' : wealthIdx < 0.5 ? '오두막 🛖' : wealthIdx < 1 ? '빌라 🏠' : wealthIdx < 2 ? '아파트 🏢' : '궁전 🏰';
+            _fillNewNote('f4_wi_val', wealthIdx.toFixed(2));
+            _fillNewNote('f4_wi_diag', wGrade);
+            noteFilled++;
+          }
+          
+          /* 비상예비자금 (맞벌이 3개월, 외벌이 6개월) */
+          if (monthlyIncome > 0) {
+            var emergNeed = monthlyIncome * (dualIncome ? 3 : 6);
+            var emergHave = D.safeAsset || 0;
+            var emergStatus = emergHave >= emergNeed ? '충족' : '부족 ' + (emergNeed - emergHave) + '만원';
+            _fillNewNote('f4_emerg', emergHave + '/' + emergNeed + '만원 (' + emergStatus + ')');
+            noteFilled++;
+          }
+          
+          /* 총자산 / 총부채 / 순자산 */
+          if (totalAsset > 0) { _fillNewNote('f4_total_asset', totalAsset + '만원'); noteFilled++; }
+          if (totalDebt > 0) { _fillNewNote('f4_total_debt', totalDebt + '만원'); noteFilled++; }
+          if (netAsset !== 0) { _fillNewNote('f4_net', netAsset + '만원'); noteFilled++; }
+          
+          /* 부채비율 */
+          if (totalAsset > 0 && totalDebt > 0) {
+            var debtRatio = (totalDebt / totalAsset * 100).toFixed(1);
+            _fillNewNote('f4_dr', debtRatio + '%');
+            noteFilled++;
+          }
+          
+          /* === 6단계: 포트폴리오 (100-나이 법칙) === */
+          if (age > 0 && monthlyIncome > 0) {
+            /* 가족수별 저축 예산 비율 */
+            var savePct = familyN <= 1 ? 0.5 : familyN === 2 ? 0.4 : familyN === 3 ? 0.3 : familyN === 4 ? 0.2 : 0.1;
+            var budget = Math.round(monthlyIncome * savePct);
+            
+            /* 투자재원 계산 */
+            var invResource = curSave >= budget ? curSave : Math.round((budget + curSave) / 2);
+            
+            /* 100-나이 법칙 */
+            var saveRatio = age / 100;
+            var invRatio = (100 - age) / 100;
+            var saveAmt = Math.round(invResource * saveRatio);
+            var invAmt = Math.round(invResource * invRatio);
+            
+            _fillNewNote('f6_budget', budget + '만원');
+            _fillNewNote('f6_cur_save', curSave + '만원');
+            _fillNewNote('f6_save_amt', saveAmt + '만원');
+            _fillNewNote('f6_inv_amt', invAmt + '만원');
+            _fillNewNote('f6_save_label', '저축 ' + age + '%');
+            _fillNewNote('f6_inv_label', '투자 ' + (100 - age) + '%');
+            _fillNewNote('f6_net', invResource + '만원');
+            _fillNewNote('f6_source', curSave >= budget ? '현재 저축투자 기준' : '(예산+현재)÷2 기준');
+            noteFilled += 8;
+            
+            /* 연금 갭 (월소득 10% 권장) */
+            var penNeed = Math.round(monthlyIncome * 0.1);
+            var penGap = Math.max(0, penNeed - curPen);
+            _fillNewNote('f6_pen_gap', penGap > 0 ? '부족 ' + penGap + '만원' : '충족');
+            noteFilled++;
+            
+            /* 보험 갭 (연봉 × 기준) */
+            /* 사망보장 = 연봉×3 + 부채 */
+            var insNeed = yearlyIncome * 3 + totalDebt;
+            _fillNewNote('f6_ins_gap', '사망보장 권장 ' + insNeed + '만원');
+            noteFilled++;
+          }
+          
+          /* === 7단계: 종합재무설계 === */
+          if (totalAsset > 0) {
+            var finCur = (D.safeAsset || 0) + (D.riskAsset || 0);
+            _fillNewNote('f7_fin_cur', finCur + '만원');
+            noteFilled++;
+            
+            /* 부동산 현황 */
+            var reCur = D.reHome || D.reInv ? ((D.reHome || 0) + (D.reInv || 0)) + '억' : '';
+            if (reCur) { _fillNewNote('f7_re_cur', reCur); noteFilled++; }
+          }
+          
+          /* === 9단계: 재무점수 & DESIRE === */
+          if (age > 0 && monthlyIncome > 0) {
+            /* 재무점수 (각 20점) */
+            /* 지출관리: 저축률 높을수록 */
+            var saveRate = monthlyIncome > 0 ? (curSave / monthlyIncome * 100) : 0;
+            var scoreExp = Math.min(20, Math.round(saveRate / 30 * 20));
+            
+            /* 자산형성: 부자지수 기반 */
+            var wi = (age > 0 && yearlyIncome > 0) ? (netAsset * 10) / (age * yearlyIncome) : 0;
+            var scoreAsset = Math.min(20, Math.round(wi * 10));
+            
+            /* 보험보장: 보험료 / 수입 5~10% 적정 */
+            var insRate = monthlyIncome > 0 ? (curIns / monthlyIncome * 100) : 0;
+            var scoreIns = insRate >= 5 && insRate <= 10 ? 20 : insRate > 0 ? 10 : 0;
+            
+            /* 노후준비: 연금 / 월수입 10% 이상 */
+            var penRate = monthlyIncome > 0 ? (curPen / monthlyIncome * 100) : 0;
+            var scoreRet = Math.min(20, Math.round(penRate * 2));
+            
+            /* 부채관리: 부채비율 낮을수록 */
+            var dR = totalAsset > 0 ? (totalDebt / totalAsset * 100) : 0;
+            var scoreDebt = dR < 20 ? 20 : dR < 40 ? 15 : dR < 60 ? 10 : 5;
+            
+            var totalScore = scoreExp + scoreAsset + scoreIns + scoreRet + scoreDebt;
+            var grade = totalScore >= 80 ? 'A' : totalScore >= 60 ? 'B' : totalScore >= 40 ? 'C' : 'D';
+            
+            _fillNewNote('f9_score', totalScore + '점');
+            _fillNewNote('f9_grade', grade + '등급');
+            _fillNewNote('f9_s1', '지출관리 ' + scoreExp + '점');
+            _fillNewNote('f9_s2', '자산형성 ' + scoreAsset + '점');
+            _fillNewNote('f9_s3', '보험보장 ' + scoreIns + '점');
+            _fillNewNote('f9_i1', '노후준비 ' + scoreRet + '점');
+            _fillNewNote('f9_i2', '부채관리 ' + scoreDebt + '점');
+            noteFilled += 7;
+            
+            /* DESIRE 단계 */
+            var desireStage = 1;
+            if (D.debtCredit > 0) desireStage = 1;  /* D: 신용대출 */
+            else if ((D.safeAsset || 0) < monthlyIncome * (dualIncome ? 3 : 6)) desireStage = 2;  /* E: 비상자금 */
+            else if (curSave < Math.round(monthlyIncome * (familyN <= 2 ? 0.4 : 0.3))) desireStage = 3;  /* S: 저축 */
+            else if (totalAsset < 100000) desireStage = 4;  /* I: 10억 미만 */
+            else if (D.debtCollat > 0) desireStage = 5;  /* R: 담보대출 */
+            else desireStage = 6;  /* E: 상속 */
+            
+            var desireLabel = ['','D(신용대출)','E(비상자금)','S(저축투자)','I(10억달성)','R(담보대출)','E(상속증여)'][desireStage];
+            _fillNewNote('f9_a1', 'DESIRE ' + desireStage + '단계: ' + desireLabel);
+            noteFilled++;
+          }
+          
+          console.log('[applyDocToNote→공식계산] 총 필드:', noteFilled + '개');
+        } catch(formulaErr) {
+          console.warn('[applyDocToNote→공식] 실패:', formulaErr.message);
+        }
+      } else {
+        console.warn('[applyDocToNote] _fillNewNote 함수 없음');
+      }
+    } catch(noteErr) {
+      console.warn('[applyDocToNote→상담노트] 실패:', noteErr.message);
+    }
     
     /* ★ 고수님 설계: setTimeout으로 rAll 지연 호출 — 재귀 차단 */
     setTimeout(function() {
