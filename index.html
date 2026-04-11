@@ -8918,7 +8918,61 @@ function restoreChatLogUI(data) {
 /* ── resumeContext 생성: Vapi 시스템 프롬프트에 주입할 요약 ── */
 function buildResumeContext() {
   var data = loadChatHistoryPersistent();
-  if(!data || !data.history || data.history.length === 0) return '';
+  
+  /* ★ [프로젝트 C v3 2026-04-11] 사전서류 분석 결과 주입
+   * window.diagDocAnalysis에 저장된 Claude Vision 분석 결과를
+   * 머니야가 상담 시 참고할 수 있도록 context에 포함
+   * 이렇게 하면 UI 상담노트 필드 매핑 버그 우회 가능
+   */
+  var docContext = '';
+  try {
+    if (window.diagDocAnalysis && typeof window.diagDocAnalysis === 'object') {
+      var docParts = [];
+      var docLabels = {
+        application: '상담신청서',
+        insurance: '보험증권',
+        pension: '연금명세서',
+        tax: '세금신고서'
+      };
+      
+      Object.keys(window.diagDocAnalysis).forEach(function(docType) {
+        var docData = window.diagDocAnalysis[docType];
+        if (!docData || !docData.success) return;
+        
+        var label = docLabels[docType] || docType;
+        var extracted = docData.extracted || docData.data || docData.analysis || {};
+        
+        /* 추출된 데이터를 JSON 문자열로 간결하게 */
+        var extractedStr = '';
+        try {
+          extractedStr = JSON.stringify(extracted, null, 2).substring(0, 2000);
+        } catch(e) {
+          extractedStr = String(extracted).substring(0, 2000);
+        }
+        
+        if (extractedStr && extractedStr !== '{}' && extractedStr !== 'null') {
+          docParts.push('[' + label + ' 분석결과]\n' + extractedStr);
+        }
+      });
+      
+      if (docParts.length > 0) {
+        docContext = '\n\n━━━ 고객이 업로드한 사전서류 정보 ━━━\n' +
+                     docParts.join('\n\n') +
+                     '\n\n※ 위 서류 정보를 참고해서 상담하세요. 이미 파악된 정보는 고객에게 "확인해드릴게요"라며 자연스럽게 복명복창만 하고 넘어가세요. 같은 정보를 다시 묻지 마세요.';
+        console.log('[사전서류→머니야] context에 주입됨:', docParts.length + '개 서류');
+      }
+    }
+  } catch(e) {
+    console.warn('[사전서류→머니야] 주입 실패:', e.message);
+  }
+  
+  /* 이전 대화가 없어도 사전서류는 있을 수 있음 */
+  if((!data || !data.history || data.history.length === 0) && !docContext) return '';
+  
+  /* 사전서류만 있고 이전 대화 없는 경우 */
+  if(!data || !data.history || data.history.length === 0) {
+    return docContext;
+  }
   
   var history = data.history;
   var lastDate = data.lastUpdated ? new Date(data.lastUpdated) : new Date();
@@ -8950,6 +9004,9 @@ function buildResumeContext() {
   if(typeof data.curStep === 'number' && data.curStep > 0) {
     context += '\n\n[이전 진행 단계] ' + data.curStep + '단계까지 완료';
   }
+  
+  /* 사전서류 context 추가 (있으면) */
+  context += docContext;
   
   context += '\n\n위 내용을 참고하여 자연스럽게 이어서 상담하세요. 이전에 이미 물어본 내용은 다시 묻지 마세요.';
   return context;
