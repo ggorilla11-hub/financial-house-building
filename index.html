@@ -4670,182 +4670,6 @@ function rAll(sec){
   if(typeof autoSave==='function') autoSave();
 }
 function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.textContent=t;el.className='badge '+c;}}
-
-/* ═══════════════════════════════════════════════════════════
-   ★ [프로젝트 C v14 2026-04-12] applyDocToNote
-   
-   고수님 설계 v14: 사전서류 → 상담노트 자동 입력
-   
-   데이터 흐름:
-   1. 고객이 상담신청서 업로드
-   2. /api/analyze-document → Claude Vision 분석
-   3. structuredData 수신
-   4. ★ applyDocToNote() 호출 → D 객체에 값 주입
-   5. rAll() 체인 발동 → 상담노트 자동 렌더링
-   
-   ⚠️ 단위 변환:
-   백엔드: 천원 단위 (unit: "천원")
-   D 객체: 만원 단위
-   → 천원 ÷ 10 = 만원
-   
-   강용씨 예시:
-   structuredData.income.total = 13000 (천원)
-   → D.income = 1300 (만원)
-   
-   D 객체 필드 참조:
-   - 4143줄 const D = { name, ageNum, income, savings, insPay, 
-                        safeAsset, riskAsset, reHome, reInv, 
-                        debtCredit, debtCollat, ins:{...} }
-   - 단위: 만원 (단, reHome/reInv는 억)
-   ═══════════════════════════════════════════════════════════ */
-function applyDocToNote(structuredData) {
-  if (!structuredData || typeof structuredData !== 'object') {
-    console.warn('[applyDocToNote] 유효하지 않은 데이터');
-    return { filled: 0, fields: [] };
-  }
-  
-  var s = structuredData;
-  var filled = 0;
-  var fields = [];
-  
-  /* 단위 변환: 백엔드가 "천원" 단위를 쓰면 ÷10, "만원"이면 그대로 */
-  var toManwon = function(val, unit) {
-    if (val == null || val === '') return null;
-    var num = parseInt(val);
-    if (isNaN(num)) return null;
-    if (unit === '천원') return Math.round(num / 10);
-    return num;  /* 이미 만원 단위 */
-  };
-  
-  try {
-    /* ── 1단계: 인적사항 ── */
-    if (s.family) {
-      if (s.family.name) { D.name = s.family.name; filled++; fields.push('이름'); }
-      if (s.family.age) { 
-        var ageN = parseInt(s.family.age);
-        if (!isNaN(ageN)) { D.ageNum = ageN; filled++; fields.push('나이'); }
-      }
-      if (s.family.job) { D.job = s.family.job; filled++; fields.push('직업'); }
-      if (s.family.size) {
-        var famN = parseInt(s.family.size);
-        if (!isNaN(famN)) { D.familyNum = famN; filled++; fields.push('가족수'); }
-      }
-    }
-    
-    /* ── 3단계: 수입지출 (월 단위) ── */
-    if (s.income) {
-      var incomeUnit = s.income.unit || '만원';
-      if (s.income.total) {
-        var inc = toManwon(s.income.total, incomeUnit);
-        if (inc != null) { D.income = inc; filled++; fields.push('월소득'); }
-      }
-      /* 맞벌이 판단 */
-      if (s.income.spouse && parseInt(s.income.spouse) > 0) {
-        D.dualIncome = true;
-      }
-    }
-    
-    /* 월 지출 항목 */
-    if (s.expenses) {
-      var expUnit = s.expenses.unit || (s.income && s.income.unit) || '만원';
-      /* 월 보험료 */
-      if (s.expenses.insurance) {
-        var ins = toManwon(s.expenses.insurance, expUnit);
-        if (ins != null) { D.insPay = ins; filled++; fields.push('월보험료'); }
-      }
-      /* 월 대출상환 */
-      if (s.expenses.debt_payment) {
-        var dp = toManwon(s.expenses.debt_payment, expUnit);
-        if (dp != null) { D.loanPay = dp; filled++; fields.push('월대출상환'); }
-      }
-    }
-    
-    /* 월 저축 — surplus 또는 income.savings */
-    if (s.income && s.income.savings) {
-      var sv = toManwon(s.income.savings, s.income.unit || '만원');
-      if (sv != null) { D.savings = sv; filled++; fields.push('월저축'); }
-    }
-    
-    /* ── 4단계: 자산부채 ── */
-    if (s.assets) {
-      var aUnit = s.assets.unit || (s.income && s.income.unit) || '만원';
-      var safeSum = 0;
-      var riskSum = 0;
-      
-      /* 안전자산: 예적금, CMA, 청약 */
-      if (s.assets.deposit) safeSum += toManwon(s.assets.deposit, aUnit) || 0;
-      if (s.assets.cma) safeSum += toManwon(s.assets.cma, aUnit) || 0;
-      if (s.assets.subscription) safeSum += toManwon(s.assets.subscription, aUnit) || 0;
-      if (s.assets.pension) safeSum += toManwon(s.assets.pension, aUnit) || 0;
-      
-      /* 위험자산: 펀드, 주식 */
-      if (s.assets.fund) riskSum += toManwon(s.assets.fund, aUnit) || 0;
-      if (s.assets.stock) riskSum += toManwon(s.assets.stock, aUnit) || 0;
-      
-      if (safeSum > 0) { D.safeAsset = safeSum; filled++; fields.push('안전자산'); }
-      if (riskSum > 0) { D.riskAsset = riskSum; filled++; fields.push('위험자산'); }
-    }
-    
-    if (s.debts) {
-      var dUnit = s.debts.unit || (s.income && s.income.unit) || '만원';
-      /* 신용대출 = 기타대출 + 은행대출(일반) */
-      var creditSum = 0;
-      if (s.debts.credit) creditSum += toManwon(s.debts.credit, dUnit) || 0;
-      if (s.debts.bank) creditSum += toManwon(s.debts.bank, dUnit) || 0;
-      if (s.debts.other) creditSum += toManwon(s.debts.other, dUnit) || 0;
-      
-      /* 담보대출 */
-      var collatSum = 0;
-      if (s.debts.mortgage) collatSum += toManwon(s.debts.mortgage, dUnit) || 0;
-      
-      if (creditSum > 0) { D.debtCredit = creditSum; D.loanCredit = creditSum; filled++; fields.push('신용대출'); }
-      if (collatSum > 0) { D.debtCollat = collatSum; D.loanCollat = collatSum; filled++; fields.push('담보대출'); }
-    }
-    
-    /* ── 자동 계산 체인 발동 ── */
-    console.log('[applyDocToNote] 매핑 완료:', filled + '개 필드', fields);
-    console.log('[applyDocToNote] D 객체 현재 상태:', {
-      name: D.name, ageNum: D.ageNum, income: D.income, 
-      savings: D.savings, insPay: D.insPay,
-      safeAsset: D.safeAsset, riskAsset: D.riskAsset,
-      debtCredit: D.debtCredit, debtCollat: D.debtCollat
-    });
-    
-    /* ★ [v14 FIX2] rAll 호출 금지 — 무한 재귀 발생
-     * 대신 개별 안전 함수만 호출해서 화면 업데이트
-     * rAll은 사용자 슬라이더 이벤트 전용으로 남겨둠
-     */
-    try {
-      if (typeof updateBpTitle === 'function') updateBpTitle();
-      if (typeof rebuildHouse === 'function') rebuildHouse();
-      if (typeof rProg === 'function') rProg();
-      /* 배지 수동 업데이트 */
-      if (typeof setBadge === 'function') {
-        var cf = !!(D.name || D.ageNum);
-        setBadge('who', cf ? '입력됨' : '미입력', cf ? 'bd-d' : 'bd-e');
-        var _stWho = document.getElementById('st-who');
-        if (_stWho && cf) _stWho.textContent = (D.name || '고객') + (D.ageNum ? ' · ' + D.ageNum + '세' : '');
-        
-        setBadge('fin', D.income > 0 ? '입력됨' : '미입력', D.income > 0 ? 'bd-d' : 'bd-e');
-        var _stFin = document.getElementById('st-fin');
-        if (_stFin && D.income > 0) _stFin.textContent = '월 ' + fmt(D.income) + '만원 수입';
-      }
-    } catch(renderErr) {
-      console.warn('[applyDocToNote] 렌더 일부 실패:', renderErr.message);
-    }
-    
-    /* 성공 토스트 */
-    if (filled > 0 && typeof showToast === 'function') {
-      showToast('✅ 상담신청서가 분석되어 상담노트에 ' + filled + '개 항목 반영되었습니다');
-    }
-    
-    return { filled: filled, fields: fields };
-  } catch(e) {
-    console.error('[applyDocToNote] 실패:', e.message, e.stack);
-    return { filled: 0, fields: [], error: e.message };
-  }
-}
-
 function rProg(){
   const sc=calcScore();
   document.getElementById('prog-fill').style.width=sc+'%';
@@ -8385,24 +8209,15 @@ function mvpUpdateGuideUI() {
     desc:  planData.desc,
   };
 
-  // 잔여 크레딧 — ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템에서 읽기
-  // 기존: mvp_credit_min (분 단위, 이전 시스템)
-  // 신규: voice_used_sec (초 단위, 정확한 추적) → 분으로 변환
+  // 잔여 크레딧 — 플랜 최대값 초과 시 최대값으로 보정
+  var storedCredit = parseInt(localStorage.getItem('mvp_credit_min') || '-1');
   var remainCredit;
-  if (typeof creditGetState === 'function') {
-    var _cs = creditGetState();
-    remainCredit = _cs.voiceRemainMin;  // 남은 분 (정수)
-    // mvp_credit_min도 동기화 (하위 호환)
+  if(storedCredit < 0 || storedCredit > info.min) {
+    // localStorage 미설정이거나 플랜 최대값 초과 → 최대값으로 세팅
+    remainCredit = info.min;
     localStorage.setItem('mvp_credit_min', String(remainCredit));
   } else {
-    // fallback: 기존 방식
-    var storedCredit = parseInt(localStorage.getItem('mvp_credit_min') || '-1');
-    if(storedCredit < 0 || storedCredit > info.min) {
-      remainCredit = info.min;
-      localStorage.setItem('mvp_credit_min', String(remainCredit));
-    } else {
-      remainCredit = storedCredit;
-    }
+    remainCredit = storedCredit;
   }
 
   // ① 상담시간 표시 (플랜명 + 분 수)
@@ -8590,12 +8405,6 @@ function mvpHandleUpload(input) {
     console.log('[MVP사전서류] 응답 수신');
     window.diagDocAnalysis = window.diagDocAnalysis || {};
     window.diagDocAnalysis[apiDocType] = data;
-    
-    /* ★ [v13.2 FIX] localStorage에 저장 (새로고침 후에도 유지) */
-    try {
-      localStorage.setItem('diag_doc_analysis', JSON.stringify(window.diagDocAnalysis));
-      console.log('[MVP사전서류] localStorage 저장 완료');
-    } catch(e) { console.warn('[MVP사전서류] localStorage 저장 실패:', e.message); }
 
     if(data && data.success) {
       /* 성공: UI 업데이트 — ✅ 아이콘을 🗑️ 삭제 버튼으로 교체 */
@@ -8611,63 +8420,6 @@ function mvpHandleUpload(input) {
         docBadge.textContent = '필수 완료'; 
         docBadge.style.background = 'rgba(34,197,94,.1)'; 
         docBadge.style.color = '#16a34a'; 
-      }
-      
-      /* ★ [프로젝트 C FIX 2026-04-11] 분석 결과를 상담노트 필드에 자동 반영
-       * 백엔드가 추출한 데이터를 파싱해서 해당 필드에 입력
-       * 문서 종류별로 매핑:
-       * - 상담신청서(application): 이름/나이/연락처 등 인적사항 → f1_*
-       * - 연금(pension): 적립금 → f4_pension, 월납입 → bt_pen_cur
-       * - 보험(insurance): 월 보험료 → bt_ins_cur
-       * - 세금(tax): 참고 정보
-       */
-      try {
-        var extracted = data.extracted || data.data || {};
-        var filledCount = 0;
-        var filledFields = [];
-        
-        if (typeof _fillNewNote === 'function') {
-          /* 공통 — 이름/나이 (상담신청서) */
-          if (extracted.name) { _fillNewNote('f1_name', extracted.name); filledCount++; filledFields.push('이름'); }
-          if (extracted.age) { _fillNewNote('f1_age', extracted.age + '세'); filledCount++; filledFields.push('나이'); }
-          if (extracted.family_size) { _fillNewNote('f1_family', extracted.family_size + '명'); filledCount++; filledFields.push('가족수'); }
-          if (extracted.job) { _fillNewNote('f1_job', extracted.job); filledCount++; filledFields.push('직업'); }
-          
-          /* 수입지출 (3단계) */
-          if (extracted.monthly_income) { _fillNewNote('bt_inc_cur', extracted.monthly_income + '만원'); filledCount++; filledFields.push('월수입'); }
-          if (extracted.monthly_loan) { _fillNewNote('bt_loan_cur', extracted.monthly_loan + '만원'); filledCount++; filledFields.push('대출원리금'); }
-          if (extracted.monthly_insurance) { _fillNewNote('bt_ins_cur', extracted.monthly_insurance + '만원'); filledCount++; filledFields.push('보험료'); }
-          if (extracted.monthly_pension) { _fillNewNote('bt_pen_cur', extracted.monthly_pension + '만원'); filledCount++; filledFields.push('연금납입'); }
-          if (extracted.monthly_savings) { _fillNewNote('bt_sav_cur', extracted.monthly_savings + '만원'); filledCount++; filledFields.push('저축투자'); }
-          
-          /* 자산부채 (4단계) */
-          if (extracted.deposit_amount) { _fillNewNote('f4_deposit', extracted.deposit_amount + '만원'); filledCount++; filledFields.push('예적금'); }
-          if (extracted.pension_amount) { _fillNewNote('f4_pension', extracted.pension_amount + '만원'); filledCount++; filledFields.push('연금적립금'); }
-          if (extracted.invest_amount) { _fillNewNote('f4_invest', extracted.invest_amount + '만원'); filledCount++; filledFields.push('투자자산'); }
-          if (extracted.realty_type) { _fillNewNote('f4_realty_type', extracted.realty_type); filledCount++; filledFields.push('거주형태'); }
-          if (extracted.realty_amount) { _fillNewNote('f4_realty', extracted.realty_amount + '만원'); filledCount++; filledFields.push('부동산금액'); }
-          if (extracted.credit_loan) { _fillNewNote('f4_credit', extracted.credit_loan + '만원'); filledCount++; filledFields.push('신용대출'); }
-          if (extracted.mortgage_loan) { _fillNewNote('f4_mortgage', extracted.mortgage_loan + '만원'); filledCount++; filledFields.push('담보대출'); }
-          
-          console.log('[사전서류→노트] 반영 완료:', filledCount + '개 필드', filledFields);
-        } else {
-          console.warn('[사전서류→노트] _fillNewNote 함수 없음');
-        }
-        
-        /* 자동 계산 트리거 */
-        setTimeout(function() {
-          if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
-          if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
-        }, 200);
-        
-        /* 성공 메시지에 반영 개수 포함 */
-        if (filledCount > 0) {
-          setTimeout(function() {
-            showToast('📝 상담노트에 ' + filledCount + '개 항목 자동 입력됨');
-          }, 1500);
-        }
-      } catch(e) {
-        console.warn('[사전서류→노트] 반영 실패:', e.message);
       }
       
       /* 풀스크린 오버레이에 결과 표시 */
@@ -9018,7 +8770,7 @@ function restoreChatLogUI(data) {
   
   /* ★ [BUG-003 FIX 2026-04-10] 음성 모드(diagStt)에서도 복원되도록 가드 완화 */
   var sttArea = document.getElementById('diagStt');
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   
   // 둘 다 없으면 진단 화면 미진입 — 종료
   if(!sttArea && !chatLog) return;
@@ -9100,88 +8852,7 @@ function restoreChatLogUI(data) {
 /* ── resumeContext 생성: Vapi 시스템 프롬프트에 주입할 요약 ── */
 function buildResumeContext() {
   var data = loadChatHistoryPersistent();
-  
-  /* ★ [프로젝트 C v3 2026-04-11] 사전서류 분석 결과 주입
-   * window.diagDocAnalysis에 저장된 Claude Vision 분석 결과를
-   * 머니야가 상담 시 참고할 수 있도록 context에 포함
-   * 이렇게 하면 UI 상담노트 필드 매핑 버그 우회 가능
-   * ★ [v13.2 FIX] localStorage에서도 복원 (페이지 새로고침 후에도 유지)
-   */
-  var docContext = '';
-  try {
-    /* localStorage에서 복원 시도 */
-    if (!window.diagDocAnalysis || Object.keys(window.diagDocAnalysis).length === 0) {
-      try {
-        var stored = localStorage.getItem('diag_doc_analysis');
-        if (stored) {
-          window.diagDocAnalysis = JSON.parse(stored);
-          console.log('[사전서류] localStorage에서 복원:', Object.keys(window.diagDocAnalysis || {}));
-        }
-      } catch(e) { console.warn('[사전서류] 복원 실패:', e.message); }
-    }
-    
-    if (window.diagDocAnalysis && typeof window.diagDocAnalysis === 'object') {
-      var docParts = [];
-      var docLabels = {
-        application: '상담신청서',
-        insurance: '보험증권',
-        pension: '연금명세서',
-        tax: '세금신고서'
-      };
-      
-      Object.keys(window.diagDocAnalysis).forEach(function(docType) {
-        var docData = window.diagDocAnalysis[docType];
-        if (!docData || !docData.success) return;
-        
-        var label = docLabels[docType] || docType;
-        /* ★ [v13.1 FIX] 백엔드 실제 응답: structuredData 필드 사용
-         * 우선순위: structuredData > extracted > data > analysis > rawText
-         */
-        var extracted = docData.structuredData || docData.extracted || docData.data || docData.analysis || docData.rawText || {};
-        
-        /* 추출된 데이터를 JSON 문자열로 간결하게 */
-        var extractedStr = '';
-        try {
-          if (typeof extracted === 'string') {
-            /* rawText인 경우 코드블록 제거 */
-            extractedStr = extracted.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim().substring(0, 2500);
-          } else {
-            extractedStr = JSON.stringify(extracted, null, 2).substring(0, 2500);
-          }
-        } catch(e) {
-          extractedStr = String(extracted).substring(0, 2500);
-        }
-        
-        if (extractedStr && extractedStr !== '{}' && extractedStr !== 'null') {
-          docParts.push('[' + label + ' 분석결과]\n' + extractedStr);
-        }
-      });
-      
-      if (docParts.length > 0) {
-        docContext = '\n\n━━━ 고객이 업로드한 사전서류 정보 ━━━\n' +
-                     docParts.join('\n\n') +
-                     '\n\n※ 위 서류 정보를 참고해서 상담하세요. 이미 파악된 정보는 고객에게 "확인해드릴게요"라며 자연스럽게 복명복창만 하고 넘어가세요. 같은 정보를 다시 묻지 마세요.';
-        console.log('[사전서류→머니야] context에 주입됨:', docParts.length + '개 서류');
-      }
-    }
-  } catch(e) {
-    console.warn('[사전서류→머니야] 주입 실패:', e.message);
-  }
-  
-  /* 이전 대화가 없어도 사전서류는 있을 수 있음 */
-  if((!data || !data.history || data.history.length === 0) && !docContext) return '';
-  
-  /* ★ [v13.2 FIX 2026-04-11] 사전서류만 있고 이전 대화 없는 경우 
-   * → "초회 진단이지만 서류 정보가 있다"는 명확한 신호 전달
-   * → 머니야가 "재진입" 모드가 아니라 "초회 + 정보 파악" 모드로 응답
-   */
-  if(!data || !data.history || data.history.length === 0) {
-    return '[초회 진단 — 고객 사전서류 보유]\n' +
-           '이 고객은 처음 상담받는 분입니다. 재진입이나 "이어서" 같은 말은 절대 하지 마세요.\n' +
-           '고객이 미리 제출한 사전서류가 있으니 아래 정보를 활용해서 따뜻하게 첫 인사를 건네세요.\n' +
-           '예: "안녕하세요 [이름] 고객님! 사전에 제출해주신 상담신청서 잘 봤습니다. [나이]세이시고 [가족 구성]이시네요..."\n' +
-           docContext;
-  }
+  if(!data || !data.history || data.history.length === 0) return '';
   
   var history = data.history;
   var lastDate = data.lastUpdated ? new Date(data.lastUpdated) : new Date();
@@ -9213,9 +8884,6 @@ function buildResumeContext() {
   if(typeof data.curStep === 'number' && data.curStep > 0) {
     context += '\n\n[이전 진행 단계] ' + data.curStep + '단계까지 완료';
   }
-  
-  /* 사전서류 context 추가 (있으면) */
-  context += docContext;
   
   context += '\n\n위 내용을 참고하여 자연스럽게 이어서 상담하세요. 이전에 이미 물어본 내용은 다시 묻지 마세요.';
   return context;
@@ -9293,7 +8961,7 @@ function collectConversationHistory() {
   }
   
   // 2) 텍스트 모드: dn_chat_log에서 수집
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(chatLog) {
     var bubbles = chatLog.querySelectorAll('[data-role]');
     bubbles.forEach(function(b) {
@@ -9352,23 +9020,26 @@ async function startTextConsultWithHistory(history) {
 }
 
 function addToChatLog(role, text) {
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(!chatLog || !text) return;
   var isUser = (role === 'user');
+  // 빈 상태 안내 제거
+  var emptyEl = document.getElementById('dn_chat_empty');
+  if (emptyEl) emptyEl.remove();
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+  bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:6px;';
   bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
   bubble.setAttribute('data-text', text);
+  var ts = (function(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })();
   bubble.innerHTML =
     '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-      (isUser ? '👤 고객' : '🤖 머니야') + '</div>' +
+      (isUser ? '👤 고객' : '🤖 머니야') + ' <span style="opacity:.5">' + ts + '</span></div>' +
     '<div class="dn-bubble-text" style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-      (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
+      (isUser ? 'background:rgba(74,144,217,.18);color:#cde;border-bottom-right-radius:3px;' : 'background:rgba(11,29,58,.8);color:#fff;border:1px solid rgba(255,255,255,.08);border-bottom-left-radius:3px;') + '">' +
       text.replace(/</g, '&lt;') + '</div>';
   chatLog.appendChild(bubble);
   chatLog.scrollTop = chatLog.scrollHeight;
-  var ph = chatLog.querySelector('div[style*="text-align:center"]');
-  if(ph) ph.remove();
+  if (typeof dnUpdateChatStats === 'function') dnUpdateChatStats();
   
   /* ★ [BUG-003 FIX 2026-04-10] 발화마다 자동 누적 + 5초 debounce 저장
    * 음성/텍스트 모두에서 호출되는 공통 함수
@@ -9443,7 +9114,7 @@ async function sendTextConsultMessage(txt) {
     var data = await response.json();
 
     // 로딩 메시지 제거 후 실제 응답 표시
-    var chatLog = document.getElementById('dn_chat_log');
+    var chatLog = document.getElementById('dn_chat');
     if(chatLog) {
       var lastBubble = chatLog.lastElementChild;
       if(lastBubble && lastBubble.textContent.trim() === '...') lastBubble.remove();
@@ -9464,7 +9135,7 @@ async function sendTextConsultMessage(txt) {
     }
   } catch(e) {
     console.error('[텍스트 상담] 오류:', e);
-    var chatLog2 = document.getElementById('dn_chat_log');
+    var chatLog2 = document.getElementById('dn_chat');
     if(chatLog2) {
       var last = chatLog2.lastElementChild;
       if(last && last.textContent.trim() === '...') last.remove();
@@ -9564,22 +9235,25 @@ function manualReturnToVoice() {
     switchBtn.style.border = '1px solid rgba(59,130,246,.3)';
     switchBtn.onclick = function() { manualSwitchToText(); };
   }
-  
-  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용
-   * 1. 텍스트 타이머 정지
-   * 2. mvpTextOnlyMode는 위에서 이미 false로 설정됨
-   * 3. 음성 타이머 시작 (남은 크레딧부터 이어서)
-   */
-  stopTextTimer();
-  startVoiceTimer();
-  
+  // 타이머 재시작
+  if(!diagInt) {
+    var _planR = localStorage.getItem('fh_plan') || 'bronze-single';
+    var _secR  = fhGetPlanMin(_planR) * 60;
+    diagInt = setInterval(function(){
+      if(diagPaused) return;
+      diagSec++;
+      var mm=String(Math.floor(diagSec/60)).padStart(2,'0');
+      var ss=String(diagSec%60).padStart(2,'0');
+      var el=document.getElementById('diagTimer');
+      if(el) el.textContent=mm+':'+ss;
+      if(diagSec>=_secR) mvpVoiceTimeUp();
+    },1000);
+  }
   if(typeof mvpUpdateGuideUI==='function') mvpUpdateGuideUI();
   // Vapi 재연결 (이 시점에 buildResumeContext가 방금 저장한 텍스트 대화를 읽어서 주입)
   showToast('🎤 음성 재연결 중입니다. 잠시만 기다려 주세요...');
   diagAddSTT('ai','음성 연결 중입니다. 이전 대화를 이어서 진행해드릴게요.',null);
   if(typeof diagConnectVoice==='function') diagConnectVoice();
-  
-  console.log('[BUG-010] 텍스트→음성 전환 완료. 크레딧:', creditGetState());
 }
 
 // ── 6. 음성 다시 시도 ────────────────────────────────────
@@ -9596,10 +9270,8 @@ function retryVoice() {
 // ── 7. 수동 텍스트 전환 (하단 버튼) ─────────────────────
 function manualSwitchToText() {
   if(mvpTextOnlyMode) { showToast('이미 텍스트 상담 중입니다'); return; }
-  
-  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용 */
-  stopVoiceTimer();  // 음성 타이머 정지 (voice_used_sec는 이미 매초 저장됨)
-  
+  // ★ 타이머 정지 (텍스트 무료)
+  if(diagInt) { clearInterval(diagInt); diagInt = null; }
   // ★ 대화 맥락 수집 후 Vapi 완전 종료
   var _history = collectConversationHistory();
   
@@ -9615,15 +9287,13 @@ function manualSwitchToText() {
     try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null; vapiCallActive = false;
   }
-  
-  /* ★ [BUG-010 FIX] UI 먼저 전환 후 텍스트 타이머 시작
-   * mvpTextOnlyMode 플래그가 switchToTextMode 안에서 true로 바뀜
-   * 그 후에 startTextTimer를 호출해야 creditUpdateDisplay가 텍스트 모드 UI 표시
-   */
+  // 크레딧 사용한 만큼만 차감
+  if(diagInt) { clearInterval(diagInt); diagInt = null; }
+  var usedMin = Math.ceil((diagSec || 0) / 60);
+  var _planName   = localStorage.getItem('fh_plan') || 'bronze-single';
+  var totalCredit = fhGetPlanMin(_planName);
+  localStorage.setItem('mvp_credit_min', String(Math.max(0, totalCredit - usedMin)));
   switchToTextMode(_history);
-  startTextTimer();  // 텍스트 타이머 시작 (일수 체크 + UI 업데이트)
-  
-  console.log('[BUG-010] 음성→텍스트 전환 완료. 크레딧:', creditGetState());
 }
 
 function mvpVoiceTimeUp() {
@@ -11421,7 +11091,7 @@ function startTrainSession() {
 
 function _trainObserveStart() {
   // MutationObserver로 대화록 변화 감지
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(!chatLog) return;
   var observer = new MutationObserver(function(muts) {
     muts.forEach(function(m) {
@@ -12124,234 +11794,6 @@ const DIAG_DEMO = DIAG_IS_FIRST ? [
 /* ── 상태 ── */
 let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=0, diagUpKey='';
 
-/* ═══════════════════════════════════════════════════════════
-   ★ [BUG-010 FIX 2026-04-11] 크레딧 관리 시스템 완전 재설계
-   
-   설계 원칙:
-   1. 음성은 분 단위 차감 (plan.min → voiceTotalSec)
-   2. 텍스트는 일 단위 차감 (plan.textDays → textTotalDays)
-   3. 전환 시 각자 독립적으로 추적
-   4. localStorage에 항상 최신 상태 유지
-   5. 텍스트 모드에서도 "남은 음성 + 남은 텍스트" 동시 표시
-   
-   localStorage 키:
-   - voice_used_sec    : 누적 사용된 음성 초
-   - text_start_date   : 텍스트 상담 시작일 (ISO yyyy-mm-dd)
-   - fh_plan           : 현재 플랜 (기존)
-   
-   함수 구조:
-   - creditInit()       : 초기화 (결제 시 호출)
-   - creditGetState()   : 현재 상태 조회 {voiceRemainSec, textRemainDays, ...}
-   - creditConsumeVoice(sec) : 음성 시간 차감
-   - creditConsumeText()    : 텍스트 일수 체크 (호출 시 현재 일수 계산)
-   - creditUpdateDisplay()  : UI 업데이트
-   - startVoiceTimer()  : 음성 타이머 시작
-   - stopVoiceTimer()   : 음성 타이머 정지 + 저장
-   - startTextTimer()   : 텍스트 타이머 시작 (일수 체크)
-   - stopTextTimer()    : 텍스트 타이머 정지
-   ═══════════════════════════════════════════════════════════ */
-
-/* 크레딧 상태 초기화 (결제 완료 시 호출) */
-function creditInit(planKey) {
-  localStorage.setItem('voice_used_sec', '0');
-  localStorage.setItem('text_start_date', new Date().toISOString().split('T')[0]);
-  if (planKey) localStorage.setItem('fh_plan', planKey);
-  console.log('[크레딧] 초기화:', planKey || '현재 플랜');
-}
-
-/* 현재 크레딧 상태 조회 */
-function creditGetState() {
-  var planKey = localStorage.getItem('fh_plan') || 'bronze-single';
-  var planData = (typeof fhGetPlan === 'function') ? fhGetPlan(planKey) : null;
-  
-  var voiceTotalMin = (planData && planData.min) || (typeof fhGetPlanMin === 'function' ? fhGetPlanMin(planKey) : 10);
-  var textTotalDays = (planData && planData.textDays) || 30;
-  
-  var voiceTotalSec = voiceTotalMin * 60;
-  var voiceUsedSec = parseInt(localStorage.getItem('voice_used_sec') || '0');
-  var voiceRemainSec = Math.max(0, voiceTotalSec - voiceUsedSec);
-  
-  // 텍스트 일수 계산
-  var textStartStr = localStorage.getItem('text_start_date');
-  var textUsedDays = 0;
-  var textRemainDays = textTotalDays;
-  if (textStartStr) {
-    try {
-      var startDate = new Date(textStartStr);
-      var now = new Date();
-      textUsedDays = Math.floor((now - startDate) / 86400000);
-      textRemainDays = Math.max(0, textTotalDays - textUsedDays);
-    } catch(e) {}
-  }
-  
-  return {
-    planKey: planKey,
-    planLabel: (planData && planData.shortLabel) || '브론즈',
-    voiceTotalMin: voiceTotalMin,
-    voiceTotalSec: voiceTotalSec,
-    voiceUsedSec: voiceUsedSec,
-    voiceRemainSec: voiceRemainSec,
-    voiceRemainMin: Math.floor(voiceRemainSec / 60),
-    textTotalDays: textTotalDays,
-    textUsedDays: textUsedDays,
-    textRemainDays: textRemainDays,
-    textStartDate: textStartStr
-  };
-}
-
-/* 음성 시간 차감 */
-function creditConsumeVoice(deltaSec) {
-  var used = parseInt(localStorage.getItem('voice_used_sec') || '0');
-  used += deltaSec;
-  localStorage.setItem('voice_used_sec', String(used));
-  return used;
-}
-
-/* 텍스트 상담 시작 (처음 한 번만) */
-function creditStartTextIfNeeded() {
-  var existing = localStorage.getItem('text_start_date');
-  if (!existing) {
-    var today = new Date().toISOString().split('T')[0];
-    localStorage.setItem('text_start_date', today);
-    console.log('[크레딧] 텍스트 상담 시작일:', today);
-    return today;
-  }
-  return existing;
-}
-
-/* UI 업데이트 — 타이머 표시 */
-function creditUpdateDisplay() {
-  var state = creditGetState();
-  var el = document.getElementById('diagTimer');
-  if (!el) return;
-  
-  var voiceMM = String(Math.floor(state.voiceRemainSec / 60)).padStart(2, '0');
-  var voiceSS = String(state.voiceRemainSec % 60).padStart(2, '0');
-  
-  if (mvpTextOnlyMode) {
-    /* 텍스트 모드: "🎤 15:00 / 📅 30일" 동시 표시 */
-    el.innerHTML = '<span style="font-size:14px">🎤 ' + voiceMM + ':' + voiceSS + '</span>' +
-                   '<span style="font-size:10px;color:rgba(255,255,255,.5);margin:0 4px">/</span>' +
-                   '<span style="font-size:14px">📅 ' + state.textRemainDays + '일</span>';
-  } else {
-    /* 음성 모드: "15:00" 남은 시간 표시 */
-    el.textContent = voiceMM + ':' + voiceSS;
-  }
-  
-  // 경고 표시 (1분 남음)
-  if (!mvpTextOnlyMode && state.voiceRemainSec <= 60 && state.voiceRemainSec > 0) {
-    el.style.color = '#ff6b6b';
-    el.style.fontWeight = '900';
-  } else if (state.voiceRemainSec > 60) {
-    el.style.color = '';
-    el.style.fontWeight = '';
-  }
-}
-
-/* ★ 음성 타이머 시작 — 기존 diagInt를 관리 */
-function startVoiceTimer() {
-  if (diagInt) {
-    console.log('[크레딧타이머] 이미 실행 중, 재시작 안 함');
-    return;
-  }
-  
-  var state = creditGetState();
-  if (state.voiceRemainSec <= 0) {
-    console.log('[크레딧타이머] 음성 크레딧 소진 - 타이머 시작 안 함');
-    showToast('⚠️ 음성 크레딧이 소진되었습니다. 텍스트 상담으로 진행됩니다.');
-    if (typeof manualSwitchToText === 'function') {
-      setTimeout(manualSwitchToText, 1500);
-    }
-    return;
-  }
-  
-  console.log('[크레딧타이머] 음성 타이머 시작. 남은 시간:', state.voiceRemainSec, '초');
-  
-  diagInt = setInterval(function() {
-    if (diagPaused) return;
-    
-    diagSec++;
-    creditConsumeVoice(1);
-    creditUpdateDisplay();
-    
-    var cur = creditGetState();
-    
-    // 1분 남음 경고 (한 번만)
-    if (cur.voiceRemainSec === 60) {
-      showToast('⚠️ 음성 크레딧 1분 남았습니다. 곧 텍스트 상담으로 전환됩니다.');
-    }
-    
-    // 소진 시 텍스트 전환
-    if (cur.voiceRemainSec <= 0) {
-      console.log('[크레딧타이머] 음성 크레딧 소진');
-      if (typeof mvpVoiceTimeUp === 'function') {
-        mvpVoiceTimeUp();
-      }
-    }
-  }, 1000);
-}
-
-/* ★ 음성 타이머 정지 */
-function stopVoiceTimer() {
-  if (diagInt) {
-    clearInterval(diagInt);
-    diagInt = null;
-    console.log('[크레딧타이머] 음성 타이머 정지');
-  }
-  // 최종 상태 저장은 이미 매초 진행 중이므로 불필요
-}
-
-/* ★ 텍스트 타이머 시작 (일수 체크) */
-function startTextTimer() {
-  // 텍스트 상담 시작일 기록 (처음만)
-  creditStartTextIfNeeded();
-  
-  // 즉시 UI 업데이트
-  creditUpdateDisplay();
-  
-  if (window._textCreditTimer) {
-    console.log('[크레딧타이머] 텍스트 타이머 이미 실행 중');
-    return;
-  }
-  
-  console.log('[크레딧타이머] 텍스트 타이머 시작 (1분 주기)');
-  
-  // 1분마다 UI 업데이트 (일수가 바뀌었는지 체크)
-  window._textCreditTimer = setInterval(function() {
-    creditUpdateDisplay();
-    
-    var state = creditGetState();
-    if (state.textRemainDays <= 0) {
-      console.log('[크레딧타이머] 텍스트 일수 소진');
-      if (typeof mvpTextDaysUp === 'function') {
-        mvpTextDaysUp();
-      }
-    }
-  }, 60000); // 1분 = 60초
-}
-
-/* ★ 텍스트 타이머 정지 */
-function stopTextTimer() {
-  if (window._textCreditTimer) {
-    clearInterval(window._textCreditTimer);
-    window._textCreditTimer = null;
-    console.log('[크레딧타이머] 텍스트 타이머 정지');
-  }
-}
-
-/* ★ 텍스트 일수 소진 시 호출 */
-function mvpTextDaysUp() {
-  stopTextTimer();
-  stopVoiceTimer();
-  showToast('📅 텍스트 상담 기간이 만료되었습니다. 재결제를 진행해주세요.');
-  // 결제 페이지로 이동 로직은 기존 함수 활용
-  setTimeout(function() {
-    if (typeof cmmOpen === 'function') {
-      // 결제 모달 또는 안내
-    }
-  }, 2000);
-}
-
 /* ── DOMContentLoaded 초기화 ── */
 document.addEventListener('DOMContentLoaded', function() {
   const bi = document.getElementById('diagBannerImg');
@@ -12465,12 +11907,6 @@ function diagHandleFile(input) {
     console.log('[사전서류] 응답 수신');
     window.diagDocAnalysis = window.diagDocAnalysis || {};
     window.diagDocAnalysis[apiDocType] = data;
-    
-    /* ★ [v13.2 FIX] localStorage에 저장 (새로고침 후에도 유지) */
-    try {
-      localStorage.setItem('diag_doc_analysis', JSON.stringify(window.diagDocAnalysis));
-      console.log('[사전서류] localStorage 저장 완료');
-    } catch(e) { console.warn('[사전서류] localStorage 저장 실패:', e.message); }
 
     if(data && data.success) {
       /* 상태 아이콘 업데이트 */
@@ -12483,58 +11919,6 @@ function diagHandleFile(input) {
       } else {
         var sm2={ins:'diagStatIns',pen:'diagStatPen',tax:'diagStatTax'};
         var e2=document.getElementById(sm2[docType]||''); if(e2) e2.textContent='✅';
-      }
-
-      /* ★ [프로젝트 C FIX 2026-04-11 v2] 상담노트 자동 반영
-       * diagHandleFile에서도 동일하게 처리 (진단 시작 전 체크리스트 경로)
-       */
-      try {
-        var extracted = data.extracted || data.data || {};
-        var filledCount = 0;
-        var filledFields = [];
-        
-        if (typeof _fillNewNote === 'function') {
-          /* 인적사항 (1단계) */
-          if (extracted.name) { _fillNewNote('f1_name', extracted.name); filledCount++; filledFields.push('이름'); }
-          if (extracted.age) { _fillNewNote('f1_age', extracted.age + '세'); filledCount++; filledFields.push('나이'); }
-          if (extracted.family_size) { _fillNewNote('f1_family', extracted.family_size + '명'); filledCount++; filledFields.push('가족수'); }
-          if (extracted.job) { _fillNewNote('f1_job', extracted.job); filledCount++; filledFields.push('직업'); }
-          
-          /* 수입지출 (3단계) */
-          if (extracted.monthly_income) { _fillNewNote('bt_inc_cur', extracted.monthly_income + '만원'); filledCount++; filledFields.push('월수입'); }
-          if (extracted.monthly_loan) { _fillNewNote('bt_loan_cur', extracted.monthly_loan + '만원'); filledCount++; filledFields.push('대출'); }
-          if (extracted.monthly_insurance) { _fillNewNote('bt_ins_cur', extracted.monthly_insurance + '만원'); filledCount++; filledFields.push('보험료'); }
-          if (extracted.monthly_pension) { _fillNewNote('bt_pen_cur', extracted.monthly_pension + '만원'); filledCount++; filledFields.push('연금납입'); }
-          if (extracted.monthly_savings) { _fillNewNote('bt_sav_cur', extracted.monthly_savings + '만원'); filledCount++; filledFields.push('저축투자'); }
-          
-          /* 자산부채 (4단계) */
-          if (extracted.deposit_amount) { _fillNewNote('f4_deposit', extracted.deposit_amount + '만원'); filledCount++; filledFields.push('예적금'); }
-          if (extracted.pension_amount) { _fillNewNote('f4_pension', extracted.pension_amount + '만원'); filledCount++; filledFields.push('연금적립금'); }
-          if (extracted.invest_amount) { _fillNewNote('f4_invest', extracted.invest_amount + '만원'); filledCount++; filledFields.push('투자자산'); }
-          if (extracted.realty_type) { _fillNewNote('f4_realty_type', extracted.realty_type); filledCount++; filledFields.push('거주형태'); }
-          if (extracted.realty_amount) { _fillNewNote('f4_realty', extracted.realty_amount + '만원'); filledCount++; filledFields.push('부동산금액'); }
-          if (extracted.credit_loan) { _fillNewNote('f4_credit', extracted.credit_loan + '만원'); filledCount++; filledFields.push('신용대출'); }
-          if (extracted.mortgage_loan) { _fillNewNote('f4_mortgage', extracted.mortgage_loan + '만원'); filledCount++; filledFields.push('담보대출'); }
-          
-          console.log('[사전서류→노트 v2] 반영 완료:', filledCount + '개', filledFields);
-        } else {
-          console.warn('[사전서류→노트 v2] _fillNewNote 함수 없음');
-        }
-        
-        /* 자동 계산 트리거 */
-        setTimeout(function() {
-          if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
-          if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
-        }, 200);
-        
-        /* 성공 토스트 */
-        if (filledCount > 0 && typeof showToast === 'function') {
-          setTimeout(function() {
-            showToast('📝 상담노트에 ' + filledCount + '개 항목 자동 입력됨');
-          }, 1500);
-        }
-      } catch(e) {
-        console.warn('[사전서류→노트 v2] 반영 실패:', e.message);
       }
 
       /* 풀스크린 오버레이에 결과 표시 */
@@ -13244,15 +12628,28 @@ function diagStartConsult() {
     }
   } catch(e) { console.warn('[자동복원] 실패:', e.message); }
 
-  /* ★ [BUG-010 FIX 2026-04-11] 새 크레딧 시스템 사용
-   * 기존: 직접 setInterval + diagSec 카운트 + _creditSec 비교
-   * 신규: startVoiceTimer() — 모든 로직이 함수 내부에 있음
-   *      - voice_used_sec 기반으로 정확한 잔여시간 계산
-   *      - UI는 "남은 시간" 표시 (경과 아님)
-   *      - 1분 남음 경고 자동
-   *      - 소진 시 자동 텍스트 전환
-   */
-  startVoiceTimer();
+  // 플랜별 크레딧 분 가져오기
+  var _timerPlan    = localStorage.getItem('fh_plan') || 'bronze-single';
+  var _creditMin    = fhGetPlanMin(_timerPlan);
+  var _creditSec    = _creditMin * 60;
+  var _warnSec      = (_creditMin - 1) * 60; // 1분 전 경고
+
+  diagInt=setInterval(function(){
+    if(diagPaused) return;
+    diagSec++;
+    const m=String(Math.floor(diagSec/60)).padStart(2,'0');
+    const s=String(diagSec%60).padStart(2,'0');
+    const el=document.getElementById('diagTimer');
+    if(el) el.textContent=m+':'+s;
+    // 플랜별 경고 (크레딧-1분 전 토스트)
+    // 브론즈(10분)→9분, 실버(20분)→19분, 골드(40분)→39분
+    if(diagSec===_warnSec) showToast('⚠️ 1분 후 텍스트 상담으로 자동 전환됩니다');
+    if(diagSec>=_creditSec) {
+      // ★ 음성만 종료, 텍스트 상담은 계속 가능
+      mvpVoiceTimeUp();
+    }
+
+  },1000);
 
   // 실제 음성 연결 시작
   if(!_vapiConnecting) diagConnectVoice();
@@ -13407,26 +12804,9 @@ async function diagConnectVoice(isPaid) {
         /* STT 영역에 표시 */
         diagAddSTT(role, displayText, null);
 
-        /* 대화록 탭(dnp9)에도 실시간 기록 */
-        var chatLog = document.getElementById('dn_chat_log');
-        if(chatLog) {
-          var isUser = (role === 'user');
-          var bubble = document.createElement('div');
-          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
-          bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
-          bubble.setAttribute('data-text', displayText);
-          bubble.innerHTML =
-            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-              (isUser ? '👤 고객' : '🤖 머니야') +
-            '</div>' +
-            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
-              displayText.replace(/</g, '&lt;') +
-            '</div>';
-          chatLog.appendChild(bubble);
-          chatLog.scrollTop = chatLog.scrollHeight;
-          var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
-          if(placeholder) placeholder.remove();
+        /* 대화록 탭에도 실시간 기록 */
+        if (typeof dnAppendChat === 'function') {
+          dnAppendChat(role, displayText);
         }
 
         if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
@@ -14042,6 +13422,25 @@ function diagBuildNotes() {
 .dstep{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;border:1.5px solid rgba(201,151,42,.25);background:rgba(11,29,58,.03);position:relative;}
 .dstep.cur{background:linear-gradient(135deg,#fff8e1,#fff3cd);border-color:#C9972A;}
 .dstep.done{background:#f0f9f0;border-color:#2E7D32;opacity:.8;}
+.dstep.now{
+  background:linear-gradient(135deg,#FEF2F2,#FEE2E2);
+  border:3px solid #DC2626;
+  box-shadow:0 0 0 4px rgba(220,38,38,.15),0 6px 20px rgba(220,38,38,.25);
+  animation:nowPulse 2s infinite;
+}
+.dstep.now::before{
+  content:'현재';
+  position:absolute;top:-10px;right:14px;
+  background:#DC2626;color:#fff;font-size:9px;font-weight:900;
+  padding:3px 9px;border-radius:12px;
+  box-shadow:0 2px 6px rgba(220,38,38,.4);
+}
+@keyframes nowPulse{
+  0%,100%{box-shadow:0 0 0 4px rgba(220,38,38,.15),0 6px 20px rgba(220,38,38,.25);}
+  50%{box-shadow:0 0 0 8px rgba(220,38,38,.08),0 6px 20px rgba(220,38,38,.35);}
+}
+.dstep.now .dbadge{background:#DC2626;color:#fff;border:2px solid #fff;}
+.dstep.now .dtitle{color:#DC2626;}
 .dstep.now{
   background:linear-gradient(135deg,#FEF2F2,#FEE2E2);
   border:3px solid #DC2626;
@@ -14701,10 +14100,23 @@ function diagBuildNotes() {
     <!-- ━━━━━━ 패널10: 대화록 ━━━━━━ -->
     <div class="dnp" id="dnp10">
       <div class="dncard">
-        <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 노트 싱크</div></div></div>
-        <div class="dncbody">
-          <div class="dn-chat" id="dn_chat">
-            <div style="text-align:center;font-size:10px;color:#8896B0;padding:10px">상담 시작 후 대화가 여기에 기록됩니다</div>
+        <div class="dnchd"><div class="dncicon">💬</div><div><div class="dnctitle">상담 대화록</div><div class="dncsub">머니야 ↔ 고객 · 전체 내역</div></div></div>
+        <div class="dncbody" style="padding:0">
+          <!-- 툴바 -->
+          <div style="display:flex;gap:6px;align-items:center;padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,.07);flex-wrap:wrap;">
+            <input id="chat_search" type="text" placeholder="🔍 대화 검색..." oninput="dnFilterChat()" style="flex:1;min-width:120px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:6px 10px;color:#fff;font-size:11px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <button onclick="dnChatExportTxt()" style="background:rgba(201,151,42,.15);border:1px solid rgba(201,151,42,.3);color:#E8B84B;font-size:10px;font-weight:700;padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;">📄 TXT</button>
+            <button onclick="dnChatClear()" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.25);color:#ef4444;font-size:10px;font-weight:700;padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;">🗑 초기화</button>
+          </div>
+          <!-- 통계 -->
+          <div id="chat_stats" style="display:flex;gap:12px;padding:8px 12px;font-size:10px;color:rgba(255,255,255,.4);border-bottom:1px solid rgba(255,255,255,.05);">
+            <span>총 <strong id="chat_cnt" style="color:rgba(255,255,255,.7)">0</strong>건</span>
+            <span>머니야 <strong id="chat_ai_cnt" style="color:#C9972A">0</strong></span>
+            <span>고객 <strong id="chat_user_cnt" style="color:#4A90D9">0</strong></span>
+          </div>
+          <!-- 대화 목록 -->
+          <div class="dn-chat" id="dn_chat" style="max-height:460px;overflow-y:auto;padding:10px 8px;">
+            <div id="dn_chat_empty" style="text-align:center;font-size:10px;color:#8896B0;padding:24px 10px">상담 시작 후 대화가 여기에 기록됩니다</div>
           </div>
         </div>
       </div>
@@ -14715,6 +14127,97 @@ function diagBuildNotes() {
 `;
 
   // ── 탭 전환 함수
+  // ── 대화록 유틸리티 함수 ──
+
+  /* 대화록에 버블 추가 (voice+text 공용) */
+  window.dnAppendChat = function(role, text, timeStr) {
+    var chatLog = document.getElementById('dn_chat');
+    if (!chatLog) return;
+    // 빈 상태 안내 제거
+    var empty = document.getElementById('dn_chat_empty');
+    if (empty) empty.remove();
+
+    var isUser = (role === 'user');
+    var ts = timeStr || (function(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })();
+
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:6px;';
+    bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
+    bubble.setAttribute('data-text', text);
+    bubble.innerHTML =
+      '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
+        (isUser ? '👤 고객' : '🤖 머니야') +
+        ' <span style="opacity:.5">' + ts + '</span>' +
+      '</div>' +
+      '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
+        (isUser ? 'background:rgba(74,144,217,.18);color:#cde;border-bottom-right-radius:3px;' : 'background:rgba(11,29,58,.8);color:#fff;border:1px solid rgba(255,255,255,.08);border-bottom-left-radius:3px;') + '">' +
+        text.replace(/</g,'&lt;').replace(/\n/g,'<br>') +
+      '</div>';
+    chatLog.appendChild(bubble);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    dnUpdateChatStats();
+  };
+
+  /* 통계 업데이트 */
+  window.dnUpdateChatStats = function() {
+    var chatLog = document.getElementById('dn_chat');
+    if (!chatLog) return;
+    var bubbles = chatLog.querySelectorAll('[data-role]');
+    var ai = 0, user = 0;
+    bubbles.forEach(function(b){ if(b.getAttribute('data-role')==='ai') ai++; else user++; });
+    var cntEl = document.getElementById('chat_cnt');
+    var aiEl  = document.getElementById('chat_ai_cnt');
+    var usrEl = document.getElementById('chat_user_cnt');
+    if (cntEl) cntEl.textContent = ai + user;
+    if (aiEl)  aiEl.textContent  = ai;
+    if (usrEl) usrEl.textContent = user;
+  };
+
+  /* 검색 필터 */
+  window.dnFilterChat = function() {
+    var q = (document.getElementById('chat_search')||{}).value || '';
+    q = q.trim().toLowerCase();
+    var chatLog = document.getElementById('dn_chat');
+    if (!chatLog) return;
+    chatLog.querySelectorAll('[data-role]').forEach(function(b){
+      if (!q) { b.style.display = ''; return; }
+      var txt = (b.getAttribute('data-text') || '').toLowerCase();
+      b.style.display = txt.indexOf(q) >= 0 ? '' : 'none';
+    });
+  };
+
+  /* TXT 내보내기 */
+  window.dnChatExportTxt = function() {
+    var chatLog = document.getElementById('dn_chat');
+    if (!chatLog) return;
+    var lines = [];
+    var nameEl = document.getElementById('f1_name');
+    var clientName = nameEl ? nameEl.textContent.trim() : '고객';
+    lines.push('=== AI머니야 상담 대화록 ===');
+    lines.push('고객명: ' + clientName);
+    lines.push('일시: ' + new Date().toLocaleString('ko-KR'));
+    lines.push('');
+    chatLog.querySelectorAll('[data-role]').forEach(function(b){
+      var role = b.getAttribute('data-role') === 'ai' ? '[머니야]' : '[고객]';
+      var txt  = b.getAttribute('data-text') || '';
+      lines.push(role + ' ' + txt);
+    });
+    var blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'moneya_chat_' + new Date().toISOString().slice(0,10) + '.txt';
+    a.click();
+  };
+
+  /* 대화록 초기화 */
+  window.dnChatClear = function() {
+    if (!confirm('대화록을 초기화하시겠습니까?')) return;
+    var chatLog = document.getElementById('dn_chat');
+    if (!chatLog) return;
+    chatLog.innerHTML = '<div id="dn_chat_empty" style="text-align:center;font-size:10px;color:#8896B0;padding:24px 10px">상담 시작 후 대화가 여기에 기록됩니다</div>';
+    dnUpdateChatStats();
+  };
+
   window.dnGo = function(i) {
     document.querySelectorAll('.dnp').forEach(function(p,j){ p.classList.toggle('active', j===i); });
     document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
@@ -14992,7 +14495,7 @@ function diagEndConsult() {
   }
 
   // 채팅 로그에도 표시
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(chatLog) {
     var endDiv = document.createElement('div');
     endDiv.innerHTML = endBannerHTML;
@@ -15572,6 +15075,76 @@ const DIAG_STEP4_FIELDS = [
   'f4_mortgage',    // 8. 담보대출
 ];
 
+/* 5단계 필드 순서 */
+const DIAG_STEP5_FIELDS = [
+  'f5_retire_age',      // 1. 은퇴 예정 나이
+  'f5_life_expectancy', // 2. 예상 수명
+];
+let diagStep5Counter = 0;
+let diagLastStep5Reset = -1;
+
+/* 5단계 자동계산 — 은퇴까지/후 년수 + SVG 타임라인 업데이트 */
+function diagRecalcHouse() {
+  // 나이: f1_age (인적사항), 없으면 f5_cur_age fallback
+  var ageEl = document.getElementById('f1_age');
+  var currentAge = parseInt((ageEl ? ageEl.textContent : '').replace(/[^\d]/g,'')) || 0;
+  var retireAge = parseInt((document.getElementById('f5_retire_age')||{textContent:''}).textContent.replace(/[^\d]/g,'')) || 0;
+  var lifeExp   = parseInt((document.getElementById('f5_life_expectancy')||{textContent:''}).textContent.replace(/[^\d]/g,'')) || 0;
+
+  if (currentAge > 0 && retireAge > currentAge) {
+    var ytr = retireAge - currentAge;
+    var yar = lifeExp > retireAge ? lifeExp - retireAge : 0;
+    _fillNewNote('f5_pre',  ytr + '년');
+    if (yar > 0) _fillNewNote('f5_post', yar + '년');
+
+    // ── SVG 타임라인 업데이트 ──
+    var svCurAge = document.getElementById('sv-cur-age');
+    var svRetAge = document.getElementById('sv-ret-age');
+    var svDieAge = document.getElementById('sv-die-age');
+    if (svCurAge) svCurAge.textContent = '현재 ' + currentAge + '세';
+    if (svRetAge) svRetAge.textContent = '은퇴 ' + retireAge + '세';
+    if (lifeExp > 0 && svDieAge) svDieAge.textContent = '사망 ' + lifeExp + '세';
+
+    // 프로그레스 바 (총 수명 대비 비율)
+    var totalSpan = lifeExp > 0 ? lifeExp - currentAge : retireAge - currentAge + 30;
+    var workSpan  = retireAge - currentAge;
+    var retSpan   = lifeExp > retireAge ? lifeExp - retireAge : 0;
+    var barTotal  = 360; // SVG px
+    var workPx    = Math.round((workSpan / totalSpan) * barTotal);
+    var retPx     = Math.round((retSpan  / totalSpan) * barTotal);
+    var svWorkBar = document.getElementById('sv-work-bar');
+    var svRetBar  = document.getElementById('sv-ret-bar');
+    if (svWorkBar) { svWorkBar.setAttribute('width', workPx); }
+    if (svRetBar)  { svRetBar.setAttribute('x', String(10 + workPx)); svRetBar.setAttribute('width', retPx); }
+
+    // 상담노트 탭 SVG도 함께 업데이트 (동일 ID 두 번째 인스턴스)
+    var svCurAgeList = document.querySelectorAll('#sv-cur-age');
+    var svRetAgeList = document.querySelectorAll('#sv-ret-age');
+    var svDieAgeList = document.querySelectorAll('#sv-die-age');
+    svCurAgeList.forEach(function(el){ el.textContent = '현재 ' + currentAge + '세'; });
+    svRetAgeList.forEach(function(el){ el.textContent = '은퇴 ' + retireAge + '세'; });
+    if (lifeExp > 0) svDieAgeList.forEach(function(el){ el.textContent = '사망 ' + lifeExp + '세'; });
+    document.querySelectorAll('#sv-work-bar').forEach(function(el){ el.setAttribute('width', workPx); });
+    document.querySelectorAll('#sv-ret-bar').forEach(function(el){ el.setAttribute('x', String(10 + workPx)); el.setAttribute('width', retPx); });
+  }
+
+  // f1_retire, f1_life 필드에도 동기화 (인적사항 탭)
+  if (retireAge > 0) {
+    var elRetire = document.getElementById('f1_retire');
+    if (elRetire && (!elRetire.textContent || elRetire.textContent.trim() === '—')) {
+      _fillNewNote('f1_retire', retireAge + '세');
+    }
+  }
+  if (lifeExp > 0) {
+    var elLife = document.getElementById('f1_life');
+    if (elLife && (!elLife.textContent || elLife.textContent.trim() === '—')) {
+      _fillNewNote('f1_life', lifeExp + '세');
+    }
+  }
+
+  console.log('[diagRecalcHouse] 현재:', currentAge, '은퇴:', retireAge, '수명:', lifeExp);
+}
+
 /* ═══════════════════════════════════════════════════════════
    [단계3 v12] 수지 탭 자동 계산 — 가족수별 예산 + 진단
    IA_RATES 기준 (이미 본 코드에 정의되어 있음):
@@ -15854,6 +15427,379 @@ function diagRecalcAssets() {
   _set('f4_emerg', isDual ? '맞벌이' : '외벌이' + ' ' + emergMonths + '개월 = ' + _fmtMan(emergNeeded) + ' (현금 ' + _fmtMan(deposit) + ' → ' + emergStatus + ')');
 }
 
+/* ═══════════════════════════════════════════════════════════
+   [단계6] 포트폴리오 자동계산 — 100-나이 법칙 + 자산배분
+   ═══════════════════════════════════════════════════════════ */
+function diagRecalcPortfolio() {
+  function _p(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    return parseInt((el.textContent || '').replace(/[^\d]/g, '')) || 0;
+  }
+  function _fmtW(v) { return v.toLocaleString() + '만원'; }
+
+  var age = _p('f1_age');
+  if (!age) age = 40; // fallback
+
+  // 수지탭 저축·투자 현재/예산
+  var curSav = _p('bt_sav_cur');
+  var bgtSav = _p('bt_sav_bgt');
+
+  // 투자재원 계산
+  var investResource;
+  if (curSav > 0 && bgtSav > 0) {
+    investResource = curSav > bgtSav ? curSav : Math.round((bgtSav + curSav) / 2);
+  } else {
+    investResource = curSav || bgtSav || 0;
+  }
+
+  // 패널6 표시 — bt_sav_bgt 없으면 수입×저축률로 fallback 계산
+  if (bgtSav <= 0) {
+    var incomeAmt = _p('f3_income') || _p('bt_inc_cur');
+    var fam = _p('f1_family') || 1;
+    var savRates = [50,40,30,20,10];
+    var savRate  = savRates[Math.min(fam-1, 4)];
+    bgtSav = Math.round(incomeAmt * savRate / 100);
+  }
+  if (curSav <= 0) curSav = _p('f3_save_cur');
+  if (curSav <= 0) curSav = _p('bt_sav_cur');
+  // 투자재원 재계산
+  if (curSav > 0 && bgtSav > 0) {
+    investResource = curSav > bgtSav ? curSav : Math.round((bgtSav + curSav) / 2);
+  } else {
+    investResource = curSav || bgtSav || 0;
+  }
+
+  var el_budget = document.getElementById('f6_budget');
+  var el_cur    = document.getElementById('f6_cur_save');
+  var el_source = document.getElementById('f6_source');
+  if (el_budget)   el_budget.textContent   = bgtSav  > 0 ? _fmtW(bgtSav)  : '—';
+  if (el_cur)      el_cur.textContent      = curSav  > 0 ? _fmtW(curSav)  : '—';
+  if (el_source)   el_source.textContent   = investResource > 0 ? _fmtW(investResource) : '—';
+
+  if (investResource > 0) {
+    var savePct  = age;          // 나이%
+    var invPct   = 100 - age;    // (100-나이)%
+    var savingsAmt = Math.round(investResource * savePct  / 100);
+    var investAmt  = Math.round(investResource * invPct   / 100);
+
+    var saveLabel = document.getElementById('f6_save_label');
+    var saveAmt   = document.getElementById('f6_save_amt');
+    var invLabel  = document.getElementById('f6_inv_label');
+    var invAmt    = document.getElementById('f6_inv_amt');
+    if (saveLabel) saveLabel.textContent = '저축 (' + savePct + '%)';
+    if (saveAmt)   saveAmt.textContent   = _fmtW(savingsAmt);
+    if (invLabel)  invLabel.textContent  = '투자 (' + invPct  + '%)';
+    if (invAmt)    invAmt.textContent    = _fmtW(investAmt);
+
+    var netEl = document.getElementById('f6_net');
+    if (netEl) netEl.textContent = _fmtW(investResource);
+  }
+
+  // 자산배분 (4단계 데이터)
+  var realty   = _p('f4_realty');
+  var deposit2 = _p('f4_deposit');
+  var pension2 = _p('f4_pension');
+  var invest2  = _p('f4_invest');
+  var totalAsset = realty + deposit2 + pension2 + invest2;
+
+  if (totalAsset > 0) {
+    var realtyRatio    = Math.round(realty / totalAsset * 100);
+    var financialRatio = 100 - realtyRatio;
+
+    var f7ReCur  = document.getElementById('f7_re_cur');
+    var f7FinCur = document.getElementById('f7_fin_cur');
+    var f7Diag   = document.getElementById('f7_diag');
+    if (f7ReCur)  f7ReCur.textContent  = _fmtW(realty)  + ' (' + realtyRatio    + '%)';
+    if (f7FinCur) f7FinCur.textContent = _fmtW(deposit2 + pension2 + invest2) + ' (' + financialRatio + '%)';
+    if (f7Diag) {
+      if (realtyRatio > 80) {
+        f7Diag.textContent = '부동산 편중 ⚠ (권장 70% 이하)';
+        f7Diag.className   = 'dnfv warn';
+      } else if (realtyRatio < 50) {
+        f7Diag.textContent = '금융자산 양호 ✓ (부동산 ' + realtyRatio + '%)';
+        f7Diag.className   = 'dnfv hi';
+      } else {
+        f7Diag.textContent = '균형 양호 ✓ (부동산 ' + realtyRatio + '% / 금융 ' + financialRatio + '%)';
+        f7Diag.className   = 'dnfv';
+      }
+    }
+  }
+
+  console.log('[diagRecalcPortfolio] age:', age, 'investResource:', investResource);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   [8단계] 보험 필요자금 자동계산 — 연봉×3+부채(사망), 연봉×2(암), 연봉×1(뇌/심), 5000(실손)
+   ═══════════════════════════════════════════════════════════ */
+function diagCalcInsNeeds() {
+  function _p(id) {
+    var el = document.getElementById(id);
+    return parseInt((el ? el.textContent : '').replace(/[^\d]/g,'')) || 0;
+  }
+  function _fmtW(v) { return v > 0 ? v.toLocaleString() : '—'; }
+
+  var income  = _p('f3_income') || _p('bt_inc_cur'); // 월수입 (만원)
+  var annInc  = income * 12;                           // 연소득
+  var credit  = _p('f4_credit');
+  var mortg   = _p('f4_mortgage');
+  var debt    = credit + mortg;
+
+  if (annInc <= 0) { console.log('[diagCalcInsNeeds] 수입 없음 — skip'); return; }
+
+  var needDeath  = annInc * 3 + debt;
+  var needCancer = annInc * 2;
+  var needBrain  = annInc;
+  var needHeart  = annInc;
+  var needActual = 5000;
+
+  var ids = {
+    death: needDeath, cancer: needCancer,
+    brain: needBrain, heart: needHeart, actual: needActual
+  };
+  Object.keys(ids).forEach(function(k) {
+    var el = document.getElementById('ins_need_' + k);
+    if (el) el.textContent = _fmtW(ids[k]);
+    // 부족 = 필요 - 준비 (준비 데이터 없으면 = 필요 전액)
+    var haveEl = document.getElementById('ins_have_' + k);
+    var haveVal = haveEl ? parseInt((haveEl.textContent||'0').replace(/[^\d]/g,'')) || 0 : 0;
+    var lackEl = document.getElementById('ins_lack_' + k);
+    if (lackEl) {
+      var lack = Math.max(0, ids[k] - haveVal);
+      lackEl.textContent = lack > 0 ? _fmtW(lack) : '✓ 충족';
+      lackEl.style.color = lack > 0 ? '#B91C1C' : '#15803D';
+    }
+  });
+
+  // 현재 보험료 연동 (3단계에서 입력된 값)
+  var insPrem = _p('f3_ins_cur') || _p('bt_ins_cur');
+  var premEl = document.getElementById('f87_premium');
+  if (premEl && insPrem > 0) premEl.textContent = insPrem + '만원/월';
+
+  console.log('[diagCalcInsNeeds] 연소득:', annInc, '사망필요:', needDeath);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   [8단계] 4단계 자산 → 8단계 부동산/부채 자동 연동
+   ═══════════════════════════════════════════════════════════ */
+function diagSync8to4() {
+  function _txt(id) { var e=document.getElementById(id); return e ? e.textContent.trim() : ''; }
+  function _p(id) { return parseInt(_txt(id).replace(/[^\d]/g,'')) || 0; }
+
+  // 8-2 부채설계
+  var credit  = _txt('f4_credit');
+  var mortg   = _txt('f4_mortgage');
+  var income  = _p('f3_income') || _p('bt_inc_cur');
+  var loan3   = _p('f3_loan_cur') || _p('bt_loan_cur');
+
+  var f82c = document.getElementById('f82_credit');
+  var f82m = document.getElementById('f82_mortgage');
+  var f82r = document.getElementById('f82_ratio');
+  if (f82c && credit) f82c.textContent = credit;
+  if (f82m && mortg)  f82m.textContent = mortg;
+  if (f82r && income > 0 && loan3 > 0) {
+    var ratio = Math.round(loan3 / income * 100);
+    f82r.textContent = ratio + '% (' + (ratio <= 10 ? '적정 ✓' : ratio <= 30 ? '주의' : '위험 ⚠') + ')';
+    f82r.className = 'dnfv ' + (ratio <= 10 ? 'hi' : ratio <= 30 ? '' : 'warn');
+  }
+
+  // 8-6 부동산설계
+  var realtyType  = _txt('f4_realty_type');
+  var realtyPrice = _txt('f4_realty');
+  var f86own   = document.getElementById('f86_own');
+  var f86price = document.getElementById('f86_price');
+  if (f86own   && realtyType)  f86own.textContent   = realtyType;
+  if (f86price && realtyPrice) f86price.textContent = realtyPrice;
+
+  // 8-4 투자설계 — 부자지수 연동
+  var wiEl = document.getElementById('f4_wi_val');
+  var f84wi = document.getElementById('f84_wi');
+  if (f84wi && wiEl && wiEl.textContent && wiEl.textContent !== '—') {
+    f84wi.textContent = wiEl.textContent;
+  }
+  // 금융자산 10억 목표 대비 부족액
+  var fin = (_p('f4_deposit') + _p('f4_pension') + _p('f4_invest'));
+  var f84gap = document.getElementById('f84_gap');
+  if (f84gap && fin >= 0) {
+    var gap = Math.max(0, 100000 - fin); // 10억 = 100000만원
+    f84gap.textContent = gap > 0 ? (gap.toLocaleString() + '만원 부족') : '목표 달성 ✓';
+    f84gap.className = 'dnfv ' + (gap > 0 ? 'warn' : 'hi');
+  }
+
+  // 8-3 저축설계 — 월 가능액 연동
+  var surplus = _p('f3_surplus') || _p('bt_sur_cur');
+  var savCur  = _p('f3_save_cur') || _p('bt_sav_cur');
+  var f83pos  = document.getElementById('f83_possible');
+  if (f83pos && (surplus + savCur) > 0) {
+    f83pos.textContent = '월 ' + (surplus + savCur).toLocaleString() + '만원';
+  }
+
+  console.log('[diagSync8to4] 완료');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   [8-5단계] 세금설계 자동계산 — 연금저축+IRP 900만원 한도
+   ═══════════════════════════════════════════════════════════ */
+function diagCalcTax() {
+  function _p(id) { return parseInt((document.getElementById(id)||{textContent:''}).textContent.replace(/[^\d]/g,'')) || 0; }
+
+  var income  = _p('f3_income') || _p('bt_inc_cur');
+  var annInc  = income * 12;
+  var penMon  = _p('f3_pension_cur') || _p('bt_pen_cur');
+  var penAnn  = penMon * 12;
+  var maxDed  = Math.min(penAnn, 900); // 900만원 한도
+
+  var rate = annInc <= 5500 ? 0.165 : 0.132;
+  var refund = Math.round(maxDed * rate);
+
+  var f85 = document.getElementById('f85_tax');
+  if (f85 && refund > 0) {
+    f85.textContent = refund.toLocaleString() + '만원 환급 가능 (납입 ' + maxDed + '만원 × ' + (rate*100).toFixed(1) + '%)';
+  }
+  console.log('[diagCalcTax] 연소득:', annInc, '환급:', refund);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   [9단계] DESIRE 단계 자동 판정
+   D:신용대출 / E:비상예비 / S:저축부족 / I:금융10억미만 / R:담보대출 / E2:상속미완
+   ═══════════════════════════════════════════════════════════ */
+function diagCalcDesire() {
+  function _p(id) { return parseInt((document.getElementById(id)||{textContent:''}).textContent.replace(/[^\d]/g,'')) || 0; }
+  function _txt(id) { var e=document.getElementById(id); return e ? e.textContent.trim() : ''; }
+
+  var credit  = _p('f4_credit');
+  var mortg   = _p('f4_mortgage');
+  var deposit = _p('f4_deposit');
+  var pension = _p('f4_pension');
+  var invest  = _p('f4_invest');
+  var income  = _p('f3_income') || _p('bt_inc_cur');
+  var savCur  = _p('f3_save_cur') || _p('bt_sav_cur');
+  var penCur  = _p('f3_pension_cur') || _p('bt_pen_cur');
+  var family  = _p('f1_family') || 1;
+
+  var isDual  = /맞벌이/.test(_txt('f1_dual'));
+  var emergNeed = income * (isDual ? 3 : 6);
+  var financialAsset = deposit + pension + invest; // 금융자산 합계
+
+  // DESIRE 6단계 판정
+  var desireStep = 6; // 기본값: E(상속) 단계
+  var dEl, eEl, sEl, iEl, rEl, e2El;
+
+  // D: 신용대출
+  var dsD  = document.getElementById('ds_D');
+  var dsDd = document.getElementById('ds_D_desc');
+  if (credit > 0) {
+    desireStep = 1;
+    if(dsD) dsD.className = 'dstep now';
+    if(dsDd) dsDd.textContent = '★ 현재 단계 — 신용대출 ' + credit.toLocaleString() + '만원 상환 필요';
+  } else {
+    if(dsD) dsD.className = 'dstep done';
+    if(dsDd) dsDd.textContent = '신용대출 없음 ✓ 졸업';
+  }
+
+  // E: 비상예비자금
+  var dsE  = document.getElementById('ds_E');
+  var dsEd = document.getElementById('ds_E_desc');
+  if (desireStep === 6 && deposit < emergNeed) {
+    desireStep = 2;
+    if(dsE) dsE.className = 'dstep now';
+    if(dsEd) dsEd.textContent = '★ 현재 단계 — 비상예비 ' + deposit.toLocaleString() + '만원 / 목표 ' + emergNeed.toLocaleString() + '만원';
+  } else if (credit <= 0) {
+    if(dsE) dsE.className = deposit >= emergNeed ? 'dstep done' : 'dstep now';
+    if(dsEd) dsEd.textContent = deposit >= emergNeed ? '비상예비자금 충족 ✓' : '비상예비자금 부족';
+    if (deposit < emergNeed && desireStep === 6) desireStep = 2;
+  }
+
+  // S: 저축투자 예산
+  var fam = family <= 1 ? 1 : family <= 2 ? 2 : family <= 3 ? 3 : family <= 4 ? 4 : 5;
+  var savRates = [50,40,30,20,10];
+  var savBgt = Math.round(income * savRates[Math.min(fam-1,4)] / 100);
+  var dsS  = document.getElementById('ds_S');
+  var dsSd = document.getElementById('ds_S_desc');
+  if (desireStep === 6 && savCur < savBgt * 0.8) {
+    desireStep = 3;
+    if(dsS) dsS.className = 'dstep now';
+    if(dsSd) dsSd.textContent = '★ 현재 단계 — 저축 ' + (savCur+penCur).toLocaleString() + '만원 / 목표 ' + savBgt.toLocaleString() + '만원';
+  } else {
+    if(dsS && desireStep > 2) dsS.className = (savCur >= savBgt * 0.8) ? 'dstep done' : 'dstep';
+    if(dsSd) dsSd.textContent = (savCur+penCur) >= savBgt * 0.8 ? '저축 목표 달성 ✓' : '저축 예산 미달';
+  }
+
+  // I: 금융자산 10억
+  var dsI  = document.getElementById('ds_I');
+  var dsId = document.getElementById('ds_I_desc');
+  if (desireStep === 6 && financialAsset < 100000) {
+    desireStep = 4;
+    if(dsI) dsI.className = 'dstep now';
+    if(dsId) dsId.textContent = '★ 현재 단계 — 금융자산 ' + (financialAsset/10000).toFixed(1) + '억 / 목표 10억';
+  } else {
+    if(dsI && desireStep > 3) dsI.className = financialAsset >= 100000 ? 'dstep done' : 'dstep';
+    if(dsId) dsId.textContent = financialAsset >= 100000 ? '금융자산 10억 달성 ✓' : '금융자산 ' + (financialAsset/10000).toFixed(1) + '억';
+  }
+
+  // R: 담보대출
+  var dsR  = document.getElementById('ds_R');
+  var dsRd = document.getElementById('ds_R_desc');
+  if (desireStep === 6 && mortg > 0) {
+    desireStep = 5;
+    if(dsR) dsR.className = 'dstep now';
+    if(dsRd) dsRd.textContent = '★ 현재 단계 — 담보대출 ' + mortg.toLocaleString() + '만원 은퇴 전 완납 목표';
+  } else {
+    if(dsR && desireStep > 4) dsR.className = mortg <= 0 ? 'dstep done' : 'dstep';
+    if(dsRd) dsRd.textContent = mortg <= 0 ? '담보대출 없음 ✓' : '담보대출 ' + mortg.toLocaleString() + '만원';
+  }
+
+  // E2: 상속증여
+  var dsE2  = document.getElementById('ds_E2');
+  if (desireStep === 6) {
+    if(dsE2) dsE2.className = 'dstep now';
+  }
+
+  // 현재 단계 라벨 업데이트
+  var curLabel = document.getElementById('desire_cur');
+  var desireNames = ['','D (신용대출 상환)','E (비상예비자금)','S (저축투자)','I (금융자산 10억)','R (담보대출 상환)','E (상속증여 플랜)'];
+  if (curLabel) curLabel.textContent = '현재 단계: ' + desireStep + '단계 ' + (desireNames[desireStep]||'');
+
+  console.log('[diagCalcDesire] DESIRE 단계:', desireStep);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   [9단계] 재무건강 점수를 패널8(최종의견)에 동기화
+   ═══════════════════════════════════════════════════════════ */
+function diagSyncHealthScore() {
+  // 기존 calcHealthScore 함수로 점수 계산 후 패널8에 반영
+  try {
+    var nd = typeof collectNoteData === 'function' ? collectNoteData() : {};
+    if (typeof calcHealthScore === 'function') {
+      var scoreData = calcHealthScore(nd);
+      var total = (scoreData.exp||0)+(scoreData.asset||0)+(scoreData.ins||0)+(scoreData.ret||0)+(scoreData.debt||0);
+
+      // 패널8 (최종의견) 점수 반영
+      var f9s = document.getElementById('f9_score');
+      if (f9s) f9s.innerHTML = total + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+      var f9g = document.getElementById('f9_grade');
+      if (f9g) f9g.textContent = total>=90?'S (최상위)':total>=80?'A (우수)':total>=70?'B+ (양호)':total>=60?'B (보통)':'C (개선필요)';
+
+      // 패널9 (재무건강) 점수 반영
+      var fhs = document.getElementById('fh_score');
+      if (fhs) fhs.innerHTML = total + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+      var fhg = document.getElementById('fh_grade');
+      if (fhg) fhg.textContent = total>=90?'S (최상위)':total>=80?'A (우수)':total>=70?'B+ (양호)':total>=60?'B (보통)':'C (개선필요)';
+
+      // 5대 영역 바 업데이트
+      var areas = [['exp',scoreData.exp],['asset',scoreData.asset],['ins',scoreData.ins],['ret',scoreData.ret],['debt',scoreData.debt]];
+      areas.forEach(function(a) {
+        var lbl = document.getElementById('fh_' + a[0]);
+        var bar = document.getElementById('fh_' + a[0] + '_bar');
+        if(lbl) lbl.textContent = (a[1]||0) + '/20';
+        if(bar) bar.style.width = Math.round((a[1]||0)/20*100) + '%';
+      });
+
+      console.log('[diagSyncHealthScore] 총점:', total);
+    }
+  } catch(e) { console.warn('[diagSyncHealthScore] 오류:', e.message); }
+}
+
 let diagLastFilledPartIdx = -1;
 let diagLastFilledLabel = '';
 
@@ -15879,7 +15825,34 @@ function diagParseAiSpeech(aiText) {
     if(sm.keys.some(function(k){ return t.includes(k); })) {
       // 반드시 현재 단계보다 높아야 하고, 최대 2칸까지만 점프 허용
       if(sm.step > diagCurPart && sm.step <= diagCurPart + 2) {
-        (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
+        (function(s){ setTimeout(function(){
+          diagActivatePart(s);
+          // ── SVG 금융집 순차 애니메이션 ──
+          if(s === 5) {
+            // 5단계 진입: 기초(보험) 점등
+            setTimeout(function(){ if(typeof setBp==='function') setBp('f',true); }, 300);
+          } else if(s === 6) {
+            // 6단계 진입: 몸통(저축/은퇴) 점등 + 포트폴리오 자동계산
+            setTimeout(function(){ if(typeof setBp==='function') setBp('w',true); }, 300);
+            setTimeout(function(){ if(typeof diagRecalcPortfolio==='function') diagRecalcPortfolio(); }, 500);
+          } else if(s === 7) {
+            // 7단계 진입: 처마보(타임라인) 점등
+            setTimeout(function(){ if(typeof setBp==='function') setBp('tl',true); }, 300);
+          } else if(s === 8) {
+            // 8단계 진입: 지붕(투자/세금) 점등
+            setTimeout(function(){ if(typeof setBp==='function') setBp('r',true); }, 300);
+            // 보험 필요자금 자동계산 (수입 기반)
+            setTimeout(function(){ if(typeof diagCalcInsNeeds==='function') diagCalcInsNeeds(); }, 500);
+            // 부동산 연동
+            setTimeout(function(){ diagSync8to4(); }, 600);
+            // 세금 계산
+            setTimeout(function(){ diagCalcTax(); }, 700);
+          } else if(s === 9) {
+            // 9단계 진입: 굴뚝(부동산) 점등 + DESIRE 판정 + 재무점수
+            setTimeout(function(){ if(typeof setBp==='function') setBp('n',true); }, 300);
+            setTimeout(function(){ diagCalcDesire(); diagSyncHealthScore(); }, 600);
+          }
+        }, 400); })(sm.step);
       }
       break;
     }
@@ -15967,16 +15940,46 @@ function diagParseAiSpeech(aiText) {
     { pg:5, key:'current_age', regex:/현재\s*(\d+)세/ },
     { pg:5, key:'retire_age',  regex:/은퇴.*?(\d+)세/ },
     { pg:5, key:'life_age',    regex:/예상\s*수명.*?(\d+)세/ },
+    // ── 8단계: 은퇴설계 고객 답변 ──
+    { pg:8, key:'f81_need',   regex:/월\s*([\d,]+)\s*만원.*필요|([\d,]+)\s*만원.*정도\s*필요/ },
+    { pg:8, key:'f81_ready',  regex:/월\s*([\d,]+)\s*만원.*준비|([\d,]+)\s*만원.*됩니다/ },
+    { pg:8, key:'f81_dream',  regex:/(?:노후|은퇴\s*후)[^\d]*?([가-힣\s]+(?:살|하며|여행|생활).{0,20})/ },
+    // ── 6단계: 포트폴리오 (머니야 복명복창에서 추출) ──
+    { pg:6, key:'save_label',  regex:/저축\s*(\d+)%/ },
+    { pg:6, key:'inv_label',   regex:/투자\s*(\d+)%/ },
+    { pg:6, key:'save_amt',    regex:/저축.*?월\s*([\d,]+)만원/ },
+    { pg:6, key:'inv_amt',     regex:/투자.*?월\s*([\d,]+)만원/ },
+    { pg:6, key:'net',         regex:/순투자재원.*?월?\s*([\d,]+)만원/ },
+    // ── 8-1 은퇴설계 (머니야 복명복창) ──
+    { pg:8, key:'f81_short',   regex:/월\s*([\d,]+)(?:만원)?\s*추가\s*저축/ },
+    { pg:8, key:'f81_lump',    regex:/은퇴일시금.*?([\d,]+)만원/ },
+    // ── 8-5 세금설계 (머니야 계산결과) ──
+    { pg:8, key:'f85_tax',     regex:/(?:환급|공제).*?([\d,]+)만원/ },
+    // ── 9단계: 재무점수 (머니야 발화) ──
+    { pg:9, key:'f9_score',    regex:/총점\s*([\d]+)점/ },
   ]
   for(var j=0; j<patterns.length; j++) {
-    /* ★ Phase R: 머니야 발화에서 데이터 추출 금지 (오입력 방지)
-       단계 감지는 위에서 이미 완료됨. 데이터는 diagAutoFillNote가 사용자 발화에서 추출. */
-    break;
-    var p = patterns[j];
-    var m = t.match(p.regex);
-    if(m) {
-      var val = (m[1]||m[0]).replace(/,/g,'');
-      dnFillById('f'+p.pg+'_'+p.key, val);
+    /* ★ Phase R(수정): 머니야 발화에서 6~9단계 계산결과만 추출
+       1~5단계 복명복창 오입력 방지는 유지. pg<=5 이면 skip. */
+    var p5 = patterns[j];
+    if(p5.pg <= 5) { continue; } // 1~5단계는 사용자 발화에서만 입력
+    var mAi = t.match(p5.regex);
+    if(mAi) {
+      var valAi = (mAi[1]||mAi[0]).replace(/,/g,'').trim();
+      if(!valAi) continue;
+      if(p5.key === 'save_label') { var _e=document.getElementById('f6_save_label'); if(_e) _e.textContent='저축 ('+valAi+'%)'; }
+      else if(p5.key === 'inv_label') { var _e=document.getElementById('f6_inv_label'); if(_e) _e.textContent='투자 ('+valAi+'%)'; }
+      else if(p5.key === 'save_amt') { var _e=document.getElementById('f6_save_amt'); if(_e) _e.textContent=valAi+'만원'; }
+      else if(p5.key === 'inv_amt') { var _e=document.getElementById('f6_inv_amt'); if(_e) _e.textContent=valAi+'만원'; }
+      else if(p5.key === 'net') { var _e=document.getElementById('f6_net'); if(_e) _e.textContent='월 '+valAi+'만원'; }
+      else if(p5.key === 'f81_short') { var _e=document.getElementById('f81_short'); if(_e) { _e.textContent='월 '+valAi+'만원 추가 필요'; _e.className='dnfv warn'; } }
+      else if(p5.key === 'f85_tax') { var _e=document.getElementById('f85_tax'); if(_e) _e.textContent=valAi+'만원 환급 가능'; }
+      else if(p5.key === 'f9_score') {
+        var _sn=parseInt(valAi);
+        var _e=document.getElementById('f9_score'); if(_e) _e.innerHTML=valAi+'<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+        var _ge=document.getElementById('f9_grade'); if(_ge) _ge.textContent=_sn>=90?'S (최상위)':_sn>=80?'A (우수)':_sn>=70?'B+ (양호)':_sn>=60?'B (보통)':'C (개선필요)';
+      }
+      console.log('[AI발화 추출 pg:'+p5.pg+']', p5.key, '=', valAi);
     }
   }
 }
@@ -16269,14 +16272,37 @@ function _fillNewNote(id, displayVal) {
   // ★ v10: 자산 탭 필드 입력 시 자동 계산
   if (/^f4_(deposit|pension|invest|realty|other|credit|mortgage)$/.test(id)) {
     setTimeout(function(){ 
-      if (typeof diagRecalcAssets === 'function') diagRecalcAssets(); 
+      if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
+      if (typeof diagRecalcPortfolio === 'function') diagRecalcPortfolio();
     }, 50);
+  }
+
+  // ★ 8단계: 은퇴 필요/준비 입력 시 부족액 자동계산
+  if (id === 'f81_need' || id === 'f81_ready') {
+    setTimeout(function(){
+      function _pN(elId){ return parseInt((document.getElementById(elId)||{textContent:''}).textContent.replace(/[^\d]/g,''))||0; }
+      var need  = _pN('f81_need');
+      var ready = _pN('f81_ready');
+      if (need > 0 && ready >= 0) {
+        var short = Math.max(0, need - ready);
+        var shortEl = document.getElementById('f81_short');
+        if (shortEl) { shortEl.textContent = short > 0 ? ('월 ' + short.toLocaleString() + '만원 부족') : '충족 ✓'; shortEl.className = 'dnfv ' + (short > 0 ? 'warn' : 'hi'); }
+        // 은퇴 일시금 (월부족 × 12 × 은퇴후년수)
+        var post = _pN('f5_post') || 30;
+        if (short > 0 && post > 0) {
+          var lump = short * 12 * post;
+          var lumpEl = document.getElementById('f81_lump');
+          if (lumpEl) lumpEl.textContent = lump.toLocaleString() + '만원 필요';
+        }
+      }
+    }, 60);
   }
   
   // ★ v12: 수지 탭 필드 입력 시 자동 계산 (bt_* 또는 f3_*)
   if (/^(bt_(inc|loan|ins|pen|sav|sur|life)_cur|f3_(income|save_cur|loan_cur|ins_cur|pension_cur|living_cur))$/.test(id)) {
     setTimeout(function(){ 
-      if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp(); 
+      if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
+      if (/sav/.test(id) && typeof diagRecalcPortfolio === 'function') diagRecalcPortfolio();
     }, 50);
   }
   
@@ -16487,6 +16513,69 @@ function diagAutoFillNote(userText) {
       }
     }
     
+    // ── 5단계 (금융집짓기) — 은퇴/수명 나이 입력 ──
+    if (curStep === 5) {
+      if (diagLastStep5Reset !== curStep) {
+        diagStep5Counter = 0;
+        diagLastStep5Reset = curStep;
+      }
+      // 나이 범위 (30~110)만 허용
+      if (numValue >= 30 && numValue <= 110) {
+        if (diagStep5Counter < DIAG_STEP5_FIELDS.length) {
+          var fieldId5 = DIAG_STEP5_FIELDS[diagStep5Counter];
+          console.log('[순서 입력 step5]', (diagStep5Counter + 1) + '번째:', fieldId5, '=', numValue + '세');
+          _fillNewNote(fieldId5, numValue + '세');
+          diagStep5Counter++;
+          // 두 값 모두 들어오면 자동계산
+          if (diagStep5Counter >= 2) diagRecalcHouse();
+          else if (fieldId5 === 'f5_retire_age') diagRecalcHouse(); // 수명 없어도 부분 계산
+          return;
+        }
+      }
+    }
+    // lastQ 기반 fallback (탭과 무관하게 은퇴/수명 키워드 감지)
+    if (/은퇴.*몇\s*세|몇\s*세.*은퇴|은퇴\s*나이/.test(lastQ) && numValue >= 30 && numValue <= 100) {
+      _fillNewNote('f5_retire_age', numValue + '세');
+      diagRecalcHouse();
+      return;
+    }
+    if (/예상\s*수명|수명.*몇|몇.*수명|사망.*나이/.test(lastQ) && numValue >= 50 && numValue <= 120) {
+      _fillNewNote('f5_life_expectancy', numValue + '세');
+      diagRecalcHouse();
+      return;
+    }
+
+    // ── 6단계 (포트폴리오) — 고객 확인 답변은 없음, 머니야가 계산해서 발화
+    // diagRecalcPortfolio()는 3/4단계 데이터 기반 자동계산으로 이미 처리됨
+
+    // ── 8단계 (7대영역) — 고객 숫자 답변 처리 ──
+    if (curStep === 8) {
+      // 8-1 은퇴설계: 월 필요자금
+      if (/꿈꾸는 노후|한 달에 얼마가 필요|필요자금|월 얼마/.test(qCtx) && numValue >= 50 && numValue <= 2000) {
+        var needEl = document.getElementById('f81_need');
+        if (needEl && (!needEl.textContent || needEl.textContent === '—')) {
+          _fillNewNote('f81_need', numValue + '만원');
+          return;
+        }
+      }
+      // 8-1 은퇴설계: 월 준비자금
+      if (/현재 매월 준비|준비되는 금액|준비 금액/.test(qCtx) && numValue >= 0 && numValue <= 1000) {
+        var readyEl = document.getElementById('f81_ready');
+        if (readyEl && (!readyEl.textContent || readyEl.textContent === '—')) {
+          _fillNewNote('f81_ready', numValue + '만원');
+          // 부족액 자동계산
+          var needVal = parseInt((document.getElementById('f81_need')||{textContent:''}).textContent.replace(/[^\d]/g,'')) || 0;
+          if (needVal > 0) {
+            var shortVal = Math.max(0, needVal - numValue);
+            _fillNewNote('f81_short', '월 ' + shortVal + '만원 부족');
+          }
+          return;
+        }
+      }
+    }
+
+    // ── 9단계 (최종의견) — DESIRE 단계 자동판정은 데이터 기반으로 처리 ──
+
     console.log('[숫자 입력 - 매칭 없음] num:', numValue, 'curStep:', curStep);
   }
   
@@ -16823,6 +16912,59 @@ function diagAutoFillNote(userText) {
     }
   }
   
+  // ── ★ 8단계 텍스트 답변 처리 ──
+  if (curStep === 8 && !filled) {
+    // 8-1 은퇴꿈: 머니야 "어떤 노후를 꿈꾸세요?" 이후 텍스트 답변
+    if (/꿈꾸는 노후|어떤 노후|노후.*꿈/.test(qCtx)) {
+      var dreamEl = document.getElementById('f81_dream');
+      if (dreamEl && (!dreamEl.textContent || dreamEl.textContent === '—')) {
+        _fillNewNote('f81_dream', t);
+        filled = true;
+      }
+    }
+    // 8-3 저축 목표: "얼마가 목표이세요?"
+    if (/목표.*자금|저축.*목표|목표.*저축/.test(qCtx)) {
+      var goalEl = document.getElementById('f83_goal');
+      if (goalEl && (!goalEl.textContent || goalEl.textContent === '—')) {
+        _fillNewNote('f83_goal', t);
+        filled = true;
+      }
+    }
+  }
+
+  // ── ★ 9단계 텍스트 답변 처리 (강점/개선/액션) ──
+  if (curStep === 9 && !filled) {
+    // 강점 3가지 순서대로
+    var strengths = ['f9_s1','f9_s2','f9_s3'];
+    var improves  = ['f9_i1','f9_i2','f9_i3'];
+    var actions   = ['f9_a1','f9_a2','f9_a3'];
+    
+    if (/강점|잘하고 있|잘 하고 있/.test(qCtx)) {
+      for (var si=0; si<strengths.length; si++) {
+        var sel = document.getElementById(strengths[si]);
+        if (sel && (!sel.textContent || sel.textContent === '—')) {
+          _fillNewNote(strengths[si], t); filled = true; break;
+        }
+      }
+    }
+    if (/개선|부족|아쉬운|보완/.test(qCtx)) {
+      for (var ii=0; ii<improves.length; ii++) {
+        var iel = document.getElementById(improves[ii]);
+        if (iel && (!iel.textContent || iel.textContent === '—')) {
+          _fillNewNote(improves[ii], t); filled = true; break;
+        }
+      }
+    }
+    if (/액션|실행|이번 달/.test(qCtx)) {
+      for (var ai=0; ai<actions.length; ai++) {
+        var ael = document.getElementById(actions[ai]);
+        if (ael && (!ael.textContent || ael.textContent === '—')) {
+          _fillNewNote(actions[ai], t); filled = true; break;
+        }
+      }
+    }
+  }
+
   if (!filled) {
     console.log('[패턴 매칭 실패]', t);
   }
