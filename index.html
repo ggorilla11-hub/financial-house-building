@@ -16407,52 +16407,54 @@ function _fillNewNote(id, displayVal) {
   return filled;
 }
 
-/* ★ [v14 Pending Queue Flush] 
- * 상담노트 DOM이 생성되면 큐에 쌓인 값을 한 번에 주입
- * 1초마다 체크해서 DOM이 있으면 flush
+/* ★ [v14 Pending Queue Flush v2] 
+ * 큐 항목을 절대 제거하지 않음 — 매번 다시 시도
+ * 진단 화면 진입/탭 전환 등으로 DOM이 재생성되는 경우에도 대응
  */
+window._fillHistory = window._fillHistory || {};  /* 마지막으로 확인한 값 기록 */
+
 function _flushPendingNotes() {
   if (!window._pendingNoteFills || window._pendingNoteFills.length === 0) return 0;
   
   var queue = window._pendingNoteFills;
   var flushed = 0;
-  var remaining = [];
   
   for (var i = 0; i < queue.length; i++) {
     var item = queue[i];
     var ids = _NOTE_ID_ALIASES[item.id] || [item.id];
-    var done = false;
+    
     for (var j = 0; j < ids.length; j++) {
-      var el = document.getElementById(ids[j]);
-      if (el) {
-        el.textContent = item.val;
-        el.classList.remove('empty');
-        el.classList.add('confirmed');
-        done = true;
-        flushed++;
-        break;
+      /* ★ querySelectorAll로 모든 인스턴스 채우기 */
+      var elements = document.querySelectorAll('#' + ids[j]);
+      for (var k = 0; k < elements.length; k++) {
+        var el = elements[k];
+        /* 이미 같은 값이면 skip */
+        if (el.textContent !== item.val) {
+          el.textContent = item.val;
+          el.classList.remove('empty');
+          el.classList.add('confirmed');
+          flushed++;
+          window._fillHistory[ids[j]] = item.val;
+        }
       }
     }
-    if (!done) remaining.push(item);
   }
   
-  window._pendingNoteFills = remaining;
   if (flushed > 0) {
-    console.log('[큐 flush] ' + flushed + '개 주입 성공, ' + remaining.length + '개 대기');
-    /* 자동 계산 트리거 */
+    console.log('[큐 flush v2] ' + flushed + '개 주입/보강, 큐 ' + queue.length + '개 항목 유지');
     if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
     if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
   }
   return flushed;
 }
 
-/* 1초마다 큐 체크 (상담노트 DOM 생성 감지) */
+/* 0.5초마다 큐 체크 — 큐는 절대 비우지 않음 (재진입/탭전환 대응) */
 if (!window._pendingNoteFlushInterval) {
   window._pendingNoteFlushInterval = setInterval(function() {
     if (window._pendingNoteFills && window._pendingNoteFills.length > 0) {
       _flushPendingNotes();
     }
-  }, 1000);
+  }, 500);
 }
 
 /* ═══════════════════════════════════════════════════════════
