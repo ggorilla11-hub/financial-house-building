@@ -16377,7 +16377,10 @@ function _fillNewNote(id, displayVal) {
     }
   }
   if (!filled) {
-    console.warn('[노트입력 실패] ID 없음:', id, '(별칭:', ids.join(','), ')');
+    /* ★ [v14 Pending Queue] DOM 아직 생성 안됨 → 큐에 저장 후 상담노트 열릴 때 재시도 */
+    if (!window._pendingNoteFills) window._pendingNoteFills = [];
+    window._pendingNoteFills.push({id: id, val: displayVal, ts: Date.now()});
+    console.log('[노트입력→큐 저장] ' + id + ' = ' + displayVal + ' (큐: ' + window._pendingNoteFills.length + '개)');
   }
   
   // ★ v10: 자산 탭 필드 입력 시 자동 계산
@@ -16402,6 +16405,54 @@ function _fillNewNote(id, displayVal) {
   }
   
   return filled;
+}
+
+/* ★ [v14 Pending Queue Flush] 
+ * 상담노트 DOM이 생성되면 큐에 쌓인 값을 한 번에 주입
+ * 1초마다 체크해서 DOM이 있으면 flush
+ */
+function _flushPendingNotes() {
+  if (!window._pendingNoteFills || window._pendingNoteFills.length === 0) return 0;
+  
+  var queue = window._pendingNoteFills;
+  var flushed = 0;
+  var remaining = [];
+  
+  for (var i = 0; i < queue.length; i++) {
+    var item = queue[i];
+    var ids = _NOTE_ID_ALIASES[item.id] || [item.id];
+    var done = false;
+    for (var j = 0; j < ids.length; j++) {
+      var el = document.getElementById(ids[j]);
+      if (el) {
+        el.textContent = item.val;
+        el.classList.remove('empty');
+        el.classList.add('confirmed');
+        done = true;
+        flushed++;
+        break;
+      }
+    }
+    if (!done) remaining.push(item);
+  }
+  
+  window._pendingNoteFills = remaining;
+  if (flushed > 0) {
+    console.log('[큐 flush] ' + flushed + '개 주입 성공, ' + remaining.length + '개 대기');
+    /* 자동 계산 트리거 */
+    if (typeof diagRecalcAssets === 'function') diagRecalcAssets();
+    if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp();
+  }
+  return flushed;
+}
+
+/* 1초마다 큐 체크 (상담노트 DOM 생성 감지) */
+if (!window._pendingNoteFlushInterval) {
+  window._pendingNoteFlushInterval = setInterval(function() {
+    if (window._pendingNoteFills && window._pendingNoteFills.length > 0) {
+      _flushPendingNotes();
+    }
+  }, 1000);
 }
 
 /* ═══════════════════════════════════════════════════════════
