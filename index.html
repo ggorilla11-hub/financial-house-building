@@ -4811,14 +4811,12 @@ function applyDocToNote(structuredData) {
       debtCredit: D.debtCredit, debtCollat: D.debtCollat
     });
     
+    /* ★ [v14 FIX] rAll 한 번만 호출 (내부에서 calcSurplus, calcDebt 등 자동 호출됨)
+     * 이전 버그: rAll 여러번 + calcSurplus/calcDebt 중복 호출 → 무한 재귀
+     */
     if (typeof rAll === 'function') {
-      rAll('who');
-      rAll('fin');
-      /* pillar 섹션도 리렌더 (부채, 저축 관련) */
-      if (touched) rAll('pillar');
+      rAll('fin');  /* fin 섹션이 가장 포괄적 — calcMonthlySave/calcIncomeTable/calcScore 모두 포함 */
     }
-    if (typeof calcSurplus === 'function') calcSurplus();
-    if (typeof calcDebt === 'function') calcDebt();
     
     /* 성공 토스트 */
     if (filled > 0 && typeof showToast === 'function') {
