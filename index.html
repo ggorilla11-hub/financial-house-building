@@ -4698,136 +4698,92 @@ function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.t
                         debtCredit, debtCollat, ins:{...} }
    - 단위: 만원 (단, reHome/reInv는 억)
    ═══════════════════════════════════════════════════════════ */
+var _applyingDoc = false;  /* ★ 고수님 설계: 재귀 방지 플래그 */
+
 function applyDocToNote(structuredData) {
+  if (_applyingDoc) { console.log('[applyDocToNote] 재귀 차단됨'); return { filled: 0, fields: [] }; }
   if (!structuredData || typeof structuredData !== 'object') {
     console.warn('[applyDocToNote] 유효하지 않은 데이터');
     return { filled: 0, fields: [] };
   }
   
+  _applyingDoc = true;
   var s = structuredData;
   var filled = 0;
   var fields = [];
   
-  /* 단위 변환: 백엔드가 "천원" 단위를 쓰면 ÷10, "만원"이면 그대로 */
-  var toManwon = function(val, unit) {
+  /* 단위 변환: 백엔드 "천원" → D 객체 "만원" */
+  var toM = function(val, unit) {
     if (val == null || val === '') return null;
     var num = parseInt(val);
     if (isNaN(num)) return null;
-    if (unit === '천원') return Math.round(num / 10);
-    return num;  /* 이미 만원 단위 */
+    return (unit === '천원') ? Math.round(num / 10) : num;
   };
   
   try {
     /* ── 1단계: 인적사항 ── */
     if (s.family) {
       if (s.family.name) { D.name = s.family.name; filled++; fields.push('이름'); }
-      if (s.family.age) { 
-        var ageN = parseInt(s.family.age);
-        if (!isNaN(ageN)) { D.ageNum = ageN; filled++; fields.push('나이'); }
-      }
+      if (s.family.age) { var a = parseInt(s.family.age); if (!isNaN(a)) { D.ageNum = a; filled++; fields.push('나이'); } }
       if (s.family.job) { D.job = s.family.job; filled++; fields.push('직업'); }
-      if (s.family.size) {
-        var famN = parseInt(s.family.size);
-        if (!isNaN(famN)) { D.familyNum = famN; filled++; fields.push('가족수'); }
-      }
+      if (s.family.size) { var f = parseInt(s.family.size); if (!isNaN(f)) { D.familyNum = f; filled++; fields.push('가족수'); } }
+      if (s.family.concern) { D.worries = [s.family.concern]; filled++; fields.push('경제적고민'); }
     }
     
-    /* ── 3단계: 수입지출 (월 단위) ── */
+    /* ── 3단계: 수입지출 ── */
     if (s.income) {
-      var incomeUnit = s.income.unit || '만원';
-      if (s.income.total) {
-        var inc = toManwon(s.income.total, incomeUnit);
-        if (inc != null) { D.income = inc; filled++; fields.push('월소득'); }
-      }
-      /* 맞벌이 판단 */
-      if (s.income.spouse && parseInt(s.income.spouse) > 0) {
-        D.dualIncome = true;
-      }
+      var iu = s.income.unit || '만원';
+      if (s.income.total) { var v = toM(s.income.total, iu); if (v != null) { D.income = v; filled++; fields.push('월소득'); } }
+      if (s.income.spouse && parseInt(s.income.spouse) > 0) D.dualIncome = true;
     }
-    
-    /* 월 지출 항목 */
     if (s.expenses) {
-      var expUnit = s.expenses.unit || (s.income && s.income.unit) || '만원';
-      /* 월 보험료 */
-      if (s.expenses.insurance) {
-        var ins = toManwon(s.expenses.insurance, expUnit);
-        if (ins != null) { D.insPay = ins; filled++; fields.push('월보험료'); }
-      }
-      /* 월 대출상환 */
-      if (s.expenses.debt_payment) {
-        var dp = toManwon(s.expenses.debt_payment, expUnit);
-        if (dp != null) { D.loanPay = dp; filled++; fields.push('월대출상환'); }
-      }
-    }
-    
-    /* 월 저축 — surplus 또는 income.savings */
-    if (s.income && s.income.savings) {
-      var sv = toManwon(s.income.savings, s.income.unit || '만원');
-      if (sv != null) { D.savings = sv; filled++; fields.push('월저축'); }
+      var eu = s.expenses.unit || (s.income && s.income.unit) || '만원';
+      if (s.expenses.insurance) { var v2 = toM(s.expenses.insurance, eu); if (v2 != null) { D.insPay = v2; filled++; fields.push('월보험료'); } }
+      if (s.expenses.debt_payment) { var v3 = toM(s.expenses.debt_payment, eu); if (v3 != null) { D.loanPay = v3; filled++; fields.push('월대출상환'); } }
     }
     
     /* ── 4단계: 자산부채 ── */
     if (s.assets) {
-      var aUnit = s.assets.unit || (s.income && s.income.unit) || '만원';
-      var safeSum = 0;
-      var riskSum = 0;
-      
-      /* 안전자산: 예적금, CMA, 청약 */
-      if (s.assets.deposit) safeSum += toManwon(s.assets.deposit, aUnit) || 0;
-      if (s.assets.cma) safeSum += toManwon(s.assets.cma, aUnit) || 0;
-      if (s.assets.subscription) safeSum += toManwon(s.assets.subscription, aUnit) || 0;
-      if (s.assets.pension) safeSum += toManwon(s.assets.pension, aUnit) || 0;
-      
-      /* 위험자산: 펀드, 주식 */
-      if (s.assets.fund) riskSum += toManwon(s.assets.fund, aUnit) || 0;
-      if (s.assets.stock) riskSum += toManwon(s.assets.stock, aUnit) || 0;
-      
-      if (safeSum > 0) { D.safeAsset = safeSum; filled++; fields.push('안전자산'); }
-      if (riskSum > 0) { D.riskAsset = riskSum; filled++; fields.push('위험자산'); }
+      var au = s.assets.unit || (s.income && s.income.unit) || '만원';
+      var safe = 0, risk = 0;
+      if (s.assets.deposit) safe += toM(s.assets.deposit, au) || 0;
+      if (s.assets.cma) safe += toM(s.assets.cma, au) || 0;
+      if (s.assets.subscription) safe += toM(s.assets.subscription, au) || 0;
+      if (s.assets.pension) safe += toM(s.assets.pension, au) || 0;
+      if (s.assets.fund) risk += toM(s.assets.fund, au) || 0;
+      if (s.assets.stock) risk += toM(s.assets.stock, au) || 0;
+      if (safe > 0) { D.safeAsset = safe; filled++; fields.push('안전자산'); }
+      if (risk > 0) { D.riskAsset = risk; filled++; fields.push('위험자산'); }
     }
-    
     if (s.debts) {
-      var dUnit = s.debts.unit || (s.income && s.income.unit) || '만원';
-      /* 신용대출 = 기타대출 + 은행대출(일반) */
-      var creditSum = 0;
-      if (s.debts.credit) creditSum += toManwon(s.debts.credit, dUnit) || 0;
-      if (s.debts.bank) creditSum += toManwon(s.debts.bank, dUnit) || 0;
-      if (s.debts.other) creditSum += toManwon(s.debts.other, dUnit) || 0;
-      
-      /* 담보대출 */
-      var collatSum = 0;
-      if (s.debts.mortgage) collatSum += toManwon(s.debts.mortgage, dUnit) || 0;
-      
-      if (creditSum > 0) { D.debtCredit = creditSum; D.loanCredit = creditSum; filled++; fields.push('신용대출'); }
-      if (collatSum > 0) { D.debtCollat = collatSum; D.loanCollat = collatSum; filled++; fields.push('담보대출'); }
+      var du = s.debts.unit || (s.income && s.income.unit) || '만원';
+      var cr = 0, co = 0;
+      if (s.debts.credit) cr += toM(s.debts.credit, du) || 0;
+      if (s.debts.bank) cr += toM(s.debts.bank, du) || 0;
+      if (s.debts.other) cr += toM(s.debts.other, du) || 0;
+      if (s.debts.mortgage) co += toM(s.debts.mortgage, du) || 0;
+      if (cr > 0) { D.debtCredit = cr; D.loanCredit = cr; filled++; fields.push('신용대출'); }
+      if (co > 0) { D.debtCollat = co; D.loanCollat = co; filled++; fields.push('담보대출'); }
     }
     
-    /* ── 자동 계산 체인 발동 ── */
-    console.log('[applyDocToNote] 매핑 완료:', filled + '개 필드', fields);
-    console.log('[applyDocToNote] D 객체 현재 상태:', {
-      name: D.name, ageNum: D.ageNum, income: D.income, 
-      savings: D.savings, insPay: D.insPay,
-      safeAsset: D.safeAsset, riskAsset: D.riskAsset,
-      debtCredit: D.debtCredit, debtCollat: D.debtCollat
-    });
+    console.log('[applyDocToNote] 매핑 완료:', filled + '개', fields);
+    console.log('[applyDocToNote] D:', {name:D.name, ageNum:D.ageNum, income:D.income, safeAsset:D.safeAsset, debtCredit:D.debtCredit});
     
-    /* ★ [v14 FIX3 2026-04-12] 렌더 호출 완전 제거
-     * updateBpTitle/rebuildHouse 등 어딘가 내부에서 무한 재귀 발생
-     * (rAll을 다시 부르거나, D 객체 변경이 다른 함수를 트리거)
-     * 
-     * D 객체 주입만 수행. 화면 업데이트는 다음 사용자 액션 
-     * (탭 전환, 슬라이더 이동, 상담 시작)에서 자연스럽게 렌더됨
-     */
-    console.log('[applyDocToNote] D 객체 주입 완료 (렌더는 상담 시작 시점에)');
+    /* ★ 고수님 설계: setTimeout으로 rAll 지연 호출 — 재귀 차단 */
+    setTimeout(function() {
+      try { rAll('who'); } catch(e) { console.warn('[applyDocToNote] rAll who:', e.message); }
+      try { rAll('fin'); } catch(e) { console.warn('[applyDocToNote] rAll fin:', e.message); }
+      _applyingDoc = false;
+      console.log('[applyDocToNote] 렌더 완료');
+    }, 100);
     
-    /* 성공 토스트 */
     if (filled > 0 && typeof showToast === 'function') {
-      showToast('✅ 상담신청서가 분석되어 상담노트에 ' + filled + '개 항목 반영되었습니다');
+      showToast('✅ 상담신청서 분석 → 상담노트 ' + filled + '개 항목 반영');
     }
-    
     return { filled: filled, fields: fields };
   } catch(e) {
-    console.error('[applyDocToNote] 실패:', e.message, e.stack);
+    _applyingDoc = false;
+    console.error('[applyDocToNote] 실패:', e.message);
     return { filled: 0, fields: [], error: e.message };
   }
 }
@@ -8599,16 +8555,19 @@ function mvpHandleUpload(input) {
         docBadge.style.color = '#16a34a'; 
       }
       
-      /* ★ [v14 Step2 2026-04-12] 사전서류 → 상담노트 자동 입력
-       * 이전 v11/v12: _fillNewNote로 개별 필드 매핑 (UI 버그 우회 실패)
-       * 현재 v14 (고수님 설계): applyDocToNote가 D 객체에 직접 주입 + rAll 체인
-       */
+      /* ★ [v14 Step2 2026-04-12] 사전서류 → 상담노트 자동 입력 */
       try {
-        if (data.structuredData && typeof applyDocToNote === 'function') {
-          var result = applyDocToNote(data.structuredData);
-          console.log('[v14 mvpHandleUpload→applyDocToNote] 결과:', result);
+        /* 고수님 제안: fetch 응답 디버깅 */
+        console.log('[v14 DEBUG] data 키:', Object.keys(data));
+        console.log('[v14 DEBUG] structuredData:', !!data.structuredData);
+        
+        var sd = data.structuredData || data.result || data.data || null;
+        if (sd && typeof applyDocToNote === 'function') {
+          var result = applyDocToNote(sd);
+          console.log('[v14 mvpHandleUpload] applyDocToNote 결과:', result);
+          console.log('[v14 DEBUG] 주입 후 D.name:', D.name, 'D.income:', D.income);
         } else {
-          console.warn('[v14] structuredData 없음 또는 applyDocToNote 미정의');
+          console.warn('[v14] structuredData 경로를 찾을 수 없음. data:', JSON.stringify(data).substring(0, 300));
         }
       } catch(e) {
         console.warn('[v14 mvpHandleUpload] applyDocToNote 실패:', e.message);
@@ -12429,17 +12388,18 @@ function diagHandleFile(input) {
         var e2=document.getElementById(sm2[docType]||''); if(e2) e2.textContent='✅';
       }
 
-      /* ★ [v14 Step2 2026-04-12] 사전서류 → 상담노트 자동 입력
-       * diagHandleFile (진단 시작 전 체크리스트 경로)
-       * 이전 v12: _fillNewNote로 개별 필드 매핑 (UI 버그 우회 실패)
-       * 현재 v14 (고수님 설계): applyDocToNote가 D 객체에 직접 주입 + rAll 체인
-       */
+      /* ★ [v14 Step2 2026-04-12] 사전서류 → 상담노트 자동 입력 */
       try {
-        if (data.structuredData && typeof applyDocToNote === 'function') {
-          var result = applyDocToNote(data.structuredData);
-          console.log('[v14 diagHandleFile→applyDocToNote] 결과:', result);
+        console.log('[v14 DEBUG diagHandleFile] data 키:', Object.keys(data));
+        console.log('[v14 DEBUG diagHandleFile] structuredData:', !!data.structuredData);
+        
+        var sd = data.structuredData || data.result || data.data || null;
+        if (sd && typeof applyDocToNote === 'function') {
+          var result = applyDocToNote(sd);
+          console.log('[v14 diagHandleFile] applyDocToNote 결과:', result);
+          console.log('[v14 DEBUG] 주입 후 D.name:', D.name, 'D.income:', D.income);
         } else {
-          console.warn('[v14] structuredData 없음 또는 applyDocToNote 미정의');
+          console.warn('[v14] structuredData 경로를 찾을 수 없음. data:', JSON.stringify(data).substring(0, 300));
         }
       } catch(e) {
         console.warn('[v14 diagHandleFile] applyDocToNote 실패:', e.message);
