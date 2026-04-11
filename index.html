@@ -8940,14 +8940,22 @@ function buildResumeContext() {
         if (!docData || !docData.success) return;
         
         var label = docLabels[docType] || docType;
-        var extracted = docData.extracted || docData.data || docData.analysis || {};
+        /* ★ [v13.1 FIX] 백엔드 실제 응답: structuredData 필드 사용
+         * 우선순위: structuredData > extracted > data > analysis > rawText
+         */
+        var extracted = docData.structuredData || docData.extracted || docData.data || docData.analysis || docData.rawText || {};
         
         /* 추출된 데이터를 JSON 문자열로 간결하게 */
         var extractedStr = '';
         try {
-          extractedStr = JSON.stringify(extracted, null, 2).substring(0, 2000);
+          if (typeof extracted === 'string') {
+            /* rawText인 경우 코드블록 제거 */
+            extractedStr = extracted.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim().substring(0, 2500);
+          } else {
+            extractedStr = JSON.stringify(extracted, null, 2).substring(0, 2500);
+          }
         } catch(e) {
-          extractedStr = String(extracted).substring(0, 2000);
+          extractedStr = String(extracted).substring(0, 2500);
         }
         
         if (extractedStr && extractedStr !== '{}' && extractedStr !== 'null') {
