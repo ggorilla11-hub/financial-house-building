@@ -14069,6 +14069,18 @@ function diagBuildNotes() {
   content:'⏳ STT 임시 (머니야 확인 대기)';
   display:block;font-size:8px;color:#9ca3af;font-style:italic;margin-top:2px;
 }
+/* ★ [v14 등정 A-1] 사전서류 입력 — 잠정 (머니야 확인 전) */
+.dnfv.presubmit{
+  background:linear-gradient(135deg,rgba(150,150,160,.12),rgba(150,150,160,.04));
+  border-left:3px solid #d1d5db;padding:5px 9px;border-radius:5px;
+  color:#6b7280;font-weight:500;font-style:italic;
+  position:relative;
+}
+.dnfv.presubmit::after{
+  content:'📄 사전서류 (확인 대기)';
+  display:inline-block;font-size:8px;color:#6b7280;font-style:normal;
+  background:#f3f4f6;padding:1px 5px;border-radius:3px;margin-left:6px;vertical-align:middle;
+}
 .dnfv.confirmed{
   background:linear-gradient(135deg,rgba(232,184,75,.22),rgba(201,151,42,.08));
   border-left:3px solid #C9972A;padding:5px 9px;border-radius:5px;
@@ -16456,7 +16468,10 @@ function _flushPendingNotes() {
         if (el.textContent !== item.val) {
           el.textContent = item.val;
           el.classList.remove('empty');
-          el.classList.add('confirmed');
+          /* ★ [v14 A-1] 사전서류는 'presubmit' (잠정). 머니야 확인 후 'confirmed'로 승격 */
+          if (!el.classList.contains('confirmed')) {
+            el.classList.add('presubmit');
+          }
           flushed++;
           window._fillHistory[ids[j]] = item.val;
         }
