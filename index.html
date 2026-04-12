@@ -15499,18 +15499,17 @@ function diagBuildNotes() {
       /* 중앙 기둥 (황금색) */
       fhSvgHTML += '<rect x="345" y="156" width="10" height="140" fill="#E8B84B" stroke="#0B1D3A" stroke-width="1.5"/>';
       
-      /* ★ [v14 E7f] 좌측 부채/저축 — 대각선 삭제, 수평선만으로 상하 분리 */
-      fhSvgHTML += '<polygon points="60,156 345,156 345,226 60,226" fill="#FEF3C7" fill-opacity="0.6"/>';
-      fhSvgHTML += '<text x="200" y="185" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">I. 부채</text>';
-      fhSvgHTML += '<text x="200" y="205" text-anchor="middle" font-size="9" fill="#B91C1C" font-weight="900">' + (totalD || '—') + '</text>';
-      fhSvgHTML += '<text x="200" y="220" text-anchor="middle" font-size="8" fill="#B91C1C" font-weight="800">↓ 은퇴까지 상환 ↓</text>';
-      /* 좌측 부채/저축 구분선 (수평) */
-      fhSvgHTML += '<line x1="60" y1="226" x2="345" y2="226" stroke="#0B1D3A" stroke-width="2"/>';
-      /* 좌하: II. 저축 */
-      fhSvgHTML += '<polygon points="60,226 345,226 345,296 60,296" fill="#F0FDF4" fill-opacity="0.75"/>';
-      fhSvgHTML += '<text x="200" y="255" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">II. 저축</text>';
-      fhSvgHTML += '<text x="200" y="275" text-anchor="middle" font-size="9" fill="#15803D" font-weight="900">월 ' + (sav||'—') + '</text>';
-      fhSvgHTML += '<text x="200" y="289" text-anchor="middle" font-size="8" fill="#15803D" font-weight="800">↑ 늘어나는 저축 ↑</text>';
+      /* ★ [v14 E7g] 좌하→우상 대각 색깔 분할 (선 없이, polygon만) */
+      /* 좌상 역삼각형 = 부채 영역 (노란색) */
+      fhSvgHTML += '<polygon points="60,156 345,156 60,296" fill="#FEF3C7" fill-opacity="0.6"/>';
+      fhSvgHTML += '<text x="150" y="190" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">I. 부채</text>';
+      fhSvgHTML += '<text x="150" y="210" text-anchor="middle" font-size="9" fill="#B91C1C" font-weight="900">' + (totalD || '—') + '</text>';
+      fhSvgHTML += '<text x="88" y="242" font-size="16" fill="#B91C1C" font-weight="900">↓↓</text>';
+      fhSvgHTML += '<text x="150" y="242" text-anchor="middle" font-size="8" fill="#B91C1C" font-weight="800">은퇴까지 상환</text>';
+      /* 우하 삼각형 = 저축 영역 (녹색) */
+      fhSvgHTML += '<polygon points="345,156 345,296 60,296" fill="#F0FDF4" fill-opacity="0.75"/>';
+      fhSvgHTML += '<text x="230" y="270" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">II. 저축</text>';
+      fhSvgHTML += '<text x="230" y="286" text-anchor="middle" font-size="9" fill="#15803D" font-weight="900">월 ' + (sav||'—') + '</text>';
       
       /* 우측: III. 은퇴 */
       fhSvgHTML += '<rect x="355" y="156" width="285" height="140" fill="#EEF2FF" fill-opacity="0.5"/>';
@@ -15549,15 +15548,13 @@ function diagBuildNotes() {
     h += '<div style="font-size:6.5pt;line-height:1.4;min-height:18px;">' + (w1 || '(상담 진행 중)') + (w2?' · '+w2:'') + '</div></div>';
     h += '</div>';
     
-    /* 3. 금융집짓기 — SVG + 보험표 (보험표 = 집의 기초) */
+    /* 3. 금융집짓기 — SVG 1층 + 보험표(=기초공사) 완전히 붙임 */
     h += '<div style="' + secStyle + 'margin-bottom:3px;">';
     h += '<div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">3. 금융집짓기 설계</div>';
-    h += '<div style="text-align:center;padding:0;">';
-    h += '<div style="width:100%;min-height:240px;margin-bottom:0;line-height:0;">' + fhSvgHTML + '</div>';
-    h += '</div>';
+    h += '<div style="width:100%;line-height:0;font-size:0;">' + fhSvgHTML + '</div>';
     
-    /* 보험 8대 표 — 집의 기초공사 역할 (SVG 바로 아래 붙임) */
-    h += '<table style="width:100%;border-collapse:collapse;font-size:5.5pt;margin-top:0;">';
+    /* 보험 8대 표 — 집의 기초공사 (SVG 1층과 완전히 붙어 한 집이 됨) */
+    h += '<table style="width:100%;border-collapse:collapse;font-size:5.5pt;margin-top:-4px;">';
     h += '<thead><tr>';
     h += '<th style="background:#0B1D3A;color:#E8B84B;padding:1.5px;border:1px solid #0B1D3A;font-size:5.5pt;font-weight:900;width:13%;">VII. 보험</th>';
     ['사망','장해','암','뇌혈관','심혈관','실손','입원','치매'].forEach(function(t){
