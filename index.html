@@ -15466,9 +15466,9 @@ function diagBuildNotes() {
       var retShort = g('f81_short') || '부족 ___만원';
       var realty = g('f4_realty') || '0억';
       
-      /* ★ [v14 E7d] 4층 구조 명확화: 지붕 / 처마보 / 1층(기둥+삼각형) / 기초(보험) */
-      fhSvgHTML = '<svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;height:auto;display:block;margin:0 auto;">';
-      fhSvgHTML += '<text x="350" y="220" text-anchor="middle" font-size="80" fill="#0B1D3A" fill-opacity="0.04" font-weight="900" font-family="serif">ohwant</text>';
+      /* ★ [v14 E7f] 4층 구조: 지붕 / 처마보 / 1층(기둥+삼각형) — 기초(보험) 띠는 삭제 (보험표가 대신함) */
+      fhSvgHTML = '<svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;height:auto;display:block;margin:0 auto;">';
+      fhSvgHTML += '<text x="350" y="210" text-anchor="middle" font-size="80" fill="#0B1D3A" fill-opacity="0.04" font-weight="900" font-family="serif">ohwant</text>';
       
       /* ━━ 지붕 (y: 12~120) ━━ */
       fhSvgHTML += '<polygon points="350,12 60,120 640,120" fill="#FFFBEA" stroke="#0B1D3A" stroke-width="2.5"/>';
@@ -15483,7 +15483,7 @@ function diagBuildNotes() {
       fhSvgHTML += '<text x="571" y="76" text-anchor="middle" font-size="11" fill="#0B1D3A" font-weight="900">부동산</text>';
       fhSvgHTML += '<text x="571" y="100" text-anchor="middle" font-size="9" fill="#B91C1C" font-weight="800">' + realty + '</text>';
       
-      /* ━━ 처마보 (y: 120~156, 높이 36) ━━ */
+      /* ━━ 처마보 (y: 120~156) ━━ */
       fhSvgHTML += '<rect x="60" y="120" width="580" height="36" fill="#F5E6C8" stroke="#0B1D3A" stroke-width="2"/>';
       fhSvgHTML += '<text x="95" y="137" text-anchor="middle" font-size="9" fill="#0B1D3A" font-weight="900">현재</text>';
       fhSvgHTML += '<text x="95" y="150" text-anchor="middle" font-size="10" fill="#0B1D3A" font-weight="900">' + curAge + '</text>';
@@ -15494,38 +15494,30 @@ function diagBuildNotes() {
       fhSvgHTML += '<text x="605" y="137" text-anchor="middle" font-size="9" fill="#0B1D3A" font-weight="900">사망</text>';
       fhSvgHTML += '<text x="605" y="150" text-anchor="middle" font-size="10" fill="#0B1D3A" font-weight="900">' + dieAge + '</text>';
       
-      /* ━━ 1층 외곽 — 기둥 역할의 벽체 (y: 156~296) ━━ */
+      /* ━━ 1층 외곽 (y: 156~296) — 중앙 기둥 + 좌측(부채/저축) + 우측(은퇴) ━━ */
       fhSvgHTML += '<rect x="60" y="156" width="580" height="140" fill="#fff" stroke="#0B1D3A" stroke-width="2.5"/>';
-      /* 기둥 (중앙 수직) */
+      /* 중앙 기둥 (황금색) */
       fhSvgHTML += '<rect x="345" y="156" width="10" height="140" fill="#E8B84B" stroke="#0B1D3A" stroke-width="1.5"/>';
       
-      /* 좌측 대각선 (부채→저축) */
-      fhSvgHTML += '<line x1="60" y1="156" x2="345" y2="296" stroke="#0B1D3A" stroke-width="2"/>';
-      /* 좌상: I. 부채 (삼각형) */
-      fhSvgHTML += '<polygon points="60,156 345,156 60,296" fill="#FEF3C7" fill-opacity="0.6"/>';
-      fhSvgHTML += '<text x="150" y="190" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">I. 부채</text>';
-      fhSvgHTML += '<text x="150" y="210" text-anchor="middle" font-size="9" fill="#B91C1C" font-weight="900">' + (totalD || '—') + '</text>';
-      fhSvgHTML += '<text x="88" y="242" font-size="16" fill="#B91C1C" font-weight="900">↓↓</text>';
-      fhSvgHTML += '<text x="150" y="242" text-anchor="middle" font-size="8" fill="#B91C1C" font-weight="800">은퇴까지 상환</text>';
-      /* 좌하: II. 저축 (삼각형) */
-      fhSvgHTML += '<polygon points="345,156 345,296 60,296" fill="#F0FDF4" fill-opacity="0.75"/>';
-      fhSvgHTML += '<text x="230" y="270" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">II. 저축</text>';
-      fhSvgHTML += '<text x="230" y="286" text-anchor="middle" font-size="9" fill="#15803D" font-weight="900">월 ' + (sav||'—') + '</text>';
+      /* ★ [v14 E7f] 좌측 부채/저축 — 대각선 삭제, 수평선만으로 상하 분리 */
+      fhSvgHTML += '<polygon points="60,156 345,156 345,226 60,226" fill="#FEF3C7" fill-opacity="0.6"/>';
+      fhSvgHTML += '<text x="200" y="185" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">I. 부채</text>';
+      fhSvgHTML += '<text x="200" y="205" text-anchor="middle" font-size="9" fill="#B91C1C" font-weight="900">' + (totalD || '—') + '</text>';
+      fhSvgHTML += '<text x="200" y="220" text-anchor="middle" font-size="8" fill="#B91C1C" font-weight="800">↓ 은퇴까지 상환 ↓</text>';
+      /* 좌측 부채/저축 구분선 (수평) */
+      fhSvgHTML += '<line x1="60" y1="226" x2="345" y2="226" stroke="#0B1D3A" stroke-width="2"/>';
+      /* 좌하: II. 저축 */
+      fhSvgHTML += '<polygon points="60,226 345,226 345,296 60,296" fill="#F0FDF4" fill-opacity="0.75"/>';
+      fhSvgHTML += '<text x="200" y="255" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">II. 저축</text>';
+      fhSvgHTML += '<text x="200" y="275" text-anchor="middle" font-size="9" fill="#15803D" font-weight="900">월 ' + (sav||'—') + '</text>';
+      fhSvgHTML += '<text x="200" y="289" text-anchor="middle" font-size="8" fill="#15803D" font-weight="800">↑ 늘어나는 저축 ↑</text>';
       
-      /* 우측: III. 은퇴 (사각형) */
+      /* 우측: III. 은퇴 */
       fhSvgHTML += '<rect x="355" y="156" width="285" height="140" fill="#EEF2FF" fill-opacity="0.5"/>';
       fhSvgHTML += '<text x="498" y="198" text-anchor="middle" font-size="15" fill="#0B1D3A" font-weight="900">III. 은퇴</text>';
       fhSvgHTML += '<text x="498" y="224" text-anchor="middle" font-size="9" fill="#4A5568" font-weight="800">필요: ' + retNeed + '</text>';
       fhSvgHTML += '<text x="498" y="246" text-anchor="middle" font-size="11" fill="#B91C1C" font-weight="900">' + retShort + '</text>';
       fhSvgHTML += '<text x="498" y="272" text-anchor="middle" font-size="9" fill="#15803D" font-weight="700">노후자금 준비</text>';
-      
-      /* ━━ 기초(보험) — 8구간 (y: 296~340) ━━ */
-      fhSvgHTML += '<rect x="30" y="296" width="640" height="44" fill="#0B1D3A"/>';
-      fhSvgHTML += '<text x="350" y="313" text-anchor="middle" font-size="11" fill="#E8B84B" font-weight="900">VII. 보험 (기초공사)</text>';
-      fhSvgHTML += '<text x="350" y="330" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">사망 · 장해 · 암 · 뇌혈관 · 심혈관 · 실손 · 입원 · 치매</text>';
-      /* 땅 */
-      fhSvgHTML += '<rect x="0" y="340" width="700" height="18" fill="#8B6914" fill-opacity="0.3"/>';
-      fhSvgHTML += '<line x1="0" y1="340" x2="700" y2="340" stroke="#8B6914" stroke-width="2"/>';
       
       fhSvgHTML += '</svg>';
     }
@@ -15557,15 +15549,15 @@ function diagBuildNotes() {
     h += '<div style="font-size:6.5pt;line-height:1.4;min-height:18px;">' + (w1 || '(상담 진행 중)') + (w2?' · '+w2:'') + '</div></div>';
     h += '</div>';
     
-    /* 3. 금융집짓기 — SVG 충분한 높이 확보 (기둥/처마보가 명확히 보이도록) */
+    /* 3. 금융집짓기 — SVG + 보험표 (보험표 = 집의 기초) */
     h += '<div style="' + secStyle + 'margin-bottom:3px;">';
     h += '<div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">3. 금융집짓기 설계</div>';
-    h += '<div style="text-align:center;padding:4px 0;">';
-    h += '<div style="width:100%;min-height:240px;">' + fhSvgHTML + '</div>';
+    h += '<div style="text-align:center;padding:0;">';
+    h += '<div style="width:100%;min-height:240px;margin-bottom:0;line-height:0;">' + fhSvgHTML + '</div>';
     h += '</div>';
     
-    /* 보험 8대 표 */
-    h += '<table style="width:100%;border-collapse:collapse;font-size:5.5pt;margin-top:2px;">';
+    /* 보험 8대 표 — 집의 기초공사 역할 (SVG 바로 아래 붙임) */
+    h += '<table style="width:100%;border-collapse:collapse;font-size:5.5pt;margin-top:0;">';
     h += '<thead><tr>';
     h += '<th style="background:#0B1D3A;color:#E8B84B;padding:1.5px;border:1px solid #0B1D3A;font-size:5.5pt;font-weight:900;width:13%;">VII. 보험</th>';
     ['사망','장해','암','뇌혈관','심혈관','실손','입원','치매'].forEach(function(t){
