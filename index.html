@@ -5947,6 +5947,36 @@ window.addEventListener('DOMContentLoaded',()=>{
     b.style.visibility='';
   });
   setTimeout(()=>{runRet();runTax();runIns();calcMonthlySave();calcIncomeTable();;if(typeof autoLoad==='function')autoLoad();},300);
+  
+  /* ★ [v14 C-6] f1_name MutationObserver 보호
+   * 어떤 경로로든 "네/예/맞아요" 등 동의어가 이름에 들어가면 즉시 복원
+   */
+  setTimeout(function() {
+    try {
+      var nameEl = document.getElementById('f1_name');
+      if (nameEl && typeof MutationObserver !== 'undefined') {
+        var lastValidName = '';
+        var observer = new MutationObserver(function(mutations) {
+          var curText = (nameEl.textContent || '').trim();
+          if (!curText) return;
+          /* 한글 2-5자가 아니거나 동의어 패턴이면 복원 */
+          var isInvalid = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇)/i.test(curText) ||
+                          !/^[가-힣]{2,5}$/.test(curText);
+          if (isInvalid && lastValidName) {
+            nameEl.textContent = lastValidName;
+            console.warn('[v14 C-6] 이름 침범 차단:', curText, '→', lastValidName);
+          } else if (!isInvalid) {
+            lastValidName = curText;
+          }
+        });
+        observer.observe(nameEl, { childList: true, characterData: true, subtree: true });
+        /* 초기값 캡처 */
+        var initText = (nameEl.textContent || '').trim();
+        if (/^[가-힣]{2,5}$/.test(initText)) lastValidName = initText;
+        console.log('[v14 C-6] f1_name 보호 시작. 초기값:', lastValidName);
+      }
+    } catch(e) { console.warn('[v14 C-6]', e.message); }
+  }, 1500);
 });
 
 /* ════════════════════════════════════════
@@ -16411,48 +16441,49 @@ let diagLastFilledLabel = '';
 function diagParseAiSpeech(aiText) {
   var t = aiText;
 
-  /* ★ [v14 C-1] 5단계 금융집짓기 SVG 빌드 애니메이션
-   * 머니야 발화 키워드별로 SVG 부분에 .built 클래스 추가
-   * 시스템 프롬프트 발화 흐름:
+  /* ★ [v14 C-1+C-4] 5단계 금융집짓기 SVG 빌드 애니메이션
+   * 시스템 프롬프트 발화 흐름 (4단계 순서):
    *   1. "보장자산이라는 기초공사" → bp-f (보험)
    *   2. "저축이라는 기둥을 세우" → bp-w (부채/저축/은퇴)
-   *   3. "생로병사라는 처마보" → bp-tl (현재/은퇴/사망 처마)
-   *   4. "투자라는 지붕" → bp-r (지붕)
-   *   5. "굴뚝이라는 부동산" → bp-n (굴뚝)
+   *   3. "생로병사라는 처마보" → bp-tl (현재/은퇴/사망)
+   *   4. "투자라는 지붕" → bp-r + bp-n (지붕+굴뚝)
+   * ★ C-4: 이미 빌드된 다음 단계만 진행 (한 발화에 여러 키워드 있어도 한 단계씩)
    */
   try {
     var fhSvg = document.querySelector('.dn-fhsvg');
     if (fhSvg) {
-      var buildPart = function(partId) {
+      var buildIfNext = function(partId) {
         var el = fhSvg.querySelector('#' + partId);
         if (el && !el.classList.contains('built')) {
           el.classList.add('built');
-          console.log('[v14 C-1 SVG빌드]', partId);
+          console.log('[v14 C-4 SVG빌드]', partId);
+          return true;
         }
+        return false;
       };
       
-      /* 1. 보험 (기초공사) */
-      if (/보장자산.*기초공사|기초공사.*시작|보험.*기초|기초.*보험/.test(t)) {
-        buildPart('bp-f');
+      /* 순서대로 점검: 이미 안 지어진 첫 부분만 짓기 */
+      var hasBPF = fhSvg.querySelector('#bp-f.built');
+      var hasBPW = fhSvg.querySelector('#bp-w.built');
+      var hasBPTL = fhSvg.querySelector('#bp-tl.built');
+      var hasBPR = fhSvg.querySelector('#bp-r.built');
+      
+      if (!hasBPF && /보장자산.*기초공사|기초공사.*시작|보험.*기초|기초.*보험/.test(t)) {
+        buildIfNext('bp-f');
+      } else if (hasBPF && !hasBPW && /저축.*기둥|기둥.*세우|저축이라는|벽.*저축/.test(t)) {
+        buildIfNext('bp-w');
+      } else if (hasBPW && !hasBPTL && /생로병사|처마보|처마|시간축/.test(t)) {
+        buildIfNext('bp-tl');
+      } else if (hasBPTL && !hasBPR && /투자.*지붕|지붕.*올리|투자라는|자산배분.*철근|콘크리트/.test(t)) {
+        buildIfNext('bp-r');
+        /* 굴뚝은 지붕 다음에 자연스럽게 - 하지만 별도 발화 시 트리거 */
       }
-      /* 2. 저축/부채/은퇴 (기둥/벽) */
-      if (/저축.*기둥|기둥.*세우|저축이라는|벽.*저축/.test(t)) {
-        buildPart('bp-w');
-      }
-      /* 3. 처마보 (현재/은퇴/사망 시간축) */
-      if (/생로병사|처마보|처마|시간축|은퇴는 몇|예상 수명|몇 세로 생각/.test(t)) {
-        buildPart('bp-tl');
-      }
-      /* 4. 투자 (지붕) */
-      if (/투자.*지붕|지붕.*올리|투자라는|자산배분.*철근|콘크리트/.test(t)) {
-        buildPart('bp-r');
-      }
-      /* 5. 부동산 (굴뚝) */
-      if (/굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t)) {
-        buildPart('bp-n');
+      /* 굴뚝은 별도 — 지붕 빌드된 후 굴뚝 발화 시 */
+      if (hasBPR && /굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t)) {
+        buildIfNext('bp-n');
       }
     }
-  } catch(svgErr) { console.warn('[v14 C-1 SVG] 실패:', svgErr.message); }
+  } catch(svgErr) { console.warn('[v14 C-4 SVG] 실패:', svgErr.message); }
 
   /* ── v14 A-7 단계 전환 감지 — strong 키워드만 점프 허용 ── 
    * strong: 명확한 단계 전환 신호 (예: "이제 4단계", "자산부채로 넘어")
@@ -16479,6 +16510,14 @@ function diagParseAiSpeech(aiText) {
       /* ★ [v14 A-3] 단계 1로의 첫 점프는 항상 허용 */
       var allowJump = (sm.step === 1 && diagCurPart === 0) ||
                       (sm.step > diagCurPart && sm.step <= diagCurPart + 2);
+      /* ★ [v14 C-5] 5단계 진행 중에는 6/7로 가는 점프 더 엄격하게 — 명확한 단계 선언만 */
+      if (allowJump && diagCurPart === 5 && (sm.step === 6 || sm.step === 7)) {
+        var hasExplicit = /(육 단계|육단계|6단계|칠 단계|칠단계|7단계|이제.*단계|다음.*단계로 넘어)/.test(t);
+        if (!hasExplicit) {
+          console.log('[v14 C-5] 5단계 잠금 - 6/7 점프 차단:', sm.step, '| t:', t.substring(0, 50));
+          allowJump = false;
+        }
+      }
       /* ★ [v14 A-7] 역방향(이전 단계로) 점프는 절대 금지 */
       if(allowJump) {
         console.log('[v14 A-7 단계전환]', diagCurPart, '→', sm.step, '| 키워드 매칭');
