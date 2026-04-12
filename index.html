@@ -15381,9 +15381,71 @@ function diagBuildNotes() {
     document.querySelectorAll('.dnt').forEach(function(t,j){ t.classList.toggle('active', j===i); });
     document.getElementById('dnPanels').scrollTop = 0;
     if(i===8) dnLoadBA();
+    /* ★ [v14 E2] 10번 탭(대화록) 진입 시 자동 로드 */
+    if(i===10 && typeof dnLoadChat === 'function') dnLoadChat();
     // ★ 탭 자동 스크롤 — 선택된 탭이 보이도록
     var activeTab = document.querySelectorAll('.dnt')[i];
     if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
+  };
+  
+  /* ★ [v14 E2] 대화록 로드 함수 — diagStt 내용 복사 + 저장된 히스토리 불러오기 */
+  window.dnLoadChat = function() {
+    var dnChat = document.getElementById('dn_chat');
+    if (!dnChat) return;
+    
+    /* 1) 현재 진행 중인 상담: #diagStt에서 복사 */
+    var diagStt = document.getElementById('diagStt');
+    if (diagStt && diagStt.children.length > 0) {
+      dnChat.innerHTML = '';
+      var header = document.createElement('div');
+      header.style.cssText = 'text-align:center;font-size:9.5px;color:#8896B0;padding:6px;border-bottom:1px solid rgba(201,151,42,.2);margin-bottom:8px;';
+      header.textContent = '🎙️ 실시간 상담 대화 · ' + diagStt.children.length + '턴';
+      dnChat.appendChild(header);
+      
+      /* 발화 복사 (스타일 유지) */
+      Array.prototype.forEach.call(diagStt.children, function(c) {
+        dnChat.appendChild(c.cloneNode(true));
+      });
+      dnChat.scrollTop = dnChat.scrollHeight;
+      return;
+    }
+    
+    /* 2) 저장된 이전 히스토리 */
+    var history = [];
+    try {
+      if (typeof _textConsultHistory !== 'undefined' && _textConsultHistory.length > 0) {
+        history = _textConsultHistory;
+      } else {
+        var saved = localStorage.getItem('fh_chat_history_last');
+        if (saved) history = JSON.parse(saved);
+      }
+    } catch(e) {}
+    
+    if (history.length === 0) {
+      dnChat.innerHTML = '<div style="text-align:center;font-size:10px;color:#8896B0;padding:20px">상담 시작 후 대화가 여기에 기록됩니다</div>';
+      return;
+    }
+    
+    dnChat.innerHTML = '';
+    var header2 = document.createElement('div');
+    header2.style.cssText = 'text-align:center;font-size:9.5px;color:#8896B0;padding:6px;border-bottom:1px solid rgba(201,151,42,.2);margin-bottom:8px;';
+    header2.textContent = '📜 이전 상담 기록 · ' + history.length + '턴';
+    dnChat.appendChild(header2);
+    
+    history.forEach(function(msg) {
+      var isAI = msg.role === 'assistant' || msg.role === 'ai';
+      var div = document.createElement('div');
+      div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start' + (isAI?'':';flex-direction:row-reverse');
+      var avatar = isAI 
+        ? '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">🤖</div>'
+        : '<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>';
+      var bubble = isAI
+        ? '<div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05)">' + (msg.content || msg.text || '') + '</div>'
+        : '<div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">' + (msg.content || msg.text || '') + '</div>';
+      div.innerHTML = avatar + bubble;
+      dnChat.appendChild(div);
+    });
+    dnChat.scrollTop = dnChat.scrollHeight;
   };
 
   // ── 히스토리 BA 연동
