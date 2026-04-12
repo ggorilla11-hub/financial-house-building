@@ -17240,6 +17240,38 @@ function diagAutoFillNote(userText) {
     console.log('[No 응답 - 매칭 없음]');
     return;
   }
+  
+  /* ★ [v14 C-12] "없습니다"/"없어요"/"0원"/"0" 단독 → 현재 질문에 0만원 입력
+   * 자산부채/수입지출에서 매우 흔한 답변
+   */
+  if (/^(없\s*(?:습니다|어요|음)?|영\s*원?|제\s*로|0\s*원?)[.\s]*$/.test(t)) {
+    console.log('[v14 C-12 부정/제로 응답] lastQ:', lastQ.substring(0, 40));
+    var zeroFieldId = null;
+    /* 4단계 자산부채 */
+    if (curStep === 4) {
+      if (/예적금|예금|적금|청약/.test(lastQ)) zeroFieldId = 'f4_deposit';
+      else if (/연금\s*적립|연금\s*잔액/.test(lastQ)) zeroFieldId = 'f4_pension';
+      else if (/펀드|주식|투자\s*자산|ETF/.test(lastQ)) zeroFieldId = 'f4_invest';
+      else if (/투자용\s*부동산|기타\s*부동산|오피스텔|토지|상가/.test(lastQ)) zeroFieldId = 'f4_other';
+      else if (/신용\s*대출/.test(lastQ)) zeroFieldId = 'f4_credit';
+      else if (/담보\s*대출|주담대|주택\s*담보/.test(lastQ)) zeroFieldId = 'f4_mortgage';
+    }
+    /* 3단계 수입지출 */
+    if (curStep === 3) {
+      if (/대출\s*원리금|대출\s*상환|월\s*대출/.test(lastQ)) zeroFieldId = 'bt_loan_cur';
+      else if (/보험료/.test(lastQ)) zeroFieldId = 'bt_ins_cur';
+      else if (/연금.*납입|연금은\s*따로/.test(lastQ)) zeroFieldId = 'bt_pen_cur';
+      else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) zeroFieldId = 'bt_sav_cur';
+      else if (/매달\s*남|남는\s*돈|잉여/.test(lastQ)) zeroFieldId = 'bt_sur_cur';
+    }
+    
+    if (zeroFieldId) {
+      _fillNewNote(zeroFieldId, '0만원');
+      console.log('[v14 C-12] 부정/제로 응답 → ' + zeroFieldId + ' = 0만원');
+      return;
+    }
+    console.log('[v14 C-12 매칭 없음] lastQ:', lastQ.substring(0, 40));
+  }
 
   // ── ★ [단계3-fix v2] 현재 탭 기준 짧은 키워드 처리 ──
   // 짧은 발화(20자 이하, 숫자 없음)는 현재 활성 탭의 주 필드로 직행
