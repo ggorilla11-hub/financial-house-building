@@ -14782,7 +14782,7 @@ function diagBuildNotes() {
     <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
     <button class="dnt" onclick="dnGo(7)">🎯 종합재무설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
-    <button class="dnt" onclick="dnGo(9)">🩺 재무건강</button>
+    <button class="dnt" onclick="dnGo(9)">🩺 검진결과</button>
     <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
     <button class="dnt" onclick="dnGo(11)">📄 리포트</button>
     <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
@@ -15415,7 +15415,7 @@ function diagBuildNotes() {
     if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
   };
   
-  /* ★ [v14 E5] 원페이지 로드 함수 — 모든 노트 데이터를 한 화면 요약 */
+  /* ★ [v14 E6] 원페이지 로드 — 2×3 그리드 + 중앙 금융집짓기 SVG (gamma2 구조) */
   window.dnLoadOnePage = function() {
     var body = document.getElementById('dn_onepage_body');
     if (!body) return;
@@ -15425,96 +15425,130 @@ function diagBuildNotes() {
       return el ? (el.textContent || '').trim() : '';
     };
     
-    /* 핵심 데이터 수집 */
+    /* 데이터 수집 */
     var name = getTxt('f1_name') || '(미기재)';
     var age = getTxt('f1_age') || '—';
+    var marry = getTxt('f1_marry') || '—';
     var family = getTxt('f1_family') || '—';
     var job = getTxt('f1_job') || '—';
-    var concern = getTxt('f2_w1') || '—';
+    var dual = getTxt('f1_dual') || '—';
+    var w1 = getTxt('f2_w1') || '—';
+    var w2 = getTxt('f2_w2') || '';
     var income = getTxt('bt_inc_cur') || '—';
-    var totalAsset = getTxt('f4_total_asset') || '—';
-    var totalDebt = getTxt('f4_total_debt') || '—';
-    var netAsset = getTxt('f4_net') || '—';
+    var loan = getTxt('bt_loan_cur') || '—';
+    var ins = getTxt('bt_ins_cur') || '—';
+    var pen = getTxt('bt_pen_cur') || '—';
+    var sav = getTxt('bt_sav_cur') || '—';
+    var sur = getTxt('bt_sur_cur') || '—';
+    var deposit = getTxt('f4_deposit') || '—';
+    var pension = getTxt('f4_pension') || '—';
+    var invest = getTxt('f4_invest') || '—';
+    var realty = getTxt('f4_realty') || '—';
+    var credit = getTxt('f4_credit') || '—';
+    var mortgage = getTxt('f4_mortgage') || '—';
+    var totalA = getTxt('f4_total_asset') || '—';
+    var totalD = getTxt('f4_total_debt') || '—';
+    var net = getTxt('f4_net') || '—';
     var wi = getTxt('f4_wi_val') || '—';
-    var score = getTxt('fh_score') || '—';
-    var grade = getTxt('fh_grade') || '—';
-    var desire = getTxt('f9_a1') || '—';
-    var retireNeed = getTxt('f81_need') || '—';
-    var retireShort = getTxt('f81_short') || '—';
-    var monthlyAdd = getTxt('f81_monthly') || '—';
-    var now = new Date().toLocaleString('ko-KR');
+    var now = new Date().toLocaleDateString('ko-KR');
+    
+    /* 5단계 SVG 복제 */
+    var fhSvgHTML = '';
+    try {
+      var origSvg = document.querySelector('#dnp5 .dn-fhsvg');
+      if (origSvg) fhSvgHTML = origSvg.outerHTML;
+    } catch(e) {}
+    if (!fhSvgHTML) fhSvgHTML = '<div style="text-align:center;padding:40px;color:#8896B0;">🏠 상담 진행 후 표시됩니다</div>';
+    
+    /* 카드 스타일 공통 */
+    var cardBase = 'background:#fff;border:1.5px solid rgba(201,151,42,.3);border-radius:10px;padding:11px 12px;min-height:140px;';
+    var titleBase = 'font-size:10.5px;font-weight:900;color:#0B1D3A;padding-bottom:6px;border-bottom:2px solid #C9972A;margin-bottom:8px;';
+    var rowBase = 'display:flex;justify-content:space-between;font-size:10px;padding:3px 0;color:#0B1D3A;';
+    var lblStyle = 'color:#64748B;';
+    var valStyle = 'font-weight:700;color:#0B1D3A;';
     
     var html = '';
     
     /* 헤더 */
-    html += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;padding:14px;border-radius:12px;margin-bottom:12px;">';
-    html += '<div style="font-size:14px;font-weight:900;color:#E8B84B;margin-bottom:4px;">🏠 금융집짓기® 원페이지 요약</div>';
-    html += '<div style="font-size:9.5px;color:rgba(255,255,255,.7);">' + name + ' 고객님 · ' + now + '</div>';
+    html += '<div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);color:#fff;padding:13px 15px;border-radius:10px;margin-bottom:10px;text-align:center;">';
+    html += '<div style="font-size:13px;font-weight:900;color:#E8B84B;">🏠 금융집짓기® 원페이지 진단</div>';
+    html += '<div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:3px;">' + name + ' 고객님 · ' + now + '</div>';
     html += '</div>';
     
-    /* 1. 기본정보 */
-    html += '<div style="background:rgba(201,151,42,.08);border-left:3px solid #C9972A;padding:10px 12px;border-radius:7px;margin-bottom:10px;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#8B6914;margin-bottom:4px;">👤 기본정보</div>';
-    html += '<div>' + name + ' · ' + age + ' · ' + job + ' · ' + family + '</div>';
+    /* 상단 2열: 인적사항 | 경제적 고민 */
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">';
+    
+    /* 인적사항 (좌상) */
+    html += '<div style="' + cardBase + '">';
+    html += '<div style="' + titleBase + '">👤 인적사항</div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">이름</span><span style="' + valStyle + '">' + name + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">나이</span><span style="' + valStyle + '">' + age + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">결혼</span><span style="' + valStyle + '">' + marry + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">가족</span><span style="' + valStyle + '">' + family + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">직업</span><span style="' + valStyle + '">' + job + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">맞벌이</span><span style="' + valStyle + '">' + dual + '</span></div>';
     html += '</div>';
     
-    /* 2. 주 고민 */
-    html += '<div style="background:rgba(220,38,38,.06);border-left:3px solid #DC2626;padding:10px 12px;border-radius:7px;margin-bottom:10px;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#B91C1C;margin-bottom:4px;">💭 주요 고민</div>';
-    html += '<div>' + concern + '</div>';
+    /* 경제적 고민 (우상) */
+    html += '<div style="' + cardBase + '">';
+    html += '<div style="' + titleBase + '">💭 경제적 고민</div>';
+    html += '<div style="font-size:10px;color:#0B1D3A;line-height:1.55;padding:3px 0;">' + w1 + '</div>';
+    if (w2) html += '<div style="font-size:9.5px;color:#64748B;line-height:1.55;padding:3px 0;margin-top:4px;border-top:1px dashed rgba(201,151,42,.3);padding-top:6px;">' + w2 + '</div>';
+    html += '</div>';
+    html += '</div>';  /* 상단 2열 끝 */
+    
+    /* 중앙: 금융집짓기 SVG */
+    html += '<div style="background:linear-gradient(135deg,rgba(201,151,42,.05),rgba(232,184,75,.02));border:1.5px solid rgba(201,151,42,.3);border-radius:10px;padding:12px;margin-bottom:8px;text-align:center;">';
+    html += '<div style="' + titleBase + 'text-align:left;">🏠 금융집짓기® 설계도</div>';
+    html += '<div style="display:flex;justify-content:center;align-items:center;">' + fhSvgHTML + '</div>';
     html += '</div>';
     
-    /* 3. 재무 핵심 수치 */
-    html += '<div style="background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.15);padding:11px;border-radius:8px;margin-bottom:10px;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px;">💰 재무 현황</div>';
-    html += '<table style="width:100%;font-size:10.5px;">';
-    html += '<tr><td style="padding:3px 0;color:#4A5568;">월 실수령</td><td style="text-align:right;font-weight:700;">' + income + '</td></tr>';
-    html += '<tr><td style="padding:3px 0;color:#4A5568;">총 자산</td><td style="text-align:right;font-weight:700;">' + totalAsset + '</td></tr>';
-    html += '<tr><td style="padding:3px 0;color:#4A5568;">총 부채</td><td style="text-align:right;font-weight:700;">' + totalDebt + '</td></tr>';
-    html += '<tr><td style="padding:3px 0;color:#4A5568;font-weight:900;">순자산</td><td style="text-align:right;font-weight:900;color:#15803D;">' + netAsset + '</td></tr>';
-    html += '<tr><td style="padding:3px 0;color:#4A5568;">부자지수</td><td style="text-align:right;font-weight:700;color:#C9972A;">' + wi + '</td></tr>';
-    html += '</table>';
+    /* 하단 2열: 수입지출 | 자산부채 */
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">';
+    
+    /* 수입지출 (좌하) */
+    html += '<div style="' + cardBase + '">';
+    html += '<div style="' + titleBase + '">💰 수입지출분석</div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">실수령</span><span style="' + valStyle + 'color:#15803D;">' + income + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">대출원리금</span><span style="' + valStyle + '">' + loan + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">보험료</span><span style="' + valStyle + '">' + ins + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">연금납입</span><span style="' + valStyle + '">' + pen + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">저축/투자</span><span style="' + valStyle + '">' + sav + '</span></div>';
+    html += '<div style="' + rowBase + 'border-top:1px solid rgba(201,151,42,.3);margin-top:3px;padding-top:6px;"><span style="font-weight:900;color:#0B1D3A;">잉여자금</span><span style="font-weight:900;color:#C9972A;">' + sur + '</span></div>';
     html += '</div>';
     
-    /* 4. 은퇴설계 핵심 */
-    html += '<div style="background:rgba(15,118,110,.06);border-left:3px solid #0F766E;padding:10px 12px;border-radius:7px;margin-bottom:10px;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#134E4A;margin-bottom:4px;">🏖️ 은퇴설계</div>';
-    html += '<div style="font-size:10.5px;">월 필요: <b>' + retireNeed + '</b> · 월 부족: <b style="color:#DC2626;">' + retireShort + '</b></div>';
-    html += '<div style="font-size:10.5px;margin-top:3px;">👉 월 추가 저축 <b style="color:#C9972A;">' + monthlyAdd + '</b></div>';
+    /* 자산부채 (우하) */
+    html += '<div style="' + cardBase + '">';
+    html += '<div style="' + titleBase + '">🏦 자산부채분석</div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">예적금</span><span style="' + valStyle + '">' + deposit + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">연금적립</span><span style="' + valStyle + '">' + pension + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">펀드/주식</span><span style="' + valStyle + '">' + invest + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">부동산</span><span style="' + valStyle + '">' + realty + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">신용대출</span><span style="' + valStyle + 'color:#DC2626;">' + credit + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">담보대출</span><span style="' + valStyle + 'color:#DC2626;">' + mortgage + '</span></div>';
+    html += '<div style="' + rowBase + 'border-top:1px solid rgba(201,151,42,.3);margin-top:3px;padding-top:6px;"><span style="font-weight:900;color:#0B1D3A;">순자산</span><span style="font-weight:900;color:#15803D;">' + net + '</span></div>';
+    html += '<div style="' + rowBase + '"><span style="' + lblStyle + '">부자지수</span><span style="font-weight:900;color:#C9972A;">' + wi + '</span></div>';
     html += '</div>';
-    
-    /* 5. 재무점수 */
-    html += '<div style="background:linear-gradient(135deg,rgba(201,151,42,.12),rgba(232,184,75,.06));border-radius:10px;padding:12px;margin-bottom:10px;text-align:center;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#8B6914;margin-bottom:4px;">🩺 재무건강검진 결과</div>';
-    html += '<div style="font-size:28px;font-weight:900;color:#0B1D3A;">' + score + '</div>';
-    html += '<div style="font-size:10.5px;color:#8B6914;font-weight:700;margin-top:2px;">등급 ' + grade + '</div>';
-    html += '</div>';
-    
-    /* 6. DESIRE 단계 */
-    html += '<div style="background:rgba(124,58,237,.06);border-left:3px solid #7C3AED;padding:10px 12px;border-radius:7px;margin-bottom:10px;">';
-    html += '<div style="font-size:10px;font-weight:900;color:#5B21B6;margin-bottom:4px;">🗺️ DESIRE 단계</div>';
-    html += '<div>' + desire + '</div>';
-    html += '</div>';
+    html += '</div>';  /* 하단 2열 끝 */
     
     /* 푸터 */
-    html += '<div style="text-align:center;font-size:8.5px;color:#8896B0;padding:8px;border-top:1px solid rgba(11,29,58,.08);margin-top:10px;">';
-    html += '오원트금융연구소 · 오상열 CFP · 금융집짓기®<br>AI재무진단 머니야 v14';
+    html += '<div style="text-align:center;font-size:8.5px;color:#8896B0;padding:8px;border-top:1px solid rgba(11,29,58,.08);">';
+    html += '오원트금융연구소 · 오상열 CFP · 금융집짓기®';
     html += '</div>';
     
     body.innerHTML = html;
   };
   
-  /* ★ [v14 E5] 리포트 로드 함수 — 원페이지와 동일하게 (차후 확장) */
+  /* ★ [v14 E6] 리포트 — 2차 개발 예정 placeholder */
   window.dnLoadReport = function() {
-    /* 일단 원페이지와 동일 내용, 나중에 더 자세한 리포트로 확장 */
-    if (typeof dnLoadOnePage === 'function') {
-      var body = document.getElementById('dn_report_body');
-      var onePageBody = document.getElementById('dn_onepage_body');
-      if (body && onePageBody) {
-        dnLoadOnePage();  /* 원페이지 먼저 로드 */
-        body.innerHTML = onePageBody.innerHTML;  /* 내용 복사 */
-      }
-    }
+    var body = document.getElementById('dn_report_body');
+    if (!body) return;
+    body.innerHTML = '<div style="text-align:center;padding:30px 20px;">' +
+      '<div style="font-size:36px;margin-bottom:10px;">📄</div>' +
+      '<div style="font-size:13px;font-weight:900;color:#0B1D3A;margin-bottom:6px;">상담 리포트</div>' +
+      '<div style="font-size:10px;color:#4A5568;line-height:1.5;">미국식 재무설계 리포트 형식으로<br>2차 개발 예정입니다</div>' +
+      '<div style="font-size:9px;color:#8896B0;margin-top:14px;">현재는 원페이지(🏠) 탭을 확인해 주세요</div>' +
+      '</div>';
   };
   
   /* ★ [v14 E2] 대화록 로드 함수 — diagStt 내용 복사 + 저장된 히스토리 불러오기 */
