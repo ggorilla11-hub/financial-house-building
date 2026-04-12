@@ -4842,7 +4842,7 @@ function _applyInsuranceDoc(sd) {
 
 /* ★ [v14 B-1] 연금증서 분석 → 8단계 은퇴설계 자동 입력
  * 백엔드 응답: sd.{accumulated, monthlyContribution, expectedPension, ...}
- * 노트 필드: f4_pension (적립금), bt_pen_cur (월납)
+ * 노트 필드: f4_pension (적립금), bt_pen_cur (월납), f81_ready (월수령액)
  */
 function _applyPensionDoc(sd) {
   var filled = 0;
@@ -4855,8 +4855,8 @@ function _applyPensionDoc(sd) {
       return n.toLocaleString() + '만원';
     };
     
-    /* 적립금 → f4_pension */
-    var accumulated = sd.accumulated || sd.totalAccumulated || sd.balance;
+    /* 적립금/총납부액 → f4_pension */
+    var accumulated = sd.accumulated || sd.totalAccumulated || sd.balance || sd.totalPaid || sd.totalContribution;
     if (accumulated) {
       var acc = parseInt(accumulated);
       if (!isNaN(acc) && acc > 0) {
@@ -4870,7 +4870,7 @@ function _applyPensionDoc(sd) {
     }
     
     /* 월 납입 → bt_pen_cur */
-    var monthly = sd.monthlyContribution || sd.monthlyPay;
+    var monthly = sd.monthlyContribution || sd.monthlyPay || sd.monthlyDeposit;
     if (monthly) {
       var m = parseInt(monthly);
       if (!isNaN(m) && m > 0) {
@@ -4883,14 +4883,82 @@ function _applyPensionDoc(sd) {
       }
     }
     
+    /* ★ [v14 B-4] 예상 월 수령액 → 은퇴설계 재계산 */
+    var expectedMonthly = sd.expectedPension || sd.expectedMonthly || sd.monthlyPension;
+    if (expectedMonthly) {
+      var em = parseInt(expectedMonthly);
+      if (!isNaN(em) && em > 0) {
+        /* 원 단위 → 만원 변환 */
+        var emM = em >= 10000 ? Math.round(em / 10000) : em;
+        
+        /* 글로벌 변수에 저장 (8-1 재계산용) */
+        window._pensionExpectedMonthly = emM;
+        
+        if (typeof _fillNewNote === 'function') {
+          _fillNewNote('f81_ready', emM + '만원/월 (개인연금)');
+          filled++;
+          fields.push('월수령액');
+        }
+        
+        /* 8-1 은퇴설계 종합 재계산 */
+        try {
+          _recalcRetireDesign();
+          filled += 3;
+          fields.push('은퇴설계재계산');
+        } catch(e) { console.warn('[recalcRetire] 실패:', e.message); }
+      }
+    }
+    
     console.log('[applyPensionDoc] 연금 ' + filled + '개 항목 입력:', fields);
     if (filled > 0 && typeof showToast === 'function') {
-      showToast('✅ 연금증서 분석 → ' + filled + '개 항목 입력');
+      showToast('✅ 연금증서 분석 → ' + filled + '개 항목 입력 + 은퇴설계 재계산');
     }
   } catch(e) {
     console.error('[applyPensionDoc] 실패:', e.message);
   }
   return { filled: filled, fields: fields };
+}
+
+/* ★ [v14 B-4] 은퇴설계 종합 재계산
+ * 공식 (상열님 가이드):
+ *   월 필요: 300만원 (기본)
+ *   월 준비: 개인연금 + 국민연금 + 노후연금 납입
+ *   월 부족: 필요 - 준비
+ *   은퇴일시금: 부족 × 12 × (사망-은퇴)
+ *   순은퇴일시금: 은퇴일시금 - 퇴직연금일시금
+ *   월 추가저축: 순은퇴일시금 ÷ (은퇴-현재) ÷ 12
+ */
+function _recalcRetireDesign() {
+  var monthlyNeed = 300;  /* 평균 노후 월 필요 */
+  var personalPen = window._pensionExpectedMonthly || 0;
+  var nationalPen = window._nationalPensionMonthly || 0;
+  var savedRetire = (typeof D !== 'undefined' && D.retirePension) ? D.retirePension : 0;
+  
+  var monthlyReady = personalPen + nationalPen + savedRetire;
+  var monthlyShort = Math.max(0, monthlyNeed - monthlyReady);
+  
+  /* 은퇴기간/경제활동기간 */
+  var curAge = (typeof D !== 'undefined' && D.ageNum) ? D.ageNum : 40;
+  var retireAge = (typeof D !== 'undefined' && D.retireAge) ? D.retireAge : 65;
+  var dieAge = (typeof D !== 'undefined' && D.dieAge) ? D.dieAge : 90;
+  var retireSpan = Math.max(1, dieAge - retireAge);  /* 은퇴 기간 */
+  var workSpan = Math.max(1, retireAge - curAge);    /* 경제활동 기간 */
+  
+  var lumpSum = monthlyShort * 12 * retireSpan;  /* 은퇴일시금 */
+  var retireLump = window._retireLumpSum || 0;   /* 퇴직연금일시금 */
+  var netLump = Math.max(0, lumpSum - retireLump);  /* 순은퇴일시금 */
+  var monthlyAdd = Math.round(netLump / workSpan / 12);  /* 월 추가저축 */
+  
+  if (typeof _fillNewNote === 'function') {
+    _fillNewNote('f81_need', monthlyNeed + '만원');
+    _fillNewNote('f81_ready', monthlyReady + '만원/월 (개인연금 ' + personalPen + ' + 노후납입 ' + savedRetire + ')');
+    _fillNewNote('f81_short', monthlyShort + '만원/월');
+    _fillNewNote('f81_lump', lumpSum.toLocaleString() + '만원 (부족' + monthlyShort + ' × 12 × ' + retireSpan + '년)');
+    _fillNewNote('f81_monthly', monthlyAdd + '만원/월 (순일시금 ' + netLump.toLocaleString() + ' ÷ ' + workSpan + '년)');
+  }
+  
+  console.log('[v14 B-4 은퇴설계] 필요:' + monthlyNeed + ' 준비:' + monthlyReady + ' 부족:' + monthlyShort + 
+              ' 일시금:' + lumpSum + ' 순일시금:' + netLump + ' 월추가:' + monthlyAdd);
 }
 
 /* ★ [v14 B-1] 세금신고서 분석 → 8단계 세금설계 참고
@@ -5237,16 +5305,14 @@ function applyDocToNote(structuredData, docType) {
              ★ [v14 B-3] 8단계 종합재무설계 7대영역 자동 계산
              ═════════════════════════════════════════════ */
           
-          /* 8-1 은퇴설계 */
+          /* 8-1 은퇴설계 — v14 B-4 통합 함수 사용 */
           if (age > 0 && monthlyIncome > 0) {
-            var retNeed = 300;  /* 평균 노후 월 필요 (만원) — 상열님 가이드 */
-            var retReady = curPen;  /* 현재 월 연금 납입 */
-            var retShort = Math.max(0, retNeed - retReady);
-            _fillNewNote('f81_need', retNeed + '만원');
-            _fillNewNote('f81_ready', retReady + '만원');
-            _fillNewNote('f81_short', retShort + '만원/월');
-            _fillNewNote('f81_monthly', Math.round(monthlyIncome * 0.1) + '만원 (월소득 10%)');
-            noteFilled += 4;
+            try {
+              if (typeof _recalcRetireDesign === 'function') {
+                _recalcRetireDesign();
+                noteFilled += 5;
+              }
+            } catch(e) { console.warn('[은퇴설계 재계산]', e.message); }
           }
           
           /* 8-2 부채설계 */
