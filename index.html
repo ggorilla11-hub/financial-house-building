@@ -4734,6 +4734,9 @@ function _applyInsuranceDoc(sd) {
       ['dem', cov.dementia_care]
     ];
     
+    /* 현재 가입 금액 저장 (부족자금 계산용) */
+    var haveMap = {};
+    
     for (var i = 0; i < map.length; i++) {
       var key = map[i][0];
       var c = map[i][1] || {};
@@ -4745,8 +4748,72 @@ function _applyInsuranceDoc(sd) {
             filled++;
             fields.push(key);
           }
+          haveMap[key] = parseInt(c.current);
         }
+      } else {
+        haveMap[key] = 0;
       }
+    }
+    
+    /* ★ [v14 B-2] 필요자금 + 부족자금 자동 계산 (시스템 프롬프트 공식)
+     * 사망·장해: 연봉×3 + 부채
+     * 암: 연봉×2
+     * 뇌혈관·심혈관: 연봉×1 각각
+     * 실손의료비: 5,000만원 (정액)
+     * 입원수술/치매: 특약가입 (정액 별도 기준 없음)
+     */
+    try {
+      var monthlyIncome = D.income || 0;
+      var yearlyIncome = monthlyIncome * 12;
+      var totalDebt = (D.debtCredit || 0) + (D.debtCollat || 0);
+      
+      if (yearlyIncome > 0) {
+        var needMap = {
+          death:   yearlyIncome * 3 + totalDebt,
+          cancer:  yearlyIncome * 2,
+          brain:   yearlyIncome * 1,
+          heart:   yearlyIncome * 1,
+          actual:  5000,
+          hosp:    0,  /* 특약가입, 정액 기준 없음 */
+          dem:     0
+        };
+        
+        var keys = ['death','cancer','brain','heart','actual','hosp','dem'];
+        for (var ki = 0; ki < keys.length; ki++) {
+          var k = keys[ki];
+          var need = needMap[k];
+          var have = haveMap[k] || 0;
+          var lack = Math.max(0, need - have);
+          
+          if (need > 0) {
+            if (typeof _fillNewNote === 'function') {
+              _fillNewNote('ins_need_' + k, need.toLocaleString() + '만원');
+              filled++;
+              fields.push('필요-' + k);
+            }
+          }
+          if (lack > 0) {
+            if (typeof _fillNewNote === 'function') {
+              _fillNewNote('ins_lack_' + k, lack.toLocaleString() + '만원');
+              filled++;
+              fields.push('부족-' + k);
+            }
+          } else if (need > 0 && have >= need) {
+            /* 충족 시 부족 = 0 표시 */
+            if (typeof _fillNewNote === 'function') {
+              _fillNewNote('ins_lack_' + k, '충족 ✓');
+              filled++;
+              fields.push('충족-' + k);
+            }
+          }
+        }
+        
+        console.log('[v14 B-2] 보험 필요/부족 자동 계산 완료. 연봉:' + yearlyIncome + '만원, 부채:' + totalDebt + '만원');
+      } else {
+        console.warn('[v14 B-2] 연봉 정보 없음 → 필요/부족 계산 스킵');
+      }
+    } catch(calcErr) {
+      console.warn('[v14 B-2] 필요/부족 계산 실패:', calcErr.message);
     }
     
     /* 월 보험료 → 3단계 bt_ins_cur 업데이트 (선택) */
