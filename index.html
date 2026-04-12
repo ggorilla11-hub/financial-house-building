@@ -13665,14 +13665,17 @@ async function diagConnectVoice(isPaid) {
       } catch(e) {}
       
       if(isPreDoc && !hasHistory) {
-        /* 케이스 1: 사전서류 보유 + 이전 대화 없음 = 초회 + 사전서류 */
+        /* 케이스 1: 사전서류 보유 + 이전 대화 없음 = 초회 + 사전서류
+         * ★ [v14 A-3] 머니야는 시스템 프롬프트(1→2→3단계) 순서대로 진행해야 함
+         * 단순한 인사로 1단계(인적사항)로 자연스럽게 유도. 노트 내용을 줄줄 읊지 말 것.
+         */
         var customerName = '';
         try { if(typeof D !== 'undefined' && D.name && D.name !== '미기재') customerName = D.name; } catch(e) {}
         var nameStr = customerName ? customerName + ' 고객님' : '고객님';
         startOptions.firstMessage = 
           '안녕하세요 ' + nameStr + '! 사전에 제출하신 상담신청서 잘 받았습니다. ' +
-          '상담노트에 기본 정보가 모두 정리되어 있어요. ' +
-          '오늘은 노트 내용을 함께 확인하면서 상담을 진행해드릴게요. 시간 괜찮으세요?';
+          '신청서에 적어주신 내용을 하나씩 확인하면서 진행할게요. ' +
+          '먼저 1단계 인적사항부터 시작하겠습니다. 시간 괜찮으세요?';
         console.log('[v14 A] 사전서류 보유 초회 인사 적용:', startOptions.firstMessage.substring(0, 60) + '...');
       } else if(hasHistory) {
         /* 케이스 2: 진짜 재진입 (이전 대화 있음) */
@@ -16013,7 +16016,7 @@ function diagParseAiSpeech(aiText) {
 
   /* ── v6.3 단계 전환 감지 — 시스템 프롬프트 키워드 기반 ── */
   var stepMap = [
-    { step:1, keys:['성함이 어떻게','이름이 어떻게','성함을 여쭤','먼저 고객님','고객님에 대해 간단히','먼저 고객님에 대해','인적사항'] },
+    { step:1, keys:['성함이 어떻게','이름이 어떻게','성함을 여쭤','먼저 고객님','고객님에 대해 간단히','먼저 고객님에 대해','인적사항','신청서에 보니까','신청서에 적어','신청서에 보면','신청서에 따르면','삼십','사십','오십','육십','이십','확인해 볼게요'] },
     { step:2, keys:['경제적으로 가장 걱정','경제적으로 가장 큰 고민','고민이나 관심','고민되시거나 관심','가장 걱정되시거나','편하게 말씀해 주세요','경제적 고민'] },
     { step:3, keys:['수입과 지출','실수령액이 어떻게','세후 한 달','월급이 어떻게','수입지출을 정리','지출을 함께 정리','소득이 어떻게','월수입이','한달 수입'] },
     { step:4, keys:['자산과 부채','예적금이나 청약','자산을 정리','자산부채','예적금','금융자산은','부동산은 어떻게','주식 같은'] },
@@ -16027,8 +16030,12 @@ function diagParseAiSpeech(aiText) {
   for(var i=0; i<stepMap.length; i++) {
     var sm = stepMap[i];
     if(sm.keys.some(function(k){ return t.includes(k); })) {
-      // 반드시 현재 단계보다 높아야 하고, 최대 2칸까지만 점프 허용
-      if(sm.step > diagCurPart && sm.step <= diagCurPart + 2) {
+      /* ★ [v14 A-3] 단계 1로의 첫 점프는 항상 허용 (사전서류 케이스 대응)
+       * diagCurPart=0에서 step=1로 가는 건 정상 진입
+       */
+      var allowJump = (sm.step === 1 && diagCurPart === 0) ||
+                      (sm.step > diagCurPart && sm.step <= diagCurPart + 2);
+      if(allowJump) {
         (function(s){ setTimeout(function(){ diagActivatePart(s); }, 400); })(sm.step);
       }
       break;
