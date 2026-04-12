@@ -5981,6 +5981,40 @@ window.addEventListener('DOMContentLoaded',()=>{
         } catch(e) {}
       }, 1000);
       
+      /* ★ [v14 C-11] 수입지출 4개 필드 자동 동기화 (D 객체 우선)
+       * 이름과 같은 패턴: D.income/D.loanPay/D.insPay/D.natPen이 정상이면
+       * 화면 값이 너무 작거나 잘못되면 D 값으로 복원
+       */
+      setInterval(function() {
+        try {
+          /* D 객체에서 정상 값이 있고, 화면이 그보다 너무 작으면 복원 */
+          var checks = [
+            { id: 'bt_inc_cur', dKey: 'income', minRatio: 0.5 },  /* 화면 값이 D의 50% 미만이면 잘못됨 */
+            { id: 'bt_loan_cur', dKey: 'loanPay', minRatio: 0.5 },
+            { id: 'bt_ins_cur', dKey: 'insPay', minRatio: 0.5 },
+            { id: 'bt_pen_cur', dKey: 'natPen', minRatio: 0.5 }
+          ];
+          
+          for (var ci = 0; ci < checks.length; ci++) {
+            var chk = checks[ci];
+            var el = document.getElementById(chk.id);
+            if (!el || !D || !D[chk.dKey]) continue;
+            
+            var dVal = parseInt(D[chk.dKey]) || 0;
+            if (dVal <= 0) continue;
+            
+            var screenText = el.textContent.replace(/[^\d]/g, '');
+            var screenVal = parseInt(screenText) || 0;
+            
+            /* 화면 값이 D 값과 다르고, 화면이 너무 작으면 (잘못된 입력) D로 복원 */
+            if (screenVal > 0 && screenVal < dVal * chk.minRatio) {
+              el.textContent = dVal + '만원';
+              console.warn('[v14 C-11] ' + chk.id + ' 동기화: ' + screenVal + '만원 → ' + dVal + '만원 (D.' + chk.dKey + ')');
+            }
+          }
+        } catch(e) {}
+      }, 1000);
+      
       /* MutationObserver — 즉시 보호 (C-8 그대로) */
       if (typeof MutationObserver !== 'undefined') {
         var lastValidName = '';
@@ -17306,6 +17340,16 @@ function diagAutoFillNote(userText) {
       else if (/실수령액|월급|월\s*수입|월\s*소득|세후/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
       
       if (step3FieldByQ) {
+        /* ★ [v14 C-11] bt_inc_cur는 보통 100만원 이상. 적은 값 들어오면 보호 */
+        if (step3FieldByQ === 'bt_inc_cur' && numValue < 100) {
+          var prevEl = document.getElementById('bt_inc_cur');
+          var prevText = prevEl ? prevEl.textContent.replace(/[^\d]/g, '') : '';
+          var prevNum = parseInt(prevText) || 0;
+          if (prevNum >= 100) {
+            console.warn('[v14 C-11] 실수령액 의심값 차단:', numValue, '(이전:', prevNum, ')');
+            return;
+          }
+        }
         console.log('[v14 A-4 lastQ매칭 step3]', step3FieldByQ, '=', displayAmount, '| lastQ:', lastQ.substring(0, 40));
         _fillNewNote(step3FieldByQ, displayAmount);
         return;
@@ -17319,6 +17363,16 @@ function diagAutoFillNote(userText) {
       
       if (diagStep3Counter < DIAG_STEP3_FIELDS.length) {
         var fieldId = DIAG_STEP3_FIELDS[diagStep3Counter];
+        /* ★ [v14 C-11] 실수령액 슬롯에 적은 값 들어오면 보호 */
+        if (fieldId === 'bt_inc_cur' && numValue < 100) {
+          var prevEl2 = document.getElementById('bt_inc_cur');
+          var prevText2 = prevEl2 ? prevEl2.textContent.replace(/[^\d]/g, '') : '';
+          var prevNum2 = parseInt(prevText2) || 0;
+          if (prevNum2 >= 100) {
+            console.warn('[v14 C-11/순서] 실수령액 의심값 차단:', numValue, '(이전:', prevNum2, ')');
+            return;
+          }
+        }
         console.log('[순서 입력 step3]', (diagStep3Counter + 1) + '번째:', fieldId, '=', displayAmount);
         _fillNewNote(fieldId, displayAmount);
         diagStep3Counter++;
