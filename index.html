@@ -5948,21 +5948,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
   setTimeout(()=>{runRet();runTax();runIns();calcMonthlySave();calcIncomeTable();;if(typeof autoLoad==='function')autoLoad();},300);
   
-  /* ★ [v14 C-6+C-7+C-8] f1_name 보호 - textContent setter 가로채기
-   * 어떤 경로로든 잘못된 값이 들어오려고 하면 즉시 거부
+  /* ★ [v14 C-6+C-7+C-8+C-9] f1_name 보호 - 자동 동기화 + MutationObserver
+   * C-9: 매 1초마다 D.name과 f1_name 동기화. 다른 값이 들어가면 즉시 D.name으로 복원.
    */
   setTimeout(function() {
     try {
       var nameEl = document.getElementById('f1_name');
       if (!nameEl) return;
       
-      var lastValidName = '';
-      try { if (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) lastValidName = D.name; } catch(e){}
-      var initText = (nameEl.textContent || '').trim();
-      if (/^[가-힣]{2,5}$/.test(initText)) lastValidName = initText;
-      
       var isInvalidName = function(s) {
-        if (!s) return false;  /* 빈 값은 허용 (초기 상태) */
+        if (!s) return false;  /* 빈 값 허용 */
         var trimmed = String(s).trim();
         if (!trimmed || trimmed === '미기재' || trimmed === '—' || trimmed.indexOf('대기') >= 0) return false;
         if (/^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|좋습니다)/i.test(trimmed)) return true;
@@ -5970,14 +5965,34 @@ window.addEventListener('DOMContentLoaded',()=>{
         return false;
       };
       
-      /* MutationObserver — 어떤 경로로든 변경되면 검사 */
+      /* C-9: 1초마다 D.name 동기화 (가장 확실한 방어) */
+      setInterval(function() {
+        try {
+          var el = document.getElementById('f1_name');  /* 매번 새로 가져오기 */
+          if (!el) return;
+          var curText = (el.textContent || '').trim();
+          var validDName = (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) ? D.name : null;
+          
+          /* D.name이 정상이고 화면이 잘못된 값이면 → D.name으로 강제 동기화 */
+          if (validDName && isInvalidName(curText)) {
+            el.textContent = validDName;
+            console.warn('[v14 C-9] D.name 동기화:', curText, '→', validDName);
+          }
+        } catch(e) {}
+      }, 1000);
+      
+      /* MutationObserver — 즉시 보호 (C-8 그대로) */
       if (typeof MutationObserver !== 'undefined') {
+        var lastValidName = '';
+        try { if (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) lastValidName = D.name; } catch(e){}
+        var initText = (nameEl.textContent || '').trim();
+        if (/^[가-힣]{2,5}$/.test(initText)) lastValidName = initText;
+        
         var observer = new MutationObserver(function() {
           var curText = (nameEl.textContent || '').trim();
           if (curText === lastValidName) return;
           
           if (isInvalidName(curText)) {
-            /* 잘못된 값 → 즉시 복원 */
             var restoreVal = lastValidName;
             if (!restoreVal) {
               try { if (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) restoreVal = D.name; } catch(e){}
@@ -5986,7 +6001,7 @@ window.addEventListener('DOMContentLoaded',()=>{
             
             if (nameEl.textContent !== restoreVal) {
               nameEl.textContent = restoreVal;
-              console.warn('[v14 C-8] 이름 보호:', curText, '→', restoreVal);
+              console.warn('[v14 C-8] 이름 즉시 보호:', curText, '→', restoreVal);
             }
           } else if (/^[가-힣]{2,5}$/.test(curText)) {
             lastValidName = curText;
@@ -5995,8 +6010,8 @@ window.addEventListener('DOMContentLoaded',()=>{
         observer.observe(nameEl, { childList: true, characterData: true, subtree: true });
       }
       
-      console.log('[v14 C-8] f1_name 강력 보호 시작. 초기값:', lastValidName || '(없음)');
-    } catch(e) { console.warn('[v14 C-8]', e.message); }
+      console.log('[v14 C-8+C-9] f1_name 보호 시작 (Observer + 1초 동기화)');
+    } catch(e) { console.warn('[v14 C-8+C-9]', e.message); }
   }, 500);
 });
 
