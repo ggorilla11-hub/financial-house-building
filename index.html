@@ -15316,6 +15316,21 @@ function diagBuildNotes() {
 
     <!-- ━━━━━━ 패널9: 재무건강결과표 (5대 영역 100점) ━━━━━━ -->
     <div class="dnp" id="dnp9">
+      <!-- ★ [v14 E3] CFP 매니저 연결 카드 — 상담 결과 확인 후 1:1 상담 유도 -->
+      <div style="background:linear-gradient(135deg,#C9972A,#E8B84B);border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 4px 16px rgba(201,151,42,.35);">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:#0B1D3A;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👔</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:900;color:#0B1D3A;">더 깊은 상담이 필요하신가요?</div>
+            <div style="font-size:10px;color:#0B1D3A;opacity:.75;margin-top:2px;line-height:1.4;">오상열 CFP 25년 2,000건 경험 · 1:1 대면·비대면 상담</div>
+          </div>
+        </div>
+        <a href="https://pf.kakao.com/_vxfmfxj" target="_blank" 
+           style="display:block;width:100%;margin-top:10px;padding:10px;background:#0B1D3A;color:#E8B84B;border-radius:8px;text-align:center;font-size:11px;font-weight:900;text-decoration:none;font-family:'Noto Sans KR',sans-serif;">
+          💬 카카오톡으로 연결하기
+        </a>
+        <div style="font-size:8.5px;color:#0B1D3A;opacity:.65;text-align:center;margin-top:6px;">카카오톡 채널 @오원트금융연구소</div>
+      </div>
       <div class="dn-score">
         <div class="dn-score-num" id="fh_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
         <div class="dn-score-lbl">재무건강검진 결과 (100점 만점)</div>
@@ -15398,13 +15413,22 @@ function diagBuildNotes() {
     if (diagStt && diagStt.children.length > 0) {
       dnChat.innerHTML = '';
       var header = document.createElement('div');
-      header.style.cssText = 'text-align:center;font-size:9.5px;color:#8896B0;padding:6px;border-bottom:1px solid rgba(201,151,42,.2);margin-bottom:8px;';
+      header.style.cssText = 'text-align:center;font-size:9.5px;color:#4A5568;padding:6px;border-bottom:1px solid rgba(201,151,42,.3);margin-bottom:8px;font-weight:700;';
       header.textContent = '🎙️ 실시간 상담 대화 · ' + diagStt.children.length + '턴';
       dnChat.appendChild(header);
       
-      /* 발화 복사 (스타일 유지) */
+      /* ★ [v14 E2-fix] 발화 복사 + 흰 배경용 글자색 재설정 */
       Array.prototype.forEach.call(diagStt.children, function(c) {
-        dnChat.appendChild(c.cloneNode(true));
+        var cloned = c.cloneNode(true);
+        /* 복제된 내부 요소의 색상을 흰 배경에 맞게 조정 */
+        cloned.querySelectorAll('[style*="color:rgba(255,255,255"]').forEach(function(el) {
+          el.style.color = '#0B1D3A';
+        });
+        cloned.querySelectorAll('[style*="background:rgba(255,255,255"]').forEach(function(el) {
+          el.style.background = 'rgba(11,29,58,.06)';
+          el.style.border = '1px solid rgba(11,29,58,.1)';
+        });
+        dnChat.appendChild(cloned);
       });
       dnChat.scrollTop = dnChat.scrollHeight;
       return;
@@ -15422,13 +15446,13 @@ function diagBuildNotes() {
     } catch(e) {}
     
     if (history.length === 0) {
-      dnChat.innerHTML = '<div style="text-align:center;font-size:10px;color:#8896B0;padding:20px">상담 시작 후 대화가 여기에 기록됩니다</div>';
+      dnChat.innerHTML = '<div style="text-align:center;font-size:10px;color:#4A5568;padding:20px">상담 시작 후 대화가 여기에 기록됩니다</div>';
       return;
     }
     
     dnChat.innerHTML = '';
     var header2 = document.createElement('div');
-    header2.style.cssText = 'text-align:center;font-size:9.5px;color:#8896B0;padding:6px;border-bottom:1px solid rgba(201,151,42,.2);margin-bottom:8px;';
+    header2.style.cssText = 'text-align:center;font-size:9.5px;color:#4A5568;padding:6px;border-bottom:1px solid rgba(201,151,42,.3);margin-bottom:8px;font-weight:700;';
     header2.textContent = '📜 이전 상담 기록 · ' + history.length + '턴';
     dnChat.appendChild(header2);
     
@@ -15436,12 +15460,13 @@ function diagBuildNotes() {
       var isAI = msg.role === 'assistant' || msg.role === 'ai';
       var div = document.createElement('div');
       div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:flex-start' + (isAI?'':';flex-direction:row-reverse');
+      /* ★ [v14 E2-fix] 흰 배경용 — 머니야(진한 네이비), 고객(골드 배경+진한 네이비) */
       var avatar = isAI 
         ? '<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">🤖</div>'
-        : '<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>';
+        : '<div style="width:19px;height:19px;border-radius:50%;background:rgba(11,29,58,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>';
       var bubble = isAI
-        ? '<div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05)">' + (msg.content || msg.text || '') + '</div>'
-        : '<div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">' + (msg.content || msg.text || '') + '</div>';
+        ? '<div style="max-width:78%;padding:6px 9px;font-size:10px;color:#0B1D3A;line-height:1.5;border-radius:0 8px 8px 8px;background:rgba(201,151,42,.08);border:1px solid rgba(201,151,42,.25)">' + (msg.content || msg.text || '') + '</div>'
+        : '<div style="max-width:78%;padding:6px 9px;font-size:10px;color:#0B1D3A;line-height:1.5;border-radius:8px 0 8px 8px;background:rgba(11,29,58,.06);border:1px solid rgba(11,29,58,.15);font-weight:600">' + (msg.content || msg.text || '') + '</div>';
       div.innerHTML = avatar + bubble;
       dnChat.appendChild(div);
     });
