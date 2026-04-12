@@ -4705,12 +4705,172 @@ function setBadge(id,t,c){const el=document.getElementById('bd-'+id);if(el){el.t
    ═══════════════════════════════════════════════════════════ */
 var _applyingDoc = false;  /* ★ 고수님 설계: 재귀 방지 플래그 */
 
-function applyDocToNote(structuredData) {
-  if (_applyingDoc) { console.log('[applyDocToNote] 재귀 차단됨'); return { filled: 0, fields: [] }; }
+/* ★ [v14 B-1] 보험증권 분석 → 8대 보장 자동 입력
+ * 백엔드 응답: sd.coverage.{death_general, cancer_general, brain, heart, medical_actual, hospitalization, dementia_care, disability}
+ * 노트 필드: ins_have_{death,cancer,brain,heart,actual,hosp,dem}
+ */
+function _applyInsuranceDoc(sd) {
+  var filled = 0;
+  var fields = [];
+  try {
+    var cov = sd.coverage || {};
+    var policy = sd.policy || {};
+    
+    var fmt2 = function(v) {
+      if (v == null || v === '') return null;
+      var n = parseInt(v);
+      if (isNaN(n)) return null;
+      return n.toLocaleString() + '만원';
+    };
+    
+    /* 8대 보장 매핑 */
+    var map = [
+      ['death', cov.death_general],
+      ['cancer', cov.cancer_general],
+      ['brain', cov.brain],
+      ['heart', cov.heart],
+      ['actual', cov.medical_actual],
+      ['hosp', cov.hospitalization],
+      ['dem', cov.dementia_care]
+    ];
+    
+    for (var i = 0; i < map.length; i++) {
+      var key = map[i][0];
+      var c = map[i][1] || {};
+      if (c.current && parseInt(c.current) > 0) {
+        var val = fmt2(c.current);
+        if (val) {
+          if (typeof _fillNewNote === 'function') {
+            _fillNewNote('ins_have_' + key, val);
+            filled++;
+            fields.push(key);
+          }
+        }
+      }
+    }
+    
+    /* 월 보험료 → 3단계 bt_ins_cur 업데이트 (선택) */
+    if (policy.monthlyPremium) {
+      var prem = parseInt(policy.monthlyPremium);
+      if (!isNaN(prem) && prem > 0) {
+        /* 백엔드는 원 단위로 줄 수 있음 → 만원으로 변환 */
+        var premM = prem >= 10000 ? Math.round(prem / 10000) : prem;
+        if (typeof _fillNewNote === 'function') {
+          _fillNewNote('bt_ins_cur', premM + '만원');
+          filled++;
+          fields.push('월보험료');
+        }
+      }
+    }
+    
+    console.log('[applyInsuranceDoc] 보험 ' + filled + '개 항목 입력:', fields);
+    if (filled > 0 && typeof showToast === 'function') {
+      showToast('✅ 보험증권 분석 → 8대 보장 ' + filled + '개 입력');
+    }
+  } catch(e) {
+    console.error('[applyInsuranceDoc] 실패:', e.message);
+  }
+  return { filled: filled, fields: fields };
+}
+
+/* ★ [v14 B-1] 연금증서 분석 → 8단계 은퇴설계 자동 입력
+ * 백엔드 응답: sd.{accumulated, monthlyContribution, expectedPension, ...}
+ * 노트 필드: f4_pension (적립금), bt_pen_cur (월납)
+ */
+function _applyPensionDoc(sd) {
+  var filled = 0;
+  var fields = [];
+  try {
+    var fmt2 = function(v) {
+      if (v == null || v === '') return null;
+      var n = parseInt(v);
+      if (isNaN(n)) return null;
+      return n.toLocaleString() + '만원';
+    };
+    
+    /* 적립금 → f4_pension */
+    var accumulated = sd.accumulated || sd.totalAccumulated || sd.balance;
+    if (accumulated) {
+      var acc = parseInt(accumulated);
+      if (!isNaN(acc) && acc > 0) {
+        var accM = acc >= 100000 ? Math.round(acc / 10000) : acc;  /* 원→만원 자동변환 */
+        if (typeof _fillNewNote === 'function') {
+          _fillNewNote('f4_pension', accM + '만원');
+          filled++;
+          fields.push('연금적립금');
+        }
+      }
+    }
+    
+    /* 월 납입 → bt_pen_cur */
+    var monthly = sd.monthlyContribution || sd.monthlyPay;
+    if (monthly) {
+      var m = parseInt(monthly);
+      if (!isNaN(m) && m > 0) {
+        var mM = m >= 10000 ? Math.round(m / 10000) : m;
+        if (typeof _fillNewNote === 'function') {
+          _fillNewNote('bt_pen_cur', mM + '만원');
+          filled++;
+          fields.push('월연금');
+        }
+      }
+    }
+    
+    console.log('[applyPensionDoc] 연금 ' + filled + '개 항목 입력:', fields);
+    if (filled > 0 && typeof showToast === 'function') {
+      showToast('✅ 연금증서 분석 → ' + filled + '개 항목 입력');
+    }
+  } catch(e) {
+    console.error('[applyPensionDoc] 실패:', e.message);
+  }
+  return { filled: filled, fields: fields };
+}
+
+/* ★ [v14 B-1] 세금신고서 분석 → 8단계 세금설계 참고
+ * 백엔드 응답: sd.{annualIncome, taxAmount, taxRate, ...}
+ * 노트 필드: 별도 세금 필드 (현재는 메모용)
+ */
+function _applyTaxDoc(sd) {
+  var filled = 0;
+  var fields = [];
+  try {
+    /* 연소득 정보 → 메모 */
+    if (sd.annualIncome) {
+      console.log('[applyTaxDoc] 연소득:', sd.annualIncome);
+      filled++;
+      fields.push('연소득');
+    }
+    
+    if (filled > 0 && typeof showToast === 'function') {
+      showToast('✅ 세금신고서 분석 완료');
+    }
+    console.log('[applyTaxDoc] 세금 ' + filled + '개 항목 인식');
+  } catch(e) {
+    console.error('[applyTaxDoc] 실패:', e.message);
+  }
+  return { filled: filled, fields: fields };
+}
+
+function applyDocToNote(structuredData, docType) {
   if (!structuredData || typeof structuredData !== 'object') {
     console.warn('[applyDocToNote] 유효하지 않은 데이터');
     return { filled: 0, fields: [] };
   }
+  
+  /* ★ [v14 B-1] docType별 분기 — 보험/연금/세금 처리 */
+  docType = docType || 'application';
+  console.log('[applyDocToNote] docType:', docType);
+  
+  if (docType === 'insurance' || docType === 'ins') {
+    return _applyInsuranceDoc(structuredData);
+  }
+  if (docType === 'pension' || docType === 'pen') {
+    return _applyPensionDoc(structuredData);
+  }
+  if (docType === 'tax') {
+    return _applyTaxDoc(structuredData);
+  }
+  /* application은 기존 로직 그대로 */
   
   _applyingDoc = true;
   var s = structuredData;
@@ -8811,8 +8971,8 @@ function mvpHandleUpload(input) {
         
         var sd = data.structuredData || data.result || data.data || null;
         if (sd && typeof applyDocToNote === 'function') {
-          var result = applyDocToNote(sd);
-          console.log('[v14 mvpHandleUpload] applyDocToNote 결과:', result);
+          var result = applyDocToNote(sd, apiDocType);  /* ★ [v14 B-1] docType 전달 */
+          console.log('[v14 mvpHandleUpload] applyDocToNote 결과:', result, '| docType:', apiDocType);
           console.log('[v14 DEBUG] 주입 후 D.name:', D.name, 'D.income:', D.income);
         } else {
           console.warn('[v14] structuredData 경로를 찾을 수 없음. data:', JSON.stringify(data).substring(0, 300));
@@ -12643,8 +12803,8 @@ function diagHandleFile(input) {
         
         var sd = data.structuredData || data.result || data.data || null;
         if (sd && typeof applyDocToNote === 'function') {
-          var result = applyDocToNote(sd);
-          console.log('[v14 diagHandleFile] applyDocToNote 결과:', result);
+          var result = applyDocToNote(sd, apiDocType);  /* ★ [v14 B-1] docType 전달 */
+          console.log('[v14 diagHandleFile] applyDocToNote 결과:', result, '| docType:', apiDocType);
           console.log('[v14 DEBUG] 주입 후 D.name:', D.name, 'D.income:', D.income);
         } else {
           console.warn('[v14] structuredData 경로를 찾을 수 없음. data:', JSON.stringify(data).substring(0, 300));
