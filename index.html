@@ -15415,14 +15415,13 @@ function diagBuildNotes() {
     if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
   };
   
-  /* ★ [v14 E7] 원페이지 — A4 양식 (오상열 CFP 공식 표준양식) */
+  /* ★ [v14 E7b] 원페이지 — A4 한 장 고정 크기 (210mm × 297mm) */
   window.dnLoadOnePage = function() {
     var body = document.getElementById('dn_onepage_body');
     if (!body) return;
     
     var g = function(id) { var el=document.getElementById(id); return el?(el.textContent||'').trim():''; };
     
-    /* 현재 상담 데이터 수집 */
     var name = g('f1_name') || '';
     var age = g('f1_age') || '';
     var job = g('f1_job') || '';
@@ -15439,123 +15438,120 @@ function diagBuildNotes() {
     var now = new Date();
     var yy = now.getFullYear(), mm = String(now.getMonth()+1).padStart(2,'0'), dd = String(now.getDate()).padStart(2,'0');
     
-    /* 인적사항 텍스트 */
     var personalText = '';
-    if (name) personalText += name + (age?' / '+age:'') + '\n';
-    if (job) personalText += job + (marry?' / '+marry:'') + '\n';
-    if (income) personalText += '월소득 ' + income + (family?' / 가족 '+family:'') + '\n';
+    if (name) personalText += name + (age?' / '+age:'') + ' ';
+    if (job) personalText += job + (marry?' / '+marry:'');
+    if (income) personalText += ' · 월소득 ' + income + (family?' · '+family:'');
     
-    /* 수지 */
     var loan = g('bt_loan_cur') || '—';
     var ins = g('bt_ins_cur') || '—';
     var pen = g('bt_pen_cur') || '—';
     var sav = g('bt_sav_cur') || '—';
     var sur = g('bt_sur_cur') || '—';
     
-    /* 5단계 SVG 복제 */
     var fhSvgHTML = '';
     try { var o = document.querySelector('#dnp5 .dn-fhsvg'); if (o) fhSvgHTML = o.outerHTML; } catch(e) {}
-    if (!fhSvgHTML) fhSvgHTML = '<div style="text-align:center;padding:30px;color:#888;font-size:9pt;">🏠 상담 진행 후 표시됩니다</div>';
+    if (!fhSvgHTML) fhSvgHTML = '<div style="text-align:center;padding:10px;color:#888;font-size:7pt;">🏠 상담 진행 후 표시</div>';
     
     var h = '';
-    /* A4 페이퍼 래퍼 */
-    h += '<div style="background:#fff;padding:12mm;font-family:\'Noto Sans KR\',sans-serif;color:#000;font-size:10pt;">';
+    /* A4 컨테이너 — aspect-ratio 210/297, 화면 전체 폭 사용 */
+    h += '<div style="width:100%;max-width:210mm;margin:0 auto;aspect-ratio:210/297;background:#fff;padding:6mm 7mm;font-family:\'Noto Sans KR\',sans-serif;color:#000;font-size:7pt;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,.1);">';
     
-    /* 헤더 (날짜 + 기관) */
-    h += '<div style="display:flex;justify-content:space-between;border-bottom:2.5px solid #0B1D3A;padding-bottom:5px;margin-bottom:7px;font-size:9pt;color:#4A5568;font-weight:700;">';
+    /* 헤더 */
+    h += '<div style="display:flex;justify-content:space-between;border-bottom:1.5px solid #0B1D3A;padding-bottom:2px;margin-bottom:3px;font-size:6.5pt;color:#4A5568;font-weight:700;flex-shrink:0;">';
     h += '<div>' + yy + '년 ' + mm + '월 ' + dd + '일</div>';
     h += '<div>오원트금융연구소 · 재무상담 표준양식</div>';
     h += '</div>';
     
     /* 제목 배너 */
-    h += '<div style="background:#0B1D3A;color:#fff;text-align:center;padding:9px 14px;margin-bottom:9px;display:flex;justify-content:center;align-items:center;gap:18px;">';
-    h += '<div style="font-size:18pt;font-weight:900;letter-spacing:6px;">금 융 집 짓 기</div>';
-    h += '<div style="text-align:right;"><div style="font-size:7.5pt;color:#E8B84B;font-weight:800;">FINANCIAL HOUSE BUILDING® · 오상열 CFP</div><div style="font-size:7pt;color:#ccc;">오원트금융연구소</div></div>';
+    h += '<div style="background:#0B1D3A;color:#fff;text-align:center;padding:4px 8px;margin-bottom:3px;display:flex;justify-content:center;align-items:center;gap:10px;flex-shrink:0;">';
+    h += '<div style="font-size:14pt;font-weight:900;letter-spacing:4px;">금 융 집 짓 기</div>';
+    h += '<div style="text-align:right;line-height:1.2;"><div style="font-size:6pt;color:#E8B84B;font-weight:800;">FINANCIAL HOUSE BUILDING®</div><div style="font-size:5.5pt;color:#ccc;">오상열 CFP · 오원트금융연구소</div></div>';
     h += '</div>';
     
-    /* 섹션 스타일 */
-    var secStyle = 'border:1.5px solid #0B1D3A;border-radius:3px;padding:7px 9px 8px;';
-    var secTitle = 'font-size:10pt;font-weight:900;color:#0B1D3A;margin-bottom:5px;border-bottom:1px dashed #C9972A;padding-bottom:3px;';
+    var secStyle = 'border:1px solid #0B1D3A;border-radius:2px;padding:3px 5px;';
+    var secTitleStyle = 'font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;border-bottom:1px dashed #C9972A;padding-bottom:1px;';
     
-    /* 1+2 그리드 */
-    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;">';
-    h += '<div style="' + secStyle + '"><div style="' + secTitle + '">1. 인적사항</div>';
-    h += '<div style="font-size:9pt;line-height:1.6;white-space:pre-line;min-height:50px;">' + (personalText || '(상담 진행 중)') + '</div></div>';
-    h += '<div style="' + secStyle + '"><div style="' + secTitle + '">2. 경제적 고민</div>';
-    h += '<div style="font-size:9pt;line-height:1.6;min-height:50px;">' + (w1 || '(상담 진행 중)') + (w2?'<br>'+w2:'') + '</div></div>';
+    /* 1+2 그리드 — 최대 2줄 */
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:3px;flex-shrink:0;">';
+    h += '<div style="' + secStyle + '"><div style="' + secTitleStyle + '">1. 인적사항</div>';
+    h += '<div style="font-size:6.5pt;line-height:1.4;min-height:18px;">' + (personalText || '(상담 진행 중)') + '</div></div>';
+    h += '<div style="' + secStyle + '"><div style="' + secTitleStyle + '">2. 경제적 고민</div>';
+    h += '<div style="font-size:6.5pt;line-height:1.4;min-height:18px;">' + (w1 || '(상담 진행 중)') + (w2?' · '+w2:'') + '</div></div>';
     h += '</div>';
     
-    /* 3. 금융집짓기 설계 */
-    h += '<div style="' + secStyle + 'margin-bottom:8px;">';
-    h += '<div style="font-size:10pt;font-weight:900;color:#0B1D3A;margin-bottom:4px;">3. 금융집짓기 설계</div>';
-    h += '<div style="text-align:center;">' + fhSvgHTML + '</div>';
+    /* 3. 금융집짓기 — flex-grow로 공간 차지 */
+    h += '<div style="' + secStyle + 'margin-bottom:3px;flex:1;display:flex;flex-direction:column;min-height:0;">';
+    h += '<div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">3. 금융집짓기 설계</div>';
+    h += '<div style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;max-height:160px;">';
+    h += '<div style="width:100%;max-height:100%;">' + fhSvgHTML + '</div>';
+    h += '</div>';
     
-    /* VII. 보험 8대 기초 표 */
-    h += '<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-top:5px;">';
+    /* 보험 8대 표 */
+    h += '<table style="width:100%;border-collapse:collapse;font-size:5.5pt;margin-top:2px;">';
     h += '<thead><tr>';
-    h += '<th style="background:#0B1D3A;color:#E8B84B;padding:4px 2px;border:1.5px solid #0B1D3A;font-size:8pt;font-weight:900;width:14%;">VII. 보험<br><span style="font-size:7pt;color:#fff;">(기초)</span></th>';
-    ['사망','장해','암 진단','뇌혈관','심혈관','실손의료','입원수술','치매간병'].forEach(function(t){
-      h += '<th style="background:#0B1D3A;color:#fff;padding:4px 2px;border:1.5px solid #0B1D3A;font-size:7.5pt;font-weight:800;">' + t + '</th>';
+    h += '<th style="background:#0B1D3A;color:#E8B84B;padding:1.5px;border:1px solid #0B1D3A;font-size:5.5pt;font-weight:900;width:13%;">VII. 보험</th>';
+    ['사망','장해','암','뇌혈관','심혈관','실손','입원','치매'].forEach(function(t){
+      h += '<th style="background:#0B1D3A;color:#fff;padding:1.5px;border:1px solid #0B1D3A;font-size:5.5pt;font-weight:800;">' + t + '</th>';
     });
     h += '</tr></thead><tbody>';
-    ['필요자금','준비자금','부족자금'].forEach(function(lbl, idx){
+    ['필요','준비','부족'].forEach(function(lbl, idx){
       var isLack = idx === 2;
       h += '<tr>';
-      h += '<td style="background:#FFF9D6;padding:4px 6px;border:1.5px solid #0B1D3A;font-size:8.5pt;font-weight:900;text-align:left;' + (isLack?'color:#B91C1C;':'') + '">' + lbl + '</td>';
-      for (var i=0;i<8;i++) h += '<td style="padding:4px;border:1.5px solid #0B1D3A;text-align:center;font-size:8pt;' + (isLack?'color:#B91C1C;':'') + '">—</td>';
+      h += '<td style="background:#FFF9D6;padding:1.5px 3px;border:1px solid #0B1D3A;font-size:5.5pt;font-weight:900;text-align:left;' + (isLack?'color:#B91C1C;':'') + '">' + lbl + '</td>';
+      for (var i=0;i<8;i++) h += '<td style="padding:1.5px;border:1px solid #0B1D3A;text-align:center;font-size:5.5pt;' + (isLack?'color:#B91C1C;':'') + '">—</td>';
       h += '</tr>';
     });
     h += '</tbody></table>';
     h += '</div>';
     
     /* 4+5 그리드 */
-    h += '<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:7px;">';
+    h += '<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:3px;flex-shrink:0;">';
     
-    /* 4. 수입지출 분석 */
-    h += '<div style="' + secStyle + '"><div style="font-size:10pt;font-weight:900;color:#0B1D3A;margin-bottom:4px;">4. 수입지출 분석</div>';
-    h += '<table style="width:100%;border-collapse:collapse;font-size:8.5pt;">';
+    /* 4. 수입지출 */
+    h += '<div style="' + secStyle + '"><div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">4. 수입지출 분석</div>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:6pt;">';
     h += '<thead><tr>';
-    ['항목','현재','기준%','예산','진단'].forEach(function(t,i){
-      h += '<th style="background:#0B1D3A;color:#fff;padding:4px;border:1px solid #888;font-size:8pt;font-weight:900;"' + (i===0?' colspan="2"':'') + '>' + t + '</th>';
+    ['항목','현재','%','예산'].forEach(function(t,i){
+      h += '<th style="background:#0B1D3A;color:#fff;padding:1.5px;border:1px solid #888;font-size:5.5pt;font-weight:900;">' + t + '</th>';
     });
     h += '</tr></thead><tbody>';
     var ioRows = [
-      {lbl:'수 입', val:income||'—', pct:'100%', bg:'#E8F5E9'},
-      {lbl:'생활비', val:'—', pct:'50%', bg:'#FFF9D6'},
-      {lbl:'저축/투자', val:sav||'—', pct:'20%', bg:'#FFF9D6'},
-      {lbl:'노후연금', val:pen||'—', pct:'10%', bg:'#FFF9D6'},
-      {lbl:'보장성보험', val:ins||'—', pct:'10%', bg:'#FFF9D6'},
-      {lbl:'대출원리금', val:loan||'—', pct:'10%', bg:'#FFF9D6'},
-      {lbl:'잉여자금', val:sur||'—', pct:'—', bg:'#FFF9D6', green:true}
+      {lbl:'수입', val:income||'—', pct:'100', bg:'#E8F5E9'},
+      {lbl:'생활비', val:'—', pct:'50', bg:'#FFF9D6'},
+      {lbl:'저축/투자', val:sav||'—', pct:'20', bg:'#FFF9D6'},
+      {lbl:'노후연금', val:pen||'—', pct:'10', bg:'#FFF9D6'},
+      {lbl:'보험료', val:ins||'—', pct:'10', bg:'#FFF9D6'},
+      {lbl:'대출', val:loan||'—', pct:'10', bg:'#FFF9D6'},
+      {lbl:'잉여', val:sur||'—', pct:'—', bg:'#FFF9D6', green:true}
     ];
     ioRows.forEach(function(r){
       h += '<tr>';
-      h += '<td colspan="2" style="background:' + r.bg + ';padding:4px 6px;border:1px solid #888;font-weight:900;text-align:left;' + (r.green?'color:#15803D;':'') + '">' + r.lbl + '</td>';
-      h += '<td style="padding:4px;border:1px solid #888;text-align:center;font-weight:800;">' + r.val + '</td>';
-      h += '<td style="padding:4px;border:1px solid #888;text-align:center;font-size:7.5pt;color:#4A5568;">' + r.pct + '</td>';
-      h += '<td style="padding:4px;border:1px solid #888;text-align:center;">—</td>';
-      h += '<td style="padding:4px;border:1px solid #888;text-align:center;">—</td>';
+      h += '<td style="background:' + r.bg + ';padding:1.5px 4px;border:1px solid #888;font-weight:900;text-align:left;font-size:6pt;' + (r.green?'color:#15803D;':'') + '">' + r.lbl + '</td>';
+      h += '<td style="padding:1.5px;border:1px solid #888;text-align:center;font-weight:800;font-size:6pt;">' + r.val + '</td>';
+      h += '<td style="padding:1.5px;border:1px solid #888;text-align:center;font-size:5.5pt;color:#4A5568;">' + r.pct + '</td>';
+      h += '<td style="padding:1.5px;border:1px solid #888;text-align:center;font-size:6pt;">—</td>';
       h += '</tr>';
     });
     h += '</tbody></table></div>';
     
-    /* 5. 자산부채 요약 */
-    h += '<div style="' + secStyle + '"><div style="font-size:10pt;font-weight:900;color:#0B1D3A;margin-bottom:4px;">5. 자산부채 요약</div>';
-    h += '<div style="border:1.5px solid #0B1D3A;border-radius:3px;padding:7px 9px;">';
-    var arStyle = 'display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #C9972A;font-size:9.5pt;font-weight:900;';
+    /* 5. 자산부채 */
+    h += '<div style="' + secStyle + '"><div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">5. 자산부채 요약</div>';
+    h += '<div style="border:1px solid #0B1D3A;border-radius:2px;padding:3px 5px;">';
+    var arStyle = 'display:flex;justify-content:space-between;padding:1.5px 0;border-bottom:1px dashed #C9972A;font-size:7pt;font-weight:900;';
     h += '<div style="' + arStyle + '"><span style="color:#4A5568;">① 총자산</span><span>' + (totalA||'—') + '</span></div>';
     h += '<div style="' + arStyle + '"><span style="color:#4A5568;">② 총부채</span><span style="color:#B91C1C;">' + (totalD||'—') + '</span></div>';
-    h += '<div style="' + arStyle + 'border-top:2px solid #0B1D3A;margin-top:4px;padding-top:6px;"><span>③ 순자산</span><span style="color:#C9972A;">' + (net||'—') + '</span></div>';
-    h += '<div style="' + arStyle + 'border-top:1px dashed #C9972A;margin-top:3px;padding-top:5px;color:#C9972A;"><span>부자지수</span><span>' + (wi||'—') + '</span></div>';
-    h += '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8.5pt;"><span style="color:#4A5568;">등급</span><span style="color:#C9972A;font-weight:800;">' + (wiGrade||'—') + '</span></div>';
+    h += '<div style="' + arStyle + 'border-top:1.5px solid #0B1D3A;margin-top:2px;padding-top:3px;"><span>③ 순자산</span><span style="color:#C9972A;">' + (net||'—') + '</span></div>';
+    h += '<div style="' + arStyle + 'border-top:1px dashed #C9972A;margin-top:2px;padding-top:2px;color:#C9972A;"><span>부자지수</span><span>' + (wi||'—') + '</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:1px 0;font-size:6pt;"><span style="color:#4A5568;">등급</span><span style="color:#C9972A;font-weight:800;">' + (wiGrade||'—') + '</span></div>';
     h += '</div>';
-    h += '<div style="font-size:7.5pt;color:#6B7280;text-align:center;margin-top:6px;font-weight:700;">부자지수 = (순자산 ÷ (나이 × 연소득)) × 100</div>';
+    h += '<div style="font-size:5.5pt;color:#6B7280;text-align:center;margin-top:2px;font-weight:700;">부자지수=(순자산÷(나이×연소득))×100</div>';
     h += '</div>';
     h += '</div>';
     
     /* 푸터 */
-    h += '<div style="border-top:1px solid #d1d5db;padding-top:5px;margin-top:10px;text-align:center;font-size:7pt;color:#6B7280;font-weight:700;">';
-    h += '본 자료는 오원트금융연구소의 [특허:제10-2202486호], [상표:제41-0388261호], [저작권:C-2020-008901호]로 보호됩니다. Copyright 오원트금융연구소.';
+    h += '<div style="border-top:1px solid #d1d5db;padding-top:2px;margin-top:3px;text-align:center;font-size:5pt;color:#6B7280;font-weight:700;flex-shrink:0;">';
+    h += '특허:제10-2202486호 · 상표:제41-0388261호 · 저작권:C-2020-008901호 · Copyright 오원트금융연구소';
     h += '</div>';
     
     h += '</div>';
