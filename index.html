@@ -4840,78 +4840,71 @@ function _applyInsuranceDoc(sd) {
   return { filled: filled, fields: fields };
 }
 
-/* ★ [v14 B-1] 연금증서 분석 → 8단계 은퇴설계 자동 입력
- * 백엔드 응답: sd.{accumulated, monthlyContribution, expectedPension, ...}
- * 노트 필드: f4_pension (적립금), bt_pen_cur (월납), f81_ready (월수령액)
+/* ★ [v14 B-5] 연금증서 분석 → 8단계 은퇴설계 자동 입력
+ * 백엔드 실제 응답 구조 (2026-04-12 확인):
+ *   {
+ *     pensionType: "국민연금" | "개인연금" | "퇴직연금",
+ *     subscription: { totalPaid: 18205730 },
+ *     expectedPayout: { monthlyAmount: 1147210, startAge: 65, unit: "원" }
+ *   }
  */
 function _applyPensionDoc(sd) {
   var filled = 0;
   var fields = [];
   try {
-    var fmt2 = function(v) {
-      if (v == null || v === '') return null;
-      var n = parseInt(v);
-      if (isNaN(n)) return null;
-      return n.toLocaleString() + '만원';
-    };
+    /* 연금 종류 구분 */
+    var pType = sd.pensionType || '';
+    var isNational = /국민/.test(pType);
+    var isPersonal = /개인|연금저축|IRP/.test(pType);
+    var isRetire = /퇴직/.test(pType);
     
-    /* 적립금/총납부액 → f4_pension */
-    var accumulated = sd.accumulated || sd.totalAccumulated || sd.balance || sd.totalPaid || sd.totalContribution;
-    if (accumulated) {
-      var acc = parseInt(accumulated);
-      if (!isNaN(acc) && acc > 0) {
-        var accM = acc >= 100000 ? Math.round(acc / 10000) : acc;  /* 원→만원 자동변환 */
-        if (typeof _fillNewNote === 'function') {
-          _fillNewNote('f4_pension', accM + '만원');
-          filled++;
-          fields.push('연금적립금');
-        }
+    /* 적립금/총납부액 → f4_pension (개인연금만 자산으로 처리) */
+    var totalPaid = (sd.subscription && sd.subscription.totalPaid) || 0;
+    if (totalPaid > 0 && !isNational) {
+      var accM = totalPaid >= 10000 ? Math.round(totalPaid / 10000) : totalPaid;
+      if (typeof _fillNewNote === 'function') {
+        _fillNewNote('f4_pension', accM + '만원');
+        filled++;
+        fields.push('연금적립금');
       }
     }
     
-    /* 월 납입 → bt_pen_cur */
-    var monthly = sd.monthlyContribution || sd.monthlyPay || sd.monthlyDeposit;
-    if (monthly) {
-      var m = parseInt(monthly);
-      if (!isNaN(m) && m > 0) {
-        var mM = m >= 10000 ? Math.round(m / 10000) : m;
-        if (typeof _fillNewNote === 'function') {
-          _fillNewNote('bt_pen_cur', mM + '만원');
-          filled++;
-          fields.push('월연금');
-        }
-      }
-    }
-    
-    /* ★ [v14 B-4] 예상 월 수령액 → 은퇴설계 재계산 */
-    var expectedMonthly = sd.expectedPension || sd.expectedMonthly || sd.monthlyPension;
-    if (expectedMonthly) {
-      var em = parseInt(expectedMonthly);
-      if (!isNaN(em) && em > 0) {
-        /* 원 단위 → 만원 변환 */
-        var emM = em >= 10000 ? Math.round(em / 10000) : em;
-        
-        /* 글로벌 변수에 저장 (8-1 재계산용) */
+    /* ★ 예상 월 수령액 매핑 */
+    var monthlyAmount = (sd.expectedPayout && sd.expectedPayout.monthlyAmount) || 0;
+    if (monthlyAmount > 0) {
+      var emM = monthlyAmount >= 10000 ? Math.round(monthlyAmount / 10000) : monthlyAmount;
+      
+      /* 연금 종류별로 글로벌 변수 분리 저장 */
+      if (isNational) {
+        window._nationalPensionMonthly = emM;
+        console.log('[v14 B-5] 국민연금 월수령액:', emM, '만원');
+      } else {
         window._pensionExpectedMonthly = emM;
-        
-        if (typeof _fillNewNote === 'function') {
-          _fillNewNote('f81_ready', emM + '만원/월 (개인연금)');
-          filled++;
-          fields.push('월수령액');
-        }
-        
-        /* 8-1 은퇴설계 종합 재계산 */
-        try {
-          _recalcRetireDesign();
-          filled += 3;
-          fields.push('은퇴설계재계산');
-        } catch(e) { console.warn('[recalcRetire] 실패:', e.message); }
+        console.log('[v14 B-5] 개인연금 월수령액:', emM, '만원');
       }
+      
+      filled++;
+      fields.push((isNational ? '국민' : '개인') + '연금월수령');
+      
+      /* 8-1 은퇴설계 종합 재계산 */
+      try {
+        _recalcRetireDesign();
+        filled += 5;
+        fields.push('은퇴설계재계산');
+      } catch(e) { console.warn('[recalcRetire] 실패:', e.message); }
     }
     
-    console.log('[applyPensionDoc] 연금 ' + filled + '개 항목 입력:', fields);
+    /* 퇴직연금 일시금 (있으면 - 향후 처리용) */
+    if (isRetire && totalPaid > 0) {
+      var lumpM = totalPaid >= 10000 ? Math.round(totalPaid / 10000) : totalPaid;
+      window._retireLumpSum = lumpM;
+      console.log('[v14 B-5] 퇴직연금 일시금:', lumpM, '만원');
+      try { _recalcRetireDesign(); } catch(e) {}
+    }
+    
+    console.log('[applyPensionDoc] ' + pType + ' ' + filled + '개 항목 입력:', fields);
     if (filled > 0 && typeof showToast === 'function') {
-      showToast('✅ 연금증서 분석 → ' + filled + '개 항목 입력 + 은퇴설계 재계산');
+      showToast('✅ ' + pType + ' 분석 → 은퇴설계 재계산 완료');
     }
   } catch(e) {
     console.error('[applyPensionDoc] 실패:', e.message);
@@ -4951,7 +4944,7 @@ function _recalcRetireDesign() {
   
   if (typeof _fillNewNote === 'function') {
     _fillNewNote('f81_need', monthlyNeed + '만원');
-    _fillNewNote('f81_ready', monthlyReady + '만원/월 (개인연금 ' + personalPen + ' + 노후납입 ' + savedRetire + ')');
+    _fillNewNote('f81_ready', monthlyReady + '만원/월 (국민 ' + nationalPen + ' + 개인 ' + personalPen + ' + 노후납입 ' + savedRetire + ')');
     _fillNewNote('f81_short', monthlyShort + '만원/월');
     _fillNewNote('f81_lump', lumpSum.toLocaleString() + '만원 (부족' + monthlyShort + ' × 12 × ' + retireSpan + '년)');
     _fillNewNote('f81_monthly', monthlyAdd + '만원/월 (순일시금 ' + netLump.toLocaleString() + ' ÷ ' + workSpan + '년)');
