@@ -16405,10 +16405,13 @@ function _fillNewNote(id, displayVal) {
   for (var i = 0; i < ids.length; i++) {
     var el = document.getElementById(ids[i]);
     if (el) {
+      /* ★ [v14 A-2] 같은 값이라도 presubmit이면 confirmed로 승격 */
+      var isSameVal = (el.textContent === displayVal);
       el.textContent = displayVal;
       el.classList.remove('empty');
-      el.classList.add('confirmed');
-      console.log('[노트입력] ' + ids[i] + ' = ' + displayVal);
+      el.classList.remove('presubmit');  /* ★ 잠정 해제 */
+      el.classList.add('confirmed');     /* ★ 확정 (굵게+녹색체크) */
+      console.log('[노트입력' + (isSameVal ? '/승격' : '') + '] ' + ids[i] + ' = ' + displayVal);
       filled = true;
     }
   }
@@ -16544,6 +16547,58 @@ function diagAutoFillNote(userText) {
       _fillNewNote('f1_dual', '맞벌이');
       return;
     }
+    
+    /* ★ [v14 A-2] 사전서류 필드 자동 승격
+     * 머니야 발화에 언급된 필드를 찾아 presubmit → confirmed로 승격
+     * (값은 그대로, 시각 표시만 변경)
+     */
+    try {
+      var ctxText = qCtx || lastQ || '';
+      var promoteList = [];
+      
+      /* 필드 키워드 매핑 */
+      var fieldMap = [
+        { id: 'f1_name', kw: /성함|이름/ },
+        { id: 'f1_age', kw: /나이|연세|살이|세이/ },
+        { id: 'f1_job', kw: /직업|일|직장|직책/ },
+        { id: 'f1_family', kw: /가족|가구원|식구/ },
+        { id: 'bt_inc_cur', kw: /수입|월급|연봉|소득/ },
+        { id: 'bt_loan_cur', kw: /대출\s*상환|대출\s*원리금|월\s*대출/ },
+        { id: 'bt_ins_cur', kw: /보험료|보험\s*납입/ },
+        { id: 'bt_pen_cur', kw: /연금\s*납입|연금\s*보험료/ },
+        { id: 'bt_sav_cur', kw: /저축|투자\s*금액|적금/ },
+        { id: 'bt_sur_cur', kw: /잉여|남는\s*돈|여유\s*자금/ },
+        { id: 'f4_deposit', kw: /예적금|예금|적금|청약/ },
+        { id: 'f4_pension', kw: /연금\s*적립|연금\s*잔액|연금\s*총액/ },
+        { id: 'f4_invest', kw: /펀드|주식|투자\s*자산|ETF/ },
+        { id: 'f4_realty', kw: /부동산|집값|보증금|전세금/ },
+        { id: 'f4_credit', kw: /신용\s*대출/ },
+        { id: 'f4_mortgage', kw: /담보\s*대출|주담대|주택\s*담보/ },
+      ];
+      
+      for (var fi = 0; fi < fieldMap.length; fi++) {
+        if (fieldMap[fi].kw.test(ctxText)) {
+          promoteList.push(fieldMap[fi].id);
+        }
+      }
+      
+      if (promoteList.length > 0) {
+        console.log('[v14 A-2] 머니야 컨텍스트 기반 승격:', promoteList);
+        for (var pi = 0; pi < promoteList.length; pi++) {
+          var pids = _NOTE_ID_ALIASES[promoteList[pi]] || [promoteList[pi]];
+          for (var pj = 0; pj < pids.length; pj++) {
+            var pEl = document.getElementById(pids[pj]);
+            if (pEl && pEl.classList.contains('presubmit')) {
+              pEl.classList.remove('presubmit');
+              pEl.classList.add('confirmed');
+              console.log('[v14 A-2] 승격됨:', pids[pj]);
+            }
+          }
+        }
+        return;
+      }
+    } catch(e) { console.warn('[v14 A-2] 승격 실패:', e.message); }
+    
     console.log('[Yes 응답 - 매칭 없음]');
     return;
   }
