@@ -16477,49 +16477,51 @@ let diagLastFilledLabel = '';
 function diagParseAiSpeech(aiText) {
   var t = aiText;
 
-  /* ★ [v14 C-1+C-4] 5단계 금융집짓기 SVG 빌드 애니메이션
-   * 시스템 프롬프트 발화 흐름 (4단계 순서):
-   *   1. "보장자산이라는 기초공사" → bp-f (보험)
-   *   2. "저축이라는 기둥을 세우" → bp-w (부채/저축/은퇴)
-   *   3. "생로병사라는 처마보" → bp-tl (현재/은퇴/사망)
-   *   4. "투자라는 지붕" → bp-r + bp-n (지붕+굴뚝)
-   * ★ C-4: 이미 빌드된 다음 단계만 진행 (한 발화에 여러 키워드 있어도 한 단계씩)
+  /* ★ [v14 C-1+C-4+C-10] 5단계 금융집짓기 SVG 빌드 애니메이션
+   * 머니야가 한 문장으로 4개 단계를 다 말하므로, 시간차로 순차 빌드
    */
   try {
     var fhSvg = document.querySelector('.dn-fhsvg');
     if (fhSvg) {
-      var buildIfNext = function(partId) {
-        var el = fhSvg.querySelector('#' + partId);
-        if (el && !el.classList.contains('built')) {
-          el.classList.add('built');
-          console.log('[v14 C-4 SVG빌드]', partId);
-          return true;
-        }
-        return false;
+      var buildPart = function(partId, delayMs) {
+        setTimeout(function() {
+          var el = fhSvg.querySelector('#' + partId);
+          if (el && !el.classList.contains('built')) {
+            el.classList.add('built');
+            console.log('[v14 C-10 SVG빌드]', partId);
+          }
+        }, delayMs);
       };
       
-      /* 순서대로 점검: 이미 안 지어진 첫 부분만 짓기 */
-      var hasBPF = fhSvg.querySelector('#bp-f.built');
-      var hasBPW = fhSvg.querySelector('#bp-w.built');
-      var hasBPTL = fhSvg.querySelector('#bp-tl.built');
-      var hasBPR = fhSvg.querySelector('#bp-r.built');
+      var hasBPF = !!fhSvg.querySelector('#bp-f.built');
+      var hasBPW = !!fhSvg.querySelector('#bp-w.built');
+      var hasBPTL = !!fhSvg.querySelector('#bp-tl.built');
+      var hasBPR = !!fhSvg.querySelector('#bp-r.built');
+      var hasBPN = !!fhSvg.querySelector('#bp-n.built');
       
-      if (!hasBPF && /보장자산.*기초공사|기초공사.*시작|보험.*기초|기초.*보험/.test(t)) {
-        buildIfNext('bp-f');
-      } else if (hasBPF && !hasBPW && /저축.*기둥|기둥.*세우|저축이라는|벽.*저축/.test(t)) {
-        buildIfNext('bp-w');
-      } else if (hasBPW && !hasBPTL && /생로병사|처마보|처마|시간축/.test(t)) {
-        buildIfNext('bp-tl');
-      } else if (hasBPTL && !hasBPR && /투자.*지붕|지붕.*올리|투자라는|자산배분.*철근|콘크리트/.test(t)) {
-        buildIfNext('bp-r');
-        /* 굴뚝은 지붕 다음에 자연스럽게 - 하지만 별도 발화 시 트리거 */
-      }
-      /* 굴뚝은 별도 — 지붕 빌드된 후 굴뚝 발화 시 */
-      if (hasBPR && /굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t)) {
-        buildIfNext('bp-n');
+      /* 발화 키워드 검사 */
+      var hasKw_basis = /보장자산.*기초공사|기초공사|보험.*기초/.test(t);
+      var hasKw_pillar = /저축.*기둥|기둥.*세우|저축이라는/.test(t);
+      var hasKw_beam = /생로병사|처마보|처마/.test(t);
+      var hasKw_roof = /투자.*지붕|지붕.*올리|투자라는/.test(t);
+      var hasKw_chimney = /굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t);
+      
+      /* 한 발화에 여러 키워드 있으면 시간차로 빌드 (각 1.8초 간격) */
+      var delay = 0;
+      var step = 1800;
+      
+      if (!hasBPF && hasKw_basis) { buildPart('bp-f', delay); delay += step; }
+      if (!hasBPW && hasKw_pillar) { buildPart('bp-w', delay); delay += step; }
+      if (!hasBPTL && hasKw_beam) { buildPart('bp-tl', delay); delay += step; }
+      if (!hasBPR && hasKw_roof) { buildPart('bp-r', delay); delay += step; }
+      if (!hasBPN && hasKw_chimney) { buildPart('bp-n', delay); delay += step; }
+      
+      if (delay > 0) {
+        console.log('[v14 C-10] 키워드 매칭. 빌드 예약:', 
+          {basis:hasKw_basis, pillar:hasKw_pillar, beam:hasKw_beam, roof:hasKw_roof, chimney:hasKw_chimney});
       }
     }
-  } catch(svgErr) { console.warn('[v14 C-4 SVG] 실패:', svgErr.message); }
+  } catch(svgErr) { console.warn('[v14 C-10 SVG] 실패:', svgErr.message); }
 
   /* ── v14 A-7 단계 전환 감지 — strong 키워드만 점프 허용 ── 
    * strong: 명확한 단계 전환 신호 (예: "이제 4단계", "자산부채로 넘어")
