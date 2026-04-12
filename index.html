@@ -16533,11 +16533,10 @@ function diagParseAiSpeech(aiText) {
       var hasBPR = !!fhSvg.querySelector('#bp-r.built');
       var hasBPN = !!fhSvg.querySelector('#bp-n.built');
       
-      /* 발화 키워드 검사 */
-      var hasKw_basis = /보장자산.*기초공사|기초공사|보험.*기초/.test(t);
-      var hasKw_pillar = /저축.*기둥|기둥.*세우|저축이라는/.test(t);
-      var hasKw_beam = /생로병사|처마보|처마/.test(t);
-      var hasKw_roof = /투자.*지붕|지붕.*올리|투자라는/.test(t);
+      var hasKw_basis = /보장자산.*기초공사|인생이라는|기초공사.*하고/.test(t);
+      var hasKw_pillar = /저축이라는\s*기둥|기둥을\s*세우/.test(t);
+      var hasKw_beam = /생로병사라는\s*처마|처마보를\s*만든/.test(t);
+      var hasKw_roof = /투자라는\s*지붕|지붕을\s*올리/.test(t);
       var hasKw_chimney = /굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t);
       
       /* 한 발화에 여러 키워드 있으면 시간차로 빌드 (각 1.8초 간격) */
@@ -17109,6 +17108,8 @@ function diagAutoFillNote(userText) {
    */
   try {
     var lq = (typeof diagLastQ !== 'undefined' ? diagLastQ : '') || '';
+    /* ★ [v14 C-13] qCtx (최근 3개 발화 합) 사용 - 머니야가 추가 발화한 경우 대응 */
+    var lqCtx = (typeof diagQContext === 'function' ? diagQContext() : lq) || lq;
     var ageM = t.match(/^([\d]{2,3})\s*(?:세|살)?[.\s]*$/);
     if (ageM) {
       var ageVal = parseInt(ageM[1]);
@@ -17116,7 +17117,7 @@ function diagAutoFillNote(userText) {
         var fhSvg = document.querySelector('.dn-fhsvg');
         if (fhSvg) {
           /* 은퇴 나이 */
-          if (/은퇴.*몇\s*세|은퇴.*나이|은퇴 시점|몇 세에 은퇴/.test(lq) && ageVal <= 80) {
+          if (/은퇴.*몇\s*세|은퇴.*나이|은퇴 시점|몇 세에 은퇴|언제 은퇴|은퇴는 몇/.test(lqCtx) && ageVal <= 80) {
             var retEl = fhSvg.querySelector('#sv-ret-age');
             if (retEl) {
               retEl.textContent = ageVal + '세';
@@ -17128,14 +17129,25 @@ function diagAutoFillNote(userText) {
               return;
             }
           }
-          /* 사망 예상 나이 */
-          if (/예상\s*수명|사망\s*나이|몇\s*세까지|수명.*몇/.test(lq) && ageVal >= 70) {
+          /* ★ [v14 C-13] 사망 예상 나이 — 매칭 패턴 대폭 강화 */
+          if (/예상\s*수명|사망\s*나이|몇\s*세까지|수명.*몇|수명은\s*몇|보통\s*9?0세|수명.*보세요|언제까지|얼마나 사실/.test(lqCtx) && ageVal >= 70) {
             var dieEl = fhSvg.querySelector('#sv-die-age');
             if (dieEl) {
               dieEl.textContent = ageVal + '세';
               if (typeof D !== 'undefined') D.dieAge = ageVal;
-              console.log('[v14 C-2 SVG] 사망나이:', ageVal);
+              console.log('[v14 C-13 SVG] 사망나이:', ageVal, '| lqCtx:', lqCtx.substring(0, 50));
               /* 은퇴설계 자동 재계산 */
+              try { if (typeof _recalcRetireDesign === 'function') _recalcRetireDesign(); } catch(e) {}
+              return;
+            }
+          }
+          /* ★ [v14 C-13] 5단계 진행 중 + 70 이상 + 은퇴나이 이미 있으면 → 사망나이로 추정 */
+          if (curStep === 5 && ageVal >= 70 && D.retireAge && D.retireAge < ageVal) {
+            var dieEl2 = fhSvg.querySelector('#sv-die-age');
+            if (dieEl2 && !dieEl2.textContent.trim()) {
+              dieEl2.textContent = ageVal + '세';
+              if (typeof D !== 'undefined') D.dieAge = ageVal;
+              console.log('[v14 C-13 SVG] 사망나이 (자동 추정):', ageVal);
               try { if (typeof _recalcRetireDesign === 'function') _recalcRetireDesign(); } catch(e) {}
               return;
             }
