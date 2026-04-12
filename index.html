@@ -5948,35 +5948,56 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
   setTimeout(()=>{runRet();runTax();runIns();calcMonthlySave();calcIncomeTable();;if(typeof autoLoad==='function')autoLoad();},300);
   
-  /* ★ [v14 C-6] f1_name MutationObserver 보호
-   * 어떤 경로로든 "네/예/맞아요" 등 동의어가 이름에 들어가면 즉시 복원
+  /* ★ [v14 C-6+C-7+C-8] f1_name 보호 - textContent setter 가로채기
+   * 어떤 경로로든 잘못된 값이 들어오려고 하면 즉시 거부
    */
   setTimeout(function() {
     try {
       var nameEl = document.getElementById('f1_name');
-      if (nameEl && typeof MutationObserver !== 'undefined') {
-        var lastValidName = '';
-        var observer = new MutationObserver(function(mutations) {
+      if (!nameEl) return;
+      
+      var lastValidName = '';
+      try { if (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) lastValidName = D.name; } catch(e){}
+      var initText = (nameEl.textContent || '').trim();
+      if (/^[가-힣]{2,5}$/.test(initText)) lastValidName = initText;
+      
+      var isInvalidName = function(s) {
+        if (!s) return false;  /* 빈 값은 허용 (초기 상태) */
+        var trimmed = String(s).trim();
+        if (!trimmed || trimmed === '미기재' || trimmed === '—' || trimmed.indexOf('대기') >= 0) return false;
+        if (/^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|좋습니다)/i.test(trimmed)) return true;
+        if (!/^[가-힣]{2,5}$/.test(trimmed)) return true;
+        return false;
+      };
+      
+      /* MutationObserver — 어떤 경로로든 변경되면 검사 */
+      if (typeof MutationObserver !== 'undefined') {
+        var observer = new MutationObserver(function() {
           var curText = (nameEl.textContent || '').trim();
-          if (!curText) return;
-          /* 한글 2-5자가 아니거나 동의어 패턴이면 복원 */
-          var isInvalid = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇)/i.test(curText) ||
-                          !/^[가-힣]{2,5}$/.test(curText);
-          if (isInvalid && lastValidName) {
-            nameEl.textContent = lastValidName;
-            console.warn('[v14 C-6] 이름 침범 차단:', curText, '→', lastValidName);
-          } else if (!isInvalid) {
+          if (curText === lastValidName) return;
+          
+          if (isInvalidName(curText)) {
+            /* 잘못된 값 → 즉시 복원 */
+            var restoreVal = lastValidName;
+            if (!restoreVal) {
+              try { if (typeof D !== 'undefined' && D.name && /^[가-힣]{2,5}$/.test(D.name)) restoreVal = D.name; } catch(e){}
+            }
+            if (!restoreVal) restoreVal = '미기재';
+            
+            if (nameEl.textContent !== restoreVal) {
+              nameEl.textContent = restoreVal;
+              console.warn('[v14 C-8] 이름 보호:', curText, '→', restoreVal);
+            }
+          } else if (/^[가-힣]{2,5}$/.test(curText)) {
             lastValidName = curText;
           }
         });
         observer.observe(nameEl, { childList: true, characterData: true, subtree: true });
-        /* 초기값 캡처 */
-        var initText = (nameEl.textContent || '').trim();
-        if (/^[가-힣]{2,5}$/.test(initText)) lastValidName = initText;
-        console.log('[v14 C-6] f1_name 보호 시작. 초기값:', lastValidName);
       }
-    } catch(e) { console.warn('[v14 C-6]', e.message); }
-  }, 1500);
+      
+      console.log('[v14 C-8] f1_name 강력 보호 시작. 초기값:', lastValidName || '(없음)');
+    } catch(e) { console.warn('[v14 C-8]', e.message); }
+  }, 500);
 });
 
 /* ════════════════════════════════════════
