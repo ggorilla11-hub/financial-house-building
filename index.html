@@ -15467,7 +15467,7 @@ function diagBuildNotes() {
       var realty = g('f4_realty') || '0억';
       
       /* ★ [v14 E7d] 4층 구조 명확화: 지붕 / 처마보 / 1층(기둥+삼각형) / 기초(보험) */
-      fhSvgHTML = '<svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;height:auto;">';
+      fhSvgHTML = '<svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;height:auto;display:block;margin:0 auto;">';
       fhSvgHTML += '<text x="350" y="220" text-anchor="middle" font-size="80" fill="#0B1D3A" fill-opacity="0.04" font-weight="900" font-family="serif">ohwant</text>';
       
       /* ━━ 지붕 (y: 12~120) ━━ */
@@ -15531,8 +15531,8 @@ function diagBuildNotes() {
     }
     
     var h = '';
-    /* A4 컨테이너 — aspect-ratio 210/297, 화면 전체 폭 사용 */
-    h += '<div style="width:100%;max-width:210mm;margin:0 auto;aspect-ratio:210/297;background:#fff;padding:6mm 7mm;font-family:\'Noto Sans KR\',sans-serif;color:#000;font-size:7pt;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,.1);">';
+    /* A4 컨테이너 — max-width만 제약, 높이는 자유 (내용 따라 늘어남) */
+    h += '<div style="width:100%;max-width:210mm;margin:0 auto;background:#fff;padding:6mm 7mm;font-family:\'Noto Sans KR\',sans-serif;color:#000;font-size:7pt;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,.1);">';
     
     /* 헤더 */
     h += '<div style="display:flex;justify-content:space-between;border-bottom:1.5px solid #0B1D3A;padding-bottom:2px;margin-bottom:3px;font-size:6.5pt;color:#4A5568;font-weight:700;flex-shrink:0;">';
@@ -15557,11 +15557,11 @@ function diagBuildNotes() {
     h += '<div style="font-size:6.5pt;line-height:1.4;min-height:18px;">' + (w1 || '(상담 진행 중)') + (w2?' · '+w2:'') + '</div></div>';
     h += '</div>';
     
-    /* 3. 금융집짓기 — flex-grow로 공간 차지 */
-    h += '<div style="' + secStyle + 'margin-bottom:3px;flex:1;display:flex;flex-direction:column;min-height:0;">';
+    /* 3. 금융집짓기 — SVG 충분한 높이 확보 (기둥/처마보가 명확히 보이도록) */
+    h += '<div style="' + secStyle + 'margin-bottom:3px;">';
     h += '<div style="font-size:7.5pt;font-weight:900;color:#0B1D3A;margin-bottom:2px;">3. 금융집짓기 설계</div>';
-    h += '<div style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;max-height:160px;">';
-    h += '<div style="width:100%;max-height:100%;">' + fhSvgHTML + '</div>';
+    h += '<div style="text-align:center;padding:4px 0;">';
+    h += '<div style="width:100%;min-height:240px;">' + fhSvgHTML + '</div>';
     h += '</div>';
     
     /* 보험 8대 표 */
