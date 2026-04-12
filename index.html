@@ -5233,6 +5233,99 @@ function applyDocToNote(structuredData, docType) {
             noteFilled++;
           }
           
+          /* ═════════════════════════════════════════════
+             ★ [v14 B-3] 8단계 종합재무설계 7대영역 자동 계산
+             ═════════════════════════════════════════════ */
+          
+          /* 8-1 은퇴설계 */
+          if (age > 0 && monthlyIncome > 0) {
+            var retNeed = 300;  /* 평균 노후 월 필요 (만원) — 상열님 가이드 */
+            var retReady = curPen;  /* 현재 월 연금 납입 */
+            var retShort = Math.max(0, retNeed - retReady);
+            _fillNewNote('f81_need', retNeed + '만원');
+            _fillNewNote('f81_ready', retReady + '만원');
+            _fillNewNote('f81_short', retShort + '만원/월');
+            _fillNewNote('f81_monthly', Math.round(monthlyIncome * 0.1) + '만원 (월소득 10%)');
+            noteFilled += 4;
+          }
+          
+          /* 8-2 부채설계 */
+          if (totalDebt >= 0) {
+            _fillNewNote('f82_credit', (D.debtCredit || 0) + '만원');
+            _fillNewNote('f82_mortgage', (D.debtCollat || 0) + '만원');
+            var debtR = totalAsset > 0 ? (totalDebt / totalAsset * 100).toFixed(1) : 0;
+            _fillNewNote('f82_ratio', debtR + '%');
+            var strategy = '';
+            if (D.debtCredit > 0) strategy = '신용대출 즉시 상환 (스노우볼 - 작은 것부터)';
+            else if (D.debtCollat > 0) strategy = '담보대출 은퇴 직전 완납 목표';
+            else strategy = '부채 없음 ✓';
+            _fillNewNote('f82_strategy', strategy);
+            noteFilled += 4;
+          }
+          
+          /* 8-3 저축설계 */
+          if (age > 0 && monthlyIncome > 0) {
+            var savePctF = familyN <= 1 ? 0.5 : familyN === 2 ? 0.4 : familyN === 3 ? 0.3 : familyN === 4 ? 0.2 : 0.1;
+            var saveBudget = Math.round(monthlyIncome * savePctF);
+            var savePossible = Math.min(saveBudget, monthlyIncome - curIns - curLoan - curPen);
+            _fillNewNote('f83_goal', saveBudget + '만원/월');
+            _fillNewNote('f83_possible', Math.max(0, savePossible) + '만원/월');
+            _fillNewNote('f83_product', '1년이내 적금 / 3년+ ISA / 5년+ 연금저축펀드·IRP·ETF');
+            noteFilled += 3;
+          }
+          
+          /* 8-4 투자설계 */
+          if (totalAsset > 0) {
+            var safeAsset = D.safeAsset || 0;
+            var riskAsset = D.riskAsset || 0;
+            var totalFin = safeAsset + riskAsset;
+            var safeR = totalFin > 0 ? Math.round(safeAsset / totalFin * 100) : 0;
+            var riskR = 100 - safeR;
+            _fillNewNote('f84_safe', safeR + '% (' + safeAsset + '만원)');
+            _fillNewNote('f84_risk', riskR + '% (' + riskAsset + '만원)');
+            
+            /* 부자지수 */
+            if (yearlyIncome > 0) {
+              var wIdx = (netAsset * 10) / (age * yearlyIncome);
+              _fillNewNote('f84_wi', wIdx.toFixed(2) + ' (목표 1.0+)');
+            }
+            
+            /* 70/30 기준 차이 */
+            var safeGap = safeR - 70;
+            var gapMsg = safeGap > 5 ? '안전자산 ' + safeGap + '%p 과다' :
+                         safeGap < -5 ? '위험자산 ' + Math.abs(safeGap) + '%p 과다' :
+                         '균형 ✓';
+            _fillNewNote('f84_gap', gapMsg);
+            noteFilled += 4;
+          }
+          
+          /* 8-5 세금설계 */
+          var taxMsg = '연금저축+IRP 합산 연 900만원 한도. ';
+          if (yearlyIncome <= 5500) taxMsg += '세액공제율 16.5%';
+          else taxMsg += '세액공제율 13.2%';
+          _fillNewNote('f85_tax', taxMsg);
+          noteFilled++;
+          
+          /* 8-6 부동산설계 */
+          var realtyType = '';
+          var realtyAmt = 0;
+          try {
+            var rtEl = document.getElementById('f4_realty_type');
+            if (rtEl) realtyType = rtEl.textContent.trim();
+            var raEl = document.getElementById('f4_realty');
+            if (raEl) {
+              var raT = raEl.textContent.replace(/[^\d]/g, '');
+              realtyAmt = parseInt(raT) || 0;
+            }
+          } catch(e) {}
+          _fillNewNote('f86_own', realtyType || '미입력');
+          _fillNewNote('f86_price', realtyAmt > 0 ? realtyAmt.toLocaleString() + '만원' : '미입력');
+          noteFilled += 2;
+          
+          /* 8-7 보험설계 - 월 보험료 */
+          _fillNewNote('f87_premium', curIns + '만원/월');
+          noteFilled++;
+          
           console.log('[applyDocToNote→공식계산] 총 필드:', noteFilled + '개');
         } catch(formulaErr) {
           console.warn('[applyDocToNote→공식] 실패:', formulaErr.message);
