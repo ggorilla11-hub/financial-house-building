@@ -2670,7 +2670,7 @@ html{visibility:visible !important;}
     </div>
     <!-- ★ 유료 AI 재무진단 버튼 (아래) -->
       <button onclick="mvpStartCheckup()" style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-size:15px;font-weight:900;font-family:'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);">
-        🏥 유료 AI 재무진단 시작하기
+        🏥 유료 AI 재무진단 머니야 시작하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">1차 전문가 진단안내 → 2차 AI재무진단 → 3차 전문가 상담</span>
       </button>
 
@@ -14038,11 +14038,38 @@ async function diagConnectVoice(isPaid) {
     vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
-      // ★ [PATCH-2026-04-09] call-end는 비정상이어도 에러 배너 표시 안함
-      // Vapi 내부 cleanup 에러로 인한 오탐 방지
       console.log('[call-end]', _vapiUserEnded ? '사용자 종료' : '자동 종료');
-      showToast('📞 상담이 종료됐습니다');
-      _vapiUserEnded = false; // 플래그 초기화
+      
+      /* ★ [v14 D-1] 비정상 종료 시 alert + 텍스트 모드 자동 전환 */
+      var wasUserEnded = _vapiUserEnded;
+      _vapiUserEnded = false;
+      
+      if (wasUserEnded) {
+        /* 사용자가 직접 종료 — 평소 처리 */
+        showToast('📞 상담이 종료됐습니다');
+      } else {
+        /* 비정상 자동 종료 — 즉시 안내 + 텍스트 전환 */
+        console.warn('[v14 D-1] 음성 끊김 감지 → 텍스트 모드 자동 전환');
+        showToast('⚠️ 음성 연결이 끊어졌어요. 텍스트로 계속 진행합니다.', 5000);
+        
+        /* 사용자에게 안내 (화면 중앙) */
+        setTimeout(function() {
+          try {
+            alert('🎤 음성 연결이 일시적으로 끊어졌어요.\n\n' +
+                  '상담 내용은 모두 저장되어 있고, 지금부터는 텍스트로 이어서 진행하실 수 있습니다.\n\n' +
+                  '하단 입력창에 답변을 입력해 주세요.');
+          } catch(e) {}
+        }, 500);
+        
+        /* 기존 대화 히스토리로 텍스트 모드 전환 */
+        try {
+          var history = [];
+          try { if (window._history) history = window._history; } catch(e) {}
+          if (typeof switchToTextMode === 'function') {
+            setTimeout(function() { switchToTextMode(history); }, 1500);
+          }
+        } catch(e) { console.warn('[v14 D-1] switchToTextMode 실패:', e.message); }
+      }
     });
 
     /* ── 오류 ── */
@@ -15136,7 +15163,7 @@ function diagBuildNotes() {
           <div class="dnfield"><span class="dnfl">월 부족</span><span class="dnfv warn" id="f81_short">—</span></div>
           <div class="dnfield"><span class="dnfl">은퇴일시금</span><span class="dnfv warn" id="f81_lump">—</span></div>
           <div class="dnfield"><span class="dnfl">월 추가저축</span><span class="dnfv warn" id="f81_monthly">—</span></div>
-          <button onclick="alert('오상열 CFP 대표님께 연락 드리겠습니다.')" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;font-size:11px;font-weight:900;padding:8px 14px;border-radius:7px;border:none;cursor:pointer;margin-top:10px;font-family:'Noto Sans KR',sans-serif;box-shadow:0 2px 6px rgba(220,38,38,.3);">💼 월 부족자금이 어려우시면? 오상열 CFP 연락</button>
+
         </div>
       </div>
       <div class="dncard">
@@ -15237,7 +15264,7 @@ function diagBuildNotes() {
           </table>
           <div class="dn-info gold" style="margin-top:8px"><strong>기준</strong>: 사망·장해=연봉×3+부채 / 암=연봉×2 / 뇌·심=연봉×1 / 실손=5천만원 / 입수·치간=특약</div>
           <div class="dnfield" style="margin-top:8px"><span class="dnfl">현재 보험료</span><span class="dnfv" id="f87_premium">—</span></div>
-          <button onclick="alert('보험설계는 오상열 CFP 대표님의 도움이 필요합니다. 연락 드리겠습니다.')" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;font-size:11px;font-weight:900;padding:8px 14px;border-radius:7px;border:none;cursor:pointer;margin-top:10px;font-family:'Noto Sans KR',sans-serif;box-shadow:0 2px 6px rgba(220,38,38,.3);">💼 보험설계 상담 → 오상열 CFP 연락</button>
+
         </div>
       </div>
     </div>
@@ -18851,7 +18878,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <span class="mpc-title" style="color:#fff;font-weight:900;">진단 안내</span>
             <span class="mpc-chevron" id="mvpGuideChev" style="color:rgba(255,255,255,.6);">▾</span>
           </div>
-          <div class="accordion-body open" id="mvpGuideBody">
+          <div class="accordion-body" id="mvpGuideBody">
             <div style="padding:10px 14px;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,151,42,.1);display:flex;align-items:center;justify-content:center;font-size:18px;">⏱</div>
@@ -18886,7 +18913,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <span style="margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);margin-right:8px;">30<span style="font-size:10px;font-weight:500;">분</span></span>
             <span class="mpc-chevron" id="mvpCreditChev" style="color:rgba(255,255,255,.6);">▾</span>
           </div>
-          <div class="accordion-body open" id="mvpCreditBody">
+          <div class="accordion-body" id="mvpCreditBody">
             <div style="padding:10px 14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <span style="font-size:11px;color:var(--muted);">이번달 남은 시간</span>
