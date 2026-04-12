@@ -15288,6 +15288,22 @@ function diagBuildNotes() {
 function diagActivatePart(idx) {
   diagCurPart = idx;
 
+  /* ★ [v14 C-3] 5단계 진입 시 현재 나이 자동 표시 */
+  if (idx === 5) {
+    setTimeout(function() {
+      try {
+        var fhSvg = document.querySelector('.dn-fhsvg');
+        if (fhSvg && typeof D !== 'undefined' && D.ageNum) {
+          var curEl = fhSvg.querySelector('#sv-cur-age');
+          if (curEl && !curEl.textContent.trim()) {
+            curEl.textContent = D.ageNum + '세';
+            console.log('[v14 C-3] 현재나이 자동 표시:', D.ageNum);
+          }
+        }
+      } catch(e) { console.warn('[v14 C-3]', e.message); }
+    }, 500);
+  }
+
   // ★ 새 탭형 노트 — 진단 단계와 탭 번호 1:1 매핑
   // 0표지 1인적 2고민 3수지 4자산 5집짓기 6포트폴리오 7종합재무설계 8최종의견 9재무건강 10대화록
   var tabIdx = (idx >= 0 && idx <= 10) ? idx : 0;
@@ -16395,6 +16411,49 @@ let diagLastFilledLabel = '';
 function diagParseAiSpeech(aiText) {
   var t = aiText;
 
+  /* ★ [v14 C-1] 5단계 금융집짓기 SVG 빌드 애니메이션
+   * 머니야 발화 키워드별로 SVG 부분에 .built 클래스 추가
+   * 시스템 프롬프트 발화 흐름:
+   *   1. "보장자산이라는 기초공사" → bp-f (보험)
+   *   2. "저축이라는 기둥을 세우" → bp-w (부채/저축/은퇴)
+   *   3. "생로병사라는 처마보" → bp-tl (현재/은퇴/사망 처마)
+   *   4. "투자라는 지붕" → bp-r (지붕)
+   *   5. "굴뚝이라는 부동산" → bp-n (굴뚝)
+   */
+  try {
+    var fhSvg = document.querySelector('.dn-fhsvg');
+    if (fhSvg) {
+      var buildPart = function(partId) {
+        var el = fhSvg.querySelector('#' + partId);
+        if (el && !el.classList.contains('built')) {
+          el.classList.add('built');
+          console.log('[v14 C-1 SVG빌드]', partId);
+        }
+      };
+      
+      /* 1. 보험 (기초공사) */
+      if (/보장자산.*기초공사|기초공사.*시작|보험.*기초|기초.*보험/.test(t)) {
+        buildPart('bp-f');
+      }
+      /* 2. 저축/부채/은퇴 (기둥/벽) */
+      if (/저축.*기둥|기둥.*세우|저축이라는|벽.*저축/.test(t)) {
+        buildPart('bp-w');
+      }
+      /* 3. 처마보 (현재/은퇴/사망 시간축) */
+      if (/생로병사|처마보|처마|시간축|은퇴는 몇|예상 수명|몇 세로 생각/.test(t)) {
+        buildPart('bp-tl');
+      }
+      /* 4. 투자 (지붕) */
+      if (/투자.*지붕|지붕.*올리|투자라는|자산배분.*철근|콘크리트/.test(t)) {
+        buildPart('bp-r');
+      }
+      /* 5. 부동산 (굴뚝) */
+      if (/굴뚝.*부동산|부동산.*굴뚝|굴뚝이라는/.test(t)) {
+        buildPart('bp-n');
+      }
+    }
+  } catch(svgErr) { console.warn('[v14 C-1 SVG] 실패:', svgErr.message); }
+
   /* ── v14 A-7 단계 전환 감지 — strong 키워드만 점프 허용 ── 
    * strong: 명확한 단계 전환 신호 (예: "이제 4단계", "자산부채로 넘어")
    * weak: 단계 내 콘텐츠 키워드 (예: "대출", "보험료") - 점프 트리거 안 함
@@ -16932,6 +16991,48 @@ function diagAutoFillNote(userText) {
   if (!t) return;
   
   console.log('[USER 발화]', t, '| curStep:', (typeof diagCurPart !== 'undefined' ? diagCurPart : '?'));
+
+  /* ★ [v14 C-2] 5단계 은퇴/사망 나이 답변 → SVG 입력
+   * 머니야 직전 질문이 "은퇴는 몇 세" 또는 "예상 수명/사망"이면
+   * 고객 숫자 답변을 SVG의 sv-ret-age / sv-die-age에 입력
+   */
+  try {
+    var lq = (typeof diagLastQ !== 'undefined' ? diagLastQ : '') || '';
+    var ageM = t.match(/^([\d]{2,3})\s*(?:세|살)?[.\s]*$/);
+    if (ageM) {
+      var ageVal = parseInt(ageM[1]);
+      if (ageVal >= 40 && ageVal <= 110) {
+        var fhSvg = document.querySelector('.dn-fhsvg');
+        if (fhSvg) {
+          /* 은퇴 나이 */
+          if (/은퇴.*몇\s*세|은퇴.*나이|은퇴 시점|몇 세에 은퇴/.test(lq) && ageVal <= 80) {
+            var retEl = fhSvg.querySelector('#sv-ret-age');
+            if (retEl) {
+              retEl.textContent = ageVal + '세';
+              if (typeof D !== 'undefined') D.retireAge = ageVal;
+              console.log('[v14 C-2 SVG] 은퇴나이:', ageVal);
+              /* 현재 나이도 자동 표시 */
+              var curEl = fhSvg.querySelector('#sv-cur-age');
+              if (curEl && typeof D !== 'undefined' && D.ageNum) curEl.textContent = D.ageNum + '세';
+              return;
+            }
+          }
+          /* 사망 예상 나이 */
+          if (/예상\s*수명|사망\s*나이|몇\s*세까지|수명.*몇/.test(lq) && ageVal >= 70) {
+            var dieEl = fhSvg.querySelector('#sv-die-age');
+            if (dieEl) {
+              dieEl.textContent = ageVal + '세';
+              if (typeof D !== 'undefined') D.dieAge = ageVal;
+              console.log('[v14 C-2 SVG] 사망나이:', ageVal);
+              /* 은퇴설계 자동 재계산 */
+              try { if (typeof _recalcRetireDesign === 'function') _recalcRetireDesign(); } catch(e) {}
+              return;
+            }
+          }
+        }
+      }
+    }
+  } catch(svgC2Err) { console.warn('[v14 C-2]', svgC2Err.message); }
 
   // ── 수정 요청 감지 (엄격) ──
   // "아니요", "아니오", "아니" 단독은 수정요청이 아닌 No 응답
