@@ -16018,8 +16018,8 @@ function diagParseAiSpeech(aiText) {
   var stepMap = [
     { step:1, keys:['성함이 어떻게','이름이 어떻게','성함을 여쭤','먼저 고객님','고객님에 대해 간단히','먼저 고객님에 대해','인적사항','신청서에 보니까','신청서에 적어','신청서에 보면','신청서에 따르면','삼십','사십','오십','육십','이십','확인해 볼게요'] },
     { step:2, keys:['경제적으로 가장 걱정','경제적으로 가장 큰 고민','고민이나 관심','고민되시거나 관심','가장 걱정되시거나','편하게 말씀해 주세요','경제적 고민'] },
-    { step:3, keys:['수입과 지출','실수령액이 어떻게','세후 한 달','월급이 어떻게','수입지출을 정리','지출을 함께 정리','소득이 어떻게','월수입이','한달 수입'] },
-    { step:4, keys:['자산과 부채','예적금이나 청약','자산을 정리','자산부채','예적금','금융자산은','부동산은 어떻게','주식 같은'] },
+    { step:3, keys:['수입과 지출','실수령액이 어떻게','세후 한 달','월급이 어떻게','수입지출을 정리','지출을 함께 정리','소득이 어떻게','월수입이','한달 수입','수입 지출','수입부터','월 수입','월수입','월 얼마','얼마나 버','벌고 계세요','대출 원리금','보험료는','연금은 따로','저축이나 투자','매달 남는','잉여자금','한 달 실수령','세후','수령액'] },
+    { step:4, keys:['자산과 부채','예적금이나 청약','자산을 정리','자산부채','예적금','금융자산은','부동산은 어떻게','주식 같은','자산 부채','연금 적립금','펀드','신용대출','담보대출','주택담보','전세','자가','월세','보증금','집값','자산이','부채가','대출이 있'] },
     { step:5, keys:['집을 그릴 때','금융집짓기 설계도','보험이 기초공사','기초공사','재무도 똑같','기둥을 세우','지붕을 올리','금융의 집','은퇴는 몇 세','예상 수명'] },
     { step:6, keys:['저축투자 포트폴리오','투자재원을 계산','적립식 저축','100-나이','순투자재원','저축 비중','투자 비중'] },
     { step:7, keys:['자산배분 포트폴리오','부동산 70','금융자산 30','리밸런싱','가중평균수익률'] },
@@ -16712,6 +16712,23 @@ function diagAutoFillNote(userText) {
     
     // ── 3단계 (수지) — 순서 기반 카운터 ──
     if (curStep === 3) {
+      /* ★ [v14 A-4] lastQ 기반 정확 매칭 우선 (사전서류 케이스 대응)
+       * 순서 카운터는 머니야 질문이 명확하지 않을 때만 사용
+       */
+      var step3FieldByQ = null;
+      if (/대출\s*원리금|대출\s*상환|월\s*대출|대출이 있/.test(lastQ)) step3FieldByQ = 'bt_loan_cur';
+      else if (/보험료/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
+      else if (/연금.*납입|연금은\s*따로/.test(lastQ)) step3FieldByQ = 'bt_pen_cur';
+      else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) step3FieldByQ = 'bt_sav_cur';
+      else if (/매달\s*남|남는\s*돈|잉여/.test(lastQ)) step3FieldByQ = 'bt_sur_cur';
+      else if (/실수령액|월급|월\s*수입|월\s*소득|세후/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
+      
+      if (step3FieldByQ) {
+        console.log('[v14 A-4 lastQ매칭 step3]', step3FieldByQ, '=', displayAmount, '| lastQ:', lastQ.substring(0, 40));
+        _fillNewNote(step3FieldByQ, displayAmount);
+        return;
+      }
+      
       // 단계 진입 시 카운터 리셋
       if (diagLastStep3Reset !== curStep) {
         diagStep3Counter = 0;
@@ -16731,6 +16748,21 @@ function diagAutoFillNote(userText) {
     
     // ── 4단계 (자산) — 순서 기반 카운터 ──
     if (curStep === 4) {
+      /* ★ [v14 A-4] lastQ 기반 정확 매칭 우선 */
+      var step4FieldByQ = null;
+      if (/예적금|예금|적금|청약/.test(lastQ)) step4FieldByQ = 'f4_deposit';
+      else if (/연금\s*적립|연금\s*잔액/.test(lastQ)) step4FieldByQ = 'f4_pension';
+      else if (/펀드|주식|투자\s*자산|ETF/.test(lastQ)) step4FieldByQ = 'f4_invest';
+      else if (/집값|보증금|전세|월세|부동산/.test(lastQ)) step4FieldByQ = 'f4_realty';
+      else if (/신용\s*대출/.test(lastQ)) step4FieldByQ = 'f4_credit';
+      else if (/담보\s*대출|주담대|주택\s*담보/.test(lastQ)) step4FieldByQ = 'f4_mortgage';
+      
+      if (step4FieldByQ) {
+        console.log('[v14 A-4 lastQ매칭 step4]', step4FieldByQ, '=', displayAmount, '| lastQ:', lastQ.substring(0, 40));
+        _fillNewNote(step4FieldByQ, displayAmount);
+        return;
+      }
+      
       if (diagLastStep4Reset !== curStep) {
         diagStep4Counter = 0;
         diagLastStep4Reset = curStep;
@@ -16739,9 +16771,7 @@ function diagAutoFillNote(userText) {
       if (diagStep4Counter < DIAG_STEP4_FIELDS.length) {
         var fieldId2 = DIAG_STEP4_FIELDS[diagStep4Counter];
         
-        /* ★ [BUG-008 FIX 2026-04-10] f4_realty_type 슬롯은 텍스트 전용
-         * 고객이 숫자를 먼저 입력했다면 이 슬롯은 건너뛰고 f4_realty(금액)으로
-         */
+        /* ★ [BUG-008 FIX 2026-04-10] f4_realty_type 슬롯은 텍스트 전용 */
         if (fieldId2 === 'f4_realty_type') {
           console.log('[순서 입력 step4] 거주형태 슬롯은 텍스트 전용 - 숫자 입력이므로 f4_realty로');
           diagStep4Counter++;
