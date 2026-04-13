@@ -18164,16 +18164,21 @@ function diagAutoFillNote(userText) {
     
     // ── 3단계 (수지) — 순서 기반 카운터 ──
     if (curStep === 3) {
-      /* ★ [v14 A-4] lastQ 기반 정확 매칭 우선 (사전서류 케이스 대응)
-       * 순서 카운터는 머니야 질문이 명확하지 않을 때만 사용
+      /* ★ [A-4 강화] qCtx(최근3발화합) 우선 매칭
+       * "월 얼마인가요?" 같은 모호한 질문은 이전 컨텍스트(원리금 언급)로 판단
+       * 실수령액은 명시적 키워드만 매칭 ("월"단독 제외)
        */
       var step3FieldByQ = null;
-      if (/대출\s*원리금|대출\s*상환|월\s*대출|대출이 있/.test(lastQ)) step3FieldByQ = 'bt_loan_cur';
-      else if (/보험료/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
-      else if (/연금.*납입|연금은\s*따로/.test(lastQ)) step3FieldByQ = 'bt_pen_cur';
-      else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) step3FieldByQ = 'bt_sav_cur';
-      else if (/매달\s*남|남는\s*돈|잉여/.test(lastQ)) step3FieldByQ = 'bt_sur_cur';
-      else if (/실수령액|월급|월\s*수입|월\s*소득|세후/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
+      var matchCtx = qCtx || lastQ; // qCtx(최근3발화) 우선
+
+      // 대출 원리금 — 가장 구체적 키워드 우선 (단순 "월 얼마"도 이전에 원리금 언급 있으면 매칭)
+      if (/대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중|갚고\s*있|대출이\s*(?:있|얼마)|월\s*대출/.test(matchCtx)) step3FieldByQ = 'bt_loan_cur';
+      else if (/보험료|보험\s*납입|보험\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_ins_cur';
+      else if (/연금.*납입|연금은\s*따로|연금\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_pen_cur';
+      else if (/저축이나\s*투자|저축\s*투자|적금|투자는|저축\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_sav_cur';
+      else if (/매달\s*남|남는\s*돈|잉여/.test(matchCtx)) step3FieldByQ = 'bt_sur_cur';
+      // 실수령액 — 반드시 명시적 키워드 (단순 "월 얼마"는 매칭 안됨)
+      else if (/실수령액|세후.*수입|세후.*월급|한\s*달\s*실수령|세후\s*한\s*달|월\s*급여|월\s*소득/.test(matchCtx)) step3FieldByQ = 'bt_inc_cur';
       
       if (step3FieldByQ) {
         /* ★ [v14 C-11] bt_inc_cur는 보통 100만원 이상. 적은 값 들어오면 보호 */
@@ -19006,12 +19011,17 @@ function snCollapseAll() {
 /* snSyncAll 은 위의 dnGo 래핑에서 i===11 시 호출됨 */
 
 function snSyncAll() {
-  // 0단계
+  // ★ 기획: 각 탭에서 입력/확정된 노트가 그대로 상담노트에 표시
+  // 방식: 각 단계 패널의 dncard 전체를 실시간 복제
+
+  // 0단계 - 표지
   snSet('sn_f0_date',    'f0_date');
   snSet('sn_f0_session', 'f0_session');
-  snSet('sn_f0_time',    null, '예상 시간');
+  var timeEl = document.getElementById('f0_time') || document.querySelector('[id*="f0_time"]');
+  var snTime = document.getElementById('sn_f0_time');
+  if (snTime) snTime.textContent = timeEl ? timeEl.textContent.trim() : (document.getElementById('diagSessionInfo') ? document.getElementById('diagSessionInfo').textContent : '—');
 
-  // 1단계
+  // 1단계 - 인적사항
   snSet('sn_f1_name',   'f1_name');
   snSet('sn_f1_age',    'f1_age');
   snSet('sn_f1_marry',  'f1_marry');
@@ -19019,12 +19029,12 @@ function snSyncAll() {
   snSet('sn_f1_job',    'f1_job');
   snSet('sn_f1_dual',   'f1_dual');
 
-  // 2단계
+  // 2단계 - 고민
   snSet('sn_f2_w1',  'f2_w1');
   snSet('sn_f2_w2',  'f2_w2');
   snSet('sn_f2_sol', 'f2_solution');
 
-  // 3~9단계: 각 패널 dncard 내용 복사
+  // 3~9단계: 각 패널 전체 dncard 복사
   snCopyPanel('sn_step3_body', 'dnp3');
   snCopyPanel('sn_step4_body', 'dnp4');
   snCopyPanel('sn_step5_body', 'dnp5');
@@ -19041,7 +19051,8 @@ function snSet(snId, srcId, fallback) {
     var src = document.getElementById(srcId);
     if (src) {
       var txt = src.textContent.trim();
-      el.textContent = txt && txt !== '— 입력 대기' ? txt : (fallback || '—');
+      var isEmpty = !txt || txt === '—' || txt.indexOf('입력 대기') >= 0 || txt.indexOf('대기') >= 0;
+      el.textContent = !isEmpty ? txt : (fallback || '—');
       return;
     }
   }
@@ -19052,16 +19063,31 @@ function snCopyPanel(snId, panelId) {
   var dest = document.getElementById(snId);
   var src  = document.getElementById(panelId);
   if (!dest || !src) return;
-  // dncard 내 dncbody 복사 (읽기전용 클론)
-  var body = src.querySelector('.dncbody');
-  if (body) {
-    var clone = body.cloneNode(true);
-    clone.style.pointerEvents = 'none';
-    clone.style.fontSize = '10.5px';
-    dest.innerHTML = '';
-    dest.appendChild(clone);
+
+  // dncard 전체 복사 시도 → 없으면 dncbody → 없으면 패널 전체
+  var target = src.querySelector('.dncbody') || src.querySelector('.dncard') || src;
+  if (!target || target === src && src.children.length === 0) {
+    dest.innerHTML = '<div style="font-size:10px;color:#9ca3af;padding:6px;">상담 진행 후 표시됩니다</div>';
+    return;
   }
+
+  var clone = target.cloneNode(true);
+  // 읽기전용: 클릭/입력 비활성화
+  clone.style.pointerEvents = 'none';
+  clone.style.fontSize = '10.5px';
+  clone.style.opacity = '0.95';
+  // confirmed(확정) 항목만 강조, empty(미입력) 항목은 흐리게
+  clone.querySelectorAll('.dnfv.empty').forEach(function(el) {
+    el.style.opacity = '0.4';
+  });
+  clone.querySelectorAll('.dnfv.confirmed').forEach(function(el) {
+    el.style.color = '#0B1D3A';
+    el.style.fontWeight = '800';
+  });
+  dest.innerHTML = '';
+  dest.appendChild(clone);
 }
+
 
 </script>
 
