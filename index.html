@@ -18572,18 +18572,32 @@ function diagToggleMoneyaMute() {
 
 /* ── #9: 원페이지 인쇄/PDF + 카톡 + 이메일 공유 ── */
 function opPrint() {
-  var body = document.getElementById('dn_onepage_body');
-  if (!body || body.children.length === 0 || body.querySelector('[style*="상담 완료 후"]')) {
+  var opBody = document.getElementById('dn_onepage_body');
+  if (!opBody || opBody.children.length === 0 || opBody.querySelector('[style*="상담 완료 후"]')) {
     if (typeof showToast === 'function') showToast('⚠️ 먼저 상담을 진행해 주세요.');
     return;
   }
   var w = window.open('', '_blank');
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
-  w.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">');
-  w.document.write('<style>body{margin:0;padding:10mm;font-family:"Noto Sans KR",sans-serif;}@media print{@page{size:A4;margin:0}body{padding:8mm;}}</style>');
+  w.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&display=swap" rel="stylesheet">');
+  w.document.write('<style>');
+  w.document.write('*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}');
+  w.document.write('html,body{margin:0;padding:0;width:210mm;}');
+  w.document.write('body{font-family:"Noto Sans KR",sans-serif;background:#fff;}');
+  w.document.write('.op-wrap{width:210mm;min-height:297mm;padding:10mm 11mm 14mm;background:#fff;}');
+  w.document.write('svg{max-width:100%!important;height:auto!important;}');
+  w.document.write('table{width:100%!important;table-layout:fixed;}');
+  w.document.write('@media print{');
+  w.document.write('@page{size:A4 portrait;margin:0;}');
+  w.document.write('html,body{width:210mm;height:297mm;}');
+  w.document.write('.op-wrap{padding:8mm 10mm 12mm;}');
+  w.document.write('}');
+  w.document.write('</style>');
   w.document.write('</head><body>');
-  w.document.write(body.innerHTML);
-  w.document.write('<script>window.onload=function(){window.print();}<\/script>');
+  w.document.write('<div class="op-wrap">');
+  w.document.write(opBody.innerHTML);
+  w.document.write('</div>');
+  w.document.write('<script>window.onload=function(){setTimeout(function(){window.print();},800);}<\/script>');
   w.document.write('</body></html>');
   w.document.close();
 }
@@ -18594,7 +18608,6 @@ function opShareKakao() {
   var url = window.location.href.split('?')[0];
   var title = (name || '고객') + '님의 금융집짓기® 재무진단 결과';
   var desc = '오원트금융연구소 AI머니야가 분석한 맞춤형 재무설계 원페이지입니다.';
-  // 카카오 SDK 연동
   try {
     if (window.Kakao && window.Kakao.isInitialized && window.Kakao.isInitialized()) {
       window.Kakao.Share.sendDefault({
@@ -18609,7 +18622,6 @@ function opShareKakao() {
       return;
     }
   } catch(e) {}
-  // 카카오 SDK 없으면 카카오톡 앱 URL scheme으로 대체
   if (typeof showToast === 'function') showToast('📋 링크를 복사했습니다. 카카오톡에 붙여넣기 하세요.');
   try { navigator.clipboard.writeText(url + '\n\n' + title + '\n' + desc); } catch(e) {}
 }
@@ -18618,15 +18630,22 @@ function opShareEmail() {
   var name = '';
   try { var el = document.getElementById('f1_name'); name = el ? el.textContent.trim() : ''; } catch(e) {}
   var subject = encodeURIComponent((name || '고객') + '님의 금융집짓기® 재무진단 원페이지');
-  var url = window.location.href.split('?')[0];
-  var body = encodeURIComponent(
+  var svcUrl = window.location.href.split('?')[0];
+  var mailBody = encodeURIComponent(
     '안녕하세요, 오원트금융연구소 오상열 CFP입니다.\n\n' +
     '오늘 상담에서 작성된 금융집짓기® 재무진단 원페이지를 공유드립니다.\n\n' +
-    '▶ AI머니야 재무진단 서비스: ' + url + '\n\n' +
+    '▶ AI머니야 재무진단 서비스: ' + svcUrl + '\n\n' +
     '문의: pf.kakao.com/_vxfmfxj\n\n' +
     '감사합니다.'
   );
-  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  var mailLink = 'mailto:?subject=' + subject + '&body=' + mailBody;
+  // window.location.href 대신 a 태그 클릭으로 처리 (모바일 호환)
+  var a = document.createElement('a');
+  a.href = mailLink;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); }, 500);
 }
 
 /* ── #6/#14: 홈(무료페이지) 복귀 ── */
