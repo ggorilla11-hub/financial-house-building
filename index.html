@@ -18506,21 +18506,51 @@ document.addEventListener('visibilitychange', function() {
 <!-- ★ [추가개발 #13/#5] 머니야 음소거 + [#6/#14] 홈복귀 + [#7] 상담노트 어코디언 (2026-04-13) -->
 <script>
 
-/* ── #13/#5: 머니야 음소거 — 독립 버튼, 기존 음성코드 미수정 ── */
-var _monyaMuted = false;
-function monyaToggleMute() {
-  _monyaMuted = !_monyaMuted;
+/* ── #13/#5: 머니야 음소거 — 전임개발자 솔루션 (Vapi 공식 API) ── */
+window.diagMoneyaMuted = false;
+window._moneyaMuteObserver = null;
+function diagToggleMoneyaMute() {
+  window.diagMoneyaMuted = !window.diagMoneyaMuted;
+  var muted = window.diagMoneyaMuted;
+
+  // 1. Vapi 공식 API (주)
+  try {
+    if (typeof vapi !== 'undefined' && vapi.send) {
+      vapi.send({
+        type: 'control',
+        control: muted ? 'mute-assistant' : 'unmute-assistant'
+      });
+    }
+  } catch(e) {}
+
+  // 2. DOM audio mute (보조)
   document.querySelectorAll('audio').forEach(function(a) {
-    try { a.volume = _monyaMuted ? 0 : 1; a.muted = _monyaMuted; } catch(e) {}
+    try { a.muted = muted; } catch(e) {}
   });
-  var ico = document.getElementById('monyaMuteIco');
-  var lbl = document.getElementById('monyaMuteLbl');
-  var btn = document.getElementById('monyaMuteBtn');
-  if (ico) ico.textContent = _monyaMuted ? '🔇' : '🔊';
-  if (lbl) lbl.textContent = _monyaMuted ? '소리끔' : '음소거';
-  if (btn) btn.style.background = _monyaMuted ? 'rgba(220,38,38,.15)' : '';
+
+  // 3. 새 audio 생성 감지 (MutationObserver)
+  if (muted && !window._moneyaMuteObserver) {
+    window._moneyaMuteObserver = new MutationObserver(function(ms) {
+      if (!window.diagMoneyaMuted) return;
+      ms.forEach(function(m) {
+        m.addedNodes.forEach(function(n) {
+          if (n.nodeType === 1 && (n.tagName === 'AUDIO' || n.tagName === 'VIDEO')) {
+            try { n.muted = true; } catch(e) {}
+          }
+        });
+      });
+    });
+    window._moneyaMuteObserver.observe(document.body, { childList: true, subtree: true });
+  } else if (!muted && window._moneyaMuteObserver) {
+    window._moneyaMuteObserver.disconnect();
+    window._moneyaMuteObserver = null;
+  }
+
+  // UI 업데이트
+  var ico = document.getElementById('diagMoneyaMuteIco');
+  if (ico) ico.textContent = muted ? '🔇' : '🔊';
   if (typeof showToast === 'function') {
-    showToast(_monyaMuted ? '🔇 머니야 음소거 중 — 대화는 계속됩니다' : '🔊 머니야 소리 켜짐');
+    showToast(muted ? '🔇 머니야 OFF' : '🔊 머니야 ON', 1500);
   }
 }
 // DOM 바인딩 제거 — onclick 인라인으로만 처리
@@ -20177,14 +20207,12 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
             </div>
-            <!-- ★ [#13] 머니야 음소거 버튼 — c-mini-btn 독립 분리 -->
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;z-index:9999;position:relative;"
-              id="monyaMuteBtn"
-              onclick="(function(e){e.stopPropagation();monyaToggleMute();})(event)">
-              <div id="monyaMuteIco"
-                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;">🔊</div>
-              <div id="monyaMuteLbl"
-                style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">음소거</div>
+            <!-- ★ [#13] 머니야 음소거 버튼 — 전임개발자 솔루션 -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;z-index:10;"
+              onclick="(function(e){e.stopPropagation();diagToggleMoneyaMute();})(event)">
+              <div id="diagMoneyaMuteIco"
+                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;">🔊</div>
+              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">머니야</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
