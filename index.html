@@ -14258,6 +14258,32 @@ async function diagConnectVoice(isPaid) {
         }
       }
 
+      /* ★ [AI 발화 iOS 대응] assistant partial 누적 + 2초 타이머
+       * iOS에서 AI 발화 final이 안 오면 diagParseAiSpeech 미호출 → 탭 이동 안됨
+       * partial을 2초 후 diagParseAiSpeech로 처리하여 단계 전환 보장
+       */
+      if (msg.type === 'transcript' && msg.role === 'assistant') {
+        window._aiTranscriptBuffer = msg.transcript || '';
+        if (msg.transcriptType === 'final') {
+          if (window._aiTranscriptTimer) clearTimeout(window._aiTranscriptTimer);
+          window._aiTranscriptTimer = null;
+          // final은 기존 코드(아래)에서 처리됨
+        } else {
+          if (window._aiTranscriptTimer) clearTimeout(window._aiTranscriptTimer);
+          window._aiTranscriptTimer = setTimeout(function() {
+            var _at = window._aiTranscriptBuffer;
+            window._aiTranscriptBuffer = '';
+            window._aiTranscriptTimer = null;
+            if (_at && _at.trim()) {
+              console.log('[iOS AI partial 타이머] 처리:', _at.substring(0, 40));
+              diagLastQ = _at;
+              if (typeof diagPushQ === 'function') diagPushQ(_at);
+              setTimeout(function(){ diagParseAiSpeech(_at); }, 300);
+            }
+          }, 2000);
+        }
+      }
+
       /* ★ [고수님 2순위] conversation-update 백업 — transcript 안 올 때 대비 */
       if (msg.type === 'conversation-update' && msg.conversation) {
         var lastUser = null;
