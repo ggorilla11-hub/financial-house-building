@@ -2649,7 +2649,7 @@ html{visibility:visible !important;}
 
       <!-- ★ 무료 텍스트 상담 버튼 (신규) -->
       <button onclick="openFreeTextChat()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(76,175,125,.5);background:rgba(76,175,125,.1);color:#81C995;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        💬 AI재무진단 텍스트상담
+        💬 AI재무진단 머니야 텍스트상담
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무진단 · 로그인하면 맥락 기억</span>
       </button>
 
@@ -2813,7 +2813,7 @@ html{visibility:visible !important;}
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
     <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8B6914,#C9972A);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
     <div style="flex:1;">
-      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 텍스트상담</div>
+      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 머니야 텍스트상담</div>
       <div style="font-size:10px;color:rgba(255,255,255,.4);">AI 재무 상담 · AI 학습 미사용</div>
     </div>
     <button onclick="closeFreeTextChat()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;line-height:1;flex-shrink:0;">×</button>
@@ -8053,13 +8053,24 @@ async function ftcSend() {
   var input = document.getElementById('ftc-input');
   if (!input || !input.value.trim() || ftcIsLoading) return;
 
-  // ── 비로그인 3회 제한, 로그인 후 무제한 ──
-  var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
-  var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
+  // ★ [#19] 횟수 기반 3단계 제어
+  var isLoggedIn = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser);
+  var userMsgCount = ftcMessages.filter(function(m){ return m.role === 'user'; }).length;
+
+  // 3회 이하 — 로그인 없이 그냥 가능
+  // 4~10회 — 로그인 유도 (비로그인만)
   if (!isLoggedIn && userMsgCount >= 3) {
     ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 더 정밀한 AI재무진단이 가능합니다. 10초면 됩니다!');
     setTimeout(function(){ showMiniLogin('계속 상담하려면 로그인이 필요해요', null); }, 500);
     return;
+  }
+
+  // 11회 이상 — 유료 AI재무진단 안내 토스트 (로그인 여부 관계없이)
+  if (userMsgCount >= 10) {
+    if (typeof showToast === 'function') {
+      showToast('🎙️ 더 깊은 재무설계는 유료 AI재무진단 머니야에서! 음성으로 정밀 진단을 받아보세요.', 4000);
+    }
+    // 토스트 후에도 전송은 계속 허용 (차단 아님)
   }
 
   var userMsg = input.value.trim();
