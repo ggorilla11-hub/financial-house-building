@@ -15413,49 +15413,146 @@ function diagBuildNotes() {
       </div>
     </div>
 
-    <!-- ━━━━━━ 패널9: 재무건강결과표 (5대 영역 100점) ━━━━━━ -->
+    <!-- ━━━━━━ 패널9: 재무건강검진결과표 [#11 개편 2026-04-13] ━━━━━━ -->
     <div class="dnp" id="dnp9">
+
+      <!-- 상단 점수 헤더 (기존 유지) -->
       <div class="dn-score">
         <div class="dn-score-num" id="fh_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
         <div class="dn-score-lbl">재무건강검진 결과 (100점 만점)</div>
         <div class="dn-score-grade" id="fh_grade">—</div>
       </div>
-      <div class="dncard">
-        <div class="dnchd"><div class="dncicon">🩺</div><div><div class="dnctitle">5대 영역별 점수 (각 20점)</div><div class="dncsub">시스템 프롬프트 재무점수 산식</div></div></div>
-        <div class="dncbody">
-          <div class="dnfield"><span class="dnfl">① 지출관리</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>생활비/저축/노후/보험/대출 5×4점</span><span class="hi" id="fh_exp">—/20</span></div>
-              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_exp_bar" style="width:0%"></div></div>
-            </div>
+
+      <!-- ★ 건강검진표 스타일 결과표 -->
+      <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);margin-bottom:10px;">
+
+        <!-- 헤더 -->
+        <div style="background:#0B1D3A;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#fff;">🏠 재무건강검진결과표</div>
+            <div style="font-size:9px;color:#C9972A;margin-top:2px;">금융집짓기® AI 재무진단 · 오원트금융연구소</div>
           </div>
-          <div class="dnfield"><span class="dnfl">② 자산형성</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>부자지수/부채비율/비상예비/수익률</span><span class="hi" id="fh_asset">—/20</span></div>
-              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_asset_bar" style="width:0%"></div></div>
-            </div>
+          <div style="text-align:right;font-size:9px;color:rgba(255,255,255,.6);line-height:1.8;">
+            <div id="fh_date_disp">—</div>
+            <div id="fh_name_disp" style="color:#E8B84B;font-weight:700;">—</div>
           </div>
-          <div class="dnfield"><span class="dnfl">③ 보험보장</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>8대항목(8) + 보장보험료(12)</span><span class="hi" id="fh_ins">—/20</span></div>
-              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ins_bar" style="width:0%"></div></div>
-            </div>
+        </div>
+
+        <!-- 고객 기본정보 -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0B1D3A;">
+          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;font-weight:600;">성명</div>
+            <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-top:2px;" id="fh_r_name">—</div>
           </div>
-          <div class="dnfield"><span class="dnfl">④ 노후준비</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>은퇴준비율(10) + 노후저축(10)</span><span class="hi" id="fh_ret">—/20</span></div>
-              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ret_bar" style="width:0%"></div></div>
-            </div>
+          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;font-weight:600;">나이/직업</div>
+            <div style="font-size:10px;font-weight:800;color:#0B1D3A;margin-top:2px;" id="fh_r_age">—</div>
           </div>
-          <div class="dnfield"><span class="dnfl">⑤ 부채관리</span>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>신용/담보/원리금/부채비율 5×4점</span><span class="hi" id="fh_debt">—/20</span></div>
-              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_debt_bar" style="width:0%"></div></div>
+          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;font-weight:600;">월소득</div>
+            <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-top:2px;" id="fh_r_income">—</div>
+          </div>
+          <div style="padding:7px 8px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;font-weight:600;">순자산</div>
+            <div style="font-size:11px;font-weight:900;color:#15803D;margin-top:2px;" id="fh_r_net">—</div>
+          </div>
+        </div>
+
+        <!-- 종합점수 + 부자지수 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0B1D3A;">
+          <div style="padding:10px 12px;border-right:1px solid #0B1D3A;text-align:center;background:#FFFBEA;">
+            <div style="font-size:9px;color:#6b7280;font-weight:600;margin-bottom:4px;">종합 재무건강점수</div>
+            <div style="font-size:28px;font-weight:900;color:#0B1D3A;" id="fh_r_score">—</div>
+            <div style="font-size:9px;color:#6b7280;margin-top:2px;">/ 100점</div>
+            <div style="display:inline-block;margin-top:6px;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:800;" id="fh_r_grade_badge">—</div>
+          </div>
+          <div style="padding:10px 12px;text-align:center;background:#F0FDF4;">
+            <div style="font-size:9px;color:#6b7280;font-weight:600;margin-bottom:4px;">부자지수 (WI)</div>
+            <div style="font-size:28px;font-weight:900;color:#15803D;" id="fh_r_wi">—</div>
+            <div style="font-size:9px;color:#6b7280;margin-top:2px;">%</div>
+            <div style="display:inline-block;margin-top:6px;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:800;background:#dcfce7;color:#15803D;" id="fh_r_wi_grade">—</div>
+          </div>
+        </div>
+
+        <!-- 5대 영역 점수 카드 -->
+        <div style="padding:10px 12px;border-bottom:1px solid #e5e7eb;background:#f8fafc;">
+          <div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:8px;">📊 5대 영역별 점수 (각 20점)</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
+            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
+              <div style="font-size:8px;color:#6b7280;font-weight:600;">지출관리</div>
+              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_exp">—</div>
+              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_exp_bar" style="width:0%;height:4px;"></div></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
+              <div style="font-size:8px;color:#6b7280;font-weight:600;">자산형성</div>
+              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_asset">—</div>
+              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_asset_bar" style="width:0%;height:4px;"></div></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
+              <div style="font-size:8px;color:#6b7280;font-weight:600;">보험보장</div>
+              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_ins">—</div>
+              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_ins_bar" style="width:0%;height:4px;"></div></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
+              <div style="font-size:8px;color:#6b7280;font-weight:600;">노후준비</div>
+              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_ret">—</div>
+              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_ret_bar" style="width:0%;height:4px;"></div></div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
+              <div style="font-size:8px;color:#6b7280;font-weight:600;">부채관리</div>
+              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_debt">—</div>
+              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_debt_bar" style="width:0%;height:4px;"></div></div>
             </div>
           </div>
         </div>
+
+        <!-- 항목별 상세 검진 테이블 -->
+        <div style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">
+          <div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px;">🔬 항목별 상세 검진결과</div>
+          <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+            <thead>
+              <tr style="background:#0B1D3A;color:#fff;">
+                <th style="padding:6px 8px;text-align:left;font-weight:700;">검사 항목</th>
+                <th style="padding:6px 8px;text-align:center;font-weight:700;">현재값</th>
+                <th style="padding:6px 8px;text-align:center;font-weight:700;">기준값</th>
+                <th style="padding:6px 8px;text-align:center;font-weight:700;">판정</th>
+              </tr>
+            </thead>
+            <tbody id="fh_r_detail_body">
+              <tr><td colspan="4" style="text-align:center;padding:16px;color:#9ca3af;">상담 완료 후 자동 표시됩니다</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 강점 & 개선점 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb;">
+          <div style="padding:10px 12px;border-right:1px solid #e5e7eb;">
+            <div style="font-size:10px;font-weight:900;color:#15803D;margin-bottom:6px;">✅ 재무 강점</div>
+            <div id="fh_r_strengths" style="font-size:9.5px;color:#374151;line-height:1.7;">—</div>
+          </div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:10px;font-weight:900;color:#B91C1C;margin-bottom:6px;">⚠️ 개선 필요</div>
+            <div id="fh_r_improvements" style="font-size:9.5px;color:#374151;line-height:1.7;">—</div>
+          </div>
+        </div>
+
+        <!-- 푸터 서명 -->
+        <div style="padding:8px 14px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:8px;color:#9ca3af;">특허:제10-2202486호 · 상표:제41-0388261호 · 저작권:C-2020-008901호</div>
+          <div style="font-size:10px;font-weight:800;color:#C9972A;">오상열 CFP® · 오원트금융연구소</div>
+        </div>
       </div>
-      <div class="dn-info gold">💡 본 코드의 calcScore() 함수와 100% 동일한 공식으로 5대 영역 자동 채점됩니다.</div>
+
+      <!-- 기존 5대영역 바 (JS 호환용 — 숨김) -->
+      <div style="display:none;">
+        <span id="fh_exp">—/20</span><div id="fh_exp_bar" style="width:0%"></div>
+        <span id="fh_asset">—/20</span><div id="fh_asset_bar" style="width:0%"></div>
+        <span id="fh_ins">—/20</span><div id="fh_ins_bar" style="width:0%"></div>
+        <span id="fh_ret">—/20</span><div id="fh_ret_bar" style="width:0%"></div>
+        <span id="fh_debt">—/20</span><div id="fh_debt_bar" style="width:0%"></div>
+      </div>
+
+      <div class="dn-info gold">💡 상담 진행 후 검진결과가 자동으로 채워집니다.</div>
     </div>
 
     <!-- ━━━━━━ 패널10: 대화록 ━━━━━━ -->
@@ -18648,6 +18745,206 @@ function opShareEmail() {
   setTimeout(function() { document.body.removeChild(a); }, 500);
 }
 
+/* ── #11: 검진결과표 렌더링 ── */
+function renderHealthReport() {
+  var now = new Date();
+  var dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
+
+  // 기본 데이터 수집
+  function g(id) { var el = document.getElementById(id); return el ? (el.textContent || '').trim() : ''; }
+  var name    = g('f1_name') || '—';
+  var age     = g('f1_age') || '—';
+  var job     = g('f1_job') || '—';
+  var income  = g('bt_inc_cur') || g('f3_income') || '—';
+  var net     = g('f4_net') || '—';
+  var wi      = g('f4_wi_val') || '—';
+  var wiGrade = g('f4_wi_grade') || '—';
+
+  // 헤더 채우기
+  var dateEl = document.getElementById('fh_date_disp');
+  var nameEl = document.getElementById('fh_name_disp');
+  if (dateEl) dateEl.textContent = dateStr;
+  if (nameEl) nameEl.textContent = name !== '—' ? name + '님' : '—';
+
+  // 기본정보 채우기
+  var rName   = document.getElementById('fh_r_name');
+  var rAge    = document.getElementById('fh_r_age');
+  var rIncome = document.getElementById('fh_r_income');
+  var rNet    = document.getElementById('fh_r_net');
+  if (rName)   rName.textContent   = name;
+  if (rAge)    rAge.textContent    = age + (job !== '—' ? ' / ' + job : '');
+  if (rIncome) rIncome.textContent = income !== '—' ? '월 ' + income : '—';
+  if (rNet)    rNet.textContent    = net;
+
+  // 종합점수
+  var score = typeof calcScore === 'function' ? calcScore() : 0;
+  var rScore = document.getElementById('fh_r_score');
+  var rGrade = document.getElementById('fh_r_grade_badge');
+  var fhScore = document.getElementById('fh_score');
+  var fhGrade = document.getElementById('fh_grade');
+
+  if (rScore) rScore.textContent = score || '—';
+  if (fhScore) fhScore.innerHTML = (score || '—') + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
+
+  var gradeInfo = score >= 80 ? {t:'우수',c:'#15803D',bg:'#dcfce7'}
+    : score >= 60 ? {t:'양호',c:'#d97706',bg:'#fef3c7'}
+    : score >= 40 ? {t:'주의',c:'#ea580c',bg:'#ffedd5'}
+    : {t:'위험',c:'#dc2626',bg:'#fee2e2'};
+
+  if (rGrade) { rGrade.textContent = gradeInfo.t; rGrade.style.background = gradeInfo.bg; rGrade.style.color = gradeInfo.c; rGrade.style.border = '1px solid ' + gradeInfo.c; }
+  if (fhGrade) { fhGrade.textContent = gradeInfo.t; }
+
+  // 부자지수
+  var rWi = document.getElementById('fh_r_wi');
+  var rWiGrade = document.getElementById('fh_r_wi_grade');
+  if (rWi) rWi.textContent = wi;
+  if (rWiGrade) rWiGrade.textContent = wiGrade;
+
+  // 5대영역 점수 계산
+  function getAreaScore(ids) {
+    var total = 0;
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { var v = parseFloat(el.textContent); if (!isNaN(v)) total += v; }
+    });
+    return Math.min(20, Math.round(total));
+  }
+
+  // 기존 fh_exp 등에서 점수 읽어오기
+  function parseScore(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var txt = el.textContent.replace('/20','').trim();
+    var v = parseFloat(txt);
+    return isNaN(v) ? 0 : v;
+  }
+
+  var expS   = parseScore('fh_exp');
+  var assetS = parseScore('fh_asset');
+  var insS   = parseScore('fh_ins');
+  var retS   = parseScore('fh_ret');
+  var debtS  = parseScore('fh_debt');
+
+  function setArea(scoreId, barId, val) {
+    var el = document.getElementById(scoreId);
+    var bar = document.getElementById(barId);
+    if (el) el.textContent = val || '—';
+    if (bar) bar.style.width = (val ? Math.round(val/20*100) : 0) + '%';
+  }
+
+  setArea('fh_r_exp',   'fh_r_exp_bar',   expS);
+  setArea('fh_r_asset', 'fh_r_asset_bar', assetS);
+  setArea('fh_r_ins',   'fh_r_ins_bar',   insS);
+  setArea('fh_r_ret',   'fh_r_ret_bar',   retS);
+  setArea('fh_r_debt',  'fh_r_debt_bar',  debtS);
+
+  // 판정 함수
+  function judge(val, good, warn) {
+    if (val === null || val === undefined || val === '—') return '<span style="color:#9ca3af;">—</span>';
+    var styles = val >= good
+      ? 'background:#f0fdf4;color:#15803D;border:1px solid #86efac;'
+      : val >= warn
+      ? 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;'
+      : 'background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;';
+    var label = val >= good ? '정상' : val >= warn ? '주의' : '위험';
+    return '<span style="' + styles + 'font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">' + label + '</span>';
+  }
+
+  // 상세 검진 테이블 생성
+  function row(label, cur, std, judgeHtml) {
+    return '<tr style="border-bottom:1px solid #f0f0f0;">'
+      + '<td style="padding:5px 8px;font-size:9.5px;color:#374151;">' + label + '</td>'
+      + '<td style="padding:5px 8px;text-align:center;font-size:9.5px;font-weight:700;">' + (cur || '—') + '</td>'
+      + '<td style="padding:5px 8px;text-align:center;font-size:9px;color:#6b7280;">' + std + '</td>'
+      + '<td style="padding:5px 8px;text-align:center;">' + judgeHtml + '</td>'
+      + '</tr>';
+  }
+
+  function sectionRow(title, color) {
+    return '<tr style="background:' + (color||'#f8fafc') + ';">'
+      + '<td colspan="4" style="padding:5px 8px;font-size:9.5px;font-weight:900;color:#0B1D3A;">' + title + '</td>'
+      + '</tr>';
+  }
+
+  var g3 = function(id) { var el=document.getElementById(id); return el?(el.textContent||'').trim():'—'; };
+  var incomeNum = parseFloat(g3('bt_inc_cur')) || 0;
+
+  var tbody = '';
+  // 💰 지출관리
+  tbody += sectionRow('💰 지출관리 (20점)', '#FEF9E7');
+  var lifeVal = g3('bt_life_cur'); var lifePct = incomeNum > 0 ? Math.round(parseFloat(lifeVal)/incomeNum*100) : 0;
+  tbody += row('생활비 비율', lifeVal ? lifeVal + '만 (' + lifePct + '%)' : '—', '50% 이하', judge(100-lifePct, 60, 40));
+  var savVal  = g3('bt_sav_cur');
+  tbody += row('저축/투자', savVal ? savVal + '만' : '—', '수입의 20%+', judge(parseFloat(savVal)||0, incomeNum*0.2, incomeNum*0.1));
+  var penVal  = g3('bt_pen_cur');
+  tbody += row('노후연금', penVal ? penVal + '만' : '—', '수입의 10%+', judge(parseFloat(penVal)||0, incomeNum*0.1, incomeNum*0.05));
+  var insVal  = g3('bt_ins_cur');
+  tbody += row('보장성보험료', insVal ? insVal + '만' : '—', '수입의 10%', judge(parseFloat(insVal)||0, incomeNum*0.05, incomeNum*0.02));
+  var loanVal = g3('bt_loan_cur');
+  tbody += row('대출원리금', loanVal ? loanVal + '만' : '—', '수입의 30% 이하', judge(incomeNum*0.3-(parseFloat(loanVal)||0), incomeNum*0.1, 0));
+
+  // 📈 자산형성
+  tbody += sectionRow('📈 자산형성 (20점)', '#F0F9FF');
+  var totalA = g3('f4_total_asset'); var totalD = g3('f4_total_debt');
+  tbody += row('순자산', net !== '—' ? net + '만' : '—', '부자지수 100% 이상', judge(parseFloat(wi)||0, 100, 50));
+  tbody += row('부채비율', totalA !== '—' && totalD !== '—' ? Math.round(parseFloat(totalD)/parseFloat(totalA)*100)+'%' : '—', '총자산의 30% 이하', '—');
+  tbody += row('비상예비자금', g3('f4_deposit') || '—', '월소득 3~6개월', '—');
+
+  // 🛡️ 보험보장
+  tbody += sectionRow('🛡️ 보험보장 (20점)', '#F0FDF4');
+  var insItems = ['사망','장해','암진단','뇌혈관','심혈관','실손의료','입원수술','치매간병'];
+  var insCount = 0;
+  ['f7_death','f7_disable','f7_cancer','f7_brain','f7_heart','f7_actual','f7_hosp','f7_dement'].forEach(function(id){
+    var el = document.getElementById(id); if(el && el.textContent.trim() && el.textContent.trim() !== '—') insCount++;
+  });
+  tbody += row('보험 8대 보장', insCount + '/8 항목', '8개 전체', judge(insCount, 8, 5));
+  tbody += row('보장성보험료', insVal ? insVal + '만' : '—', '수입의 8~12%', '—');
+
+  // 🏖️ 노후준비
+  tbody += sectionRow('🏖️ 노후준비 (20점)', '#FFF7ED');
+  var retNeed = g3('f81_need') || g3('f8_ret_need') || '—';
+  var retShort = g3('f81_short') || '—';
+  tbody += row('노후 필요자금', retNeed, '은퇴 후 월 생활비×기간', '—');
+  tbody += row('부족자금', retShort, '0원 목표', retShort === '0' || retShort === '0만원' ? judge(100,100,50) : judge(0,100,50));
+  tbody += row('노후연금', penVal ? penVal + '만/월' : '—', '월 수입의 10%+', judge(parseFloat(penVal)||0, incomeNum*0.1, incomeNum*0.05));
+
+  // 💳 부채관리
+  tbody += sectionRow('💳 부채관리 (20점)', '#FDF4FF');
+  var creditD = g3('f4_debt_credit') || g3('bt_credit_debt') || '—';
+  var collatD = g3('f4_debt_collat') || g3('bt_collat_debt') || '—';
+  tbody += row('신용대출', creditD !== '—' ? creditD + '만' : '없음', '0원 목표', judge(creditD==='없음'||creditD==='—'?100:100-parseFloat(creditD)/100, 80, 50));
+  tbody += row('담보대출', collatD !== '—' ? collatD + '만' : '없음', 'LTV 60% 이하', '—');
+  tbody += row('월 원리금', loanVal ? loanVal + '만' : '—', '수입의 30% 이하', judge(incomeNum*0.3-(parseFloat(loanVal)||0), incomeNum*0.1, 0));
+
+  var detBody = document.getElementById('fh_r_detail_body');
+  if (detBody) detBody.innerHTML = tbody;
+
+  // 강점 & 개선점
+  var strengths = [], improvements = [];
+  if (expS >= 16)   strengths.push('✅ 지출 관리 우수');     else improvements.push('⚠️ 지출 구조 개선 필요');
+  if (assetS >= 16) strengths.push('✅ 자산 형성 양호');     else improvements.push('⚠️ 자산 축적 강화 필요');
+  if (insS >= 16)   strengths.push('✅ 보험 보장 충분');     else improvements.push('⚠️ 보험 8대 보장 보완 필요');
+  if (retS >= 16)   strengths.push('✅ 노후 준비 충실');     else improvements.push('⚠️ 노후 연금 강화 필요');
+  if (debtS >= 16)  strengths.push('✅ 부채 관리 건전');     else improvements.push('⚠️ 부채 상환 계획 수립 필요');
+  if (!strengths.length) strengths.push('상담 진행 후 분석됩니다');
+  if (!improvements.length) improvements.push('특이 사항 없음');
+
+  var strEl = document.getElementById('fh_r_strengths');
+  var impEl = document.getElementById('fh_r_improvements');
+  if (strEl) strEl.innerHTML = strengths.join('<br>');
+  if (impEl) impEl.innerHTML = improvements.join('<br>');
+}
+
+/* ── #11: dnGo 래핑 — 탭9 진입 시 자동 렌더링 ── */
+(function() {
+  var _origDnGo9 = window.dnGo;
+  window.dnGo = function(i) {
+    if (typeof _origDnGo9 === 'function') _origDnGo9(i);
+    if (i === 9) { setTimeout(renderHealthReport, 100); }
+    if (i === 11) snSyncAll();
+  };
+})();
+
 /* ── #6/#14: 홈(무료페이지) 복귀 ── */
 function goToFreePageFromDiag() {
   var tabs = document.querySelectorAll('.mp-tab-btn');
@@ -18682,15 +18979,7 @@ function snCollapseAll() {
   });
 }
 
-/* ── #7: 상담노트 탭 진입 시 각 단계 데이터 동기화 ── */
-(function() {
-  // dnGo 원본 보존 후 래핑 (음성코드 미수정)
-  var _origDnGo = window.dnGo;
-  window.dnGo = function(i) {
-    if (typeof _origDnGo === 'function') _origDnGo(i);
-    if (i === 11) snSyncAll();
-  };
-})();
+/* snSyncAll 은 위의 dnGo 래핑에서 i===11 시 호출됨 */
 
 function snSyncAll() {
   // 0단계
