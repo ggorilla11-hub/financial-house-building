@@ -18506,36 +18506,34 @@ document.addEventListener('visibilitychange', function() {
 <!-- ★ [추가개발 #13/#5] 머니야 음소거 + [#6/#14] 홈복귀 + [#7] 상담노트 어코디언 (2026-04-13) -->
 <script>
 
-/* ── #13/#5: 머니야 음소거 ── */
+/* ── #13/#5: 머니야 음소거 — 클릭 이벤트 정상 작동 버전 ── */
 var _monyaMuted = false;
 function monyaToggleMute() {
   _monyaMuted = !_monyaMuted;
-  // Vapi 내부 코드 미수정 — 페이지 내 audio 볼륨만 제어
+  // 페이지 내 모든 audio 볼륨 제어 (Vapi 내부 코드 미수정)
   document.querySelectorAll('audio').forEach(function(a) {
-    try { a.volume = _monyaMuted ? 0 : 1; } catch(e) {}
+    try { a.volume = _monyaMuted ? 0 : 1; a.muted = _monyaMuted; } catch(e) {}
   });
-  // Vapi SDK가 내부적으로 생성하는 audio context gain 제어 시도
-  try {
-    if (window._vapiAudioContext) {
-      window._vapiAudioContext.destination.channelInterpretation = 'discrete';
-    }
-  } catch(e) {}
   var ico = document.getElementById('monyaMuteIco');
   var lbl = document.getElementById('monyaMuteLbl');
   var btn = document.getElementById('monyaMuteBtn');
   if (ico) ico.textContent = _monyaMuted ? '🔇' : '🔊';
   if (lbl) lbl.textContent = _monyaMuted ? '소리끔' : '음소거';
-  if (btn) {
-    btn.style.opacity = _monyaMuted ? '1' : '0.7';
-    btn.querySelector('.ico').style.background = _monyaMuted
-      ? 'rgba(220,38,38,.25)' : '';
-    btn.querySelector('.ico').style.borderColor = _monyaMuted
-      ? 'rgba(220,38,38,.5)' : '';
-  }
+  if (btn) btn.style.background = _monyaMuted ? 'rgba(220,38,38,.2)' : '';
   if (typeof showToast === 'function') {
     showToast(_monyaMuted ? '🔇 머니야 음소거 중 — 대화는 계속됩니다' : '🔊 머니야 소리 켜짐');
   }
 }
+// 음소거 버튼 클릭 이벤트 — DOM 로드 후 직접 바인딩 (onclick 중복 방지)
+document.addEventListener('DOMContentLoaded', function() {
+  var muteBtn = document.getElementById('monyaMuteBtn');
+  if (muteBtn) {
+    muteBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      monyaToggleMute();
+    });
+  }
+});
 
 /* ── #6/#14: 홈(무료페이지) 복귀 ── */
 function goToFreePageFromDiag() {
@@ -19605,7 +19603,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   <!-- ── 헤더 (MVP: 돌아가기/X 숨김) ── -->
   <div class="mp-header">
     <div class="mp-header-row">
-      <button class="mp-back-btn" onclick="mpClose()" style="display:none">← 돌아가기</button>
+      <!-- ★ [#7] ← 화살표: 원트큐브 결과화면으로 이동 -->
+      <button onclick="backToFreeResult()"
+        style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;">
+        ←
+      </button>
       <span class="mp-title-txt">🏥 AI 재무검진</span>
       <button class="mp-back-btn" onclick="mpClose()" style="display:none;font-size:16px;color:rgba(255,255,255,.4)">✕</button>
     </div>
@@ -19782,6 +19784,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
                   <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무진단 상담 | 보유기간: 서비스 이용 종료 시까지</span>
                 </span>
               </label>
+              <!-- ★ [#2] 면책/개인정보 고지 문구 — 체크박스 바로 아래 -->
+              <div style="margin-top:8px;padding:9px 11px;background:#fff8e6;border-radius:7px;border:1px solid rgba(201,151,42,.3);">
+                <div style="font-size:9.5px;color:#b45309;font-weight:800;margin-bottom:4px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
+                <div style="font-size:9px;color:#6b7280;line-height:1.6;">📋 개인정보보호법상 고객님과의 대화 내용을 기록함을 이해해 주시기 바랍니다. 대화 기록은 재무진단 서비스 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
+              </div>
             </div>
           </div>
         </div>
