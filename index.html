@@ -18180,10 +18180,13 @@ function diagAutoFillNote(userText) {
       var step3FieldByQ = null;
       // 직전 2개 발화 (대출 원리금 "월 얼마인가요?" 대응용)
       var prevQ = diagQHistory.slice(-2).join(' ');
+      // bt_loan_cur에 이미 값이 입력됐으면 prevQ 대출 조건 무시 (오염 방지)
+      var loanEl = document.getElementById('bt_loan_cur');
+      var loanAlreadyFilled = loanEl && loanEl.textContent && loanEl.textContent !== '—' && loanEl.textContent.indexOf('입력') < 0;
 
-      // 대출 원리금 — lastQ + 직전2발화에서 확인
+      // 대출 원리금 — lastQ + 직전2발화에서 확인 (단, 이미 입력된 경우 prevQ 무시)
       if (/대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중|갚고\s*있|대출이\s*(?:있|얼마)|월\s*대출/.test(lastQ) ||
-          /대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중/.test(prevQ)) step3FieldByQ = 'bt_loan_cur';
+          (!loanAlreadyFilled && /대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중/.test(prevQ))) step3FieldByQ = 'bt_loan_cur';
       else if (/보험료|보험\s*납입/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
       else if (/연금.*납입|연금은\s*따로/.test(lastQ)) step3FieldByQ = 'bt_pen_cur';
       else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) step3FieldByQ = 'bt_sav_cur';
