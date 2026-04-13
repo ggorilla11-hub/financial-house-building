@@ -8730,6 +8730,164 @@ function _mvpEnterCheckup() {
   mpOpen();
 }
 
+/* ★ [v14 G1] 머니야 음성 음소거 토글 — 대화 중 머니야만 잠시 끄기 
+ * Vapi의 setVolumeLevel() 또는 DOM audio 요소로 음소거 */
+window.diagMoneyaMuted = false;
+function diagToggleMoneyaMute() {
+  window.diagMoneyaMuted = !window.diagMoneyaMuted;
+  
+  try {
+    /* 방법 1: Vapi SDK setVolumeLevel (있으면 사용) */
+    if (typeof vapi !== 'undefined' && vapi) {
+      if (typeof vapi.setVolumeLevel === 'function') {
+        vapi.setVolumeLevel(window.diagMoneyaMuted ? 0 : 1);
+      } else if (typeof vapi.setMuted === 'function') {
+        /* 주의: setMuted는 내 마이크 음소거임 — 사용 안 함 */
+      }
+    }
+    
+    /* 방법 2: DOM의 모든 audio 요소 mute (백업) */
+    document.querySelectorAll('audio').forEach(function(a) {
+      try { a.muted = window.diagMoneyaMuted; } catch(e){}
+    });
+    /* daily-video / daily-audio iframe 내부 음성도 처리 */
+    document.querySelectorAll('video').forEach(function(v) {
+      try { if (v.srcObject) v.muted = window.diagMoneyaMuted; } catch(e){}
+    });
+  } catch(err) {
+    console.warn('[v14 G1] 음소거 실패:', err.message);
+  }
+  
+  /* 아이콘 변경 */
+  var ico = document.getElementById('diagMoneyaMuteIco');
+  if (ico) ico.textContent = window.diagMoneyaMuted ? '🔇' : '🔊';
+  
+  /* 버튼 활성 상태 표시 */
+  var btn = document.getElementById('diagMoneyaMuteBtn');
+  if (btn) {
+    if (window.diagMoneyaMuted) btn.classList.add('act');
+    else btn.classList.remove('act');
+  }
+  
+  /* Toast 안내 */
+  if (typeof showToast === 'function') {
+    showToast(window.diagMoneyaMuted ? '🔇 머니야 음성 OFF' : '🔊 머니야 음성 ON', 1500);
+  }
+  
+  console.log('[v14 G1] 머니야 음소거:', window.diagMoneyaMuted);
+}
+
+/* ★ [v14 G3] 머니야 음성 음소거 토글 — Vapi 공식 API 기반 (검증 완료)
+ * 
+ * [검증된 방식]
+ * 1) 주방법: vapi.send({type:'control', control:'mute-assistant'/'unmute-assistant'})
+ *    → Vapi 서버 레벨 제어, 가장 안정적
+ * 2) 보조: DOM audio muted 속성 (Vapi가 새 audio 만들어도 재적용)
+ * 3) 주기적 재적용: 음소거 상태에서 새 audio 추가 시 자동 mute
+ * 
+ * [토글 보장]
+ * - 음소거 OFF 시 unmute-assistant 전송 + 모든 audio의 muted=false
+ * - 주기적 체크(MutationObserver)로 새 audio도 상태 맞춤
+ */
+window.diagMoneyaMuted = false;
+window._moneyaMuteObserver = null;
+
+function diagToggleMoneyaMute() {
+  window.diagMoneyaMuted = !window.diagMoneyaMuted;
+  var muted = window.diagMoneyaMuted;
+  
+  /* ─── 방법 1: Vapi 공식 control 메시지 (주방법) ─── */
+  try {
+    if (typeof vapi !== 'undefined' && vapi && typeof vapi.send === 'function') {
+      vapi.send({
+        type: 'control',
+        control: muted ? 'mute-assistant' : 'unmute-assistant'
+      });
+      console.log('[v14 G3] Vapi control 전송:', muted ? 'mute-assistant' : 'unmute-assistant');
+    }
+  } catch(e) { console.warn('[v14 G3] Vapi send 실패:', e.message); }
+  
+  /* ─── 방법 2: DOM audio/video muted 속성 (보조) ─── */
+  _applyMuteToAllAudio(muted);
+  
+  /* ─── 방법 3: 음소거 동안 새 audio 추가 시 자동 mute (MutationObserver) ─── */
+  if (muted) {
+    _startMoneyaMuteObserver();
+  } else {
+    _stopMoneyaMuteObserver();
+  }
+  
+  /* ─── UI 업데이트 ─── */
+  var ico = document.getElementById('diagMoneyaMuteIco');
+  if (ico) ico.textContent = muted ? '🔇' : '🔊';
+  
+  var btn = document.getElementById('diagMoneyaMuteBtn');
+  if (btn) {
+    if (muted) btn.classList.add('act');
+    else btn.classList.remove('act');
+  }
+  
+  if (typeof showToast === 'function') {
+    showToast(muted ? '🔇 머니야 음성 OFF' : '🔊 머니야 음성 ON', 1500);
+  }
+  
+  console.log('[v14 G3] 머니야 음소거 상태:', muted);
+}
+
+/* 모든 audio/video 엘리먼트에 mute 적용 */
+function _applyMuteToAllAudio(muted) {
+  try {
+    document.querySelectorAll('audio').forEach(function(a) {
+      try { 
+        a.muted = muted;
+        /* 볼륨은 건드리지 않음 — volume=0 하면 복원 어려움 */
+      } catch(e){}
+    });
+    document.querySelectorAll('video').forEach(function(v) {
+      try { 
+        if (v.srcObject) v.muted = muted; 
+      } catch(e){}
+    });
+  } catch(e) { console.warn('[v14 G3] DOM mute 실패:', e.message); }
+}
+
+/* 음소거 중 새 audio 추가 감지 → 자동 mute 적용 */
+function _startMoneyaMuteObserver() {
+  if (window._moneyaMuteObserver) return;
+  try {
+    window._moneyaMuteObserver = new MutationObserver(function(mutations) {
+      if (!window.diagMoneyaMuted) return;
+      mutations.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+          if (node.nodeType !== 1) return;
+          if (node.tagName === 'AUDIO' || node.tagName === 'VIDEO') {
+            try { node.muted = true; } catch(e){}
+          }
+          /* iframe 내부 audio도 처리 시도 */
+          try {
+            var innerAudios = node.querySelectorAll ? node.querySelectorAll('audio, video') : [];
+            innerAudios.forEach(function(el) {
+              try { el.muted = true; } catch(e){}
+            });
+          } catch(e){}
+        });
+      });
+    });
+    window._moneyaMuteObserver.observe(document.body, { childList: true, subtree: true });
+    console.log('[v14 G3] Mute observer 시작');
+  } catch(e) { console.warn('[v14 G3] Observer 시작 실패:', e.message); }
+}
+
+function _stopMoneyaMuteObserver() {
+  try {
+    if (window._moneyaMuteObserver) {
+      window._moneyaMuteObserver.disconnect();
+      window._moneyaMuteObserver = null;
+      console.log('[v14 G3] Mute observer 종료');
+    }
+  } catch(e){}
+}
+
 function mvpStartCheckup() {
   /* ★ [v14 F2] 환경별 분기 — main=결제필수, dev=7일 무료체험 */
   var IS_STAGING = location.hostname.includes('-dev') 
@@ -14879,11 +15037,11 @@ function diagBuildNotes() {
     <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
     <button class="dnt" onclick="dnGo(5)">🏠 집짓기</button>
     <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
-    <button class="dnt" onclick="dnGo(7)">🎯 재무설계</button>
+    <button class="dnt" onclick="dnGo(7)">🎯 종합재무설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
     <button class="dnt" onclick="dnGo(9)">🩺 검진결과</button>
     <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
-    <button class="dnt" onclick="dnGo(11)">📄 상담노트</button>
+    <button class="dnt" onclick="dnGo(11)">📄 리포트</button>
     <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
   </div>
 
@@ -14909,7 +15067,7 @@ function diagBuildNotes() {
           <!-- 오상열 CFP 프로필 카드 -->
           <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:14px;border:1px solid rgba(201,151,42,.3);">
             <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
-              <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5" alt="오상열 CFP" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #E8B84B;flex-shrink:0;" onerror="this.style.display='none'">
+              <div style="width:48px;height:48px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #E8B84B;flex-shrink:0;">👨‍💼</div>
               <div>
                 <div style="font-size:13px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
                 <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:1px;">오원트금융연구소 · 금융집짓기® 창시자 · 25년 훈련</div>
@@ -15470,146 +15628,16 @@ function diagBuildNotes() {
       </div>
     </div>
 
-    <!-- ━━━━━━ 패널11: 상담노트 종합정리 [#7 재작성 2026-04-13] ━━━━━━ -->
+    <!-- ━━━━━━ 패널11: 리포트 (종합) ━━━━━━ -->
     <div class="dnp" id="dnp11">
-      <div class="dncard" style="padding:0;">
-        <div class="dnchd" style="padding:10px 14px;"><div class="dncicon">📄</div><div><div class="dnctitle">상담노트 종합정리</div><div class="dncsub">전체 단계 한눈에 · 클릭하면 펼쳐집니다</div></div></div>
-        <!-- 어코디언 컨테이너 -->
-        <div id="sn_accordion" style="padding:0 10px 14px;">
-
-          <!-- 공통 어코디언 CSS -->
-          <style>
-            .sn-item{border:1px solid rgba(201,151,42,.25);border-radius:8px;margin-bottom:6px;overflow:hidden;}
-            .sn-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff8e6;cursor:pointer;font-size:11px;font-weight:900;color:#0B1D3A;}
-            .sn-hd:hover{background:#fff3cc;}
-            .sn-hd .sn-arrow{font-size:10px;transition:transform .25s;color:#C9972A;}
-            .sn-bd{display:none;padding:10px 12px;background:#fff;border-top:1px solid rgba(201,151,42,.15);}
-            .sn-bd.open{display:block;}
-            .sn-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed rgba(201,151,42,.15);font-size:10.5px;gap:8px;}
-            .sn-row:last-child{border-bottom:none;}
-            .sn-lbl{color:#6B7280;font-weight:600;flex-shrink:0;min-width:90px;}
-            .sn-val{color:#0B1D3A;font-weight:700;text-align:right;word-break:break-all;}
-          </style>
-
-          <!-- 0단계: 표지 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>📋 0단계 — 표지</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">진단 일자</span><span class="sn-val" id="sn_f0_date">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">회차</span><span class="sn-val" id="sn_f0_session">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">예상 시간</span><span class="sn-val" id="sn_f0_time">—</span></div>
-            </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">상담 리포트</div><div class="dncsub">종합 상담 결과 요약</div></div></div>
+        <div class="dncbody">
+          <div id="dn_report_body" style="font-size:11px;color:#0B1D3A;line-height:1.6;">
+            <div style="text-align:center;padding:20px;color:#4A5568;">상담 완료 후 리포트가 표시됩니다</div>
           </div>
-
-          <!-- 1단계: 인적사항 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>👤 1단계 — 인적사항</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">① 성함</span><span class="sn-val" id="sn_f1_name">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">② 나이</span><span class="sn-val" id="sn_f1_age">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">③ 결혼 여부</span><span class="sn-val" id="sn_f1_marry">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">④ 가족 수</span><span class="sn-val" id="sn_f1_family">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">⑤ 직업</span><span class="sn-val" id="sn_f1_job">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">⑥ 맞벌이</span><span class="sn-val" id="sn_f1_dual">—</span></div>
-            </div>
-          </div>
-
-          <!-- 2단계: 경제적 고민 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>💭 2단계 — 경제적 고민</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">주요 걱정 1</span><span class="sn-val" id="sn_f2_w1">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">주요 걱정 2</span><span class="sn-val" id="sn_f2_w2">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">해결 방향</span><span class="sn-val" id="sn_f2_sol">—</span></div>
-            </div>
-          </div>
-
-          <!-- 3단계: 수입지출 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>💰 3단계 — 수입지출 분석</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step3_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 4단계: 자산부채 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🏦 4단계 — 자산부채 현황</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step4_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 5단계: 금융집짓기 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🏠 5단계 — 금융집짓기 설계</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step5_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 6단계: 포트폴리오 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>📈 6단계 — 포트폴리오</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step6_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 7단계: 종합재무설계 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🎯 7단계 — 종합재무설계</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step7_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 8단계: 최종의견 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>⭐ 8단계 — 최종의견</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step8_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 9단계: 재무건강 검진결과 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🩺 9단계 — 재무건강 검진결과</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step9_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 전체 펼치기 / 접기 버튼 -->
-          <div style="display:flex;gap:6px;margin-top:8px;">
-            <button onclick="snExpandAll()" style="flex:1;padding:8px;background:#0B1D3A;color:#E8B84B;border:none;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">▼ 전체 펼치기</button>
-            <button onclick="snCollapseAll()" style="flex:1;padding:8px;background:#fff8e6;color:#0B1D3A;border:1px solid #C9972A;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">▲ 전체 접기</button>
-          </div>
-
-        </div><!-- /sn_accordion -->
+        </div>
       </div>
-      <!-- 기존 report body 유지 (JS 호환) -->
-      <div id="dn_report_body" style="display:none;"></div>
     </div>
 
     <!-- ━━━━━━ 패널12: 원페이지 요약 ━━━━━━ -->
@@ -18503,132 +18531,6 @@ document.addEventListener('visibilitychange', function() {
 
 </script>
 
-<!-- ★ [추가개발 #13/#5] 머니야 음소거 + [#6/#14] 홈복귀 + [#7] 상담노트 어코디언 (2026-04-13) -->
-<script>
-
-/* ── #13/#5: 머니야 음소거 — 독립 버튼, 기존 음성코드 미수정 ── */
-var _monyaMuted = false;
-function monyaToggleMute() {
-  _monyaMuted = !_monyaMuted;
-  document.querySelectorAll('audio').forEach(function(a) {
-    try { a.volume = _monyaMuted ? 0 : 1; a.muted = _monyaMuted; } catch(e) {}
-  });
-  var ico = document.getElementById('monyaMuteIco');
-  var lbl = document.getElementById('monyaMuteLbl');
-  var btn = document.getElementById('monyaMuteBtn');
-  if (ico) ico.textContent = _monyaMuted ? '🔇' : '🔊';
-  if (lbl) lbl.textContent = _monyaMuted ? '소리끔' : '음소거';
-  if (btn) btn.style.background = _monyaMuted ? 'rgba(220,38,38,.15)' : '';
-  if (typeof showToast === 'function') {
-    showToast(_monyaMuted ? '🔇 머니야 음소거 중 — 대화는 계속됩니다' : '🔊 머니야 소리 켜짐');
-  }
-}
-// DOM 바인딩 제거 — onclick 인라인으로만 처리
-
-/* ── #6/#14: 홈(무료페이지) 복귀 ── */
-function goToFreePageFromDiag() {
-  var tabs = document.querySelectorAll('.mp-tab-btn');
-  if (typeof mpTab === 'function' && tabs && tabs[0]) {
-    mpTab(0, tabs[0]);
-  }
-  if (typeof showToast === 'function') showToast('✅ 검진안내 홈으로 이동했습니다');
-}
-
-/* ── #7: 어코디언 토글 ── */
-function snToggle(hd) {
-  var bd = hd.nextElementSibling;
-  var arrow = hd.querySelector('.sn-arrow');
-  var isOpen = bd.classList.contains('open');
-  bd.classList.toggle('open', !isOpen);
-  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
-function snExpandAll() {
-  document.querySelectorAll('#sn_accordion .sn-bd').forEach(function(bd) {
-    bd.classList.add('open');
-  });
-  document.querySelectorAll('#sn_accordion .sn-arrow').forEach(function(a) {
-    a.style.transform = 'rotate(180deg)';
-  });
-}
-function snCollapseAll() {
-  document.querySelectorAll('#sn_accordion .sn-bd').forEach(function(bd) {
-    bd.classList.remove('open');
-  });
-  document.querySelectorAll('#sn_accordion .sn-arrow').forEach(function(a) {
-    a.style.transform = '';
-  });
-}
-
-/* ── #7: 상담노트 탭 진입 시 각 단계 데이터 동기화 ── */
-(function() {
-  // dnGo 원본 보존 후 래핑 (음성코드 미수정)
-  var _origDnGo = window.dnGo;
-  window.dnGo = function(i) {
-    if (typeof _origDnGo === 'function') _origDnGo(i);
-    if (i === 11) snSyncAll();
-  };
-})();
-
-function snSyncAll() {
-  // 0단계
-  snSet('sn_f0_date',    'f0_date');
-  snSet('sn_f0_session', 'f0_session');
-  snSet('sn_f0_time',    null, '예상 시간');
-
-  // 1단계
-  snSet('sn_f1_name',   'f1_name');
-  snSet('sn_f1_age',    'f1_age');
-  snSet('sn_f1_marry',  'f1_marry');
-  snSet('sn_f1_family', 'f1_family');
-  snSet('sn_f1_job',    'f1_job');
-  snSet('sn_f1_dual',   'f1_dual');
-
-  // 2단계
-  snSet('sn_f2_w1',  'f2_w1');
-  snSet('sn_f2_w2',  'f2_w2');
-  snSet('sn_f2_sol', 'f2_solution');
-
-  // 3~9단계: 각 패널 dncard 내용 복사
-  snCopyPanel('sn_step3_body', 'dnp3');
-  snCopyPanel('sn_step4_body', 'dnp4');
-  snCopyPanel('sn_step5_body', 'dnp5');
-  snCopyPanel('sn_step6_body', 'dnp6');
-  snCopyPanel('sn_step7_body', 'dnp7');
-  snCopyPanel('sn_step8_body', 'dnp8');
-  snCopyPanel('sn_step9_body', 'dnp9');
-}
-
-function snSet(snId, srcId, fallback) {
-  var el = document.getElementById(snId);
-  if (!el) return;
-  if (srcId) {
-    var src = document.getElementById(srcId);
-    if (src) {
-      var txt = src.textContent.trim();
-      el.textContent = txt && txt !== '— 입력 대기' ? txt : (fallback || '—');
-      return;
-    }
-  }
-  el.textContent = fallback || '—';
-}
-
-function snCopyPanel(snId, panelId) {
-  var dest = document.getElementById(snId);
-  var src  = document.getElementById(panelId);
-  if (!dest || !src) return;
-  // dncard 내 dncbody 복사 (읽기전용 클론)
-  var body = src.querySelector('.dncbody');
-  if (body) {
-    var clone = body.cloneNode(true);
-    clone.style.pointerEvents = 'none';
-    clone.style.fontSize = '10.5px';
-    dest.innerHTML = '';
-    dest.appendChild(clone);
-  }
-}
-
-</script>
-
 
 <!-- ★ 이용약관 모달 -->
 <div id="terms-modal-bg" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:9999990;align-items:flex-end;justify-content:center;">
@@ -19555,11 +19457,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             </span>
           </span>
         </label>
-        <!-- ★ [#2] 면책/개인정보 고지 문구 — 체크박스 바로 아래 -->
-        <div style="margin-top:8px;padding:9px 11px;background:rgba(220,38,38,.06);border-radius:7px;border:1px solid rgba(220,38,38,.18);">
-          <div style="font-size:9.5px;color:#b45309;font-weight:800;margin-bottom:3px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
-          <div style="font-size:9px;color:#6b7280;line-height:1.6;">📋 개인정보보호법상 고객님과의 대화 내용을 기록함을 이해해 주시기 바랍니다.<br>대화 기록은 재무진단 서비스 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
-        </div>
       </div>
     </div>
 
@@ -19593,11 +19490,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   <!-- ── 헤더 (MVP: 돌아가기/X 숨김) ── -->
   <div class="mp-header">
     <div class="mp-header-row">
-      <!-- ★ [#7] ← 화살표: 원트큐브 결과화면으로 이동 -->
-      <button onclick="backToFreeResult()"
-        style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;">
-        ←
-      </button>
+      <button class="mp-back-btn" onclick="mpClose()" style="display:none">← 돌아가기</button>
       <span class="mp-title-txt">🏥 AI 재무검진</span>
       <button class="mp-back-btn" onclick="mpClose()" style="display:none;font-size:16px;color:rgba(255,255,255,.4)">✕</button>
     </div>
@@ -19774,11 +19667,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
                   <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무진단 상담 | 보유기간: 서비스 이용 종료 시까지</span>
                 </span>
               </label>
-              <!-- ★ [#2] 면책/개인정보 고지 문구 — 체크박스 바로 아래 -->
-              <div style="margin-top:8px;padding:9px 11px;background:#fff8e6;border-radius:7px;border:1px solid rgba(201,151,42,.3);">
-                <div style="font-size:9.5px;color:#b45309;font-weight:800;margin-bottom:4px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
-                <div style="font-size:9px;color:#6b7280;line-height:1.6;">📋 개인정보보호법상 고객님과의 대화 내용을 기록함을 이해해 주시기 바랍니다. 대화 기록은 재무진단 서비스 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
-              </div>
             </div>
           </div>
         </div>
@@ -20104,11 +19992,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:1px" id="diagSessionInfo">오늘 · 1회차</div>
           </div>
           <div class="c-top-btns">
-            <!-- ★ [#14] 무료페이지(홈) 복귀 버튼 -->
-            <button class="c-tbtn" onclick="goToFreePageFromDiag()"
-              style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.2);padding:5px 8px;font-size:10px;">
-              ← 홈
-            </button>
             <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
             <button class="c-tbtn" id="diagTextSwitchBtn" onclick="manualSwitchToText()"
               style="background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);">
@@ -20173,18 +20056,19 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
               <div class="ico" id="diagMicIco">🎤</div>
               <div class="lbl">마이크</div>
             </div>
+            <!-- ★ [v14 G3] 머니야 음성 음소거 버튼 — Vapi 공식 API 기반 -->
+            <div class="c-mini-btn" onclick="diagToggleMoneyaMute()" id="diagMoneyaMuteBtn" style="position:relative;z-index:10;">
+              <div class="ico" id="diagMoneyaMuteIco">🔊</div>
+              <div class="lbl">머니야</div>
+            </div>
+            <!-- ★ [v14 G1] 머니야 음소거 버튼 — 대화 중 머니야 음성만 잠시 끄기 -->
+            <div class="c-mini-btn" onclick="diagToggleMoneyaMute()" id="diagMoneyaMuteBtn" style="position:relative;z-index:10;">
+              <div class="ico" id="diagMoneyaMuteIco">🔊</div>
+              <div class="lbl">머니야</div>
+            </div>
             <div class="c-mini-btn" onclick="diagToggleCamera()">
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
-            </div>
-            <!-- ★ [#13] 머니야 음소거 버튼 — c-mini-btn 독립 분리 -->
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;z-index:9999;position:relative;"
-              id="monyaMuteBtn"
-              onclick="(function(e){e.stopPropagation();monyaToggleMute();})(event)">
-              <div id="monyaMuteIco"
-                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;">🔊</div>
-              <div id="monyaMuteLbl"
-                style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">음소거</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
