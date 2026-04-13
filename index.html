@@ -16312,6 +16312,15 @@ function diagEndConsult() {
   }
   showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
 
+  /* ★ [추가] 종료 시 상담노트 동기화 + 검진결과 탭 자동 이동 */
+  setTimeout(function() {
+    try {
+      if (typeof snSyncAll === 'function') snSyncAll();
+      if (typeof renderHealthReport === 'function') renderHealthReport();
+      if (typeof dnGo === 'function') dnGo(9); // 검진결과 탭으로 이동
+    } catch(e) {}
+  }, 800);
+
   /* ★ 종료 안내 배너 — 리포트 탭 상단에 삽입 */
   var usedMinDisplay = Math.floor(diagSec / 60);
   var remainingCredit = parseInt(localStorage.getItem('mvp_credit_min') || '0');
@@ -18164,21 +18173,22 @@ function diagAutoFillNote(userText) {
     
     // ── 3단계 (수지) — 순서 기반 카운터 ──
     if (curStep === 3) {
-      /* ★ [A-4 강화] qCtx(최근3발화합) 우선 매칭
-       * "월 얼마인가요?" 같은 모호한 질문은 이전 컨텍스트(원리금 언급)로 판단
-       * 실수령액은 명시적 키워드만 매칭 ("월"단독 제외)
+      /* ★ [A-4 수정] lastQ 기반 매칭 (기존 방식 복원)
+       * qCtx 사용 시 이전 발화 키워드 오염 문제 발생 → lastQ만 사용
+       * 대출 원리금만 예외적으로 직전2발화(prevQ) 추가 확인
        */
       var step3FieldByQ = null;
-      var matchCtx = qCtx || lastQ; // qCtx(최근3발화) 우선
+      // 직전 2개 발화 (대출 원리금 "월 얼마인가요?" 대응용)
+      var prevQ = diagQHistory.slice(-2).join(' ');
 
-      // 대출 원리금 — 가장 구체적 키워드 우선 (단순 "월 얼마"도 이전에 원리금 언급 있으면 매칭)
-      if (/대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중|갚고\s*있|대출이\s*(?:있|얼마)|월\s*대출/.test(matchCtx)) step3FieldByQ = 'bt_loan_cur';
-      else if (/보험료|보험\s*납입|보험\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_ins_cur';
-      else if (/연금.*납입|연금은\s*따로|연금\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_pen_cur';
-      else if (/저축이나\s*투자|저축\s*투자|적금|투자는|저축\s*얼마/.test(matchCtx)) step3FieldByQ = 'bt_sav_cur';
-      else if (/매달\s*남|남는\s*돈|잉여/.test(matchCtx)) step3FieldByQ = 'bt_sur_cur';
-      // 실수령액 — 반드시 명시적 키워드 (단순 "월 얼마"는 매칭 안됨)
-      else if (/실수령액|세후.*수입|세후.*월급|한\s*달\s*실수령|세후\s*한\s*달|월\s*급여|월\s*소득/.test(matchCtx)) step3FieldByQ = 'bt_inc_cur';
+      // 대출 원리금 — lastQ + 직전2발화에서 확인
+      if (/대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중|갚고\s*있|대출이\s*(?:있|얼마)|월\s*대출/.test(lastQ) ||
+          /대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중/.test(prevQ)) step3FieldByQ = 'bt_loan_cur';
+      else if (/보험료|보험\s*납입/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
+      else if (/연금.*납입|연금은\s*따로/.test(lastQ)) step3FieldByQ = 'bt_pen_cur';
+      else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) step3FieldByQ = 'bt_sav_cur';
+      else if (/매달\s*남|남는\s*돈|잉여/.test(lastQ)) step3FieldByQ = 'bt_sur_cur';
+      else if (/실수령액|세후.*수입|세후.*월급|한\s*달\s*실수령|세후\s*한\s*달|월\s*급여|월\s*소득/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
       
       if (step3FieldByQ) {
         /* ★ [v14 C-11] bt_inc_cur는 보통 100만원 이상. 적은 값 들어오면 보호 */
