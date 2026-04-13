@@ -14152,6 +14152,56 @@ async function diagConnectVoice(isPaid) {
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
     vapi.on('message', function(msg) {
+
+      /* ★ [고수님 1순위] partial 누적 + 1.5초 타이머 — iOS final 누락 대응 */
+      if (msg.type === 'transcript' && msg.role === 'user') {
+        window._transcriptBuffer = msg.transcript || '';
+
+        if (msg.transcriptType === 'final') {
+          // final이면 즉시 처리
+          if (window._transcriptTimer) clearTimeout(window._transcriptTimer);
+          window._transcriptTimer = null;
+          var _ft = window._transcriptBuffer;
+          window._transcriptBuffer = '';
+          if (_ft && _ft.trim()) {
+            setTimeout(function(){ diagAutoFillNote(_ft); }, _isIOS ? 600 : 300);
+          }
+        } else {
+          // partial이면 1.5초 후 처리 (final 안 오는 경우 대비)
+          if (window._transcriptTimer) clearTimeout(window._transcriptTimer);
+          window._transcriptTimer = setTimeout(function() {
+            var _pt = window._transcriptBuffer;
+            window._transcriptBuffer = '';
+            window._transcriptTimer = null;
+            if (_pt && _pt.trim()) {
+              console.log('[iOS partial 타이머] 처리:', _pt.substring(0, 30));
+              diagAutoFillNote(_pt);
+            }
+          }, 1500);
+        }
+      }
+
+      /* ★ [고수님 2순위] conversation-update 백업 — transcript 안 올 때 대비 */
+      if (msg.type === 'conversation-update' && msg.conversation) {
+        var lastUser = null;
+        for (var ci = msg.conversation.length - 1; ci >= 0; ci--) {
+          if (msg.conversation[ci].role === 'user') {
+            lastUser = msg.conversation[ci].content;
+            break;
+          }
+        }
+        if (lastUser && lastUser.trim()) {
+          console.log('[conversation-update 백업]', lastUser.substring(0, 30));
+          setTimeout(function(){ diagAutoFillNote(lastUser); }, 200);
+        }
+      }
+
+      /* ★ [iOS 기존 백업] partial transcript 저장 */
+      if(msg.type === 'transcript' && msg.role !== 'assistant') {
+        window._lastPartialTranscript = msg.transcript || '';
+        window._lastPartialRole = msg.role === 'assistant' ? 'ai' : 'user';
+      }
+
       /* 자막 표시 */
       if(msg.type === 'transcript' && msg.transcriptType === 'final') {
         var role = msg.role === 'assistant' ? 'ai' : 'user';
@@ -14193,8 +14243,36 @@ async function diagConnectVoice(isPaid) {
       }
     });
 
+    /* ★ [iOS 대응] speech-end 이벤트 — iOS에서 final transcript 미발생 시 백업 처리 */
+    vapi.on('speech-end', function() {
+      if (!_isIOS) return; // iOS에서만 작동
+      setTimeout(function() {
+        try {
+          var backup = window._lastPartialTranscript;
+          if (backup && backup.trim() && window._lastPartialRole === 'user') {
+            console.log('[iOS 백업] speech-end에서 partial 사용:', backup.substring(0, 30));
+            diagAutoFillNote(backup);
+            window._lastPartialTranscript = ''; // 중복 방지
+          }
+        } catch(e) {}
+      }, 400);
+    });
+
     /* ── 통화 종료 ── */
-    vapi.on('call-end', function() {
+    vapi.on('call-end', function(data) {
+      /* ★ [고수님 3순위] call-end 최종 보정 — 놓친 발화 최종 파싱 */
+      try {
+        if (data && data.messages && Array.isArray(data.messages)) {
+          var userMsgs = data.messages.filter(function(m){ return m.role === 'user'; });
+          userMsgs.forEach(function(u, idx) {
+            var txt = u.message || u.content || '';
+            if (txt && txt.trim()) {
+              setTimeout(function(){ diagAutoFillNote(txt); }, idx * 100);
+            }
+          });
+          console.log('[call-end 보정] user 발화:', userMsgs.length + '개');
+        }
+      } catch(e) { console.warn('[call-end 보정 오류]', e.message); }
       vapiCallActive = false;
       diagMic = false;
       console.log('[call-end]', _vapiUserEnded ? '사용자 종료' : '자동 종료');
@@ -17586,41 +17664,102 @@ function diagAutoFillNote_legacy(userText) {
         { key:'f1_name', regex:/이름은?\s*([가-힣]{2,5})/ },
       ]);
     }
+  }
 
+  // ★ [항상 적용] 나이/결혼/가족수 — 단계 무관, 해당 필드 비어있을 때만
+  (function() {
+    var ageEl    = document.getElementById('f1_age');
+    var marryEl  = document.getElementById('f1_marry');
+    var familyEl = document.getElementById('f1_family');
+
+    var ageEmpty    = !ageEl    || !ageEl.classList.contains('confirmed');
+    var marryEmpty  = !marryEl  || !marryEl.classList.contains('confirmed');
+    var familyEmpty = !familyEl || !familyEl.classList.contains('confirmed');
+
+    // ── 나이 ──
+    if (ageEmpty) {
+      var agePatterns = [
+        /^(\d{1,3})\s*세[.\s]*$/,
+        /^(\d{1,3})\s*살[.\s]*$/,
+        /(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)?/,
+        /(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)?/,
+        /올해\s*(\d{1,3})/,
+        /나이.*?(\d{1,3})/,
+      ];
+      for (var ai = 0; ai < agePatterns.length; ai++) {
+        var am = t.match(agePatterns[ai]);
+        if (am) {
+          var av = parseInt(am[1]);
+          if (av >= 1 && av <= 100) {
+            _fillNewNote('f1_age', av + '세');
+            return;
+          }
+        }
+      }
+    }
+
+    // ── 결혼 여부 ──
+    if (marryEmpty) {
+      if (/(기혼|결혼\s*했|결혼했|유부|배우자|남편|아내|와이프|부인)/.test(t)) {
+        _fillNewNote('f1_marry', '기혼'); return;
+      }
+      if (/(미혼|결혼\s*(?:안\s*했|안했|못했|안\s*했어요)|싱글|혼자\s*살|독신)/.test(t)) {
+        _fillNewNote('f1_marry', '미혼'); return;
+      }
+      // lastQ 기반 네/아니오
+      if (/^(네|예|응|맞아요?|맞습니다|그렇습니다|했어요|했습니다)[.\s]*$/.test(t) && /결혼/.test(lastQ)) {
+        _fillNewNote('f1_marry', '기혼'); return;
+      }
+      if (/^(아니[오요]?|아닙니다|안\s*했|못했)[.\s]*$/.test(t) && /결혼/.test(lastQ)) {
+        _fillNewNote('f1_marry', '미혼'); return;
+      }
+    }
+
+    // ── 가족수 ──
+    if (familyEmpty) {
+      var famPatterns = [
+        { r: /^(\d+)\s*명[.\s]*$/, g: 1 },
+        { r: /가족.*?(\d+)\s*명/, g: 1 },
+        { r: /(\d+)\s*인?\s*가족/, g: 1 },
+        { r: /식구.*?(\d+)/, g: 1 },
+        { r: /총\s*(\d+)\s*명/, g: 1 },
+        { r: /저\s*포함.*?(\d+)\s*명/, g: 1 },
+        { r: /^(\d+)[.\s]*$/, g: 1 }, // 숫자만 + lastQ에 가족 언급 시
+      ];
+      for (var fi = 0; fi < famPatterns.length; fi++) {
+        var fm = t.match(famPatterns[fi].r);
+        if (fm) {
+          var fv = parseInt(fm[famPatterns[fi].g]);
+          // 숫자만 단독인 경우 lastQ에 가족/식구 언급 있어야만 적용
+          if (famPatterns[fi].r.source === '^(\\d+)[.\\s]*$') {
+            if (!/가족|식구|몇\s*명|몇\s*분/.test(lastQ)) continue;
+          }
+          if (fv >= 1 && fv <= 15) {
+            _fillNewNote('f1_family', fv + '명'); return;
+          }
+        }
+      }
+      // "둘이서", "셋이서" 등 한글 숫자
+      if (/^(혼자|1인)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '1명'); return; }
+      if (/^(둘이서?|부부만|둘)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '2명'); return; }
+      if (/^(셋이서?|셋)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '3명'); return; }
+      if (/^(넷이서?|넷)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '4명'); return; }
+      if (/^(다섯이서?|다섯)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '5명'); return; }
+    }
+  })();
+
+  if (curStep <= 1) {
+    // 나이/결혼/가족수는 위에서 이미 처리됨 — 직업/맞벌이만 여기서 처리
     patterns = patterns.concat([
-      // 나이 - 짧은 발화
-      { key:'f1_age', regex:/^(\d{1,3})\s*세[.\s]*$/ },    // "44세"
-      { key:'f1_age', regex:/^(\d{1,3})\s*살[.\s]*$/ },    // "44살"
-      { key:'f1_age', regex:/^(\d{1,3})[.\s]*$/ },          // "44" 숫자만
-      // 나이 - 완전한 문장
-      { key:'f1_age', regex:/(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)?/ },
-      { key:'f1_age', regex:/(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
-      { key:'f1_age', regex:/올해\s*(\d{1,3})/ },
-      { key:'f1_age', regex:/나이.*?(\d{1,3})/ },
-      // 직업
-      { key:'f1_job', regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)/ },
-      // 결혼
-      { key:'f1_marry', regex:/(기혼|미혼)/ },
-      { key:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했는데)/ },
-      { key:'f1_marry', regex:/결혼\s*(?:안 했|안했|못했|안 했어요)/ },
-      // 자녀
-      { key:'f1_child', regex:/자녀.*?(\d+)\s*명/ },
-      { key:'f1_child', regex:/아이.*?(\d+)\s*명/ },
-      { key:'f1_child', regex:/(\d+)\s*명.*?(?:아이|자녀|아들|딸)/ },
-      // 가족수
-      { key:'f1_family', regex:/(\d+)\s*인?\s*가족/ },
-      { key:'f1_family', regex:/가족.*?(\d+)\s*명/ },
-      { key:'f1_family', regex:/^(\d+)\s*명[.\s]*$/ },       // "3명"
-      { key:'f1_family', regex:/식구.*?(\d+)/ },
-      { key:'f1_family', regex:/총\s*(\d+)\s*명/ },
-      // 맞벌이
+      { key:'f1_job',  regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생|간부|임원|대표|사장|팀장|과장|부장|차장)/ },
       { key:'f1_dual', regex:/(맞벌이|외벌이)/ },
       { key:'f1_dual', regex:/둘\s*다\s*일/ },
-      // 은퇴예정
+      { key:'f1_dual', regex:/아내?(?:도|가)\s*(?:일|직장|다녀)/ },
       { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
       { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
-      // 예상수명
       { key:'f1_life', regex:/(\d+)세.*?(?:살고\s*싶|수명|예상)/ },
+      { key:'f1_child', regex:/자녀.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/아이.*?(\d+)\s*명/ },
     ]);
   }
 
