@@ -16326,6 +16326,7 @@ function diagEndConsult() {
   /* ★ [추가] 종료 시 상담노트 동기화 + 검진결과 탭 자동 이동 */
   setTimeout(function() {
     try {
+      if (typeof saveChatHistory === 'function') saveChatHistory(); // ★ #10 대화록 저장
       if (typeof snSyncAll === 'function') snSyncAll();
       if (typeof renderHealthReport === 'function') renderHealthReport();
       if (typeof dnGo === 'function') dnGo(9); // 검진결과 탭으로 이동
@@ -19032,7 +19033,105 @@ function snCollapseAll() {
   });
 }
 
-/* snSyncAll 은 위의 dnGo 래핑에서 i===11 시 호출됨 */
+/* ── #10: 대화록 5년 보관 + 마이페이지 리스트 ── */
+
+// 대화록 저장 (상담 종료 시 호출)
+function saveChatHistory() {
+  try {
+    var chatLog = document.getElementById('dn_chat_log') || document.getElementById('dn_chat');
+    var chatText = chatLog ? chatLog.innerText : '';
+    if (!chatText || chatText.trim().length < 10) return;
+
+    var records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]');
+    var now = new Date();
+    var dateStr = now.getFullYear() + '.' +
+      String(now.getMonth()+1).padStart(2,'0') + '.' +
+      String(now.getDate()).padStart(2,'0');
+    var timeStr = String(now.getHours()).padStart(2,'0') + ':' +
+      String(now.getMinutes()).padStart(2,'0');
+
+    // 고객명
+    var nameEl = document.getElementById('f1_name');
+    var name = nameEl ? nameEl.textContent.trim() : '';
+    if (!name || name === '—' || name.indexOf('대기') >= 0) name = '고객';
+
+    // 5년 = 1825일 이내 항목만 유지
+    var cutoff = Date.now() - (1825 * 24 * 60 * 60 * 1000);
+    records = records.filter(function(r) { return r.ts > cutoff; });
+
+    records.unshift({
+      ts: now.getTime(),
+      date: dateStr,
+      time: timeStr,
+      name: name,
+      session: (typeof DIAG_SESSION_NUM !== 'undefined' ? DIAG_SESSION_NUM : 1) + '회차',
+      preview: chatText.substring(0, 80).replace(/\n/g, ' '),
+      full: chatText
+    });
+
+    // 최대 200건 유지
+    if (records.length > 200) records = records.slice(0, 200);
+    localStorage.setItem('moneya_chat_history', JSON.stringify(records));
+    console.log('[대화록] 저장 완료:', dateStr, timeStr);
+  } catch(e) { console.warn('[대화록] 저장 실패:', e); }
+}
+
+// 대화록 리스트 렌더링
+function renderChatHistoryList() {
+  var container = document.getElementById('chatHistoryList');
+  if (!container) return;
+
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]'); } catch(e) {}
+
+  if (records.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:11px;">' +
+      '💬 아직 대화록이 없습니다.<br>AI진단 상담 완료 후 자동 저장됩니다.</div>';
+    return;
+  }
+
+  container.innerHTML = records.map(function(r, i) {
+    return '<div onclick="viewChatDetail(' + i + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .15s;" ' +
+      'onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" onmouseout="this.style.background=\'\'">' +
+      '<div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--navy),#1a3260);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid rgba(201,151,42,.3);">💬</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:10.5px;font-weight:700;color:#fff;">' + r.name + '님 · ' + r.session + '</div>' +
+        '<div style="font-size:9px;color:var(--muted);margin-top:1px;">' + r.date + ' ' + r.time + '</div>' +
+        '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (r.preview || '') + '</div>' +
+      '</div>' +
+      '<div style="font-size:18px;color:var(--gold);flex-shrink:0;">›</div>' +
+    '</div>';
+  }).join('');
+}
+
+// 대화록 상세 보기
+function viewChatDetail(idx) {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]'); } catch(e) {}
+  var r = records[idx];
+  if (!r) return;
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:9999999;display:flex;flex-direction:column;';
+  modal.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--navy);border-bottom:2px solid var(--gold);flex-shrink:0;">' +
+      '<div style="font-size:13px;font-weight:900;color:var(--gold2);">💬 ' + r.name + '님 · ' + r.date + ' ' + r.session + '</div>' +
+      '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:0;line-height:1;">×</button>' +
+    '</div>' +
+    '<div style="flex:1;overflow-y:auto;padding:14px 16px;background:#0B1D3A;">' +
+      '<pre style="white-space:pre-wrap;font-size:11px;color:rgba(255,255,255,.8);font-family:var(--fn);line-height:1.7;">' + (r.full || '') + '</pre>' +
+    '</div>';
+  document.body.appendChild(modal);
+}
+
+// 마이페이지 탭 진입 시 자동 렌더링
+(function() {
+  var _origMpTab = window.mpTab;
+  window.mpTab = function(idx, btn) {
+    if (typeof _origMpTab === 'function') _origMpTab(idx, btn);
+    if (idx === 6) setTimeout(renderChatHistoryList, 100); // 마이페이지 탭
+  };
+})();
 
 function snSyncAll() {
   // ★ 기획: 각 탭에서 입력/확정된 노트가 그대로 상담노트에 표시
@@ -21148,13 +21247,19 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div id="mp-faq-list"></div>
       </div>
 
-      <!-- 상담 녹음 (마이페이지 맨 아래) -->
+      <!-- ★ [#10] 대화록 리스트 (상담 녹음 대체) -->
       <div class="mpc mp-fade-in" style="margin:8px 12px 0">
-        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;"><span class="mpc-icon" style="color:#fff;">🎙️</span><span class="mpc-title" style="color:#fff;font-weight:900;">상담 녹음</span></div>
-        <div class="mpc-bd">
-          <div id="mvpRecList" style="min-height:60px;"></div>
+        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;">
+          <span class="mpc-icon" style="color:#fff;">💬</span>
+          <span class="mpc-title" style="color:#fff;font-weight:900;">대화록 리스트</span>
+          <span style="font-size:9px;color:rgba(255,255,255,.4);margin-left:auto;">5년 보관</span>
+        </div>
+        <div class="mpc-bd" style="padding:0;">
+          <div id="chatHistoryList" style="min-height:60px;"></div>
         </div>
       </div>
+      <!-- 기존 녹음 컨테이너 (JS 호환용 숨김 유지) -->
+      <div style="display:none;"><div id="mvpRecList"></div></div>
 
       <div id="fh-dev-version" style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)"
         onclick="fhDevTap()" title="개발자 메뉴">앱 버전 v2.8.1 (금융집짓기®)</div>
