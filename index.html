@@ -2653,8 +2653,8 @@ html{visibility:visible !important;}
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무진단 · 로그인하면 맥락 기억</span>
       </button>
 
-      <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
-      <button onclick="openDesireSimulator()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
+      <!-- ★ DESIRE 단계 파악 버튼 (신규) — [추가개발 #18] 숨김처리 2026-04-13 -->
+      <button onclick="openDesireSimulator()" style="display:none;width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🗺️ 나의 DESIRE 단계 파악하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
       </button>
@@ -14871,19 +14871,20 @@ function diagBuildNotes() {
 
 <div id="dnWrap">
   <div id="dnTabs">
+    <!-- ★ [추가개발 #12] 탭 2줄 축약 + 원페이지 위로 이동 (2026-04-13) -->
     <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
+    <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
     <button class="dnt" onclick="dnGo(1)">👤 인적</button>
     <button class="dnt" onclick="dnGo(2)">💭 고민</button>
     <button class="dnt" onclick="dnGo(3)">💰 수지</button>
     <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
     <button class="dnt" onclick="dnGo(5)">🏠 집짓기</button>
     <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
-    <button class="dnt" onclick="dnGo(7)">🎯 종합재무설계</button>
+    <button class="dnt" onclick="dnGo(7)">🎯 재무설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
     <button class="dnt" onclick="dnGo(9)">🩺 검진결과</button>
     <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
-    <button class="dnt" onclick="dnGo(11)">📄 리포트</button>
-    <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
+    <button class="dnt" onclick="dnGo(11)">📄 상담노트</button>
   </div>
 
   <div id="dnPanels">
@@ -14908,7 +14909,7 @@ function diagBuildNotes() {
           <!-- 오상열 CFP 프로필 카드 -->
           <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:14px;border:1px solid rgba(201,151,42,.3);">
             <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
-              <div style="width:48px;height:48px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #E8B84B;flex-shrink:0;">👨‍💼</div>
+              <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5" alt="오상열 CFP" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #E8B84B;flex-shrink:0;" onerror="this.outerHTML='<div style=\'width:48px;height:48px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #E8B84B;flex-shrink:0;\'>👨‍💼</div>'">
               <div>
                 <div style="font-size:13px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
                 <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:1px;">오원트금융연구소 · 금융집짓기® 창시자 · 25년 훈련</div>
@@ -15469,13 +15470,30 @@ function diagBuildNotes() {
       </div>
     </div>
 
-    <!-- ━━━━━━ 패널11: 리포트 (종합) ━━━━━━ -->
+    <!-- ━━━━━━ 패널11: 상담노트 종합정리 [추가개발 #7 2026-04-13] ━━━━━━ -->
     <div class="dnp" id="dnp11">
       <div class="dncard">
-        <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">상담 리포트</div><div class="dncsub">종합 상담 결과 요약</div></div></div>
+        <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">상담노트 종합정리</div><div class="dncsub">0~8단계 전체 상담 내용 한눈에 보기</div></div></div>
         <div class="dncbody">
+          <!-- 기존 리포트 바디 유지 -->
           <div id="dn_report_body" style="font-size:11px;color:#0B1D3A;line-height:1.6;">
-            <div style="text-align:center;padding:20px;color:#4A5568;">상담 완료 후 리포트가 표시됩니다</div>
+            <div style="text-align:center;padding:20px;color:#4A5568;">상담 완료 후 종합 노트가 표시됩니다</div>
+          </div>
+          <!-- ★ 단계별 상담노트 바로가기 링크 -->
+          <div style="margin-top:12px;padding:10px;background:#fff;border-radius:8px;border:1px solid rgba(201,151,42,.25);">
+            <div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:8px;">📋 단계별 상담노트 바로가기</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+              <button onclick="dnGo(0)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">📋 표지</button>
+              <button onclick="dnGo(1)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">👤 인적사항</button>
+              <button onclick="dnGo(2)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">💭 경제적 고민</button>
+              <button onclick="dnGo(3)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">💰 수입지출</button>
+              <button onclick="dnGo(4)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">🏦 자산부채</button>
+              <button onclick="dnGo(5)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">🏠 금융집짓기</button>
+              <button onclick="dnGo(6)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">📈 포트폴리오</button>
+              <button onclick="dnGo(7)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">🎯 재무설계</button>
+              <button onclick="dnGo(8)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">⭐ 최종의견</button>
+              <button onclick="dnGo(9)" style="padding:6px 4px;background:#FFF9D6;border:1px solid #C9972A;border-radius:6px;font-size:9px;font-weight:700;color:#0B1D3A;cursor:pointer;font-family:var(--fn);">🩺 검진결과</button>
+            </div>
           </div>
         </div>
       </div>
@@ -18372,6 +18390,39 @@ document.addEventListener('visibilitychange', function() {
 
 </script>
 
+<!-- ★ [추가개발 #13] 머니야 음소거 함수 (2026-04-13) — 음성코드 미수정, 오디오 볼륨만 제어 -->
+<script>
+var _monyaMuted = false;
+function monyaToggleMute() {
+  _monyaMuted = !_monyaMuted;
+  // 페이지 내 모든 오디오 엘리먼트 볼륨 제어 (Vapi 내부 코드 미수정)
+  document.querySelectorAll('audio').forEach(function(a) {
+    a.volume = _monyaMuted ? 0 : 1;
+  });
+  var ico = document.getElementById('monyaMuteIco');
+  var lbl = document.getElementById('monyaMuteLbl');
+  var btn = document.getElementById('monyaMuteBtn');
+  if (ico) ico.textContent = _monyaMuted ? '🔇' : '🔊';
+  if (lbl) lbl.textContent = _monyaMuted ? '소리끔' : '음소거';
+  if (btn) btn.classList.toggle('act', _monyaMuted);
+  if (typeof showToast === 'function') {
+    showToast(_monyaMuted ? '🔇 머니야 음소거 중 (대화는 계속됩니다)' : '🔊 머니야 소리 켜짐');
+  }
+}
+</script>
+
+<!-- ★ [추가개발 #14] 결제 후 무료페이지 복귀 버튼 함수 (2026-04-13) -->
+<script>
+function goToFreePageFromDiag() {
+  // 마이페이지 탭0(검진안내)으로 이동 — 기존 mpTab 함수 재활용
+  if (typeof mpTab === 'function') {
+    var tabs = document.querySelectorAll('.mp-tab-btn');
+    if (tabs && tabs[0]) mpTab(0, tabs[0]);
+  }
+  if (typeof showToast === 'function') showToast('✅ 무료 검진안내 페이지로 이동했습니다');
+}
+</script>
+
 
 <!-- ★ 이용약관 모달 -->
 <div id="terms-modal-bg" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:9999990;align-items:flex-end;justify-content:center;">
@@ -19304,6 +19355,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
     <div style="font-size:9px;color:#bbb;text-align:center;margin-top:8px;">
       🔒 입력하신 정보는 재무진단 안내에만 사용됩니다
     </div>
+    <!-- ★ [추가개발 #2] 면책/개인정보 고지 문구 (2026-04-13) -->
+    <div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,.05);border-radius:8px;border:1px solid rgba(255,255,255,.1);">
+      <div style="font-size:9px;color:rgba(255,200,100,.75);font-weight:700;margin-bottom:4px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.45);line-height:1.6;">📋 개인정보보호법상 고객님과의 대화를 기록함을 이해해 주시기 바랍니다. 대화 기록은 재무진단 서비스 제공 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
+    </div>
   </div>
 
   <!-- 월정기구독 안내 (월정기 플랜 선택 시만 표시) -->
@@ -19833,6 +19889,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:1px" id="diagSessionInfo">오늘 · 1회차</div>
           </div>
           <div class="c-top-btns">
+            <!-- ★ [추가개발 #14] 무료페이지 복귀 버튼 (2026-04-13) -->
+            <button class="c-tbtn" onclick="goToFreePageFromDiag()"
+              style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);font-size:9px;">
+              ← 홈
+            </button>
             <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
             <button class="c-tbtn" id="diagTextSwitchBtn" onclick="manualSwitchToText()"
               style="background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);">
@@ -19900,6 +19961,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <div class="c-mini-btn" onclick="diagToggleCamera()">
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
+            </div>
+            <!-- ★ [추가개발 #13] 머니야 음소거 버튼 (2026-04-13) — 음성코드 미수정, UI만 추가 -->
+            <div class="c-mini-btn" id="monyaMuteBtn" onclick="monyaToggleMute()">
+              <div class="ico" id="monyaMuteIco">🔊</div>
+              <div class="lbl" id="monyaMuteLbl">음소거</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
