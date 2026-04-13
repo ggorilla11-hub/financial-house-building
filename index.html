@@ -8711,8 +8711,101 @@ function calcFreeHealthScore(answers) {
   };
 }
 
+/* ★ [v14 F2] 결제 완료자 진단 진입 헬퍼 */
+function _mvpEnterCheckup() {
+  var simWrap = document.getElementById('sim-wrap');
+  if (simWrap) simWrap.style.display = 'none';
+  var funnelWrap = document.getElementById('funnel-wrap');
+  if (funnelWrap) funnelWrap.classList.add('fn-hidden');
+  mpIsSubscribed = true;
+  if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+  var btn = document.getElementById('btn-header-main');
+  if (btn) {
+    btn.textContent = '🏥 AI 재무검진';
+    btn.onclick = function(){ mpOpen(); };
+    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
+    btn.style.animation = 'none';
+  }
+  showToast('✅ 구독 확인 — AI재무진단을 시작합니다');
+  mpOpen();
+}
+
 function mvpStartCheckup() {
-  // ★ staging용: 결제 없이 7일 무료 체험
+  /* ★ [v14 F2] 환경별 분기 — main=결제필수, dev=7일 무료체험 */
+  var IS_STAGING = location.hostname.includes('-dev') 
+                || location.hostname.includes('staging')
+                || location.hostname.includes('localhost')
+                || location.hostname === '127.0.0.1';
+  
+  /* ═══════ PROD(main): 결제 필수 ═══════ */
+  if (!IS_STAGING) {
+    /* 1) 로그인 체크 */
+    var user = window._fhAuth ? window._fhAuth.currentUser : null;
+    if (!user) {
+      showToast('🔒 먼저 구글 로그인이 필요합니다');
+      if (typeof fhLoginOpen === 'function') fhLoginOpen();
+      else if (typeof fhStartLogin === 'function') fhStartLogin();
+      return;
+    }
+    
+    /* 2) Firestore에서 구독 확인 */
+    if (window._fhDb) {
+      var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
+      window._fhDb.collection('subscribers').doc(docId).get()
+        .then(function(doc) {
+          var isValid = false;
+          if (doc.exists) {
+            var d = doc.data();
+            if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
+              isValid = true;
+              /* localStorage 동기화 */
+              localStorage.setItem('fh_member_v1', '1');
+              localStorage.setItem('fh_subscribed', '1');
+              localStorage.setItem('fh_plan', d.plan || 'bronze-single');
+              localStorage.setItem('mvp_credit_min', String(d.creditMin || 10));
+              localStorage.setItem('fh_payer_email', user.email);
+              if (d.payerName) localStorage.setItem('fh_payer_name', d.payerName);
+              mpIsSubscribed = true;
+            }
+          }
+          
+          if (isValid) {
+            /* 구독자 → 진단 시작 */
+            _mvpEnterCheckup();
+          } else {
+            /* 미구독 → 결제 화면 */
+            showToast('💳 AI 재무진단은 유료 구독이 필요합니다');
+            if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
+            else if (typeof mpOpen === 'function') { mpOpen(); }
+          }
+        })
+        .catch(function(e) {
+          console.warn('[v14 F2] Firestore 조회 실패:', e.message);
+          /* 네트워크 오류 시 localStorage fallback */
+          var localPlan = localStorage.getItem('fh_plan');
+          var localSub = localStorage.getItem('fh_subscribed');
+          if (localPlan && localSub === '1') {
+            _mvpEnterCheckup();
+          } else {
+            showToast('💳 AI 재무진단은 유료 구독이 필요합니다');
+            if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
+          }
+        });
+    } else {
+      /* Firestore 없으면 localStorage만 체크 */
+      var lp = localStorage.getItem('fh_plan');
+      var ls = localStorage.getItem('fh_subscribed');
+      if (lp && ls === '1') {
+        _mvpEnterCheckup();
+      } else {
+        showToast('💳 AI 재무진단은 유료 구독이 필요합니다');
+        if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
+      }
+    }
+    return;
+  }
+  
+  /* ═══════ STAGING(dev): 7일 무료 체험 ═══════ */
   var trialStart = localStorage.getItem('fh_trial_start');
   if (!trialStart) {
     localStorage.setItem('fh_trial_start', new Date().toISOString());
@@ -8747,11 +8840,11 @@ function mvpStartCheckup() {
   mpOpen();
 
   var user = window._fhAuth ? window._fhAuth.currentUser : null;
-  // 로그인 안 된 경우에도 체험 허용 (staging 전용)
+  /* 로그인 안 된 경우에도 체험 허용 (staging 전용) */
   if (!user) {
     return;
   }
-  // 로그인된 경우 → Firestore에서 구독 확인
+  /* 로그인된 경우 → Firestore에서 구독 확인 */
   if (window._fhDb) {
     var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
     window._fhDb.collection('subscribers').doc(docId).get()
@@ -8761,7 +8854,7 @@ function mvpStartCheckup() {
           var d = doc.data();
           if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
             isValid = true;
-            // localStorage 동기화
+            /* localStorage 동기화 */
             localStorage.setItem('fh_member_v1', '1');
             localStorage.setItem('fh_subscribed', '1');
             localStorage.setItem('fh_plan', d.plan || 'silver-month');
