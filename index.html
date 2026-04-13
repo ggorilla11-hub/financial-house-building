@@ -18506,11 +18506,10 @@ document.addEventListener('visibilitychange', function() {
 <!-- ★ [추가개발 #13/#5] 머니야 음소거 + [#6/#14] 홈복귀 + [#7] 상담노트 어코디언 (2026-04-13) -->
 <script>
 
-/* ── #13/#5: 머니야 음소거 — 클릭 이벤트 정상 작동 버전 ── */
+/* ── #13/#5: 머니야 음소거 — 독립 버튼, 기존 음성코드 미수정 ── */
 var _monyaMuted = false;
 function monyaToggleMute() {
   _monyaMuted = !_monyaMuted;
-  // 페이지 내 모든 audio 볼륨 제어 (Vapi 내부 코드 미수정)
   document.querySelectorAll('audio').forEach(function(a) {
     try { a.volume = _monyaMuted ? 0 : 1; a.muted = _monyaMuted; } catch(e) {}
   });
@@ -18519,21 +18518,12 @@ function monyaToggleMute() {
   var btn = document.getElementById('monyaMuteBtn');
   if (ico) ico.textContent = _monyaMuted ? '🔇' : '🔊';
   if (lbl) lbl.textContent = _monyaMuted ? '소리끔' : '음소거';
-  if (btn) btn.style.background = _monyaMuted ? 'rgba(220,38,38,.2)' : '';
+  if (btn) btn.style.background = _monyaMuted ? 'rgba(220,38,38,.15)' : '';
   if (typeof showToast === 'function') {
     showToast(_monyaMuted ? '🔇 머니야 음소거 중 — 대화는 계속됩니다' : '🔊 머니야 소리 켜짐');
   }
 }
-// 음소거 버튼 클릭 이벤트 — DOM 로드 후 직접 바인딩 (onclick 중복 방지)
-document.addEventListener('DOMContentLoaded', function() {
-  var muteBtn = document.getElementById('monyaMuteBtn');
-  if (muteBtn) {
-    muteBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      monyaToggleMute();
-    });
-  }
-});
+// DOM 바인딩 제거 — onclick 인라인으로만 처리
 
 /* ── #6/#14: 홈(무료페이지) 복귀 ── */
 function goToFreePageFromDiag() {
@@ -20187,10 +20177,14 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
             </div>
-            <!-- ★ [#13] 머니야 음소거 버튼 -->
-            <div class="c-mini-btn" id="monyaMuteBtn" onclick="monyaToggleMute()">
-              <div class="ico" id="monyaMuteIco">🔊</div>
-              <div class="lbl" id="monyaMuteLbl">음소거</div>
+            <!-- ★ [#13] 머니야 음소거 버튼 — c-mini-btn 독립 분리 -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;z-index:9999;position:relative;"
+              id="monyaMuteBtn"
+              onclick="(function(e){e.stopPropagation();monyaToggleMute();})(event)">
+              <div id="monyaMuteIco"
+                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;">🔊</div>
+              <div id="monyaMuteLbl"
+                style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">음소거</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
