@@ -2653,8 +2653,8 @@ html{visibility:visible !important;}
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무진단 · 로그인하면 맥락 기억</span>
       </button>
 
-      <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
-      <button onclick="openDesireSimulator()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
+      <!-- ★ DESIRE 단계 파악 버튼 (신규) — [#18] 숨김처리 -->
+      <button onclick="openDesireSimulator()" style="display:none;width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🗺️ 나의 DESIRE 단계 파악하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
       </button>
@@ -14918,6 +14918,7 @@ function diagBuildNotes() {
 
 <div id="dnWrap">
   <div id="dnTabs">
+    <!-- ★ [#12] 탭 명칭 축약 / [#4] 원페이지 상담노트 뒤로 이동 -->
     <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
     <button class="dnt" onclick="dnGo(1)">👤 인적</button>
     <button class="dnt" onclick="dnGo(2)">💭 고민</button>
