@@ -19015,14 +19015,18 @@ function renderHealthReport() {
   if (impEl) impEl.innerHTML = improvements.join('<br>');
 }
 
-/* ── #11: dnGo 래핑 — 탭9 진입 시 자동 렌더링 ── */
+/* ── #11: dnGo 래핑 — 탭9/11 진입 시 자동 렌더링 (실행 시점 안전 버전) ── */
 (function() {
-  var _origDnGo9 = window.dnGo;
-  window.dnGo = function(i) {
-    if (typeof _origDnGo9 === 'function') _origDnGo9(i);
-    if (i === 9) { setTimeout(renderHealthReport, 100); }
-    if (i === 11) snSyncAll();
-  };
+  // 원본이 정의된 후에 래핑하도록 setTimeout 사용
+  setTimeout(function() {
+    var _origDnGo9 = window.dnGo;
+    if (typeof _origDnGo9 !== 'function') return; // 원본 없으면 래핑 안함
+    window.dnGo = function(i) {
+      _origDnGo9(i); // 원본 반드시 호출
+      if (i === 9)  { setTimeout(renderHealthReport, 100); }
+      if (i === 11) { setTimeout(snSyncAll, 100); }
+    };
+  }, 2000); // 상담 화면 완전 로드 후 래핑
 })();
 
 /* ── #6/#14: 홈(무료페이지) 복귀 ── */
