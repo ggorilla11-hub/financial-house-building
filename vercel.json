@@ -1,6 +1,7 @@
 {
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/expert", "destination": "/expert.html" }
+    { "source": "/expert", "destination": "/expert.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

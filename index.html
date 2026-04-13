@@ -7,9 +7,9 @@
 
 
 <script>
-/* ★ [신규방문] ?new=1 파라미터 감지 → 완전 초기화 */
+/* ★ [신규방문] ?v=숫자 파라미터 감지 → 완전 초기화 */
 (function() {
-  if (location.search.indexOf('new=1') >= 0) {
+  if (/[?&]v=\d/.test(location.search)) {
     try {
       // 대화 기록 키 패턴으로 삭제
       var keysToDelete = [];
@@ -31,7 +31,7 @@
       }
       keysToDelete.forEach(function(k) { localStorage.removeItem(k); });
       // URL에서 ?new=1 제거 후 리로드 (파라미터 없이 깨끗하게)
-      var cleanUrl = location.href.replace(/[?&]new=1/, '').replace(/\?$/, '');
+      var cleanUrl = location.href.replace(/[?&]v=\d+/, '').replace(/\?$/, '');
       location.replace(cleanUrl);
     } catch(e) {}
   }
