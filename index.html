@@ -17669,15 +17669,26 @@ var _NOTE_ID_ALIASES = {
 };
 
 function _fillNewNote(id, displayVal) {
-  /* ★ [v14 A-8] f1_name은 한글 이름 패턴(2~5자)만 허용 — "네네", "예예" 등 동의어 차단 */
+  /* ★ [A-8 강화] f1_name — 한글 이름만 허용 + 최초 확정 후 LOCK */
   if (id === 'f1_name' && displayVal) {
     var nameStr = String(displayVal).trim();
-    /* 동의어 패턴 차단 */
-    if (/^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇)/i.test(nameStr) ||
-        !/^[가-힣]{2,5}$/.test(nameStr)) {
-      console.warn('[v14 A-8] f1_name 한글 이름 패턴 불일치, 차단:', displayVal);
+    var blocked = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|혼자|혼|1인|한명|한분|없어요|없습니다)/i.test(nameStr)
+      || !/^[가-힣]{2,5}$/.test(nameStr);
+    if (blocked) {
+      console.warn('[f1_name] 차단:', displayVal);
       return false;
     }
+    /* ★ 최초 확정 후 LOCK */
+    var nameEl = document.getElementById('f1_name');
+    if (nameEl && nameEl.classList.contains('confirmed')) {
+      console.warn('[f1_name LOCK] 이미 확정, 변경 거부:', displayVal);
+      return false;
+    }
+  }
+  /* ★ f1_family "혼자"/"1인" → "1명" 자동 변환 */
+  if (id === 'f1_family' && displayVal) {
+    var famStr = String(displayVal).trim();
+    if (/^(혼자|1인|1인가구|나혼자)$/.test(famStr)) displayVal = '1명';
   }
   
   var ids = _NOTE_ID_ALIASES[id] || [id];
@@ -17722,7 +17733,20 @@ function _fillNewNote(id, displayVal) {
       if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp(); 
     }, 50);
   }
-  
+
+  // ★ [추가개발 #11-A] 상담노트/검진결과 동적 반영 — 입력될 때마다 자동 업데이트
+  setTimeout(function() {
+    try {
+      // 현재 활성 탭이 9(검진결과)면 renderHealthReport 재실행
+      var activeDnt = document.querySelector('.dnt.active');
+      if (activeDnt) {
+        var activeIdx = Array.prototype.indexOf.call(document.querySelectorAll('.dnt'), activeDnt);
+        if (activeIdx === 9 && typeof renderHealthReport === 'function') renderHealthReport();
+        if (activeIdx === 11 && typeof snSyncAll === 'function') snSyncAll();
+      }
+    } catch(e) {}
+  }, 200);
+
   return filled;
 }
 
