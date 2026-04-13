@@ -7,6 +7,35 @@
 
 
 <script>
+/* ★ [신규방문] ?new=1 파라미터 감지 → 완전 초기화 */
+(function() {
+  if (location.search.indexOf('new=1') >= 0) {
+    try {
+      // 대화 기록 키 패턴으로 삭제
+      var keysToDelete = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (
+          k.indexOf('fh_chat_log_') === 0 ||
+          k.indexOf('fh_subscribed') === 0 ||
+          k.indexOf('fh_plan') === 0 ||
+          k.indexOf('fh_trial') === 0 ||
+          k.indexOf('fh_session') === 0 ||
+          k.indexOf('fh_member') === 0 ||
+          k.indexOf('mvp_credit') === 0 ||
+          k.indexOf('fh_sub_date') === 0 ||
+          k.indexOf('moneya_chat') === 0
+        )) {
+          keysToDelete.push(k);
+        }
+      }
+      keysToDelete.forEach(function(k) { localStorage.removeItem(k); });
+      // URL에서 ?new=1 제거 후 리로드 (파라미터 없이 깨끗하게)
+      var cleanUrl = location.href.replace(/[?&]new=1/, '').replace(/\?$/, '');
+      location.replace(cleanUrl);
+    } catch(e) {}
+  }
+})();
 (function(){
   var ua = navigator.userAgent || '';
   var isKakao = /KAKAOTALK/i.test(ua);
@@ -17538,19 +17567,27 @@ function diagAutoFillNote_legacy(userText) {
 
   if (curStep <= 1) {
     // [1단계] 인적사항
+    // ★ 이름 확정 후 f1_name 패턴 완전 제거 (LOCK 이중 보호)
+    var _nameConfirmed = (function(){
+      var el = document.getElementById('f1_name');
+      return el && el.classList.contains('confirmed');
+    })();
+
+    if (!_nameConfirmed) {
+      patterns = patterns.concat([
+        { key:'f1_name', regex:/^([가-힣]{2,5})$/ },
+        { key:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },
+        { key:'f1_name', regex:/^([가-힣]{2,5})(?:요|이요)[.\s]*$/ },
+        { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
+        { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
+        { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
+        { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)?/ },
+        { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
+        { key:'f1_name', regex:/이름은?\s*([가-힣]{2,5})/ },
+      ]);
+    }
+
     patterns = patterns.concat([
-      // ★ Phase R: 짧은 발화 우선 매칭 — "홍길동", "44세" 등
-      // 성함 - 짧은 발화
-      { key:'f1_name', regex:/^([가-힣]{2,5})$/ },                   // "홍길동"
-      { key:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },             // "홍길동."
-      { key:'f1_name', regex:/^([가-힣]{2,5})(?:요|이요)[.\s]*$/ },  // "홍길동요"
-      // 성함 - 완전한 문장
-      { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
-      { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
-      { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
-      { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)?/ },
-      { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
-      { key:'f1_name', regex:/이름은?\s*([가-힣]{2,5})/ },
       // 나이 - 짧은 발화
       { key:'f1_age', regex:/^(\d{1,3})\s*세[.\s]*$/ },    // "44세"
       { key:'f1_age', regex:/^(\d{1,3})\s*살[.\s]*$/ },    // "44살"
@@ -17732,13 +17769,14 @@ function _fillNewNote(id, displayVal) {
   /* ★ [A-8 강화] f1_name — 한글 이름만 허용 + 최초 확정 후 LOCK */
   if (id === 'f1_name' && displayVal) {
     var nameStr = String(displayVal).trim();
-    var blocked = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|혼자|혼|1인|한명|한분|없어요|없습니다)/i.test(nameStr)
+    // ★ 이름 불가 단어 차단 목록 (외벌이/맞벌이/직업어/상태어 모두 포함)
+    var blocked = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|혼자|혼|1인|한명|한분|없어요|없습니다|외벌이|맞벌이|기혼|미혼|이혼|사별|직장인|자영업|공무원|주부|프리랜서|의사|변호사|교사|간호사|서울|부산|대구|인천|광주|대전|울산|세종|경기)/i.test(nameStr)
       || !/^[가-힣]{2,5}$/.test(nameStr);
     if (blocked) {
       console.warn('[f1_name] 차단:', displayVal);
       return false;
     }
-    /* ★ 최초 확정 후 LOCK */
+    /* ★ 최초 확정 후 LOCK — confirmed 상태면 무조건 거부 */
     var nameEl = document.getElementById('f1_name');
     if (nameEl && nameEl.classList.contains('confirmed')) {
       console.warn('[f1_name LOCK] 이미 확정, 변경 거부:', displayVal);
@@ -18416,8 +18454,13 @@ function diagAutoFillNote(userText) {
   // ★ [단계3-fix v2] 단계 제약 복구 — 타 단계 오염 방지
   // 이전에 if(true)로 풀려있던 것이 "노후" → f1_name 오입력 원인
   if (curStep <= 1) {
-    patterns = patterns.concat([
-      // 이름
+    // ★ 이름 확정 후 f1_name 패턴 완전 제거
+    var _nameConfirmed2 = (function(){
+      var el = document.getElementById('f1_name');
+      return el && el.classList.contains('confirmed');
+    })();
+
+    var _namePatterns = _nameConfirmed2 ? [] : [
       { id:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고|입|이에|요)/ },
       { id:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
       { id:'f1_name', regex:/이름은?\s*([가-힣]{2,5})(?:입|이에|예|요|$)/ },
@@ -18426,8 +18469,10 @@ function diagAutoFillNote(userText) {
       { id:'f1_name', regex:/^([가-힣]{2,5})예요/ },
       { id:'f1_name', regex:/^([가-힣]{2,5})이고/ },
       { id:'f1_name', regex:/^([가-힣]{2,5})요[.\s]*$/ },
-      { id:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ }, // 이름 한 단어만
-      
+      { id:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },
+    ];
+
+    patterns = patterns.concat(_namePatterns).concat([
       // 나이
       { id:'f1_age', regex:/(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
       { id:'f1_age', regex:/(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
