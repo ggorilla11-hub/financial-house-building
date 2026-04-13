@@ -8509,7 +8509,13 @@ function freeScoreSubmit() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'free_score', name: name, phone: phone, email: email,
-      plan: '무료 재무건강점수', result_title: resultTitle,
+      plan: '무료 재무건강점수',
+      data_type:  '무료검진신청',       // ★ [#17] 무료/유료 구분
+      sheet_name: 'AI머니야_마케팅DB',  // ★ 시트명 명시
+      payment_type: '무료',             // ★ 결제유형
+      seminar_yn: 'N',                  // ★ 세미나 초대 해당없음
+      file_code:  'FREE_CHECKUP',       // ★ 파일구분 코드
+      result_title: resultTitle,
       result_sub: resultSub, result_d: resultD,
       health_score: scoreData.totalScore, score_grade: scoreData.grade,
       score_expense: scoreData.expense, score_asset: scoreData.asset,
@@ -8934,16 +8940,36 @@ function mvpCompletePurchase() {
 // MVP: 구글시트 DB 저장 + 안내 발송
 function mvpSaveToSheet(name, phone, email) {
   var currentPlan = window._fhCurrentPlan || selectedPlan || 'bronze-single';
+
+  // ★ [#17] 결제 유형 구분 (구글시트 파일구분 항목용)
+  var paymentType = '단일결제';
+  var seminarYn = 'N'; // 세미나 초대 여부
+  if (currentPlan.indexOf('-month') > -1) {
+    paymentType = '월정기';
+    seminarYn = 'Y'; // 정기결제 → 세미나 초대 대상
+  } else if (currentPlan.indexOf('-year') > -1) {
+    paymentType = '연회비';
+    seminarYn = 'Y'; // 정기결제 → 세미나 초대 대상
+  }
+  var tierCode = currentPlan.replace('-single','').replace('-month','').replace('-year','').toUpperCase();
+  // 파일구분 코드: BRONZE_SINGLE, SILVER_MONTH, GOLD_YEAR 등
+  var fileCode = tierCode + '_' + paymentType.replace('월정기','MONTH').replace('연회비','YEAR').replace('단일결제','SINGLE');
+
   fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name:  name,
-      email: email,
-      phone: phone,
-      plan:  currentPlan,
-      source: 'main-payment-form',
-      timestamp: new Date().toISOString()
+      name:         name,
+      email:        email,
+      phone:        phone,
+      plan:         currentPlan,
+      payment_type: paymentType,   // ★ 단일결제/월정기/연회비
+      seminar_yn:   seminarYn,     // ★ 세미나 초대 여부 Y/N
+      file_code:    fileCode,      // ★ 구글시트 파일구분 코드
+      source:       'main-payment-form',
+      sheet_name:   'AI머니야_마케팅DB', // ★ 시트명 명시
+      data_type:    '유료진단신청',       // ★ 무료/유료 구분
+      timestamp:    new Date().toISOString()
     })
   }).then(function(r) {
     console.log('[구글시트] 저장 완료:', r.status);
@@ -19852,6 +19878,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
           <span>✗</span> 8단계 종합재무설계 7대영역 (실버 이상)
         </div>
+        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#CD7F32;margin-top:2px;background:rgba(205,127,50,.08);border-radius:6px;padding:5px 7px;">
+          <span style="color:#CD7F32;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:5px;margin-bottom:10px;">
@@ -19902,6 +19932,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:#475569;font-weight:700;">✓</span> PDF 재무진단 리포트
+        </div>
+        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#475569;margin-top:2px;background:rgba(148,163,184,.1);border-radius:6px;padding:5px 7px;">
+          <span style="color:#475569;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
         </div>
       </div>
     </div>
@@ -19954,6 +19988,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:var(--gold);font-weight:700;">✓</span> PDF 재무진단 리포트
         </div>
+        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gold);margin-top:2px;background:rgba(201,151,42,.1);border-radius:6px;padding:5px 7px;">
+          <span style="color:var(--gold);font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:5px;margin-bottom:10px;">
@@ -20004,6 +20042,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:#a855f7;font-weight:700;">✓</span> PDF 재무진단 리포트
+        </div>
+        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#a855f7;margin-top:2px;background:rgba(168,85,247,.1);border-radius:6px;padding:5px 7px;">
+          <span style="color:#a855f7;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
         </div>
       </div>
     </div>
