@@ -14040,7 +14040,7 @@ async function diagConnectVoice(isPaid) {
       diagMic = false;
       console.log('[call-end]', _vapiUserEnded ? '사용자 종료' : '자동 종료');
       
-      /* ★ [v14 D-1] 비정상 종료 시 alert + 텍스트 모드 자동 전환 */
+      /* ★ [v14 D-1+D-2] 비정상 종료 시 안내 배너 + 텍스트 모드 자동 전환 */
       var wasUserEnded = _vapiUserEnded;
       _vapiUserEnded = false;
       
@@ -14049,17 +14049,35 @@ async function diagConnectVoice(isPaid) {
         showToast('📞 상담이 종료됐습니다');
       } else {
         /* 비정상 자동 종료 — 즉시 안내 + 텍스트 전환 */
-        console.warn('[v14 D-1] 음성 끊김 감지 → 텍스트 모드 자동 전환');
+        console.warn('[v14 D-1+D-2] 음성 끊김 감지 → 텍스트 모드 자동 전환');
         showToast('⚠️ 음성 연결이 끊어졌어요. 텍스트로 계속 진행합니다.', 5000);
         
-        /* 사용자에게 안내 (화면 중앙) */
-        setTimeout(function() {
-          try {
-            alert('🎤 음성 연결이 일시적으로 끊어졌어요.\n\n' +
-                  '상담 내용은 모두 저장되어 있고, 지금부터는 텍스트로 이어서 진행하실 수 있습니다.\n\n' +
-                  '하단 입력창에 답변을 입력해 주세요.');
-          } catch(e) {}
-        }, 500);
+        /* ★ [v14 D-2] inline 배너 (alert보다 눈에 띄고 스팸 차단 안됨) */
+        try {
+          var existingBanner = document.getElementById('voiceDropBanner');
+          if (existingBanner) existingBanner.remove();
+          
+          var banner = document.createElement('div');
+          banner.id = 'voiceDropBanner';
+          banner.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;' +
+            'background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;padding:14px 20px;' +
+            'border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.3);font-family:"Noto Sans KR",sans-serif;' +
+            'font-size:12px;font-weight:700;max-width:90%;line-height:1.55;text-align:center;' +
+            'border:2px solid #0B1D3A;animation:fadeIn .3s ease;';
+          banner.innerHTML = 
+            '<div style="font-size:14px;font-weight:900;margin-bottom:4px;">🎤 음성 연결이 끊어졌어요</div>' +
+            '<div style="font-size:11px;">상담 내용은 그대로 저장되어 있어요.<br>텍스트로 이어서 진행해 주세요.</div>' +
+            '<button onclick="this.parentElement.remove()" style="margin-top:8px;padding:6px 14px;' +
+            'background:#0B1D3A;color:#E8B84B;border:none;border-radius:6px;font-size:10.5px;' +
+            'font-weight:800;cursor:pointer;font-family:inherit;">확인</button>';
+          document.body.appendChild(banner);
+          
+          /* 10초 후 자동 제거 */
+          setTimeout(function() {
+            var b = document.getElementById('voiceDropBanner');
+            if (b) b.remove();
+          }, 10000);
+        } catch(bannerErr) { console.warn('[v14 D-2 배너]', bannerErr.message); }
         
         /* 기존 대화 히스토리로 텍스트 모드 전환 */
         try {
