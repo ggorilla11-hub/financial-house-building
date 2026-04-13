@@ -7,44 +7,6 @@
 
 
 <script>
-/* ★ [신규방문] ?v=숫자 파라미터 감지 → 완전 초기화 */
-(function() {
-  if (/[?&]v=\d/.test(location.search)) {
-    try {
-      // 대화 기록 키 패턴으로 삭제
-      var keysToDelete = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && (
-          k.indexOf('fh_chat_log_') === 0 ||
-          k.indexOf('fh_subscribed') === 0 ||
-          k.indexOf('fh_plan') === 0 ||
-          k.indexOf('fh_trial') === 0 ||
-          k.indexOf('fh_session') === 0 ||
-          k.indexOf('fh_member') === 0 ||
-          k.indexOf('mvp_credit') === 0 ||
-          k.indexOf('fh_sub_date') === 0 ||
-          k.indexOf('moneya_chat') === 0 ||
-          k.indexOf('voice_used_sec') === 0 ||
-          k.indexOf('text_start_date') === 0 ||
-          k.indexOf('fh_toast_') === 0
-        )) {
-          keysToDelete.push(k);
-        }
-      }
-      keysToDelete.forEach(function(k) { localStorage.removeItem(k); });
-      // ★ develop 테스트: 크레딧 20분 + 브론즈플랜 + 7일 체험 리셋
-      localStorage.setItem('mvp_credit_min', '20');
-      localStorage.setItem('fh_plan', 'bronze-month');
-      localStorage.setItem('fh_subscribed', '1');
-      localStorage.setItem('fh_member_v1', '1');
-      localStorage.removeItem('fh_trial_start'); // 7일 카운터 리셋
-      // URL에서 ?v=숫자 제거 후 리로드
-      var cleanUrl = location.href.replace(/[?&]v=\d+/, '').replace(/\?$/, '');
-      location.replace(cleanUrl);
-    } catch(e) {}
-  }
-})();
 (function(){
   var ua = navigator.userAgent || '';
   var isKakao = /KAKAOTALK/i.test(ua);
@@ -2687,12 +2649,12 @@ html{visibility:visible !important;}
 
       <!-- ★ 무료 텍스트 상담 버튼 (신규) -->
       <button onclick="openFreeTextChat()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(76,175,125,.5);background:rgba(76,175,125,.1);color:#81C995;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
-        💬 AI재무진단 머니야 텍스트상담
+        💬 AI재무진단 텍스트상담
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">텍스트로 AI 재무진단 · 로그인하면 맥락 기억</span>
       </button>
 
-      <!-- ★ DESIRE 단계 파악 버튼 (신규) — [#18] 숨김처리 -->
-      <button onclick="openDesireSimulator()" style="display:none;width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
+      <!-- ★ DESIRE 단계 파악 버튼 (신규) -->
+      <button onclick="openDesireSimulator()" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(201,151,42,.5);background:rgba(201,151,42,.08);color:#E8B84B;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:10px;">
         🗺️ 나의 DESIRE 단계 파악하기
         <span style="display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:3px;">재무 여정 6단계 중 내 위치 확인 · 단계별 목표 설정</span>
       </button>
@@ -2851,7 +2813,7 @@ html{visibility:visible !important;}
   <div style="background:linear-gradient(135deg,#0B1D3A,#1a3260);border-bottom:2px solid rgba(201,151,42,.3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
     <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8B6914,#C9972A);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
     <div style="flex:1;">
-      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 머니야 텍스트상담</div>
+      <div style="font-size:14px;font-weight:900;color:#E8B84B;">AI재무진단 텍스트상담</div>
       <div style="font-size:10px;color:rgba(255,255,255,.4);">AI 재무 상담 · AI 학습 미사용</div>
     </div>
     <button onclick="closeFreeTextChat()" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;line-height:1;flex-shrink:0;">×</button>
@@ -7376,7 +7338,6 @@ function simulateMakeWebhook(name, score, ins, ret, wealth){
 // 카톡 인앱 감지
 const isKakao = /KAKAOTALK/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-var _isIOS = isIOS; // ★ 음성 타이밍 조정용 전역 변수
 const isAndroid = /Android/i.test(navigator.userAgent);
 
 // iOS 카톡 인앱: 100vh 버그 수정
@@ -8092,24 +8053,13 @@ async function ftcSend() {
   var input = document.getElementById('ftc-input');
   if (!input || !input.value.trim() || ftcIsLoading) return;
 
-  // ★ [#19] 횟수 기반 3단계 제어
-  var isLoggedIn = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser);
-  var userMsgCount = ftcMessages.filter(function(m){ return m.role === 'user'; }).length;
-
-  // 3회 이하 — 로그인 없이 그냥 가능
-  // 4~10회 — 로그인 유도 (비로그인만)
+  // ── 비로그인 3회 제한, 로그인 후 무제한 ──
+  var isLoggedIn = (typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser);
+  var userMsgCount = ftcMessages.filter(function(m){ return m.role==='user'; }).length;
   if (!isLoggedIn && userMsgCount >= 3) {
     ftcAddMessage('ai', '💡 로그인하시면 대화 맥락을 기억해서 더 정밀한 AI재무진단이 가능합니다. 10초면 됩니다!');
     setTimeout(function(){ showMiniLogin('계속 상담하려면 로그인이 필요해요', null); }, 500);
     return;
-  }
-
-  // 11회 이상 — 유료 AI재무진단 안내 토스트 (로그인 여부 관계없이)
-  if (userMsgCount >= 10) {
-    if (typeof showToast === 'function') {
-      showToast('🎙️ 더 깊은 재무설계는 유료 AI재무진단 머니야에서! 음성으로 정밀 진단을 받아보세요.', 4000);
-    }
-    // 토스트 후에도 전송은 계속 허용 (차단 아님)
   }
 
   var userMsg = input.value.trim();
@@ -8548,13 +8498,7 @@ function freeScoreSubmit() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'free_score', name: name, phone: phone, email: email,
-      plan: '무료 재무건강점수',
-      data_type:  '무료검진신청',       // ★ [#17] 무료/유료 구분
-      sheet_name: 'AI머니야_마케팅DB',  // ★ 시트명 명시
-      payment_type: '무료',             // ★ 결제유형
-      seminar_yn: 'N',                  // ★ 세미나 초대 해당없음
-      file_code:  'FREE_CHECKUP',       // ★ 파일구분 코드
-      result_title: resultTitle,
+      plan: '무료 재무건강점수', result_title: resultTitle,
       result_sub: resultSub, result_d: resultD,
       health_score: scoreData.totalScore, score_grade: scoreData.grade,
       score_expense: scoreData.expense, score_asset: scoreData.asset,
@@ -8767,107 +8711,29 @@ function calcFreeHealthScore(answers) {
   };
 }
 
-/* ★ [v14 F2] 결제 완료자 진단 진입 헬퍼 */
-function _mvpEnterCheckup() {
-  var simWrap = document.getElementById('sim-wrap');
-  if (simWrap) simWrap.style.display = 'none';
-  var funnelWrap = document.getElementById('funnel-wrap');
-  if (funnelWrap) funnelWrap.classList.add('fn-hidden');
-  mpIsSubscribed = true;
-  if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
-  var btn = document.getElementById('btn-header-main');
-  if (btn) {
-    btn.textContent = '🏥 AI 재무검진';
-    btn.onclick = function(){ mpOpen(); };
-    btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
-    btn.style.animation = 'none';
-  }
-  showToast('✅ 구독 확인 — AI재무진단을 시작합니다');
-  mpOpen();
-}
-
 function mvpStartCheckup() {
-  /* ★ [v14 F2] 환경별 분기 — main=결제필수, dev=7일 무료체험 */
-  var IS_STAGING = location.hostname.includes('-dev') 
-                || location.hostname.includes('staging')
-                || location.hostname.includes('localhost')
-                || location.hostname === '127.0.0.1';
-  
-  /* ═══════ PROD(main): 결제 필수 ═══════ */
-  if (!IS_STAGING) {
-    /* 1) 이미 구독 확인된 상태 (localStorage) → 바로 진단 진입 */
-    var lp = localStorage.getItem('fh_plan');
-    var ls = localStorage.getItem('fh_subscribed');
-    if (lp && ls === '1') {
-      _mvpEnterCheckup();
-      return;
-    }
-    
-    /* 2) 로그인된 상태면 Firestore에서 구독 재확인 (이전 결제자 복원) */
-    var user = window._fhAuth ? window._fhAuth.currentUser : null;
-    if (user && window._fhDb) {
-      var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
-      window._fhDb.collection('subscribers').doc(docId).get()
-        .then(function(doc) {
-          var isValid = false;
-          if (doc.exists) {
-            var d = doc.data();
-            if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
-              isValid = true;
-              /* localStorage 동기화 */
-              localStorage.setItem('fh_member_v1', '1');
-              localStorage.setItem('fh_subscribed', '1');
-              localStorage.setItem('fh_plan', d.plan || 'bronze-single');
-              localStorage.setItem('mvp_credit_min', String(d.creditMin || 10));
-              localStorage.setItem('fh_payer_email', user.email);
-              if (d.payerName) localStorage.setItem('fh_payer_name', d.payerName);
-              mpIsSubscribed = true;
-            }
-          }
-          
-          if (isValid) {
-            /* 기존 구독자 → 진단 진입 */
-            _mvpEnterCheckup();
-          } else {
-            /* 미구독자 → 플랜 선택 화면 (로그인/전번/결제) */
-            if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
-            else if (typeof mpOpen === 'function') mpOpen();
-          }
-        })
-        .catch(function(e) {
-          console.warn('[v14 F3] Firestore 조회 실패:', e.message);
-          /* 에러 시에도 플랜 화면으로 */
-          if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
-          else if (typeof mpOpen === 'function') mpOpen();
-        });
-    } else {
-      /* 3) 로그인 안 됨 or Firestore 없음 → 플랜 선택 화면으로 (고객이 여기서 로그인/전번/결제) */
-      if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
-      else if (typeof mpOpen === 'function') mpOpen();
-    }
-    return;
-  }
-  
-  /* ═══════ STAGING(dev): 음성 20분 + 7일 텍스트 무료 체험 ═══════ */
+  // ★ staging용: 결제 없이 7일 무료 체험
   var trialStart = localStorage.getItem('fh_trial_start');
-  var now = new Date();
   if (!trialStart) {
-    localStorage.setItem('fh_trial_start', now.toISOString());
-    trialStart = now.toISOString();
+    localStorage.setItem('fh_trial_start', new Date().toISOString());
+    trialStart = new Date().toISOString();
   }
   var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  var remaining = Math.max(0, 7 - daysPassed);
-
+  if (daysPassed >= 7) {
+    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+    mpOpenSubscribe();
+    return;
+  }
+  var remaining = 7 - daysPassed;
   var simWrap = document.getElementById('sim-wrap');
   if (simWrap) simWrap.style.display = 'none';
   var funnelWrap = document.getElementById('funnel-wrap');
   if (funnelWrap) funnelWrap.classList.add('fn-hidden');
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
-  localStorage.setItem('fh_sub_date', now.toISOString());
-  localStorage.setItem('fh_plan', 'bronze-month');   // 브론즈 = 음성 20분
-  localStorage.setItem('mvp_credit_min', '20');       // 음성 20분
-  // voice_used_sec는 call-start 시점에만 초기화 (재접속 시 크레딧 보호)
+  localStorage.setItem('fh_sub_date', new Date().toISOString());
+  localStorage.setItem('fh_plan', 'silver-month');
+  localStorage.setItem('mvp_credit_min', '20');
   mpIsSubscribed = true;
   if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
   var btn = document.getElementById('btn-header-main');
@@ -8877,19 +8743,15 @@ function mvpStartCheckup() {
     btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
     btn.style.animation = 'none';
   }
-  if (remaining > 0) {
-    showToast('🎁 AI머니야 무료 체험 중 · 음성 20분 · 텍스트 D-' + remaining + '일');
-  } else {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다.');
-  }
+  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
   mpOpen();
 
   var user = window._fhAuth ? window._fhAuth.currentUser : null;
-  /* 로그인 안 된 경우에도 체험 허용 (staging 전용) */
+  // 로그인 안 된 경우에도 체험 허용 (staging 전용)
   if (!user) {
     return;
   }
-  /* 로그인된 경우 → Firestore에서 구독 확인 */
+  // 로그인된 경우 → Firestore에서 구독 확인
   if (window._fhDb) {
     var docId = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
     window._fhDb.collection('subscribers').doc(docId).get()
@@ -8899,7 +8761,7 @@ function mvpStartCheckup() {
           var d = doc.data();
           if (d.active && (!d.expiry || new Date(d.expiry) > new Date())) {
             isValid = true;
-            /* localStorage 동기화 */
+            // localStorage 동기화
             localStorage.setItem('fh_member_v1', '1');
             localStorage.setItem('fh_subscribed', '1');
             localStorage.setItem('fh_plan', d.plan || 'silver-month');
@@ -8981,36 +8843,16 @@ function mvpCompletePurchase() {
 // MVP: 구글시트 DB 저장 + 안내 발송
 function mvpSaveToSheet(name, phone, email) {
   var currentPlan = window._fhCurrentPlan || selectedPlan || 'bronze-single';
-
-  // ★ [#17] 결제 유형 구분 (구글시트 파일구분 항목용)
-  var paymentType = '단일결제';
-  var seminarYn = 'N'; // 세미나 초대 여부
-  if (currentPlan.indexOf('-month') > -1) {
-    paymentType = '월정기';
-    seminarYn = 'Y'; // 정기결제 → 세미나 초대 대상
-  } else if (currentPlan.indexOf('-year') > -1) {
-    paymentType = '연회비';
-    seminarYn = 'Y'; // 정기결제 → 세미나 초대 대상
-  }
-  var tierCode = currentPlan.replace('-single','').replace('-month','').replace('-year','').toUpperCase();
-  // 파일구분 코드: BRONZE_SINGLE, SILVER_MONTH, GOLD_YEAR 등
-  var fileCode = tierCode + '_' + paymentType.replace('월정기','MONTH').replace('연회비','YEAR').replace('단일결제','SINGLE');
-
   fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name:         name,
-      email:        email,
-      phone:        phone,
-      plan:         currentPlan,
-      payment_type: paymentType,   // ★ 단일결제/월정기/연회비
-      seminar_yn:   seminarYn,     // ★ 세미나 초대 여부 Y/N
-      file_code:    fileCode,      // ★ 구글시트 파일구분 코드
-      source:       'main-payment-form',
-      sheet_name:   'AI머니야_마케팅DB', // ★ 시트명 명시
-      data_type:    '유료진단신청',       // ★ 무료/유료 구분
-      timestamp:    new Date().toISOString()
+      name:  name,
+      email: email,
+      phone: phone,
+      plan:  currentPlan,
+      source: 'main-payment-form',
+      timestamp: new Date().toISOString()
     })
   }).then(function(r) {
     console.log('[구글시트] 저장 완료:', r.status);
@@ -10180,55 +10022,9 @@ function addToChatLog(role, text) {
 
 // ── 4. 텍스트 메시지 전송 → Render /api/consult-chat ──
 async function sendTextConsultMessage(txt) {
-  // ★ [7일 텍스트 만료 체크] 전송 전 매번 확인
-  var IS_STAGING_TXT = location.hostname.includes('-dev') || location.hostname.includes('localhost') || location.hostname === '127.0.0.1';
-  if (IS_STAGING_TXT) {
-    var trialStartTxt = localStorage.getItem('fh_trial_start');
-    if (trialStartTxt) {
-      var daysTxt = Math.floor((Date.now() - new Date(trialStartTxt).getTime()) / (1000*60*60*24));
-      var remainTxt = Math.max(0, 7 - daysTxt);
-      // 3일 남음 알림 (하루 1번)
-      var toast3Key = 'fh_toast_3day_' + new Date().toDateString();
-      if (remainTxt === 3 && !localStorage.getItem(toast3Key)) {
-        localStorage.setItem(toast3Key, '1');
-        showToast('📅 텍스트 상담 3일 남았습니다. 유료 플랜으로 계속 이용하세요!', 5000);
-      }
-      // 1일 남음 알림
-      var toast1Key = 'fh_toast_1day_' + new Date().toDateString();
-      if (remainTxt === 1 && !localStorage.getItem(toast1Key)) {
-        localStorage.setItem(toast1Key, '1');
-        showToast('⚠️ 텍스트 상담 마지막 날입니다! 내일부터 유료 플랜이 필요합니다.', 5000);
-      }
-      // 만료
-      if (remainTxt <= 0) {
-        showToast('⏰ 7일 무료 텍스트 상담이 종료되었습니다. 유료 AI재무진단을 시작해보세요!', 5000);
-        setTimeout(function(){
-          showToast('👉 실버(40분) · 골드(60분) · 프리미엄(CFP상담) 플랜을 선택하세요', 5000);
-        }, 6000);
-        setTimeout(function(){
-          if (typeof mpOpenSubscribe === 'function') mpOpenSubscribe();
-        }, 3000);
-        return; // 전송 차단
-      }
-    }
-  }
   // 로딩 표시
   var loadingId = 'loading_' + Date.now();
-  diagAddSTT('ai', '머니야가 생각 중입니다... (처음엔 10~20초 걸릴 수 있어요)', null);
-
-  // ★ Render 슬립 대응 fetch (timeout 60초)
-  async function fetchWithTimeout(url, options, timeoutMs) {
-    var controller = new AbortController();
-    var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
-    try {
-      var res = await fetch(url, Object.assign({}, options, { signal: controller.signal }));
-      clearTimeout(timer);
-      return res;
-    } catch(e) {
-      clearTimeout(timer);
-      throw e;
-    }
-  }
+  diagAddSTT('ai', '...', null);
 
   try {
     var userName = localStorage.getItem('fh_payer_name') || (window.D && window.D.name) || '고객';
@@ -10261,18 +10057,18 @@ async function sendTextConsultMessage(txt) {
       }
     } catch(e) {}
 
-    var response = await fetchWithTimeout('https://moneya-server.onrender.com/api/consult-chat', {
+    var response = await fetch('https://moneya-server.onrender.com/api/consult-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: txt,
         userName: userName,
         financialContext: financialContext,
-        conversationHistory: _textConsultHistory.slice(-10),
-        resumeContext: resumeCtx,
-        planInfo: planInfoStr
+        conversationHistory: _textConsultHistory.slice(-10), // 최근 10개만
+        resumeContext: resumeCtx,  // ★ 신규
+        planInfo: planInfoStr       // ★ 신규
       })
-    }, 60000); // ★ 60초 timeout (Render 슬립 대응)
+    });
 
     var data = await response.json();
 
@@ -10294,19 +10090,16 @@ async function sendTextConsultMessage(txt) {
       if(typeof diagPushQ === 'function') diagPushQ(data.message);
       setTimeout(function(){ diagParseAiSpeech(data.message); }, 300);
     } else {
-      diagAddSTT('ai', '⚠️ 서버가 잠시 준비 중입니다. 10~20초 후 다시 입력해 주시면 바로 답변드립니다! (Render 서버 웜업 중)', null);
+      diagAddSTT('ai', '죄송합니다. 잠시 후 다시 입력해 주세요.', null);
     }
   } catch(e) {
     console.error('[텍스트 상담] 오류:', e);
     var chatLog2 = document.getElementById('dn_chat_log');
     if(chatLog2) {
       var last = chatLog2.lastElementChild;
-      if(last && last.textContent.indexOf('머니야가 생각') >= 0) last.remove();
+      if(last && last.textContent.trim() === '...') last.remove();
     }
-    var errMsg = e.name === 'AbortError'
-      ? '⏱️ 서버 응답 시간이 초과됐습니다. 잠시 후 다시 입력해 주세요. (서버 웜업 중)'
-      : '⚠️ 네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
-    diagAddSTT('ai', errMsg, null);
+    diagAddSTT('ai', '연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.', null);
   }
 }
 
@@ -10517,16 +10310,7 @@ function mvpVoiceTimeUp() {
       null);
   }, 1500);
 
-  // ★ [유료 전환 유도] 음성 종료 후 단계별 토스트
-  setTimeout(function() {
-    showToast('💬 음성 20분 종료 · 텍스트로 ' + _textDays + '일 상담 가능합니다', 4000);
-  }, 500);
-  setTimeout(function() {
-    showToast('🚀 더 깊은 재무설계를 원하시면 유료 AI재무진단을 이용해 보세요!', 5000);
-  }, 5000);
-  setTimeout(function() {
-    showToast('👉 유료 플랜: 실버(40분) · 골드(60분) · 프리미엄(CFP상담 포함)', 5000);
-  }, 11000);
+  showToast('💬 음성 종료 · 텍스트로 ' + _textDays + '일 상담 가능합니다');
 }
 
 function mpOpen() {
@@ -13122,13 +12906,6 @@ function startVoiceTimer() {
     
     var cur = creditGetState();
     
-    // ★ [유료 전환 유도] 음성 잔여 시간별 토스트
-    if (cur.voiceRemainSec === 600) { // 10분 남음
-      showToast('⏱️ 음성 진단 10분 남았습니다. 더 깊은 상담은 유료 플랜에서!', 4000);
-    }
-    if (cur.voiceRemainSec === 300) { // 5분 남음
-      showToast('⏱️ 음성 진단 5분 남았습니다. 지금 유료 플랜으로 업그레이드하세요! →', 5000);
-    }
     // 1분 남음 경고 (한 번만)
     if (cur.voiceRemainSec === 60) {
       showToast('⚠️ 음성 크레딧 1분 남았습니다. 곧 텍스트 상담으로 전환됩니다.');
@@ -14212,99 +13989,10 @@ async function diagConnectVoice(isPaid) {
       showToast('✅ AI 머니야 연결 완료 · 음성 진단을 시작합니다');
       var w = document.getElementById('diagWave') || document.querySelector('.diag-wave');
       if(w) w.classList.remove('muted');
-
-      /* ★ [추가] 첫 음성 상담 시작 시 voice_used_sec 초기화
-       * - mvpStartCheckup()에서 하지 않고 실제 통화 시작 시점에만 실행
-       * - 이미 사용한 크레딧이 있으면 유지 (재접속 보호)
-       * - voice_used_sec가 없거나 0인 경우에만 초기화
-       */
-      try {
-        var usedSec = parseInt(localStorage.getItem('voice_used_sec') || '0');
-        if (usedSec === 0) {
-          localStorage.removeItem('voice_used_sec');
-          console.log('[call-start] voice_used_sec 초기화 (첫 상담)');
-        }
-      } catch(e) {}
     });
 
     /* ── 메시지 수신 (자막 + Tool Call) ── */
     vapi.on('message', function(msg) {
-
-      /* ★ [고수님 1순위] partial 누적 + 1.5초 타이머 — iOS final 누락 대응 */
-      if (msg.type === 'transcript' && msg.role === 'user') {
-        window._transcriptBuffer = msg.transcript || '';
-
-        if (msg.transcriptType === 'final') {
-          // final이면 즉시 처리
-          if (window._transcriptTimer) clearTimeout(window._transcriptTimer);
-          window._transcriptTimer = null;
-          var _ft = window._transcriptBuffer;
-          window._transcriptBuffer = '';
-          if (_ft && _ft.trim()) {
-            setTimeout(function(){ diagAutoFillNote(_ft); }, _isIOS ? 600 : 300);
-          }
-        } else {
-          // partial이면 1.5초 후 처리 (final 안 오는 경우 대비)
-          if (window._transcriptTimer) clearTimeout(window._transcriptTimer);
-          window._transcriptTimer = setTimeout(function() {
-            var _pt = window._transcriptBuffer;
-            window._transcriptBuffer = '';
-            window._transcriptTimer = null;
-            if (_pt && _pt.trim()) {
-              console.log('[iOS partial 타이머] 처리:', _pt.substring(0, 30));
-              diagAutoFillNote(_pt);
-            }
-          }, 1500);
-        }
-      }
-
-      /* ★ [AI 발화 iOS 대응] assistant partial 누적 + 2초 타이머
-       * iOS에서 AI 발화 final이 안 오면 diagParseAiSpeech 미호출 → 탭 이동 안됨
-       * partial을 2초 후 diagParseAiSpeech로 처리하여 단계 전환 보장
-       */
-      if (msg.type === 'transcript' && msg.role === 'assistant') {
-        window._aiTranscriptBuffer = msg.transcript || '';
-        if (msg.transcriptType === 'final') {
-          if (window._aiTranscriptTimer) clearTimeout(window._aiTranscriptTimer);
-          window._aiTranscriptTimer = null;
-          // final은 기존 코드(아래)에서 처리됨
-        } else {
-          if (window._aiTranscriptTimer) clearTimeout(window._aiTranscriptTimer);
-          window._aiTranscriptTimer = setTimeout(function() {
-            var _at = window._aiTranscriptBuffer;
-            window._aiTranscriptBuffer = '';
-            window._aiTranscriptTimer = null;
-            if (_at && _at.trim()) {
-              console.log('[iOS AI partial 타이머] 처리:', _at.substring(0, 40));
-              diagLastQ = _at;
-              if (typeof diagPushQ === 'function') diagPushQ(_at);
-              setTimeout(function(){ diagParseAiSpeech(_at); }, 300);
-            }
-          }, 2000);
-        }
-      }
-
-      /* ★ [고수님 2순위] conversation-update 백업 — transcript 안 올 때 대비 */
-      if (msg.type === 'conversation-update' && msg.conversation) {
-        var lastUser = null;
-        for (var ci = msg.conversation.length - 1; ci >= 0; ci--) {
-          if (msg.conversation[ci].role === 'user') {
-            lastUser = msg.conversation[ci].content;
-            break;
-          }
-        }
-        if (lastUser && lastUser.trim()) {
-          console.log('[conversation-update 백업]', lastUser.substring(0, 30));
-          setTimeout(function(){ diagAutoFillNote(lastUser); }, 200);
-        }
-      }
-
-      /* ★ [iOS 기존 백업] partial transcript 저장 */
-      if(msg.type === 'transcript' && msg.role !== 'assistant') {
-        window._lastPartialTranscript = msg.transcript || '';
-        window._lastPartialRole = msg.role === 'assistant' ? 'ai' : 'user';
-      }
-
       /* 자막 표시 */
       if(msg.type === 'transcript' && msg.transcriptType === 'final') {
         var role = msg.role === 'assistant' ? 'ai' : 'user';
@@ -14336,8 +14024,8 @@ async function diagConnectVoice(isPaid) {
           if(placeholder) placeholder.remove();
         }
 
-        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, _isIOS ? 600 : 300);
-        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, _isIOS ? 800 : 500); diagLastQ = displayText; if(typeof diagPushQ==='function') diagPushQ(displayText); }
+        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
+        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; if(typeof diagPushQ==='function') diagPushQ(displayText); }
       }
 
       /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
@@ -14346,36 +14034,8 @@ async function diagConnectVoice(isPaid) {
       }
     });
 
-    /* ★ [iOS 대응] speech-end 이벤트 — iOS에서 final transcript 미발생 시 백업 처리 */
-    vapi.on('speech-end', function() {
-      if (!_isIOS) return; // iOS에서만 작동
-      setTimeout(function() {
-        try {
-          var backup = window._lastPartialTranscript;
-          if (backup && backup.trim() && window._lastPartialRole === 'user') {
-            console.log('[iOS 백업] speech-end에서 partial 사용:', backup.substring(0, 30));
-            diagAutoFillNote(backup);
-            window._lastPartialTranscript = ''; // 중복 방지
-          }
-        } catch(e) {}
-      }, 400);
-    });
-
     /* ── 통화 종료 ── */
-    vapi.on('call-end', function(data) {
-      /* ★ [고수님 3순위] call-end 최종 보정 — 놓친 발화 최종 파싱 */
-      try {
-        if (data && data.messages && Array.isArray(data.messages)) {
-          var userMsgs = data.messages.filter(function(m){ return m.role === 'user'; });
-          userMsgs.forEach(function(u, idx) {
-            var txt = u.message || u.content || '';
-            if (txt && txt.trim()) {
-              setTimeout(function(){ diagAutoFillNote(txt); }, idx * 100);
-            }
-          });
-          console.log('[call-end 보정] user 발화:', userMsgs.length + '개');
-        }
-      } catch(e) { console.warn('[call-end 보정 오류]', e.message); }
+    vapi.on('call-end', function() {
       vapiCallActive = false;
       diagMic = false;
       console.log('[call-end]', _vapiUserEnded ? '사용자 종료' : '자동 종료');
@@ -15131,7 +14791,6 @@ function diagBuildNotes() {
 
 <div id="dnWrap">
   <div id="dnTabs">
-    <!-- ★ [#12] 탭 명칭 축약 / [#4] 원페이지 상담노트 뒤로 이동 -->
     <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
     <button class="dnt" onclick="dnGo(1)">👤 인적</button>
     <button class="dnt" onclick="dnGo(2)">💭 고민</button>
@@ -15139,11 +14798,11 @@ function diagBuildNotes() {
     <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
     <button class="dnt" onclick="dnGo(5)">🏠 집짓기</button>
     <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
-    <button class="dnt" onclick="dnGo(7)">🎯 재무설계</button>
+    <button class="dnt" onclick="dnGo(7)">🎯 종합재무설계</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
     <button class="dnt" onclick="dnGo(9)">🩺 검진결과</button>
     <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
-    <button class="dnt" onclick="dnGo(11)">📄 상담노트</button>
+    <button class="dnt" onclick="dnGo(11)">📄 리포트</button>
     <button class="dnt" onclick="dnGo(12)" style="background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;font-weight:900;">🏠 원페이지</button>
   </div>
 
@@ -15169,7 +14828,7 @@ function diagBuildNotes() {
           <!-- 오상열 CFP 프로필 카드 -->
           <div style="margin-top:14px;background:linear-gradient(135deg,#0B1D3A,#1a3260);border-radius:11px;padding:14px;border:1px solid rgba(201,151,42,.3);">
             <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
-              <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5" alt="오상열 CFP" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #E8B84B;flex-shrink:0;" onerror="this.style.display='none'">
+              <div style="width:48px;height:48px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #E8B84B;flex-shrink:0;">👨‍💼</div>
               <div>
                 <div style="font-size:13px;font-weight:900;color:#fff;">오상열 대표 CFP®</div>
                 <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:1px;">오원트금융연구소 · 금융집짓기® 창시자 · 25년 훈련</div>
@@ -15673,146 +15332,49 @@ function diagBuildNotes() {
       </div>
     </div>
 
-    <!-- ━━━━━━ 패널9: 재무건강검진결과표 [#11 개편 2026-04-13] ━━━━━━ -->
+    <!-- ━━━━━━ 패널9: 재무건강결과표 (5대 영역 100점) ━━━━━━ -->
     <div class="dnp" id="dnp9">
-
-      <!-- 상단 점수 헤더 (기존 유지) -->
       <div class="dn-score">
         <div class="dn-score-num" id="fh_score">—<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span></div>
         <div class="dn-score-lbl">재무건강검진 결과 (100점 만점)</div>
         <div class="dn-score-grade" id="fh_grade">—</div>
       </div>
-
-      <!-- ★ 건강검진표 스타일 결과표 -->
-      <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);margin-bottom:10px;">
-
-        <!-- 헤더 -->
-        <div style="background:#0B1D3A;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:14px;font-weight:900;color:#fff;">🏠 재무건강검진결과표</div>
-            <div style="font-size:9px;color:#C9972A;margin-top:2px;">금융집짓기® AI 재무진단 · 오원트금융연구소</div>
-          </div>
-          <div style="text-align:right;font-size:9px;color:rgba(255,255,255,.6);line-height:1.8;">
-            <div id="fh_date_disp">—</div>
-            <div id="fh_name_disp" style="color:#E8B84B;font-weight:700;">—</div>
-          </div>
-        </div>
-
-        <!-- 고객 기본정보 -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0B1D3A;">
-          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
-            <div style="font-size:8px;color:#6b7280;font-weight:600;">성명</div>
-            <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-top:2px;" id="fh_r_name">—</div>
-          </div>
-          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
-            <div style="font-size:8px;color:#6b7280;font-weight:600;">나이/직업</div>
-            <div style="font-size:10px;font-weight:800;color:#0B1D3A;margin-top:2px;" id="fh_r_age">—</div>
-          </div>
-          <div style="padding:7px 8px;border-right:1px solid #e5e7eb;text-align:center;">
-            <div style="font-size:8px;color:#6b7280;font-weight:600;">월소득</div>
-            <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-top:2px;" id="fh_r_income">—</div>
-          </div>
-          <div style="padding:7px 8px;text-align:center;">
-            <div style="font-size:8px;color:#6b7280;font-weight:600;">순자산</div>
-            <div style="font-size:11px;font-weight:900;color:#15803D;margin-top:2px;" id="fh_r_net">—</div>
-          </div>
-        </div>
-
-        <!-- 종합점수 + 부자지수 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0B1D3A;">
-          <div style="padding:10px 12px;border-right:1px solid #0B1D3A;text-align:center;background:#FFFBEA;">
-            <div style="font-size:9px;color:#6b7280;font-weight:600;margin-bottom:4px;">종합 재무건강점수</div>
-            <div style="font-size:28px;font-weight:900;color:#0B1D3A;" id="fh_r_score">—</div>
-            <div style="font-size:9px;color:#6b7280;margin-top:2px;">/ 100점</div>
-            <div style="display:inline-block;margin-top:6px;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:800;" id="fh_r_grade_badge">—</div>
-          </div>
-          <div style="padding:10px 12px;text-align:center;background:#F0FDF4;">
-            <div style="font-size:9px;color:#6b7280;font-weight:600;margin-bottom:4px;">부자지수 (WI)</div>
-            <div style="font-size:28px;font-weight:900;color:#15803D;" id="fh_r_wi">—</div>
-            <div style="font-size:9px;color:#6b7280;margin-top:2px;">%</div>
-            <div style="display:inline-block;margin-top:6px;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:800;background:#dcfce7;color:#15803D;" id="fh_r_wi_grade">—</div>
-          </div>
-        </div>
-
-        <!-- 5대 영역 점수 카드 -->
-        <div style="padding:10px 12px;border-bottom:1px solid #e5e7eb;background:#f8fafc;">
-          <div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:8px;">📊 5대 영역별 점수 (각 20점)</div>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
-            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
-              <div style="font-size:8px;color:#6b7280;font-weight:600;">지출관리</div>
-              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_exp">—</div>
-              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_exp_bar" style="width:0%;height:4px;"></div></div>
-            </div>
-            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
-              <div style="font-size:8px;color:#6b7280;font-weight:600;">자산형성</div>
-              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_asset">—</div>
-              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_asset_bar" style="width:0%;height:4px;"></div></div>
-            </div>
-            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
-              <div style="font-size:8px;color:#6b7280;font-weight:600;">보험보장</div>
-              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_ins">—</div>
-              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_ins_bar" style="width:0%;height:4px;"></div></div>
-            </div>
-            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
-              <div style="font-size:8px;color:#6b7280;font-weight:600;">노후준비</div>
-              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_ret">—</div>
-              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_ret_bar" style="width:0%;height:4px;"></div></div>
-            </div>
-            <div style="background:#fff;border-radius:7px;padding:7px 4px;text-align:center;border:1.5px solid #e5e7eb;">
-              <div style="font-size:8px;color:#6b7280;font-weight:600;">부채관리</div>
-              <div style="font-size:16px;font-weight:900;color:#0B1D3A;margin-top:3px;" id="fh_r_debt">—</div>
-              <div class="wi-bg" style="margin-top:4px;height:4px;"><div class="wi-fill" id="fh_r_debt_bar" style="width:0%;height:4px;"></div></div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">🩺</div><div><div class="dnctitle">5대 영역별 점수 (각 20점)</div><div class="dncsub">시스템 프롬프트 재무점수 산식</div></div></div>
+        <div class="dncbody">
+          <div class="dnfield"><span class="dnfl">① 지출관리</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>생활비/저축/노후/보험/대출 5×4점</span><span class="hi" id="fh_exp">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_exp_bar" style="width:0%"></div></div>
             </div>
           </div>
-        </div>
-
-        <!-- 항목별 상세 검진 테이블 -->
-        <div style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">
-          <div style="font-size:10px;font-weight:900;color:#0B1D3A;margin-bottom:6px;">🔬 항목별 상세 검진결과</div>
-          <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
-            <thead>
-              <tr style="background:#0B1D3A;color:#fff;">
-                <th style="padding:6px 8px;text-align:left;font-weight:700;">검사 항목</th>
-                <th style="padding:6px 8px;text-align:center;font-weight:700;">현재값</th>
-                <th style="padding:6px 8px;text-align:center;font-weight:700;">기준값</th>
-                <th style="padding:6px 8px;text-align:center;font-weight:700;">판정</th>
-              </tr>
-            </thead>
-            <tbody id="fh_r_detail_body">
-              <tr><td colspan="4" style="text-align:center;padding:16px;color:#9ca3af;">상담 완료 후 자동 표시됩니다</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 강점 & 개선점 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e7eb;">
-          <div style="padding:10px 12px;border-right:1px solid #e5e7eb;">
-            <div style="font-size:10px;font-weight:900;color:#15803D;margin-bottom:6px;">✅ 재무 강점</div>
-            <div id="fh_r_strengths" style="font-size:9.5px;color:#374151;line-height:1.7;">—</div>
+          <div class="dnfield"><span class="dnfl">② 자산형성</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>부자지수/부채비율/비상예비/수익률</span><span class="hi" id="fh_asset">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_asset_bar" style="width:0%"></div></div>
+            </div>
           </div>
-          <div style="padding:10px 12px;">
-            <div style="font-size:10px;font-weight:900;color:#B91C1C;margin-bottom:6px;">⚠️ 개선 필요</div>
-            <div id="fh_r_improvements" style="font-size:9.5px;color:#374151;line-height:1.7;">—</div>
+          <div class="dnfield"><span class="dnfl">③ 보험보장</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>8대항목(8) + 보장보험료(12)</span><span class="hi" id="fh_ins">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ins_bar" style="width:0%"></div></div>
+            </div>
           </div>
-        </div>
-
-        <!-- 푸터 서명 -->
-        <div style="padding:8px 14px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:8px;color:#9ca3af;">특허:제10-2202486호 · 상표:제41-0388261호 · 저작권:C-2020-008901호</div>
-          <div style="font-size:10px;font-weight:800;color:#C9972A;">오상열 CFP® · 오원트금융연구소</div>
+          <div class="dnfield"><span class="dnfl">④ 노후준비</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>은퇴준비율(10) + 노후저축(10)</span><span class="hi" id="fh_ret">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_ret_bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="dnfield"><span class="dnfl">⑤ 부채관리</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;"><span>신용/담보/원리금/부채비율 5×4점</span><span class="hi" id="fh_debt">—/20</span></div>
+              <div class="wi-bg" style="margin-top:4px"><div class="wi-fill" id="fh_debt_bar" style="width:0%"></div></div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- 기존 5대영역 바 (JS 호환용 — 숨김) -->
-      <div style="display:none;">
-        <span id="fh_exp">—/20</span><div id="fh_exp_bar" style="width:0%"></div>
-        <span id="fh_asset">—/20</span><div id="fh_asset_bar" style="width:0%"></div>
-        <span id="fh_ins">—/20</span><div id="fh_ins_bar" style="width:0%"></div>
-        <span id="fh_ret">—/20</span><div id="fh_ret_bar" style="width:0%"></div>
-        <span id="fh_debt">—/20</span><div id="fh_debt_bar" style="width:0%"></div>
-      </div>
-
-      <div class="dn-info gold">💡 상담 진행 후 검진결과가 자동으로 채워집니다.</div>
+      <div class="dn-info gold">💡 본 코드의 calcScore() 함수와 100% 동일한 공식으로 5대 영역 자동 채점됩니다.</div>
     </div>
 
     <!-- ━━━━━━ 패널10: 대화록 ━━━━━━ -->
@@ -15827,146 +15389,16 @@ function diagBuildNotes() {
       </div>
     </div>
 
-    <!-- ━━━━━━ 패널11: 상담노트 종합정리 [#7 재작성 2026-04-13] ━━━━━━ -->
+    <!-- ━━━━━━ 패널11: 리포트 (종합) ━━━━━━ -->
     <div class="dnp" id="dnp11">
-      <div class="dncard" style="padding:0;">
-        <div class="dnchd" style="padding:10px 14px;"><div class="dncicon">📄</div><div><div class="dnctitle">상담노트 종합정리</div><div class="dncsub">전체 단계 한눈에 · 클릭하면 펼쳐집니다</div></div></div>
-        <!-- 어코디언 컨테이너 -->
-        <div id="sn_accordion" style="padding:0 10px 14px;">
-
-          <!-- 공통 어코디언 CSS -->
-          <style>
-            .sn-item{border:1px solid rgba(201,151,42,.25);border-radius:8px;margin-bottom:6px;overflow:hidden;}
-            .sn-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#fff8e6;cursor:pointer;font-size:11px;font-weight:900;color:#0B1D3A;}
-            .sn-hd:hover{background:#fff3cc;}
-            .sn-hd .sn-arrow{font-size:10px;transition:transform .25s;color:#C9972A;}
-            .sn-bd{display:none;padding:10px 12px;background:#fff;border-top:1px solid rgba(201,151,42,.15);}
-            .sn-bd.open{display:block;}
-            .sn-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed rgba(201,151,42,.15);font-size:10.5px;gap:8px;}
-            .sn-row:last-child{border-bottom:none;}
-            .sn-lbl{color:#6B7280;font-weight:600;flex-shrink:0;min-width:90px;}
-            .sn-val{color:#0B1D3A;font-weight:700;text-align:right;word-break:break-all;}
-          </style>
-
-          <!-- 0단계: 표지 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>📋 0단계 — 표지</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">진단 일자</span><span class="sn-val" id="sn_f0_date">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">회차</span><span class="sn-val" id="sn_f0_session">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">예상 시간</span><span class="sn-val" id="sn_f0_time">—</span></div>
-            </div>
+      <div class="dncard">
+        <div class="dnchd"><div class="dncicon">📄</div><div><div class="dnctitle">상담 리포트</div><div class="dncsub">종합 상담 결과 요약</div></div></div>
+        <div class="dncbody">
+          <div id="dn_report_body" style="font-size:11px;color:#0B1D3A;line-height:1.6;">
+            <div style="text-align:center;padding:20px;color:#4A5568;">상담 완료 후 리포트가 표시됩니다</div>
           </div>
-
-          <!-- 1단계: 인적사항 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>👤 1단계 — 인적사항</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">① 성함</span><span class="sn-val" id="sn_f1_name">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">② 나이</span><span class="sn-val" id="sn_f1_age">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">③ 결혼 여부</span><span class="sn-val" id="sn_f1_marry">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">④ 가족 수</span><span class="sn-val" id="sn_f1_family">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">⑤ 직업</span><span class="sn-val" id="sn_f1_job">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">⑥ 맞벌이</span><span class="sn-val" id="sn_f1_dual">—</span></div>
-            </div>
-          </div>
-
-          <!-- 2단계: 경제적 고민 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>💭 2단계 — 경제적 고민</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd">
-              <div class="sn-row"><span class="sn-lbl">주요 걱정 1</span><span class="sn-val" id="sn_f2_w1">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">주요 걱정 2</span><span class="sn-val" id="sn_f2_w2">—</span></div>
-              <div class="sn-row"><span class="sn-lbl">해결 방향</span><span class="sn-val" id="sn_f2_sol">—</span></div>
-            </div>
-          </div>
-
-          <!-- 3단계: 수입지출 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>💰 3단계 — 수입지출 분석</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step3_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 4단계: 자산부채 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🏦 4단계 — 자산부채 현황</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step4_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 5단계: 금융집짓기 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🏠 5단계 — 금융집짓기 설계</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step5_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 6단계: 포트폴리오 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>📈 6단계 — 포트폴리오</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step6_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 7단계: 종합재무설계 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🎯 7단계 — 종합재무설계</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step7_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 8단계: 최종의견 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>⭐ 8단계 — 최종의견</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step8_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 9단계: 재무건강 검진결과 -->
-          <div class="sn-item">
-            <div class="sn-hd" onclick="snToggle(this)">
-              <span>🩺 9단계 — 재무건강 검진결과</span><span class="sn-arrow">▼</span>
-            </div>
-            <div class="sn-bd" id="sn_step9_body">
-              <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px;">상담 진행 후 자동 표시됩니다</div>
-            </div>
-          </div>
-
-          <!-- 전체 펼치기 / 접기 버튼 -->
-          <div style="display:flex;gap:6px;margin-top:8px;">
-            <button onclick="snExpandAll()" style="flex:1;padding:8px;background:#0B1D3A;color:#E8B84B;border:none;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">▼ 전체 펼치기</button>
-            <button onclick="snCollapseAll()" style="flex:1;padding:8px;background:#fff8e6;color:#0B1D3A;border:1px solid #C9972A;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">▲ 전체 접기</button>
-          </div>
-
-        </div><!-- /sn_accordion -->
+        </div>
       </div>
-      <!-- 기존 report body 유지 (JS 호환) -->
-      <div id="dn_report_body" style="display:none;"></div>
     </div>
 
     <!-- ━━━━━━ 패널12: 원페이지 요약 ━━━━━━ -->
@@ -15974,21 +15406,6 @@ function diagBuildNotes() {
       <div class="dncard">
         <div class="dnchd"><div class="dncicon">🏠</div><div><div class="dnctitle">금융집짓기® 원페이지 진단</div><div class="dncsub">인적사항 · 고민 · 설계도 · 수지 · 자산부채</div></div></div>
         <div class="dncbody">
-          <!-- ★ [#9] 공유/다운로드 버튼 바 -->
-          <div id="op_action_bar" style="display:flex;gap:6px;margin-bottom:10px;">
-            <button onclick="opPrint()"
-              style="flex:1;padding:9px 4px;background:#0B1D3A;color:#E8B84B;border:none;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">
-              🖨️ 인쇄/PDF
-            </button>
-            <button onclick="opShareKakao()"
-              style="flex:1;padding:9px 4px;background:#FEE500;color:#3C1E1E;border:none;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">
-              💬 카톡공유
-            </button>
-            <button onclick="opShareEmail()"
-              style="flex:1;padding:9px 4px;background:#fff;color:#0B1D3A;border:1.5px solid #0B1D3A;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;font-family:var(--fn);">
-              ✉️ 이메일
-            </button>
-          </div>
           <div id="dn_onepage_body" style="font-size:11px;color:#0B1D3A;line-height:1.7;">
             <div style="text-align:center;padding:20px;color:#4A5568;">상담 완료 후 요약이 표시됩니다</div>
           </div>
@@ -16571,16 +15988,6 @@ function diagEndConsult() {
     list.insertBefore(div, list.firstChild);
   }
   showToast('🎉 '+DIAG_SESSION_NUM+'회차 진단 완료! PDF 리포트가 생성되었습니다 📄');
-
-  /* ★ [추가] 종료 시 상담노트 동기화 + 검진결과 탭 자동 이동 */
-  setTimeout(function() {
-    try {
-      if (typeof saveChatHistory === 'function') saveChatHistory(); // ★ #10 대화록 저장
-      if (typeof snSyncAll === 'function') snSyncAll();
-      if (typeof renderHealthReport === 'function') renderHealthReport();
-      if (typeof dnGo === 'function') dnGo(9); // 검진결과 탭으로 이동
-    } catch(e) {}
-  }, 800);
 
   /* ★ 종료 안내 배너 — 리포트 탭 상단에 삽입 */
   var usedMinDisplay = Math.floor(diagSec / 60);
@@ -17748,121 +17155,52 @@ function diagAutoFillNote_legacy(userText) {
 
   if (curStep <= 1) {
     // [1단계] 인적사항
-    // ★ 이름 확정 후 f1_name 패턴 완전 제거 (LOCK 이중 보호)
-    var _nameConfirmed = (function(){
-      var el = document.getElementById('f1_name');
-      return el && el.classList.contains('confirmed');
-    })();
-
-    if (!_nameConfirmed) {
-      patterns = patterns.concat([
-        { key:'f1_name', regex:/^([가-힣]{2,5})$/ },
-        { key:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },
-        { key:'f1_name', regex:/^([가-힣]{2,5})(?:요|이요)[.\s]*$/ },
-        { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
-        { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
-        { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
-        { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)?/ },
-        { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
-        { key:'f1_name', regex:/이름은?\s*([가-힣]{2,5})/ },
-      ]);
-    }
-  }
-
-  // ★ [항상 적용] 나이/결혼/가족수 — 단계 무관, 해당 필드 비어있을 때만
-  (function() {
-    var ageEl    = document.getElementById('f1_age');
-    var marryEl  = document.getElementById('f1_marry');
-    var familyEl = document.getElementById('f1_family');
-
-    var ageEmpty    = !ageEl    || !ageEl.classList.contains('confirmed');
-    var marryEmpty  = !marryEl  || !marryEl.classList.contains('confirmed');
-    var familyEmpty = !familyEl || !familyEl.classList.contains('confirmed');
-
-    // ── 나이 ──
-    if (ageEmpty) {
-      var agePatterns = [
-        /^(\d{1,3})\s*세[.\s]*$/,
-        /^(\d{1,3})\s*살[.\s]*$/,
-        /(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)?/,
-        /(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)?/,
-        /올해\s*(\d{1,3})/,
-        /나이.*?(\d{1,3})/,
-      ];
-      for (var ai = 0; ai < agePatterns.length; ai++) {
-        var am = t.match(agePatterns[ai]);
-        if (am) {
-          var av = parseInt(am[1]);
-          if (av >= 1 && av <= 100) {
-            _fillNewNote('f1_age', av + '세');
-            return;
-          }
-        }
-      }
-    }
-
-    // ── 결혼 여부 ──
-    if (marryEmpty) {
-      if (/(기혼|결혼\s*했|결혼했|유부|배우자|남편|아내|와이프|부인)/.test(t)) {
-        _fillNewNote('f1_marry', '기혼'); return;
-      }
-      if (/(미혼|결혼\s*(?:안\s*했|안했|못했|안\s*했어요)|싱글|혼자\s*살|독신)/.test(t)) {
-        _fillNewNote('f1_marry', '미혼'); return;
-      }
-      // lastQ 기반 네/아니오
-      if (/^(네|예|응|맞아요?|맞습니다|그렇습니다|했어요|했습니다)[.\s]*$/.test(t) && /결혼/.test(lastQ)) {
-        _fillNewNote('f1_marry', '기혼'); return;
-      }
-      if (/^(아니[오요]?|아닙니다|안\s*했|못했)[.\s]*$/.test(t) && /결혼/.test(lastQ)) {
-        _fillNewNote('f1_marry', '미혼'); return;
-      }
-    }
-
-    // ── 가족수 ──
-    if (familyEmpty) {
-      var famPatterns = [
-        { r: /^(\d+)\s*명[.\s]*$/, g: 1 },
-        { r: /가족.*?(\d+)\s*명/, g: 1 },
-        { r: /(\d+)\s*인?\s*가족/, g: 1 },
-        { r: /식구.*?(\d+)/, g: 1 },
-        { r: /총\s*(\d+)\s*명/, g: 1 },
-        { r: /저\s*포함.*?(\d+)\s*명/, g: 1 },
-        { r: /^(\d+)[.\s]*$/, g: 1 }, // 숫자만 + lastQ에 가족 언급 시
-      ];
-      for (var fi = 0; fi < famPatterns.length; fi++) {
-        var fm = t.match(famPatterns[fi].r);
-        if (fm) {
-          var fv = parseInt(fm[famPatterns[fi].g]);
-          // 숫자만 단독인 경우 lastQ에 가족/식구 언급 있어야만 적용
-          if (famPatterns[fi].r.source === '^(\\d+)[.\\s]*$') {
-            if (!/가족|식구|몇\s*명|몇\s*분/.test(lastQ)) continue;
-          }
-          if (fv >= 1 && fv <= 15) {
-            _fillNewNote('f1_family', fv + '명'); return;
-          }
-        }
-      }
-      // "둘이서", "셋이서" 등 한글 숫자
-      if (/^(혼자|1인)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '1명'); return; }
-      if (/^(둘이서?|부부만|둘)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '2명'); return; }
-      if (/^(셋이서?|셋)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '3명'); return; }
-      if (/^(넷이서?|넷)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '4명'); return; }
-      if (/^(다섯이서?|다섯)[.\s]*$/.test(t) && /가족|식구/.test(lastQ)) { _fillNewNote('f1_family', '5명'); return; }
-    }
-  })();
-
-  if (curStep <= 1) {
-    // 나이/결혼/가족수는 위에서 이미 처리됨 — 직업/맞벌이만 여기서 처리
     patterns = patterns.concat([
-      { key:'f1_job',  regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생|간부|임원|대표|사장|팀장|과장|부장|차장)/ },
-      { key:'f1_dual', regex:/(맞벌이|외벌이)/ },
-      { key:'f1_dual', regex:/둘\s*다\s*일/ },
-      { key:'f1_dual', regex:/아내?(?:도|가)\s*(?:일|직장|다녀)/ },
-      { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
-      { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
-      { key:'f1_life', regex:/(\d+)세.*?(?:살고\s*싶|수명|예상)/ },
+      // ★ Phase R: 짧은 발화 우선 매칭 — "홍길동", "44세" 등
+      // 성함 - 짧은 발화
+      { key:'f1_name', regex:/^([가-힣]{2,5})$/ },                   // "홍길동"
+      { key:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },             // "홍길동."
+      { key:'f1_name', regex:/^([가-힣]{2,5})(?:요|이요)[.\s]*$/ },  // "홍길동요"
+      // 성함 - 완전한 문장
+      { key:'f1_name', regex:/^([가-힣]{2,5})입니다/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})이에요/ },
+      { key:'f1_name', regex:/^([가-힣]{2,5})예요/ },
+      { key:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고)?/ },
+      { key:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
+      { key:'f1_name', regex:/이름은?\s*([가-힣]{2,5})/ },
+      // 나이 - 짧은 발화
+      { key:'f1_age', regex:/^(\d{1,3})\s*세[.\s]*$/ },    // "44세"
+      { key:'f1_age', regex:/^(\d{1,3})\s*살[.\s]*$/ },    // "44살"
+      { key:'f1_age', regex:/^(\d{1,3})[.\s]*$/ },          // "44" 숫자만
+      // 나이 - 완전한 문장
+      { key:'f1_age', regex:/(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)?/ },
+      { key:'f1_age', regex:/(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)?/ },
+      { key:'f1_age', regex:/올해\s*(\d{1,3})/ },
+      { key:'f1_age', regex:/나이.*?(\d{1,3})/ },
+      // 직업
+      { key:'f1_job', regex:/(공무원|직장인|자영업자?|프리랜서|의사|간호사|교사|교수|회사원|사업가?|주부|대학생)/ },
+      // 결혼
+      { key:'f1_marry', regex:/(기혼|미혼)/ },
+      { key:'f1_marry', regex:/결혼\s*(?:했어요|했습니다|했고|했는데)/ },
+      { key:'f1_marry', regex:/결혼\s*(?:안 했|안했|못했|안 했어요)/ },
+      // 자녀
       { key:'f1_child', regex:/자녀.*?(\d+)\s*명/ },
       { key:'f1_child', regex:/아이.*?(\d+)\s*명/ },
+      { key:'f1_child', regex:/(\d+)\s*명.*?(?:아이|자녀|아들|딸)/ },
+      // 가족수
+      { key:'f1_family', regex:/(\d+)\s*인?\s*가족/ },
+      { key:'f1_family', regex:/가족.*?(\d+)\s*명/ },
+      { key:'f1_family', regex:/^(\d+)\s*명[.\s]*$/ },       // "3명"
+      { key:'f1_family', regex:/식구.*?(\d+)/ },
+      { key:'f1_family', regex:/총\s*(\d+)\s*명/ },
+      // 맞벌이
+      { key:'f1_dual', regex:/(맞벌이|외벌이)/ },
+      { key:'f1_dual', regex:/둘\s*다\s*일/ },
+      // 은퇴예정
+      { key:'f1_retire', regex:/(\d+)\s*세.*?은퇴/ },
+      { key:'f1_retire', regex:/은퇴.*?(\d+)\s*세/ },
+      // 예상수명
+      { key:'f1_life', regex:/(\d+)세.*?(?:살고\s*싶|수명|예상)/ },
     ]);
   }
 
@@ -18008,27 +17346,15 @@ var _NOTE_ID_ALIASES = {
 };
 
 function _fillNewNote(id, displayVal) {
-  /* ★ [A-8 강화] f1_name — 한글 이름만 허용 + 최초 확정 후 LOCK */
+  /* ★ [v14 A-8] f1_name은 한글 이름 패턴(2~5자)만 허용 — "네네", "예예" 등 동의어 차단 */
   if (id === 'f1_name' && displayVal) {
     var nameStr = String(displayVal).trim();
-    // ★ 이름 불가 단어 차단 목록 (외벌이/맞벌이/직업어/상태어 모두 포함)
-    var blocked = /^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇|혼자|혼|1인|한명|한분|없어요|없습니다|외벌이|맞벌이|기혼|미혼|이혼|사별|직장인|자영업|공무원|주부|프리랜서|의사|변호사|교사|간호사|서울|부산|대구|인천|광주|대전|울산|세종|경기)/i.test(nameStr)
-      || !/^[가-힣]{2,5}$/.test(nameStr);
-    if (blocked) {
-      console.warn('[f1_name] 차단:', displayVal);
+    /* 동의어 패턴 차단 */
+    if (/^(네|예|응|아니|아니요|맞아요?|맞습니다|괜찮|좋아요?|그래요?|그렇)/i.test(nameStr) ||
+        !/^[가-힣]{2,5}$/.test(nameStr)) {
+      console.warn('[v14 A-8] f1_name 한글 이름 패턴 불일치, 차단:', displayVal);
       return false;
     }
-    /* ★ 최초 확정 후 LOCK — confirmed 상태면 무조건 거부 */
-    var nameEl = document.getElementById('f1_name');
-    if (nameEl && nameEl.classList.contains('confirmed')) {
-      console.warn('[f1_name LOCK] 이미 확정, 변경 거부:', displayVal);
-      return false;
-    }
-  }
-  /* ★ f1_family "혼자"/"1인" → "1명" 자동 변환 */
-  if (id === 'f1_family' && displayVal) {
-    var famStr = String(displayVal).trim();
-    if (/^(혼자|1인|1인가구|나혼자)$/.test(famStr)) displayVal = '1명';
   }
   
   var ids = _NOTE_ID_ALIASES[id] || [id];
@@ -18073,20 +17399,7 @@ function _fillNewNote(id, displayVal) {
       if (typeof diagRecalcIncomeExp === 'function') diagRecalcIncomeExp(); 
     }, 50);
   }
-
-  // ★ [추가개발 #11-A] 상담노트/검진결과 동적 반영 — 입력될 때마다 자동 업데이트
-  setTimeout(function() {
-    try {
-      // 현재 활성 탭이 9(검진결과)면 renderHealthReport 재실행
-      var activeDnt = document.querySelector('.dnt.active');
-      if (activeDnt) {
-        var activeIdx = Array.prototype.indexOf.call(document.querySelectorAll('.dnt'), activeDnt);
-        if (activeIdx === 9 && typeof renderHealthReport === 'function') renderHealthReport();
-        if (activeIdx === 11 && typeof snSyncAll === 'function') snSyncAll();
-      }
-    } catch(e) {}
-  }, 200);
-
+  
   return filled;
 }
 
@@ -18167,29 +17480,7 @@ function diagAutoFillNote(userText) {
   if (!userText || typeof userText !== 'string') return;
   var t = userText.trim();
   if (!t) return;
-
-  /* ★ [추가] curStep 보정 안전장치
-   * iOS에서 AI 발화 파싱(800ms) 전에 고객 발화가 먼저 처리되면
-   * diagCurPart가 아직 0일 수 있음 → lastQ 키워드로 단계 추론
-   * 기존 diagCurPart 변수 직접 수정 없이 로컬 변수로 보정
-   */
-  var _lq = (typeof diagLastQ !== 'undefined' ? diagLastQ : '') || '';
-  if ((typeof diagCurPart === 'undefined' || diagCurPart === 0) && _lq) {
-    if (/실수령액|세후.*수입|세후.*월급|한\s*달\s*실수령|대출\s*원리금|보험료|저축이나\s*투자|연금.*납입|매달\s*남/.test(_lq)) {
-      diagCurPart = 3;
-      console.log('[curStep 보정] lastQ 기반 → 3단계(수지)');
-    } else if (/예적금|청약|연금\s*적립|펀드|ETF|주식|부동산|집값|신용\s*대출|담보\s*대출/.test(_lq)) {
-      diagCurPart = 4;
-      console.log('[curStep 보정] lastQ 기반 → 4단계(자산)');
-    } else if (/성함|이름|나이|결혼|가족|직업|맞벌이/.test(_lq)) {
-      diagCurPart = 1;
-      console.log('[curStep 보정] lastQ 기반 → 1단계(인적)');
-    } else if (/고민|걱정|관심|무엇인가요|어떻게\s*되세요/.test(_lq)) {
-      diagCurPart = 2;
-      console.log('[curStep 보정] lastQ 기반 → 2단계(고민)');
-    }
-  }
-
+  
   console.log('[USER 발화]', t, '| curStep:', (typeof diagCurPart !== 'undefined' ? diagCurPart : '?'));
 
   /* ★ [v14 C-2] 5단계 은퇴/사망 나이 답변 → SVG 입력
@@ -18526,25 +17817,16 @@ function diagAutoFillNote(userText) {
     
     // ── 3단계 (수지) — 순서 기반 카운터 ──
     if (curStep === 3) {
-      /* ★ [A-4 수정] lastQ 기반 매칭 (기존 방식 복원)
-       * qCtx 사용 시 이전 발화 키워드 오염 문제 발생 → lastQ만 사용
-       * 대출 원리금만 예외적으로 직전2발화(prevQ) 추가 확인
+      /* ★ [v14 A-4] lastQ 기반 정확 매칭 우선 (사전서류 케이스 대응)
+       * 순서 카운터는 머니야 질문이 명확하지 않을 때만 사용
        */
       var step3FieldByQ = null;
-      // 직전 2개 발화 (대출 원리금 "월 얼마인가요?" 대응용)
-      var prevQ = diagQHistory.slice(-2).join(' ');
-      // bt_loan_cur에 이미 값이 입력됐으면 prevQ 대출 조건 무시 (오염 방지)
-      var loanEl = document.getElementById('bt_loan_cur');
-      var loanAlreadyFilled = loanEl && loanEl.textContent && loanEl.textContent !== '—' && loanEl.textContent.indexOf('입력') < 0;
-
-      // 대출 원리금 — lastQ + 직전2발화에서 확인 (단, 이미 입력된 경우 prevQ 무시)
-      if (/대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중|갚고\s*있|대출이\s*(?:있|얼마)|월\s*대출/.test(lastQ) ||
-          (!loanAlreadyFilled && /대출\s*원리금|대출\s*상환|원리금\s*상환|상환\s*중/.test(prevQ))) step3FieldByQ = 'bt_loan_cur';
-      else if (/보험료|보험\s*납입/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
+      if (/대출\s*원리금|대출\s*상환|월\s*대출|대출이 있/.test(lastQ)) step3FieldByQ = 'bt_loan_cur';
+      else if (/보험료/.test(lastQ)) step3FieldByQ = 'bt_ins_cur';
       else if (/연금.*납입|연금은\s*따로/.test(lastQ)) step3FieldByQ = 'bt_pen_cur';
       else if (/저축이나\s*투자|저축\s*투자|적금|투자는/.test(lastQ)) step3FieldByQ = 'bt_sav_cur';
       else if (/매달\s*남|남는\s*돈|잉여/.test(lastQ)) step3FieldByQ = 'bt_sur_cur';
-      else if (/실수령액|세후.*수입|세후.*월급|한\s*달\s*실수령|세후\s*한\s*달|월\s*급여|월\s*소득/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
+      else if (/실수령액|월급|월\s*수입|월\s*소득|세후/.test(lastQ)) step3FieldByQ = 'bt_inc_cur';
       
       if (step3FieldByQ) {
         /* ★ [v14 C-11] bt_inc_cur는 보통 100만원 이상. 적은 값 들어오면 보호 */
@@ -18718,13 +18000,8 @@ function diagAutoFillNote(userText) {
   // ★ [단계3-fix v2] 단계 제약 복구 — 타 단계 오염 방지
   // 이전에 if(true)로 풀려있던 것이 "노후" → f1_name 오입력 원인
   if (curStep <= 1) {
-    // ★ 이름 확정 후 f1_name 패턴 완전 제거
-    var _nameConfirmed2 = (function(){
-      var el = document.getElementById('f1_name');
-      return el && el.classList.contains('confirmed');
-    })();
-
-    var _namePatterns = _nameConfirmed2 ? [] : [
+    patterns = patterns.concat([
+      // 이름
       { id:'f1_name', regex:/저는?\s*([가-힣]{2,5})(?:입니다|이에요|예요|이라고|라고|입|이에|요)/ },
       { id:'f1_name', regex:/제\s*이름은?\s*([가-힣]{2,5})/ },
       { id:'f1_name', regex:/이름은?\s*([가-힣]{2,5})(?:입|이에|예|요|$)/ },
@@ -18733,10 +18010,8 @@ function diagAutoFillNote(userText) {
       { id:'f1_name', regex:/^([가-힣]{2,5})예요/ },
       { id:'f1_name', regex:/^([가-힣]{2,5})이고/ },
       { id:'f1_name', regex:/^([가-힣]{2,5})요[.\s]*$/ },
-      { id:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ },
-    ];
-
-    patterns = patterns.concat(_namePatterns).concat([
+      { id:'f1_name', regex:/^([가-힣]{2,5})[.\s]*$/ }, // 이름 한 단어만
+      
       // 나이
       { id:'f1_age', regex:/(\d{1,3})\s*살\s*(?:이에요|입니다|이고|이요|요)/ },
       { id:'f1_age', regex:/(\d{1,3})\s*세\s*(?:이에요|입니다|이고|이요|요|예요)/ },
@@ -19014,555 +18289,6 @@ document.addEventListener('visibilitychange', function() {
     forceCleanupVapi();
   }
 });
-
-</script>
-
-<!-- ★ [추가개발 #13/#5] 머니야 음소거 + [#6/#14] 홈복귀 + [#7] 상담노트 어코디언 (2026-04-13) -->
-<script>
-
-/* ── #13/#5: 머니야 음소거 — 전임개발자 솔루션 (Vapi 공식 API) ── */
-window.diagMoneyaMuted = false;
-window._moneyaMuteObserver = null;
-function diagToggleMoneyaMute() {
-  window.diagMoneyaMuted = !window.diagMoneyaMuted;
-  var muted = window.diagMoneyaMuted;
-
-  // 1. Vapi 공식 API (주)
-  try {
-    if (typeof vapi !== 'undefined' && vapi.send) {
-      vapi.send({
-        type: 'control',
-        control: muted ? 'mute-assistant' : 'unmute-assistant'
-      });
-    }
-  } catch(e) {}
-
-  // 2. DOM audio mute (보조)
-  document.querySelectorAll('audio').forEach(function(a) {
-    try { a.muted = muted; } catch(e) {}
-  });
-
-  // 3. 새 audio 생성 감지 (MutationObserver)
-  if (muted && !window._moneyaMuteObserver) {
-    window._moneyaMuteObserver = new MutationObserver(function(ms) {
-      if (!window.diagMoneyaMuted) return;
-      ms.forEach(function(m) {
-        m.addedNodes.forEach(function(n) {
-          if (n.nodeType === 1 && (n.tagName === 'AUDIO' || n.tagName === 'VIDEO')) {
-            try { n.muted = true; } catch(e) {}
-          }
-        });
-      });
-    });
-    window._moneyaMuteObserver.observe(document.body, { childList: true, subtree: true });
-  } else if (!muted && window._moneyaMuteObserver) {
-    window._moneyaMuteObserver.disconnect();
-    window._moneyaMuteObserver = null;
-  }
-
-  // UI 업데이트
-  var ico = document.getElementById('diagMoneyaMuteIco');
-  if (ico) ico.textContent = muted ? '🔇' : '🔊';
-  if (typeof showToast === 'function') {
-    showToast(muted ? '🔇 머니야 OFF' : '🔊 머니야 ON', 1500);
-  }
-}
-// DOM 바인딩 제거 — onclick 인라인으로만 처리
-
-/* ── #9: 원페이지 인쇄/PDF + 카톡 + 이메일 공유 ── */
-function opPrint() {
-  var opBody = document.getElementById('dn_onepage_body');
-  if (!opBody || opBody.children.length === 0 || opBody.querySelector('[style*="상담 완료 후"]')) {
-    if (typeof showToast === 'function') showToast('⚠️ 먼저 상담을 진행해 주세요.');
-    return;
-  }
-  var w = window.open('', '_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
-  w.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&display=swap" rel="stylesheet">');
-  w.document.write('<style>');
-  w.document.write('*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}');
-  w.document.write('html,body{margin:0;padding:0;width:210mm;}');
-  w.document.write('body{font-family:"Noto Sans KR",sans-serif;background:#fff;}');
-  w.document.write('.op-wrap{width:210mm;min-height:297mm;padding:10mm 11mm 14mm;background:#fff;}');
-  w.document.write('svg{max-width:100%!important;height:auto!important;}');
-  w.document.write('table{width:100%!important;table-layout:fixed;}');
-  w.document.write('@media print{');
-  w.document.write('@page{size:A4 portrait;margin:0;}');
-  w.document.write('html,body{width:210mm;height:297mm;}');
-  w.document.write('.op-wrap{padding:8mm 10mm 12mm;}');
-  w.document.write('}');
-  w.document.write('</style>');
-  w.document.write('</head><body>');
-  w.document.write('<div class="op-wrap">');
-  w.document.write(opBody.innerHTML);
-  w.document.write('</div>');
-  w.document.write('<script>window.onload=function(){setTimeout(function(){window.print();},800);}<\/script>');
-  w.document.write('</body></html>');
-  w.document.close();
-}
-
-function opShareKakao() {
-  var name = '';
-  try { var el = document.getElementById('f1_name'); name = el ? el.textContent.trim() : ''; } catch(e) {}
-  var url = window.location.href.split('?')[0];
-  var title = (name || '고객') + '님의 금융집짓기® 재무진단 결과';
-  var desc = '오원트금융연구소 AI머니야가 분석한 맞춤형 재무설계 원페이지입니다.';
-  try {
-    if (window.Kakao && window.Kakao.isInitialized && window.Kakao.isInitialized()) {
-      window.Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: title,
-          description: desc,
-          imageUrl: 'https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EC%98%A4%EC%83%81%EC%97%B4%20%EC%82%AC%EC%A7%84.png?alt=media&token=63eaf15e-9d0b-4d72-8fbb-ee03d6ecc8e5',
-          link: { mobileWebUrl: url, webUrl: url }
-        }
-      });
-      return;
-    }
-  } catch(e) {}
-  if (typeof showToast === 'function') showToast('📋 링크를 복사했습니다. 카카오톡에 붙여넣기 하세요.');
-  try { navigator.clipboard.writeText(url + '\n\n' + title + '\n' + desc); } catch(e) {}
-}
-
-function opShareEmail() {
-  var name = '';
-  try { var el = document.getElementById('f1_name'); name = el ? el.textContent.trim() : ''; } catch(e) {}
-  var subject = encodeURIComponent((name || '고객') + '님의 금융집짓기® 재무진단 원페이지');
-  var svcUrl = window.location.href.split('?')[0];
-  var mailBody = encodeURIComponent(
-    '안녕하세요, 오원트금융연구소 오상열 CFP입니다.\n\n' +
-    '오늘 상담에서 작성된 금융집짓기® 재무진단 원페이지를 공유드립니다.\n\n' +
-    '▶ AI머니야 재무진단 서비스: ' + svcUrl + '\n\n' +
-    '문의: pf.kakao.com/_vxfmfxj\n\n' +
-    '감사합니다.'
-  );
-  var mailLink = 'mailto:?subject=' + subject + '&body=' + mailBody;
-  // window.location.href 대신 a 태그 클릭으로 처리 (모바일 호환)
-  var a = document.createElement('a');
-  a.href = mailLink;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function() { document.body.removeChild(a); }, 500);
-}
-
-/* ── #11: 검진결과표 렌더링 ── */
-function renderHealthReport() {
-  var now = new Date();
-  var dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
-
-  // 기본 데이터 수집
-  function g(id) { var el = document.getElementById(id); return el ? (el.textContent || '').trim() : ''; }
-  var name    = g('f1_name') || '—';
-  var age     = g('f1_age') || '—';
-  var job     = g('f1_job') || '—';
-  var income  = g('bt_inc_cur') || g('f3_income') || '—';
-  var net     = g('f4_net') || '—';
-  var wi      = g('f4_wi_val') || '—';
-  var wiGrade = g('f4_wi_grade') || '—';
-
-  // 헤더 채우기
-  var dateEl = document.getElementById('fh_date_disp');
-  var nameEl = document.getElementById('fh_name_disp');
-  if (dateEl) dateEl.textContent = dateStr;
-  if (nameEl) nameEl.textContent = name !== '—' ? name + '님' : '—';
-
-  // 기본정보 채우기
-  var rName   = document.getElementById('fh_r_name');
-  var rAge    = document.getElementById('fh_r_age');
-  var rIncome = document.getElementById('fh_r_income');
-  var rNet    = document.getElementById('fh_r_net');
-  if (rName)   rName.textContent   = name;
-  if (rAge)    rAge.textContent    = age + (job !== '—' ? ' / ' + job : '');
-  if (rIncome) rIncome.textContent = income !== '—' ? '월 ' + income : '—';
-  if (rNet)    rNet.textContent    = net;
-
-  // 종합점수
-  var score = typeof calcScore === 'function' ? calcScore() : 0;
-  var rScore = document.getElementById('fh_r_score');
-  var rGrade = document.getElementById('fh_r_grade_badge');
-  var fhScore = document.getElementById('fh_score');
-  var fhGrade = document.getElementById('fh_grade');
-
-  if (rScore) rScore.textContent = score || '—';
-  if (fhScore) fhScore.innerHTML = (score || '—') + '<span style="font-size:18px;color:rgba(255,255,255,.4)">점</span>';
-
-  var gradeInfo = score >= 80 ? {t:'우수',c:'#15803D',bg:'#dcfce7'}
-    : score >= 60 ? {t:'양호',c:'#d97706',bg:'#fef3c7'}
-    : score >= 40 ? {t:'주의',c:'#ea580c',bg:'#ffedd5'}
-    : {t:'위험',c:'#dc2626',bg:'#fee2e2'};
-
-  if (rGrade) { rGrade.textContent = gradeInfo.t; rGrade.style.background = gradeInfo.bg; rGrade.style.color = gradeInfo.c; rGrade.style.border = '1px solid ' + gradeInfo.c; }
-  if (fhGrade) { fhGrade.textContent = gradeInfo.t; }
-
-  // 부자지수
-  var rWi = document.getElementById('fh_r_wi');
-  var rWiGrade = document.getElementById('fh_r_wi_grade');
-  if (rWi) rWi.textContent = wi;
-  if (rWiGrade) rWiGrade.textContent = wiGrade;
-
-  // 5대영역 점수 계산
-  function getAreaScore(ids) {
-    var total = 0;
-    ids.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) { var v = parseFloat(el.textContent); if (!isNaN(v)) total += v; }
-    });
-    return Math.min(20, Math.round(total));
-  }
-
-  // 기존 fh_exp 등에서 점수 읽어오기
-  function parseScore(id) {
-    var el = document.getElementById(id);
-    if (!el) return 0;
-    var txt = el.textContent.replace('/20','').trim();
-    var v = parseFloat(txt);
-    return isNaN(v) ? 0 : v;
-  }
-
-  var expS   = parseScore('fh_exp');
-  var assetS = parseScore('fh_asset');
-  var insS   = parseScore('fh_ins');
-  var retS   = parseScore('fh_ret');
-  var debtS  = parseScore('fh_debt');
-
-  function setArea(scoreId, barId, val) {
-    var el = document.getElementById(scoreId);
-    var bar = document.getElementById(barId);
-    if (el) el.textContent = val || '—';
-    if (bar) bar.style.width = (val ? Math.round(val/20*100) : 0) + '%';
-  }
-
-  setArea('fh_r_exp',   'fh_r_exp_bar',   expS);
-  setArea('fh_r_asset', 'fh_r_asset_bar', assetS);
-  setArea('fh_r_ins',   'fh_r_ins_bar',   insS);
-  setArea('fh_r_ret',   'fh_r_ret_bar',   retS);
-  setArea('fh_r_debt',  'fh_r_debt_bar',  debtS);
-
-  // 판정 함수
-  function judge(val, good, warn) {
-    if (val === null || val === undefined || val === '—') return '<span style="color:#9ca3af;">—</span>';
-    var styles = val >= good
-      ? 'background:#f0fdf4;color:#15803D;border:1px solid #86efac;'
-      : val >= warn
-      ? 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;'
-      : 'background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;';
-    var label = val >= good ? '정상' : val >= warn ? '주의' : '위험';
-    return '<span style="' + styles + 'font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">' + label + '</span>';
-  }
-
-  // 상세 검진 테이블 생성
-  function row(label, cur, std, judgeHtml) {
-    return '<tr style="border-bottom:1px solid #f0f0f0;">'
-      + '<td style="padding:5px 8px;font-size:9.5px;color:#374151;">' + label + '</td>'
-      + '<td style="padding:5px 8px;text-align:center;font-size:9.5px;font-weight:700;">' + (cur || '—') + '</td>'
-      + '<td style="padding:5px 8px;text-align:center;font-size:9px;color:#6b7280;">' + std + '</td>'
-      + '<td style="padding:5px 8px;text-align:center;">' + judgeHtml + '</td>'
-      + '</tr>';
-  }
-
-  function sectionRow(title, color) {
-    return '<tr style="background:' + (color||'#f8fafc') + ';">'
-      + '<td colspan="4" style="padding:5px 8px;font-size:9.5px;font-weight:900;color:#0B1D3A;">' + title + '</td>'
-      + '</tr>';
-  }
-
-  var g3 = function(id) { var el=document.getElementById(id); return el?(el.textContent||'').trim():'—'; };
-  var incomeNum = parseFloat(g3('bt_inc_cur')) || 0;
-
-  var tbody = '';
-  // 💰 지출관리
-  tbody += sectionRow('💰 지출관리 (20점)', '#FEF9E7');
-  var lifeVal = g3('bt_life_cur'); var lifePct = incomeNum > 0 ? Math.round(parseFloat(lifeVal)/incomeNum*100) : 0;
-  tbody += row('생활비 비율', lifeVal ? lifeVal + '만 (' + lifePct + '%)' : '—', '50% 이하', judge(100-lifePct, 60, 40));
-  var savVal  = g3('bt_sav_cur');
-  tbody += row('저축/투자', savVal ? savVal + '만' : '—', '수입의 20%+', judge(parseFloat(savVal)||0, incomeNum*0.2, incomeNum*0.1));
-  var penVal  = g3('bt_pen_cur');
-  tbody += row('노후연금', penVal ? penVal + '만' : '—', '수입의 10%+', judge(parseFloat(penVal)||0, incomeNum*0.1, incomeNum*0.05));
-  var insVal  = g3('bt_ins_cur');
-  tbody += row('보장성보험료', insVal ? insVal + '만' : '—', '수입의 10%', judge(parseFloat(insVal)||0, incomeNum*0.05, incomeNum*0.02));
-  var loanVal = g3('bt_loan_cur');
-  tbody += row('대출원리금', loanVal ? loanVal + '만' : '—', '수입의 30% 이하', judge(incomeNum*0.3-(parseFloat(loanVal)||0), incomeNum*0.1, 0));
-
-  // 📈 자산형성
-  tbody += sectionRow('📈 자산형성 (20점)', '#F0F9FF');
-  var totalA = g3('f4_total_asset'); var totalD = g3('f4_total_debt');
-  tbody += row('순자산', net !== '—' ? net + '만' : '—', '부자지수 100% 이상', judge(parseFloat(wi)||0, 100, 50));
-  tbody += row('부채비율', totalA !== '—' && totalD !== '—' ? Math.round(parseFloat(totalD)/parseFloat(totalA)*100)+'%' : '—', '총자산의 30% 이하', '—');
-  tbody += row('비상예비자금', g3('f4_deposit') || '—', '월소득 3~6개월', '—');
-
-  // 🛡️ 보험보장
-  tbody += sectionRow('🛡️ 보험보장 (20점)', '#F0FDF4');
-  var insItems = ['사망','장해','암진단','뇌혈관','심혈관','실손의료','입원수술','치매간병'];
-  var insCount = 0;
-  ['f7_death','f7_disable','f7_cancer','f7_brain','f7_heart','f7_actual','f7_hosp','f7_dement'].forEach(function(id){
-    var el = document.getElementById(id); if(el && el.textContent.trim() && el.textContent.trim() !== '—') insCount++;
-  });
-  tbody += row('보험 8대 보장', insCount + '/8 항목', '8개 전체', judge(insCount, 8, 5));
-  tbody += row('보장성보험료', insVal ? insVal + '만' : '—', '수입의 8~12%', '—');
-
-  // 🏖️ 노후준비
-  tbody += sectionRow('🏖️ 노후준비 (20점)', '#FFF7ED');
-  var retNeed = g3('f81_need') || g3('f8_ret_need') || '—';
-  var retShort = g3('f81_short') || '—';
-  tbody += row('노후 필요자금', retNeed, '은퇴 후 월 생활비×기간', '—');
-  tbody += row('부족자금', retShort, '0원 목표', retShort === '0' || retShort === '0만원' ? judge(100,100,50) : judge(0,100,50));
-  tbody += row('노후연금', penVal ? penVal + '만/월' : '—', '월 수입의 10%+', judge(parseFloat(penVal)||0, incomeNum*0.1, incomeNum*0.05));
-
-  // 💳 부채관리
-  tbody += sectionRow('💳 부채관리 (20점)', '#FDF4FF');
-  var creditD = g3('f4_debt_credit') || g3('bt_credit_debt') || '—';
-  var collatD = g3('f4_debt_collat') || g3('bt_collat_debt') || '—';
-  tbody += row('신용대출', creditD !== '—' ? creditD + '만' : '없음', '0원 목표', judge(creditD==='없음'||creditD==='—'?100:100-parseFloat(creditD)/100, 80, 50));
-  tbody += row('담보대출', collatD !== '—' ? collatD + '만' : '없음', 'LTV 60% 이하', '—');
-  tbody += row('월 원리금', loanVal ? loanVal + '만' : '—', '수입의 30% 이하', judge(incomeNum*0.3-(parseFloat(loanVal)||0), incomeNum*0.1, 0));
-
-  var detBody = document.getElementById('fh_r_detail_body');
-  if (detBody) detBody.innerHTML = tbody;
-
-  // 강점 & 개선점
-  var strengths = [], improvements = [];
-  if (expS >= 16)   strengths.push('✅ 지출 관리 우수');     else improvements.push('⚠️ 지출 구조 개선 필요');
-  if (assetS >= 16) strengths.push('✅ 자산 형성 양호');     else improvements.push('⚠️ 자산 축적 강화 필요');
-  if (insS >= 16)   strengths.push('✅ 보험 보장 충분');     else improvements.push('⚠️ 보험 8대 보장 보완 필요');
-  if (retS >= 16)   strengths.push('✅ 노후 준비 충실');     else improvements.push('⚠️ 노후 연금 강화 필요');
-  if (debtS >= 16)  strengths.push('✅ 부채 관리 건전');     else improvements.push('⚠️ 부채 상환 계획 수립 필요');
-  if (!strengths.length) strengths.push('상담 진행 후 분석됩니다');
-  if (!improvements.length) improvements.push('특이 사항 없음');
-
-  var strEl = document.getElementById('fh_r_strengths');
-  var impEl = document.getElementById('fh_r_improvements');
-  if (strEl) strEl.innerHTML = strengths.join('<br>');
-  if (impEl) impEl.innerHTML = improvements.join('<br>');
-}
-
-/* ── #11: dnGo 래핑 — 탭9/11 진입 시 자동 렌더링 (실행 시점 안전 버전) ── */
-(function() {
-  // 원본이 정의된 후에 래핑하도록 setTimeout 사용
-  setTimeout(function() {
-    var _origDnGo9 = window.dnGo;
-    if (typeof _origDnGo9 !== 'function') return; // 원본 없으면 래핑 안함
-    window.dnGo = function(i) {
-      _origDnGo9(i); // 원본 반드시 호출
-      if (i === 9)  { setTimeout(renderHealthReport, 100); }
-      if (i === 11) { setTimeout(snSyncAll, 100); }
-    };
-  }, 2000); // 상담 화면 완전 로드 후 래핑
-})();
-
-/* ── #6/#14: 홈(무료페이지) 복귀 ── */
-function goToFreePageFromDiag() {
-  var tabs = document.querySelectorAll('.mp-tab-btn');
-  if (typeof mpTab === 'function' && tabs && tabs[0]) {
-    mpTab(0, tabs[0]);
-  }
-  if (typeof showToast === 'function') showToast('✅ 검진안내 홈으로 이동했습니다');
-}
-
-/* ── #7: 어코디언 토글 ── */
-function snToggle(hd) {
-  var bd = hd.nextElementSibling;
-  var arrow = hd.querySelector('.sn-arrow');
-  var isOpen = bd.classList.contains('open');
-  bd.classList.toggle('open', !isOpen);
-  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
-function snExpandAll() {
-  document.querySelectorAll('#sn_accordion .sn-bd').forEach(function(bd) {
-    bd.classList.add('open');
-  });
-  document.querySelectorAll('#sn_accordion .sn-arrow').forEach(function(a) {
-    a.style.transform = 'rotate(180deg)';
-  });
-}
-function snCollapseAll() {
-  document.querySelectorAll('#sn_accordion .sn-bd').forEach(function(bd) {
-    bd.classList.remove('open');
-  });
-  document.querySelectorAll('#sn_accordion .sn-arrow').forEach(function(a) {
-    a.style.transform = '';
-  });
-}
-
-/* ── #10: 대화록 5년 보관 + 마이페이지 리스트 ── */
-
-// 대화록 저장 (상담 종료 시 호출)
-function saveChatHistory() {
-  try {
-    var chatLog = document.getElementById('dn_chat_log') || document.getElementById('dn_chat');
-    var chatText = chatLog ? chatLog.innerText : '';
-    if (!chatText || chatText.trim().length < 10) return;
-
-    var records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]');
-    var now = new Date();
-    var dateStr = now.getFullYear() + '.' +
-      String(now.getMonth()+1).padStart(2,'0') + '.' +
-      String(now.getDate()).padStart(2,'0');
-    var timeStr = String(now.getHours()).padStart(2,'0') + ':' +
-      String(now.getMinutes()).padStart(2,'0');
-
-    // 고객명
-    var nameEl = document.getElementById('f1_name');
-    var name = nameEl ? nameEl.textContent.trim() : '';
-    if (!name || name === '—' || name.indexOf('대기') >= 0) name = '고객';
-
-    // 5년 = 1825일 이내 항목만 유지
-    var cutoff = Date.now() - (1825 * 24 * 60 * 60 * 1000);
-    records = records.filter(function(r) { return r.ts > cutoff; });
-
-    records.unshift({
-      ts: now.getTime(),
-      date: dateStr,
-      time: timeStr,
-      name: name,
-      session: (typeof DIAG_SESSION_NUM !== 'undefined' ? DIAG_SESSION_NUM : 1) + '회차',
-      preview: chatText.substring(0, 80).replace(/\n/g, ' '),
-      full: chatText
-    });
-
-    // 최대 200건 유지
-    if (records.length > 200) records = records.slice(0, 200);
-    localStorage.setItem('moneya_chat_history', JSON.stringify(records));
-    console.log('[대화록] 저장 완료:', dateStr, timeStr);
-  } catch(e) { console.warn('[대화록] 저장 실패:', e); }
-}
-
-// 대화록 리스트 렌더링
-function renderChatHistoryList() {
-  var container = document.getElementById('chatHistoryList');
-  if (!container) return;
-
-  var records = [];
-  try { records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]'); } catch(e) {}
-
-  if (records.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:11px;">' +
-      '💬 아직 대화록이 없습니다.<br>AI진단 상담 완료 후 자동 저장됩니다.</div>';
-    return;
-  }
-
-  container.innerHTML = records.map(function(r, i) {
-    return '<div onclick="viewChatDetail(' + i + ')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .15s;" ' +
-      'onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" onmouseout="this.style.background=\'\'">' +
-      '<div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--navy),#1a3260);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid rgba(201,151,42,.3);">💬</div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:10.5px;font-weight:700;color:#fff;">' + r.name + '님 · ' + r.session + '</div>' +
-        '<div style="font-size:9px;color:var(--muted);margin-top:1px;">' + r.date + ' ' + r.time + '</div>' +
-        '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (r.preview || '') + '</div>' +
-      '</div>' +
-      '<div style="font-size:18px;color:var(--gold);flex-shrink:0;">›</div>' +
-    '</div>';
-  }).join('');
-}
-
-// 대화록 상세 보기
-function viewChatDetail(idx) {
-  var records = [];
-  try { records = JSON.parse(localStorage.getItem('moneya_chat_history') || '[]'); } catch(e) {}
-  var r = records[idx];
-  if (!r) return;
-
-  var modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.85);z-index:9999999;display:flex;flex-direction:column;';
-  modal.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--navy);border-bottom:2px solid var(--gold);flex-shrink:0;">' +
-      '<div style="font-size:13px;font-weight:900;color:var(--gold2);">💬 ' + r.name + '님 · ' + r.date + ' ' + r.session + '</div>' +
-      '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:0;line-height:1;">×</button>' +
-    '</div>' +
-    '<div style="flex:1;overflow-y:auto;padding:14px 16px;background:#0B1D3A;">' +
-      '<pre style="white-space:pre-wrap;font-size:11px;color:rgba(255,255,255,.8);font-family:var(--fn);line-height:1.7;">' + (r.full || '') + '</pre>' +
-    '</div>';
-  document.body.appendChild(modal);
-}
-
-// 마이페이지 탭 진입 시 자동 렌더링
-(function() {
-  var _origMpTab = window.mpTab;
-  window.mpTab = function(idx, btn) {
-    if (typeof _origMpTab === 'function') _origMpTab(idx, btn);
-    if (idx === 6) setTimeout(renderChatHistoryList, 100); // 마이페이지 탭
-  };
-})();
-
-function snSyncAll() {
-  // ★ 기획: 각 탭에서 입력/확정된 노트가 그대로 상담노트에 표시
-  // 방식: 각 단계 패널의 dncard 전체를 실시간 복제
-
-  // 0단계 - 표지
-  snSet('sn_f0_date',    'f0_date');
-  snSet('sn_f0_session', 'f0_session');
-  var timeEl = document.getElementById('f0_time') || document.querySelector('[id*="f0_time"]');
-  var snTime = document.getElementById('sn_f0_time');
-  if (snTime) snTime.textContent = timeEl ? timeEl.textContent.trim() : (document.getElementById('diagSessionInfo') ? document.getElementById('diagSessionInfo').textContent : '—');
-
-  // 1단계 - 인적사항
-  snSet('sn_f1_name',   'f1_name');
-  snSet('sn_f1_age',    'f1_age');
-  snSet('sn_f1_marry',  'f1_marry');
-  snSet('sn_f1_family', 'f1_family');
-  snSet('sn_f1_job',    'f1_job');
-  snSet('sn_f1_dual',   'f1_dual');
-
-  // 2단계 - 고민
-  snSet('sn_f2_w1',  'f2_w1');
-  snSet('sn_f2_w2',  'f2_w2');
-  snSet('sn_f2_sol', 'f2_solution');
-
-  // 3~9단계: 각 패널 전체 dncard 복사
-  snCopyPanel('sn_step3_body', 'dnp3');
-  snCopyPanel('sn_step4_body', 'dnp4');
-  snCopyPanel('sn_step5_body', 'dnp5');
-  snCopyPanel('sn_step6_body', 'dnp6');
-  snCopyPanel('sn_step7_body', 'dnp7');
-  snCopyPanel('sn_step8_body', 'dnp8');
-  snCopyPanel('sn_step9_body', 'dnp9');
-}
-
-function snSet(snId, srcId, fallback) {
-  var el = document.getElementById(snId);
-  if (!el) return;
-  if (srcId) {
-    var src = document.getElementById(srcId);
-    if (src) {
-      var txt = src.textContent.trim();
-      var isEmpty = !txt || txt === '—' || txt.indexOf('입력 대기') >= 0 || txt.indexOf('대기') >= 0;
-      el.textContent = !isEmpty ? txt : (fallback || '—');
-      return;
-    }
-  }
-  el.textContent = fallback || '—';
-}
-
-function snCopyPanel(snId, panelId) {
-  var dest = document.getElementById(snId);
-  var src  = document.getElementById(panelId);
-  if (!dest || !src) return;
-
-  // dncard 전체 복사 시도 → 없으면 dncbody → 없으면 패널 전체
-  var target = src.querySelector('.dncbody') || src.querySelector('.dncard') || src;
-  if (!target || target === src && src.children.length === 0) {
-    dest.innerHTML = '<div style="font-size:10px;color:#9ca3af;padding:6px;">상담 진행 후 표시됩니다</div>';
-    return;
-  }
-
-  var clone = target.cloneNode(true);
-  // 읽기전용: 클릭/입력 비활성화
-  clone.style.pointerEvents = 'none';
-  clone.style.fontSize = '10.5px';
-  clone.style.opacity = '0.95';
-  // confirmed(확정) 항목만 강조, empty(미입력) 항목은 흐리게
-  clone.querySelectorAll('.dnfv.empty').forEach(function(el) {
-    el.style.opacity = '0.4';
-  });
-  clone.querySelectorAll('.dnfv.confirmed').forEach(function(el) {
-    el.style.color = '#0B1D3A';
-    el.style.fontWeight = '800';
-  });
-  dest.innerHTML = '';
-  dest.appendChild(clone);
-}
-
 
 </script>
 
@@ -20204,10 +18930,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#aaa;">
           <span>✗</span> 8단계 종합재무설계 7대영역 (실버 이상)
         </div>
-        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#CD7F32;margin-top:2px;background:rgba(205,127,50,.08);border-radius:6px;padding:5px 7px;">
-          <span style="color:#CD7F32;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
-        </div>
       </div>
     </div>
     <div style="display:flex;gap:5px;margin-bottom:10px;">
@@ -20258,10 +18980,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:#475569;font-weight:700;">✓</span> PDF 재무진단 리포트
-        </div>
-        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#475569;margin-top:2px;background:rgba(148,163,184,.1);border-radius:6px;padding:5px 7px;">
-          <span style="color:#475569;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
         </div>
       </div>
     </div>
@@ -20314,10 +19032,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:var(--gold);font-weight:700;">✓</span> PDF 재무진단 리포트
         </div>
-        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gold);margin-top:2px;background:rgba(201,151,42,.1);border-radius:6px;padding:5px 7px;">
-          <span style="color:var(--gold);font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
-        </div>
       </div>
     </div>
     <div style="display:flex;gap:5px;margin-bottom:10px;">
@@ -20368,10 +19082,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#666;">
           <span style="color:#a855f7;font-weight:700;">✓</span> PDF 재무진단 리포트
-        </div>
-        <!-- ★ [#17] 월례 재테크 세미나 초대 -->
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#a855f7;margin-top:2px;background:rgba(168,85,247,.1);border-radius:6px;padding:5px 7px;">
-          <span style="color:#a855f7;font-weight:700;">🎓</span> <strong>월례 재테크 세미나 초대</strong> (정기결제 고객 전용)
         </div>
       </div>
     </div>
@@ -20508,11 +19218,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             </span>
           </span>
         </label>
-        <!-- ★ [#2] 면책/개인정보 고지 문구 — 체크박스 바로 아래 -->
-        <div style="margin-top:8px;padding:9px 11px;background:rgba(220,38,38,.06);border-radius:7px;border:1px solid rgba(220,38,38,.18);">
-          <div style="font-size:9.5px;color:#b45309;font-weight:800;margin-bottom:3px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
-          <div style="font-size:9px;color:#6b7280;line-height:1.6;">📋 개인정보보호법상 고객님과의 대화 내용을 기록함을 이해해 주시기 바랍니다.<br>대화 기록은 재무진단 서비스 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
-        </div>
       </div>
     </div>
 
@@ -20546,11 +19251,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   <!-- ── 헤더 (MVP: 돌아가기/X 숨김) ── -->
   <div class="mp-header">
     <div class="mp-header-row">
-      <!-- ★ [#7] ← 화살표: 원트큐브 결과화면으로 이동 -->
-      <button onclick="backToFreeResult()"
-        style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;">
-        ←
-      </button>
+      <button class="mp-back-btn" onclick="mpClose()" style="display:none">← 돌아가기</button>
       <span class="mp-title-txt">🏥 AI 재무검진</span>
       <button class="mp-back-btn" onclick="mpClose()" style="display:none;font-size:16px;color:rgba(255,255,255,.4)">✕</button>
     </div>
@@ -20727,11 +19428,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
                   <span style="color:#999;font-size:9px;">수집항목: 이름, 전화번호, 이메일, 재무정보 | 목적: AI 재무진단 상담 | 보유기간: 서비스 이용 종료 시까지</span>
                 </span>
               </label>
-              <!-- ★ [#2] 면책/개인정보 고지 문구 — 체크박스 바로 아래 -->
-              <div style="margin-top:8px;padding:9px 11px;background:#fff8e6;border-radius:7px;border:1px solid rgba(201,151,42,.3);">
-                <div style="font-size:9.5px;color:#b45309;font-weight:800;margin-bottom:4px;">⚠️ AI는 틀릴 수 있습니다. 중요한 재무 결정은 반드시 전문가와 상의하세요.</div>
-                <div style="font-size:9px;color:#6b7280;line-height:1.6;">📋 개인정보보호법상 고객님과의 대화 내용을 기록함을 이해해 주시기 바랍니다. 대화 기록은 재무진단 서비스 목적으로만 활용되며, AI 학습에는 사용되지 않습니다.</div>
-              </div>
             </div>
           </div>
         </div>
@@ -21057,11 +19753,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:1px" id="diagSessionInfo">오늘 · 1회차</div>
           </div>
           <div class="c-top-btns">
-            <!-- ★ [#14] 무료페이지(홈) 복귀 버튼 -->
-            <button class="c-tbtn" onclick="goToFreePageFromDiag()"
-              style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.2);padding:5px 8px;font-size:10px;">
-              ← 홈
-            </button>
             <button class="c-tbtn c-tbtn-pause" id="diagPauseBtn" onclick="diagTogglePause()">⏸ 일시정지</button>
             <button class="c-tbtn" id="diagTextSwitchBtn" onclick="manualSwitchToText()"
               style="background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);">
@@ -21129,13 +19820,6 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
             <div class="c-mini-btn" onclick="diagToggleCamera()">
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
-            </div>
-            <!-- ★ [#13] 머니야 음소거 버튼 — 전임개발자 솔루션 -->
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;z-index:10;"
-              onclick="(function(e){e.stopPropagation();diagToggleMoneyaMute();})(event)">
-              <div id="diagMoneyaMuteIco"
-                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;">🔊</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">머니야</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
@@ -21615,19 +20299,13 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <div id="mp-faq-list"></div>
       </div>
 
-      <!-- ★ [#10] 대화록 리스트 (상담 녹음 대체) -->
+      <!-- 상담 녹음 (마이페이지 맨 아래) -->
       <div class="mpc mp-fade-in" style="margin:8px 12px 0">
-        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;">
-          <span class="mpc-icon" style="color:#fff;">💬</span>
-          <span class="mpc-title" style="color:#fff;font-weight:900;">대화록 리스트</span>
-          <span style="font-size:9px;color:rgba(255,255,255,.4);margin-left:auto;">5년 보관</span>
-        </div>
-        <div class="mpc-bd" style="padding:0;">
-          <div id="chatHistoryList" style="min-height:60px;"></div>
+        <div class="mpc-hd" style="background:var(--navy);padding:11px 14px;"><span class="mpc-icon" style="color:#fff;">🎙️</span><span class="mpc-title" style="color:#fff;font-weight:900;">상담 녹음</span></div>
+        <div class="mpc-bd">
+          <div id="mvpRecList" style="min-height:60px;"></div>
         </div>
       </div>
-      <!-- 기존 녹음 컨테이너 (JS 호환용 숨김 유지) -->
-      <div style="display:none;"><div id="mvpRecList"></div></div>
 
       <div id="fh-dev-version" style="text-align:center;padding:12px;font-size:8.5px;color:var(--muted)"
         onclick="fhDevTap()" title="개발자 메뉴">앱 버전 v2.8.1 (금융집짓기®)</div>
