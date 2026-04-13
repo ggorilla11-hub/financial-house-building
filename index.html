@@ -7338,6 +7338,7 @@ function simulateMakeWebhook(name, score, ins, ret, wealth){
 // 카톡 인앱 감지
 const isKakao = /KAKAOTALK/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+var _isIOS = isIOS; // ★ 음성 타이밍 조정용 전역 변수
 const isAndroid = /Android/i.test(navigator.userAgent);
 
 // iOS 카톡 인앱: 100vh 버그 수정
@@ -8809,19 +8810,14 @@ function mvpStartCheckup() {
     return;
   }
   
-  /* ═══════ STAGING(dev): 7일 무료 체험 ═══════ */
-  var trialStart = localStorage.getItem('fh_trial_start');
-  if (!trialStart) {
-    localStorage.setItem('fh_trial_start', new Date().toISOString());
-    trialStart = new Date().toISOString();
+  /* ═══════ STAGING(dev): 무조건 무료 체험 (7일 제한 없음) ═══════ */
+  // ★ URL에 ?reset_trial=1 이 있으면 localStorage 초기화
+  if (location.search.includes('reset_trial=1')) {
+    localStorage.removeItem('fh_trial_start');
+    localStorage.removeItem('fh_subscribed');
+    localStorage.removeItem('fh_plan');
+    showToast('🔄 테스트 초기화 완료');
   }
-  var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if (daysPassed >= 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
-    mpOpenSubscribe();
-    return;
-  }
-  var remaining = 7 - daysPassed;
   var simWrap = document.getElementById('sim-wrap');
   if (simWrap) simWrap.style.display = 'none';
   var funnelWrap = document.getElementById('funnel-wrap');
@@ -8830,7 +8826,7 @@ function mvpStartCheckup() {
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
   localStorage.setItem('fh_plan', 'silver-month');
-  localStorage.setItem('mvp_credit_min', '20');
+  localStorage.setItem('mvp_credit_min', '40');
   mpIsSubscribed = true;
   if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
   var btn = document.getElementById('btn-header-main');
@@ -8840,7 +8836,7 @@ function mvpStartCheckup() {
     btn.style.background = 'linear-gradient(135deg,var(--gold),var(--gold2))';
     btn.style.animation = 'none';
   }
-  showToast('🎁 무료 체험 중 (D-' + remaining + '일 남음)');
+  showToast('🎁 개발 테스트 모드 (결제 없이 진입)');
   mpOpen();
 
   var user = window._fhAuth ? window._fhAuth.currentUser : null;
@@ -14158,8 +14154,8 @@ async function diagConnectVoice(isPaid) {
           if(placeholder) placeholder.remove();
         }
 
-        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, 300);
-        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, 500); diagLastQ = displayText; if(typeof diagPushQ==='function') diagPushQ(displayText); }
+        if(role === 'user') setTimeout(function(){ diagAutoFillNote(displayText); }, _isIOS ? 600 : 300);
+        if(role === 'ai') { setTimeout(function(){ diagParseAiSpeech(displayText); }, _isIOS ? 800 : 500); diagLastQ = displayText; if(typeof diagPushQ==='function') diagPushQ(displayText); }
       }
 
       /* Tool Call 수신 → 상담노트 업데이트 (DEV-002) */
