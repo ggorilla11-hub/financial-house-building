@@ -8829,7 +8829,7 @@ function mvpStartCheckup() {
   localStorage.setItem('fh_subscribed', '1');
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
-  localStorage.setItem('fh_plan', 'silver-month');
+  localStorage.setItem('fh_plan', 'bronze-staging');
   localStorage.setItem('mvp_credit_min', '20');
   mpIsSubscribed = true;
   if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
@@ -8861,7 +8861,7 @@ function mvpStartCheckup() {
             /* localStorage 동기화 */
             localStorage.setItem('fh_member_v1', '1');
             localStorage.setItem('fh_subscribed', '1');
-            localStorage.setItem('fh_plan', d.plan || 'silver-month');
+            localStorage.setItem('fh_plan', d.plan || 'bronze-staging');
             localStorage.setItem('mvp_credit_min', String(d.creditMin || 20));
             mpIsSubscribed = true;
           }
