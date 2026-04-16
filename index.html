@@ -18817,23 +18817,67 @@ function opShareKakao() {
 function opShareEmail() {
   var name = '';
   try { var el = document.getElementById('f1_name'); name = el ? el.textContent.trim() : ''; } catch(e) {}
-  var subject = encodeURIComponent((name || '고객') + '님의 금융집짓기® 재무진단 원페이지');
+  var subjectRaw = (name || '고객') + '님의 금융집짓기® 재무진단 원페이지';
   var svcUrl = window.location.href.split('?')[0];
-  var mailBody = encodeURIComponent(
+  var mailBodyRaw =
     '안녕하세요, 오원트금융연구소 오상열 CFP입니다.\n\n' +
     '오늘 상담에서 작성된 금융집짓기® 재무진단 원페이지를 공유드립니다.\n\n' +
     '▶ AI머니야 재무진단 서비스: ' + svcUrl + '\n\n' +
     '문의: pf.kakao.com/_vxfmfxj\n\n' +
-    '감사합니다.'
-  );
-  var mailLink = 'mailto:?subject=' + subject + '&body=' + mailBody;
-  // window.location.href 대신 a 태그 클릭으로 처리 (모바일 호환)
-  var a = document.createElement('a');
-  a.href = mailLink;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function() { document.body.removeChild(a); }, 500);
+    '감사합니다.';
+  
+  /* ★ S-14: 클립보드 복사 우선 (모든 환경 호환) */
+  var fullText = '제목: ' + subjectRaw + '\n\n' + mailBodyRaw;
+  
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullText).then(function() {
+        if (typeof showToast === 'function') {
+          showToast('📋 이메일 내용이 클립보드에 복사되었습니다. 메일 앱에 붙여넣기 하세요.', 4000);
+        } else {
+          alert('이메일 내용이 클립보드에 복사되었습니다.\n메일 앱을 열어 붙여넣기 하세요.');
+        }
+      }).catch(function() {
+        opShareEmailFallback(subjectRaw, mailBodyRaw);
+      });
+    } else {
+      opShareEmailFallback(subjectRaw, mailBodyRaw);
+    }
+  } catch(e) {
+    opShareEmailFallback(subjectRaw, mailBodyRaw);
+  }
+  
+  /* mailto 링크도 시도 (메일 앱 있으면 자동 열림) */
+  setTimeout(function() {
+    var mailLink = 'mailto:?subject=' + encodeURIComponent(subjectRaw) + '&body=' + encodeURIComponent(mailBodyRaw);
+    var a = document.createElement('a');
+    a.href = mailLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    try { a.click(); } catch(e) {}
+    setTimeout(function() { try { document.body.removeChild(a); } catch(e) {} }, 500);
+  }, 600);
+}
+
+function opShareEmailFallback(subject, body) {
+  /* 클립보드 실패 시: textarea 트릭으로 복사 */
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = '제목: ' + subject + '\n\n' + body;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (typeof showToast === 'function') {
+      showToast('📋 이메일 내용이 클립보드에 복사되었습니다.', 4000);
+    } else {
+      alert('이메일 내용이 클립보드에 복사되었습니다.');
+    }
+  } catch(e) {
+    alert('복사 실패. 메일 앱을 직접 열어주세요.');
+  }
 }
 
 /* ── #11: 검진결과표 렌더링 ── */
