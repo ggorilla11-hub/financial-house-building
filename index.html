@@ -11853,21 +11853,65 @@ function mpCancelSubscription() {
 }
 
 function mpDoCancelSubscription() {
-  // 구독 상태 초기화
-  ['fh_subscribed','fh_member_v1','fh_sub_date','fh_sub_oid'].forEach(k => {
-    localStorage.removeItem(k);
-  });
-  // (Firebase 연동은 추후 추가 예정)
-  mpIsSubscribed = false;
-  // 헤더 버튼 원래대로
-  const btn = document.getElementById('btn-header-main');
-  if(btn) {
-    btn.className = 'hbtn hbtn-subscribe';
-    btn.textContent = '💳 구독하기';
-    btn.onclick = headerMainAction;
+  /* ★ [2026-04] 법적 안전 - 수동 취소 접수 방식 */
+  /* 고객 정보 수집 */
+  var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  var userName = user ? (user.displayName || '사용자') : (localStorage.getItem('fh_payer_name') || '고객');
+  var userEmail = user ? (user.email || '') : (localStorage.getItem('fh_payer_email') || '');
+  var userPhone = localStorage.getItem('fh_phone') || '';
+  var plan = localStorage.getItem('fh_plan') || 'unknown';
+  var subDate = localStorage.getItem('fh_sub_date') || '';
+  
+  /* 대표님에게 취소 요청 자동 알림 */
+  try {
+    fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'subscription_cancel',
+        data_type: '구독취소요청',
+        sheet_name: 'AI머니야_마케팅DB',
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
+        plan: plan,
+        file_code: 'CANCEL_REQUEST',
+        sub_date: subDate,
+        cancel_requested_at: new Date().toISOString()
+      })
+    }).catch(function(e) { console.log('[취소요청] 알림 실패:', e); });
+  } catch(e) { console.log('[취소요청] 오류:', e); }
+  
+  /* 기존 모달 제거 */
+  document.querySelectorAll('div[style*="z-index:99999"]').forEach(function(el) { el.remove(); });
+  
+  /* 접수 완료 모달 표시 */
+  var confirmModal = document.createElement('div');
+  confirmModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  confirmModal.innerHTML = 
+    '<div style="background:#fff;border-radius:16px;padding:26px 22px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
+      '<div style="text-align:center;font-size:40px;margin-bottom:10px;">📋</div>' +
+      '<div style="text-align:center;font-size:16px;font-weight:900;color:#0B1D3A;margin-bottom:14px;">구독 취소 요청이<br>접수되었습니다</div>' +
+      '<div style="font-size:11.5px;color:#4A5568;line-height:1.75;margin-bottom:14px;padding:14px;background:#FFFBEA;border-radius:10px;border:1px solid rgba(201,151,42,.3);">' +
+        '✅ <strong>24시간 이내</strong>에 오상열 대표가<br>' +
+        '&nbsp;&nbsp;&nbsp;&nbsp;직접 확인 후 처리해 드립니다.<br><br>' +
+        '📱 <strong>급하신 경우 직접 연락 주세요:</strong><br>' +
+        '&nbsp;&nbsp;&nbsp;&nbsp;카카오톡: <a href="https://pf.kakao.com/_vxfmfxj" target="_blank" style="color:#C9972A;font-weight:700;">AI머니야 채널</a><br>' +
+        '&nbsp;&nbsp;&nbsp;&nbsp;전화: <strong style="color:#0B1D3A;">010-5424-5332</strong><br><br>' +
+        '💡 <strong>처리 완료까지</strong> 기존 서비스는<br>' +
+        '&nbsp;&nbsp;&nbsp;&nbsp;계속 이용 가능합니다.' +
+      '</div>' +
+      '<div style="font-size:10px;color:#9ca3af;text-align:center;margin-bottom:14px;">' +
+        '개인정보보호법에 따라 취소 접수 내역은<br>5년간 안전하게 보관됩니다.' +
+      '</div>' +
+      '<button onclick="document.querySelectorAll(\'div[style*=\\"z-index:99999\\"]\').forEach(function(el){el.remove()});if(typeof mpClose===\'function\')mpClose();" style="width:100%;padding:13px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border:none;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;font-family:var(--fn);">확인했습니다</button>' +
+    '</div>';
+  document.body.appendChild(confirmModal);
+  
+  /* 토스트 알림 */
+  if (typeof showToast === 'function') {
+    showToast('✅ 취소 요청 접수 완료 · 24시간 내 처리', 4000);
   }
-  document.querySelectorAll('div[style*="z-index:99999"]').forEach(el => el.remove());
-  mpClose();
   showToast('구독이 취소되었습니다. 이번 달 말까지 이용 가능합니다.');
 }
 
