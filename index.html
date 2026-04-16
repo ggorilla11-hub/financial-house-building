@@ -10362,6 +10362,18 @@ function manualSwitchToText() {
     try { vapi.removeAllListeners(); } catch(e) {}
     vapi = null; vapiCallActive = false;
   }
+  /* ★ 오디오 엘리먼트 강제 중단 — 이미 재생 중인 스트림도 차단 */
+  try {
+    document.querySelectorAll('audio, video').forEach(function(a) {
+      try {
+        a.muted = true;
+        a.pause();
+        a.currentTime = 0;
+        a.src = '';
+        a.load();
+      } catch(e) {}
+    });
+  } catch(e) {}
   
   /* ★ [BUG-010 FIX] UI 먼저 전환 후 텍스트 타이머 시작
    * mvpTextOnlyMode 플래그가 switchToTextMode 안에서 true로 바뀜
