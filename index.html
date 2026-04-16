@@ -8504,7 +8504,7 @@ function freeScoreSubmit() {
   var resultSub = (document.getElementById('fn-r-sub') || {}).textContent || '';
   var resultD = (document.getElementById('fn-result-d') || {}).textContent || '';
   var scoreData = calcFreeHealthScore(fnAnswers);
-  fetch('https://hook.eu1.make.com/1mcudhpows7bp0xabpfn5rj842txgf6e', {
+  fetch('https://ohwant-webhook.vercel.app/api/welcome-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
