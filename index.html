@@ -11823,13 +11823,14 @@ function mpCancelSubscription() {
   modal.innerHTML = `
     <div style="background:var(--navy);border-radius:16px;padding:24px;max-width:320px;width:100%">
       <div style="font-size:32px;text-align:center;margin-bottom:12px">💳</div>
-      <div style="font-size:15px;font-weight:900;color:var(--paper);margin-bottom:8px;text-align:center">구독 취소</div>
+      <div style="font-size:15px;font-weight:900;color:var(--paper);margin-bottom:8px;text-align:center">구독 취소 / 환불 요청</div>
       <div style="background:rgba(255,107,0,.1);border:1px solid rgba(255,107,0,.3);border-radius:10px;padding:12px;margin-bottom:14px">
-        <div style="font-size:10px;color:#FF6B00;font-weight:700;margin-bottom:4px">⚠️ 취소 시 유의사항</div>
+        <div style="font-size:10px;color:#FF6B00;font-weight:700;margin-bottom:4px">⚠️ 취소 · 환불 안내</div>
         <div style="font-size:9.5px;color:var(--muted);line-height:1.6">
+          • <strong style="color:#10B981">결제 7일 이내 100% 환불</strong> 가능합니다<br>
+          • 월정기 결제는 언제든 해지 가능합니다<br>
           • ${nextBill}까지 이용 가능합니다<br>
-          • 취소 후 재구독 시 가격이 변경될 수 있습니다<br>
-          • 히스토리 데이터는 유지됩니다
+          • 히스토리 데이터는 5년간 유지됩니다
         </div>
       </div>
       <div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px">
@@ -11904,15 +11905,19 @@ function mpDoCancelSubscription() {
   confirmModal.innerHTML = 
     '<div style="background:#fff;border-radius:16px;padding:26px 22px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
       '<div style="text-align:center;font-size:40px;margin-bottom:10px;">📋</div>' +
-      '<div style="text-align:center;font-size:16px;font-weight:900;color:#0B1D3A;margin-bottom:14px;">구독 취소 요청이<br>접수되었습니다</div>' +
+      '<div style="text-align:center;font-size:16px;font-weight:900;color:#0B1D3A;margin-bottom:14px;">요청이 접수되었습니다</div>' +
       '<div style="font-size:11.5px;color:#4A5568;line-height:1.75;margin-bottom:14px;padding:14px;background:#FFFBEA;border-radius:10px;border:1px solid rgba(201,151,42,.3);">' +
-        '✅ <strong>24시간 이내</strong>에 오상열 대표가<br>' +
-        '&nbsp;&nbsp;&nbsp;&nbsp;직접 확인 후 처리해 드립니다.<br><br>' +
-        '📱 <strong>급하신 경우 직접 연락 주세요:</strong><br>' +
-        '&nbsp;&nbsp;&nbsp;&nbsp;카카오톡: <a href="https://pf.kakao.com/_vxfmfxj" target="_blank" style="color:#C9972A;font-weight:700;">AI머니야 채널</a><br>' +
-        '&nbsp;&nbsp;&nbsp;&nbsp;전화: <strong style="color:#0B1D3A;">010-5424-5332</strong><br><br>' +
-        '💡 <strong>처리 완료까지</strong> 기존 서비스는<br>' +
-        '&nbsp;&nbsp;&nbsp;&nbsp;계속 이용 가능합니다.' +
+        '<div style="text-align:center;font-weight:900;color:#0B1D3A;margin-bottom:8px;">카카오톡 채널이 곧 열립니다</div>' +
+        '<div style="font-size:10.5px;color:#4A5568;margin-bottom:10px;">카톡 창에서 아래 메시지를 보내주세요:<br>' +
+        '&nbsp;&nbsp;&nbsp;<strong>"구독 취소 요청합니다 - [이름]"</strong> 또는<br>' +
+        '&nbsp;&nbsp;&nbsp;<strong>"환불 요청합니다 - [이름]"</strong></div>' +
+        '<div style="padding-top:10px;border-top:1px dashed rgba(0,0,0,.1);">' +
+        '✅ <strong>24시간 이내</strong>에 오상열 대표가 직접 처리해 드립니다.<br>' +
+        '✅ <strong>7일 이내 결제</strong>는 100% 환불 가능합니다.<br><br>' +
+        '📱 카카오톡 채널이 안 열리는 경우:<br>' +
+        '&nbsp;&nbsp;<a href="https://pf.kakao.com/_vxfmfxj" target="_blank" style="color:#C9972A;font-weight:700;">pf.kakao.com/_vxfmfxj</a><br>' +
+        '&nbsp;&nbsp;전화: <strong style="color:#0B1D3A;">010-5424-5332</strong>' +
+        '</div>' +
       '</div>' +
       '<div style="font-size:10px;color:#9ca3af;text-align:center;margin-bottom:14px;">' +
         '개인정보보호법에 따라 취소 접수 내역은<br>5년간 안전하게 보관됩니다.' +
@@ -21535,7 +21540,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       </div>
         <div class="mp-menu-item" onclick="mpCancelSubscription()">
           <span class="mp-menu-icon">💳</span>
-          <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소</div><div class="mp-menu-sub">취소 후 이번 달 말까지 이용 가능</div></div>
+          <div style="flex:1"><div class="mp-menu-lbl" style="color:#FF6B00">구독 취소 / 환불 요청</div><div class="mp-menu-sub">7일 이내 환불 · 정기결제 취소</div></div>
           <span class="mp-menu-arr">›</span>
         </div>
         <div class="mp-menu-item mp-danger" style="display:none" onclick="mpWithdraw()">
