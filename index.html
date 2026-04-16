@@ -19221,17 +19221,31 @@ function enableNoteFieldEditing() {
     el.dataset.editEnabled = '1';
     el.style.cursor = 'pointer';
     el.title = '클릭하여 수정';
-    el.addEventListener('mouseenter', function() {
-      el.style.background = 'rgba(201,151,42,0.12)';
-    });
-    el.addEventListener('mouseleave', function() {
-      el.style.background = '';
-    });
     el.addEventListener('click', function(e) {
       e.stopPropagation();
       var labelEl = el.previousElementSibling;
       var label = labelEl ? labelEl.textContent.trim() : '값';
       editNoteField(el.id, label);
+    });
+  });
+  var incomeFields = [
+    {id:'bt_inc_cur', label:'실수령액'},
+    {id:'bt_loan_cur', label:'대출 원리금'},
+    {id:'bt_ins_cur', label:'보험료'},
+    {id:'bt_pen_cur', label:'노후연금'},
+    {id:'bt_sav_cur', label:'저축/투자'},
+    {id:'bt_sur_cur', label:'잉여자금'},
+    {id:'bt_life_cur', label:'생활비'}
+  ];
+  incomeFields.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if (!el || el.dataset.editEnabled) return;
+    el.dataset.editEnabled = '1';
+    el.style.cursor = 'pointer';
+    el.title = '클릭하여 수정';
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      editNoteField(f.id, f.label);
     });
   });
 }
