@@ -20815,12 +20815,10 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
             </div>
-            <!-- ★ [#13] 머니야 음소거 버튼 — 전임개발자 솔루션 -->
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;z-index:10;"
-              onclick="(function(e){e.stopPropagation();diagToggleMoneyaMute();})(event)">
-              <div id="diagMoneyaMuteIco"
-                style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;">🔊</div>
-              <div style="font-size:7.5px;color:rgba(255,255,255,.35);font-weight:700;">머니야</div>
+            <!-- ★ [#13] 머니야 음소거 버튼 — S-13 클릭 수정 -->
+            <div class="c-mini-btn" onclick="diagToggleMoneyaMute()">
+              <div class="ico" id="diagMoneyaMuteIco">🔊</div>
+              <div class="lbl">머니야</div>
             </div>
             <div class="c-mini-btn" onclick="mvpToggleRecord()">
               <div class="ico" id="mvpRecIco">⏺</div>
