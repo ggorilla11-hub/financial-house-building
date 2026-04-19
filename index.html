@@ -11938,8 +11938,35 @@ function fcCopyLink() {
     navigator.clipboard.writeText(url).then(function(){ showToast('✅ 링크 복사 완료!'); });
   } else { showToast('✅ 링크 복사 완료!'); }
 }
-function fcShareKakao(){ showToast('💬 카카오 공유 — 추후 활성화 예정'); }
-function fcShareSMS(){   showToast('📱 문자 발송 — 추후 활성화 예정'); }
+function fcShareKakao(){
+  var code = localStorage.getItem('fh_agent_code') || '';
+  var name = localStorage.getItem('fh_fc_name') || '전문 FC';
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  if(window.Kakao && window.Kakao.isInitialized()) {
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: '🏥 AI 재무건강검진 초대',
+        description: name + ' 설계사가 추천하는 AI 재무진단. 10분이면 내 재무 건강을 확인할 수 있습니다. 상품을 먼저 권하지 않습니다.',
+        imageUrl: 'https://financial-house-building.vercel.app/og.png',
+        link: { mobileWebUrl: url, webUrl: url }
+      },
+      buttons: [{ title: '재무건강검진 받기', link: { mobileWebUrl: url, webUrl: url } }]
+    });
+  } else {
+    if(navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      showToast('✅ 링크 복사됨 — 카톡에 붙여넣기 해주세요');
+    }
+  }
+}
+function fcShareSMS(){
+  var code = localStorage.getItem('fh_agent_code') || '';
+  var name = localStorage.getItem('fh_fc_name') || '전문 FC';
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  var msg = name + ' 설계사가 추천하는 AI 재무건강검진입니다. 10분이면 확인 가능합니다. ' + url;
+  window.open('sms:?body=' + encodeURIComponent(msg));
+}
 
 // 고객에게 카톡 알림톡 발송
 function fcSendKakao() {
