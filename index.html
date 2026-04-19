@@ -12905,7 +12905,7 @@ var FH_PART_NAMES = [
 ];
 
 var FH_NOTE_PARTS = [
-  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 8단계 종합 재무상담'},{l:'상담 시간',d:'50분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
+  { title:'0파트 · 오프닝', fields:[{l:'상담 목적',d:'금융집짓기® 재무진단서비스'},{l:'상담 시간',d:'50분 예상'},{l:'자료 준비',d:'상담신청서 업로드 완료'}] },
   { title:'1파트 · 인적사항', fields:[{l:'성함',d:'오상열'},{l:'나이',d:'45세'},{l:'직업',d:'직장인 (제조업 부장)'},{l:'가족',d:'기혼 · 자녀 2명 (13세, 10세)'}] },
   { title:'2파트 · 경제적 고민', fields:[{l:'주요 걱정',d:'노후 준비가 너무 늦은 것 같아요'},{l:'재무 목표',d:'60세 조기 은퇴 + 자녀 교육비'},{l:'현재 불만',d:'저축하는데 어디 가는지 모르겠어요'}] },
   { title:'3파트 · 수입지출 분석', fields:[{l:'월 총수입(세후)',d:'400만원'},{l:'생활비',d:'180만원'},{l:'보험료',d:'30만원'},{l:'대출상환',d:'55만원'},{l:'저축·투자',d:'48만원 (12%)'},{l:'미파악 지출',d:'87만원 ← 블랙홀!'}] },
@@ -13107,7 +13107,7 @@ function fhAddSTT(role, text, tag) {
 
 // 데모 스크립트
 var FH_DEMO = [
-  { delay:1500,  role:'ai',   text:'안녕하세요! AI 재무설계사 머니야입니다. 금융집짓기® 종합 재무상담을 시작하겠습니다. 성함과 나이를 알려주시겠어요?', part:0, tag:'0파트 오프닝' },
+  { delay:1500,  role:'ai',   text:'안녕하세요! AI재무진단서비스의 머니야입니다. 금융집짓기 재무진단서비스를 시작하겠습니다. 성함과 나이를 알려주시겠어요?', part:0, tag:'0파트 오프닝' },
   { delay:6000,  role:'user', text:'안녕하세요, 오상열이고요, 45세입니다.' },
   { delay:8500,  role:'ai',   text:'반갑습니다 오상열님! 직업과 가족 구성을 알려주세요.', part:1, tag:'1파트 인적사항' },
   { delay:13000, role:'user', text:'제조업 부장이고요, 아내와 아이 둘 있어요.' },
@@ -15355,7 +15355,7 @@ function diagBuildNotes() {
     <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
     <button class="dnt" onclick="dnGo(5)">🏠 집짓기</button>
     <button class="dnt" onclick="dnGo(6)">📈 포트폴리오</button>
-    <button class="dnt" onclick="dnGo(7)">🎯 재무설계</button>
+    <button class="dnt" onclick="dnGo(7)">🎯 재무설계7</button>
     <button class="dnt" onclick="dnGo(8)">⭐ 최종의견</button>
     <button class="dnt" onclick="dnGo(9)">🩺 검진결과</button>
     <button class="dnt" onclick="dnGo(10)">💬 대화록</button>
@@ -17732,17 +17732,18 @@ function diagParseAiSpeech(aiText) {
     }
   } catch(e) { console.warn('[v14 E4-1]', e.message); }
 
-  /* ★ 6~9단계 탭 자동 이동 */
+  /* ★ 6~9단계 탭 자동 이동 — 5단계 이후에만 작동 */
   try {
-    if (/포트폴리오|적립식.*저축투자|100-나이|100.*나이.*법칙|순투자재원/.test(t)) {
+    var _curStage = window._currentNoteStage || 0;
+    if (_curStage >= 5 && /포트폴리오|적립식.*저축투자|100-나이|100.*나이.*법칙|순투자재원/.test(t)) {
       if (typeof dnGo === 'function') dnGo(6);
       window._currentNoteStage = 6;
     }
-    if (/자산.*배분|부동산.*%.*금융|70.*30|리밸런싱/.test(t)) {
+    if (_curStage >= 6 && /자산.*배분|부동산.*%.*금융|70.*30|리밸런싱/.test(t)) {
       if (typeof dnGo === 'function') dnGo(7);
       window._currentNoteStage = 7;
     }
-    if (/은퇴.*설계|노후.*꿈|부채.*설계|저축.*설계|투자.*설계|세금.*설계|부동산.*설계|보험.*설계|종합.*재무/.test(t)) {
+    if (_curStage >= 7 && /은퇴.*설계|노후.*꿈|부채.*설계|저축.*설계|투자.*설계|세금.*설계|부동산.*설계|보험.*설계/.test(t)) {
       if (typeof dnGo === 'function') dnGo(7);
     }
     /* ★ 5번: 꿈꾸는 노후 — AI 발화에서 고객 답변 감지 */
