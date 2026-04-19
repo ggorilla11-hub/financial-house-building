@@ -17732,26 +17732,31 @@ function diagParseAiSpeech(aiText) {
     }
   } catch(e) { console.warn('[v14 E4-1]', e.message); }
 
-  /* ★ 0~4단계 탭 자동 이동 — 발화 키워드 감지 */
+  /* ★ 0~5단계 탭 자동 이동 — 머니야 질문 문장 정확 매칭 */
   try {
     var _cs = window._currentNoteStage || 0;
-    if (_cs <= 1 && /성함|이름.*어떻게|시간.*괜찮|시작하겠습니다|인적사항/.test(t)) {
+    /* 1단계 인적: 머니야가 성함을 물을 때만 (시작) */
+    if (_cs === 0 && /성함이.*어떻게|이름이.*어떻게|시작하겠습니다/.test(t)) {
       if (typeof dnGo === 'function') dnGo(1);
       window._currentNoteStage = 1;
     }
-    if (_cs <= 2 && /경제적.*고민|경제적.*관심|고민.*관심|고민이.*무엇|걱정.*무엇/.test(t)) {
+    /* 2단계 고민: 머니야가 정확히 경제적 고민을 물을 때만 */
+    if (_cs === 1 && /경제적으로.*가장.*고민|경제적으로.*가장.*관심|경제적으로.*걱정/.test(t)) {
       if (typeof dnGo === 'function') dnGo(2);
       window._currentNoteStage = 2;
     }
-    if (_cs <= 3 && /실수령액|세후.*수입|한.*달.*수입|수입지출|월급|월수입/.test(t)) {
+    /* 3단계 수지: 머니야가 실수령액을 물을 때만 */
+    if (_cs === 2 && /세후.*실수령|실수령액.*어떻게|한.*달.*실수령/.test(t)) {
       if (typeof dnGo === 'function') dnGo(3);
       window._currentNoteStage = 3;
     }
-    if (_cs <= 4 && /예적금|청약통장|연금.*적립|투자.*자산|부동산.*자가|자산부채/.test(t)) {
+    /* 4단계 자산: 머니야가 예적금을 물을 때만 */
+    if (_cs === 3 && /예적금.*청약|예적금.*얼마|청약통장.*얼마/.test(t)) {
       if (typeof dnGo === 'function') dnGo(4);
       window._currentNoteStage = 4;
     }
-    if (_cs <= 5 && /집.*그릴|금융집짓기|기초공사|보험.*기초|저축.*기둥|투자.*지붕/.test(t)) {
+    /* 5단계 집짓기: 머니야가 집 그리기 질문할 때만 */
+    if (_cs === 4 && /집.*그릴.*때|집.*어디서부터|금융도.*마찬가지/.test(t)) {
       if (typeof dnGo === 'function') dnGo(5);
       window._currentNoteStage = 5;
     }
