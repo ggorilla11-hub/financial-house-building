@@ -2479,7 +2479,119 @@ html{visibility:visible !important;}
 <body>
 
 
-<div id="funnel-wrap">
+<!-- ═══ 2차 프로젝트: 새 초화면 (AFTER) ═══ -->
+<div id="new-landing" style="position:fixed;inset:0;z-index:997;max-width:430px;margin:0 auto;overflow-y:auto;background:#FAFAF7;font-family:'Noto Sans KR',sans-serif;">
+
+  <!-- 상단 바 -->
+  <div style="background:#0B1D3A;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+    <div style="width:32px;height:32px;border-radius:50%;background:#C9972A;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#0B1D3A;">M</div>
+    <div style="color:#fff;font-size:13px;font-weight:700;">AI머니야</div>
+    <div style="flex:1"></div>
+    <div style="color:rgba(255,255,255,.4);font-size:10px;">by 오원트금융연구소</div>
+  </div>
+
+  <!-- 히어로 섹션 -->
+  <div style="padding:32px 24px 20px;text-align:center;">
+    <div style="font-size:15px;color:#4A5568;line-height:1.9;margin-bottom:20px;">
+      "재무설계사한테 가면<br><strong style="color:#0B1D3A">상품 팔잖아요</strong>"<br><br>
+      "혼자서 유튜브 보면<br><strong style="color:#0B1D3A">뭐가 맞는지 모르겠잖아요</strong>"
+    </div>
+    <div style="font-size:22px;font-weight:900;color:#0B1D3A;line-height:1.4;margin-bottom:6px;">
+      상품을 먼저 권하지 않습니다.<br>
+      <span style="color:#C9972A;">먼저 듣고, 진단합니다.</span>
+    </div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:20px;">25년 경력 FPSB 인증 CFP가 만든 AI 재무진단</div>
+    <button onclick="newLandingCTA()" style="display:block;margin:0 auto 12px;padding:16px 32px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border-radius:30px;font-size:16px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.4);font-family:inherit;max-width:300px;width:100%;">
+      🎯 10분 재무건강검진 받기
+    </button>
+    <div style="text-align:center;font-size:11px;color:#10B981;font-weight:700;">✅ 7일 이내 100% 환불 보장 · 9,900원</div>
+  </div>
+
+  <!-- 사회적 증거 -->
+  <div style="margin:0 20px 20px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+    <div style="font-size:11px;color:#6B7280;font-weight:700;margin-bottom:12px;text-align:center;">신뢰할 수 있는 이유</div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;background:#FFFBEA;padding:5px 10px;border-radius:16px;font-size:10px;font-weight:700;color:#0B1D3A;">📺 47,000 구독자</div>
+      <div style="display:flex;align-items:center;gap:4px;background:#FFFBEA;padding:5px 10px;border-radius:16px;font-size:10px;font-weight:700;color:#0B1D3A;">🎙 365회 팟캐스트</div>
+      <div style="display:flex;align-items:center;gap:4px;background:#FFFBEA;padding:5px 10px;border-radius:16px;font-size:10px;font-weight:700;color:#0B1D3A;">📋 2,000+ 상담</div>
+      <div style="display:flex;align-items:center;gap:4px;background:#FFFBEA;padding:5px 10px;border-radius:16px;font-size:10px;font-weight:700;color:#0B1D3A;">🏆 FPSB 인증 CFP</div>
+    </div>
+  </div>
+
+  <!-- 청진기 비유 -->
+  <div style="margin:0 20px 20px;background:#0B1D3A;border-radius:16px;padding:20px;color:#fff;">
+    <div style="font-size:13px;font-weight:900;color:#C9972A;margin-bottom:14px;text-align:center;">🏥 AI머니야는 이렇게 일합니다</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;font-size:11px;">
+      <div style="font-size:22px;flex-shrink:0;">🩺</div>
+      <div><span style="color:#C9972A;font-weight:700;">청진기 (AI 머니야)</span><br><span style="color:rgba(255,255,255,.6);font-size:10px;">당신의 재무 건강을 진단합니다</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;font-size:11px;">
+      <div style="font-size:22px;flex-shrink:0;">👨‍⚕️</div>
+      <div><span style="color:#C9972A;font-weight:700;">의사 (오상열 CFP)</span><br><span style="color:rgba(255,255,255,.6);font-size:10px;">진단 결과를 바탕으로 처방합니다</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;font-size:11px;">
+      <div style="font-size:22px;flex-shrink:0;">💊</div>
+      <div><span style="color:#C9972A;font-weight:700;">약 (금융상품)</span><br><span style="color:rgba(255,255,255,.6);font-size:10px;">필요한 사람에게만, 원할 때만</span></div>
+    </div>
+  </div>
+
+  <!-- 샘플 영상 -->
+  <div style="margin:0 20px 20px;border-radius:16px;overflow:hidden;background:#000;height:180px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px;cursor:pointer;position:relative;">
+    ▶
+    <div style="position:absolute;bottom:10px;left:12px;font-size:10px;color:rgba(255,255,255,.6);">📹 실제 AI머니야 상담 미리보기 (준비 중)</div>
+  </div>
+
+  <!-- 고객 후기 -->
+  <div style="margin:0 20px 20px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+    <div style="font-size:11px;color:#6B7280;font-weight:700;margin-bottom:12px;text-align:center;">실제 상담 고객 후기</div>
+    <div style="padding:10px;background:#FFFBEA;border-radius:10px;margin-bottom:8px;">
+      <div style="font-size:10px;color:#C9972A;margin-bottom:4px;">⭐⭐⭐⭐⭐</div>
+      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"내 재정 상태가 이렇게 한눈에 정리되는 건 처음이에요. 20년 고민이 10분 만에 방향 잡혔습니다."</div>
+      <div style="font-size:9px;color:#6B7280;margin-top:4px;">— 40대 맞벌이 직장인</div>
+    </div>
+    <div style="padding:10px;background:#FFFBEA;border-radius:10px;margin-bottom:8px;">
+      <div style="font-size:10px;color:#C9972A;margin-bottom:4px;">⭐⭐⭐⭐⭐</div>
+      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"상품 권유 없이 순수하게 제 고민만 들어주셔서 너무 좋았어요. 보험 점검 결과가 특히 유용했습니다."</div>
+      <div style="font-size:9px;color:#6B7280;margin-top:4px;">— 35세 자영업자</div>
+    </div>
+    <div style="padding:10px;background:#FFFBEA;border-radius:10px;">
+      <div style="font-size:10px;color:#C9972A;margin-bottom:4px;">⭐⭐⭐⭐⭐</div>
+      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"금융집짓기 원페이지 하나로 우리 가족 재무 상태가 한눈에 보여요. 매달 점검하고 있습니다."</div>
+      <div style="font-size:9px;color:#6B7280;margin-top:4px;">— 50대 은퇴 준비자</div>
+    </div>
+  </div>
+
+  <!-- 하단 CTA -->
+  <div style="padding:0 24px 40px;">
+    <button onclick="newLandingCTA()" style="display:block;width:100%;padding:16px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border-radius:16px;font-size:16px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.4);font-family:inherit;">
+      🎯 9,900원으로 재무건강검진 시작
+    </button>
+    <div style="text-align:center;font-size:11px;color:#10B981;font-weight:700;margin-top:10px;">✅ 7일 이내 100% 환불 보장</div>
+    <div style="text-align:center;font-size:9px;color:#9CA3AF;margin-top:16px;">
+      오원트금융연구소 · 대표 오상열 CFP<br>
+      AI 재무설계사 머니야 · 상담문의 010-5424-5332<br>
+      Copyright 2013. 오원트금융연구소 · 금융집짓기® 특허·상표권 All rights reserved.<br>
+      <a href="#" onclick="if(typeof mpTermsModal==='function')mpTermsModal();return false;" style="color:#9CA3AF;">이용약관</a> |
+      <a href="#" onclick="if(typeof mpPrivacyModal==='function')mpPrivacyModal();return false;" style="color:#9CA3AF;">개인정보처리방침</a>
+    </div>
+  </div>
+
+</div>
+<!-- ═══ /새 초화면 ═══ -->
+
+<script>
+/* ★ 새 초화면 CTA → 결제 플랜 화면으로 이동 */
+function newLandingCTA() {
+  document.getElementById('new-landing').style.display = 'none';
+  if (typeof mpOpenSubscribe === 'function') {
+    mpOpenSubscribe();
+  } else if (typeof mpOpen === 'function') {
+    mpOpen();
+  }
+}
+</script>
+
+<div id="funnel-wrap" style="display:none !important;">
 
 <!-- ═══════════════════════════════════════
      S0: 랜딩
@@ -2729,7 +2841,7 @@ html{visibility:visible !important;}
 </div><!-- /funnel-wrap -->
 
 <!-- ★ 무료 재무진단점수 신청 모달 -->
-<div id="freeScoreModal" style="display:none;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
+<div id="freeScoreModal" style="display:none !important;position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:18px;padding:24px 20px;width:90%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:32px;margin-bottom:6px;">🆓</div>
