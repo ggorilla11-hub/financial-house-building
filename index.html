@@ -5073,6 +5073,7 @@ function _recalcRetireDesign() {
   var monthlyAdd = Math.round(netLump / workSpan / 12);  /* 월 추가저축 */
   
   if (typeof _fillNewNote === 'function') {
+    _fillNewNote('f81_dream', '편안한 노후 (상담 중 확인)');
     _fillNewNote('f81_need', monthlyNeed + '만원');
     _fillNewNote('f81_ready', monthlyReady + '만원/월 (국민 ' + nationalPen + ' + 개인 ' + personalPen + ' + 노후납입 ' + savedRetire + ')');
     _fillNewNote('f81_short', monthlyShort + '만원/월');
@@ -17572,12 +17573,18 @@ function diagParseAiSpeech(aiText) {
   try {
     if (/포트폴리오|적립식.*저축투자|100-나이|100.*나이.*법칙|순투자재원/.test(t)) {
       if (typeof dnGo === 'function') dnGo(6);
+      window._currentNoteStage = 6;
     }
     if (/자산.*배분|부동산.*%.*금융|70.*30|리밸런싱/.test(t)) {
       if (typeof dnGo === 'function') dnGo(7);
+      window._currentNoteStage = 7;
     }
     if (/은퇴.*설계|노후.*꿈|부채.*설계|저축.*설계|투자.*설계|세금.*설계|부동산.*설계|보험.*설계|종합.*재무/.test(t)) {
       if (typeof dnGo === 'function') dnGo(7);
+    }
+    /* ★ 5번: 꿈꾸는 노후 — AI 발화에서 고객 답변 감지 */
+    if (/어떤.*노후.*꿈|노후.*꿈꾸/.test(t)) {
+      window._waitingDream = true;
     }
     if (/최종.*의견|DESIRE|재무점수|강점.*개선|액션.*제시|클로징|마치겠습니다/.test(t)) {
       if (typeof dnGo === 'function') dnGo(8);
