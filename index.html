@@ -19543,6 +19543,47 @@ function enableNoteFieldEditing() {
       editNoteField(f.id, f.label);
     });
   });
+
+
+  /* ★ 3. 계산값 필드 (dn-calc-val) 편집 — 6단계 포트폴리오 */
+  document.querySelectorAll('.dn-calc-val').forEach(function(el) {
+    if (el.dataset.editEnabled) return;
+    el.dataset.editEnabled = '1';
+    el.style.cursor = 'pointer';
+    el.title = '클릭하여 수정';
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var labelEl = el.previousElementSibling;
+      var label = labelEl ? labelEl.textContent.trim() : '값';
+      editNoteField(el.id, label);
+    });
+  });
+
+  /* ★ 4. 9단계 점수/등급/액션 편집 */
+  ['f9_score','f9_grade','f9_s1','f9_s2','f9_s3','f9_i1','f9_i2','f9_a1','f9_a2','f9_a3'].forEach(function(fid) {
+    var el = document.getElementById(fid);
+    if (!el || el.dataset.editEnabled) return;
+    el.dataset.editEnabled = '1';
+    el.style.cursor = 'pointer';
+    el.title = '클릭하여 수정';
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      editNoteField(fid, fid);
+    });
+  });
+
+  /* ★ 5. dnab 값 필드 편집 — 저축/투자 배분 */
+  document.querySelectorAll('.dnab-v').forEach(function(el) {
+    if (el.dataset.editEnabled) return;
+    el.dataset.editEnabled = '1';
+    el.style.cursor = 'pointer';
+    el.title = '클릭하여 수정';
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var label = el.previousElementSibling ? el.previousElementSibling.textContent.trim() : '값';
+      editNoteField(el.id, label);
+    });
+  });
 }
 
 /* 주기적으로 체크 (새로 생성되는 필드 대응) */
