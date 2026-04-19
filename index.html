@@ -2585,10 +2585,20 @@ function newLandingCTA() {
   document.getElementById('new-landing').style.display = 'none';
   var appEl = document.getElementById('main-app');
   if (appEl) appEl.style.display = '';
-  if (typeof mpOpenSubscribe === 'function') {
-    mpOpenSubscribe();
-  } else if (typeof mpOpen === 'function') {
-    mpOpen();
+  /* ★ 환경 분기: DEV/스테이징 → 바로 진단, PROD → 결제 화면 */
+  var _isStaging = location.hostname.includes('-dev') || location.hostname.includes('staging') || location.hostname.includes('localhost');
+  if (_isStaging) {
+    /* 스테이징: 결제 스킵 → 바로 진단 시작 */
+    if (typeof mvpStartCheckup === 'function') {
+      mvpStartCheckup();
+    }
+  } else {
+    /* PROD: 결제 화면 열기 */
+    if (typeof mpOpenSubscribe === 'function') {
+      mpOpenSubscribe();
+    } else if (typeof mpOpen === 'function') {
+      mpOpen();
+    }
   }
 }
 /* ★ 결제 취소 시 새 초화면 복원 */
