@@ -19731,7 +19731,7 @@ function fcMgmtSaveProfile() {
   fcMgmtInit();
 }
 /* FC관리 탭 자동 표시 (전문가 플랜 또는 에이전트일 때) */
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   var plan = localStorage.getItem('fh_plan') || '';
   var isAgent = localStorage.getItem('fh_is_agent') === '1';
   var hasAgentCode = !!localStorage.getItem('fh_agent_code');
@@ -19740,7 +19740,7 @@ function fcMgmtSaveProfile() {
     var tab = document.getElementById('fc-mgmt-tab');
     if (tab) tab.style.display = '';
   }
-})();
+});
 
 /* ★ 상담노트/검진결과표 담당자 동적 표시 */
 (function() {
