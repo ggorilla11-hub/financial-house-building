@@ -21185,11 +21185,12 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <!-- 하단 컨트롤 -->
         <div class="c-bottom">
           <div class="c-btn-row">
-            <div class="c-mini-btn" onclick="diagToggleMic()">
+            <!-- ★ S-20 미작동 버튼 숨김 -->
+            <div class="c-mini-btn" onclick="diagToggleMic()" style="display:none;">
               <div class="ico" id="diagMicIco">🎤</div>
               <div class="lbl">마이크</div>
             </div>
-            <div class="c-mini-btn" onclick="diagToggleCamera()">
+            <div class="c-mini-btn" onclick="diagToggleCamera()" style="display:none;">
               <div class="ico">📷</div>
               <div class="lbl">카메라</div>
             </div>
@@ -21198,11 +21199,11 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
               <div class="ico" id="diagMoneyaMuteIco">🔊</div>
               <div class="lbl">머니야</div>
             </div>
-            <div class="c-mini-btn" onclick="mvpToggleRecord()">
+            <div class="c-mini-btn" onclick="mvpToggleRecord()" style="display:none;">
               <div class="ico" id="mvpRecIco">⏺</div>
               <div class="lbl" id="mvpRecLbl">녹음</div>
             </div>
-            <div class="c-mini-btn" onclick="diagOpenUpload('application')">
+            <div class="c-mini-btn" onclick="diagOpenUpload('application')" style="display:none;">
               <div class="ico">📎</div>
               <div class="lbl">서류</div>
             </div>
