@@ -5121,7 +5121,7 @@ function _recalcRetireDesign() {
   var monthlyAdd = Math.round(netLump / workSpan / 12);  /* 월 추가저축 */
   
   if (typeof _fillNewNote === 'function') {
-    _fillNewNote('f81_dream', '편안한 노후 (상담 중 확인)');
+    // f81_dream 기본값 제거 — 고객 답변 후 입력
     _fillNewNote('f81_need', monthlyNeed + '만원');
     _fillNewNote('f81_ready', monthlyReady + '만원/월 (국민 ' + nationalPen + ' + 개인 ' + personalPen + ' + 노후납입 ' + savedRetire + ')');
     _fillNewNote('f81_short', monthlyShort + '만원/월');
