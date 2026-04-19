@@ -7179,10 +7179,11 @@ function mpSelectPlan(plan) {
     amountEl.textContent = '₩' + planInfo.amount.toLocaleString();
   }
   
-  // ★ FC 프로필은 결제 후 마이페이지에서 입력 (결제 전에는 숨김)
+  // ★ 전문가 플랜 선택 시 FC 프로필 폼 표시
   var fcExtra = document.getElementById('fc-extra-info');
   if (fcExtra) {
-    fcExtra.style.display = 'none';
+    var _curTier = (FH_PLANS[plan] || {}).tier || '';
+    fcExtra.style.display = (_curTier === 'expert') ? 'block' : 'none';
   }
 }
 
