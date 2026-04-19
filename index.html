@@ -11884,7 +11884,7 @@ function fcDashInit() {
     dashSection.style.display = 'none';
     return;
   }
-  dashSection.style.display = 'block';
+  dashSection.style.display = 'none'; /* FC관리 탭으로 이동 */
 
   // Firestore에서 설계사 정보 로드
   var user = window._fhAuth ? window._fhAuth.currentUser : null;
