@@ -2608,6 +2608,8 @@ if(location.search.includes('pay_result=')){
 <script>
 /* ★ 새 초화면 CTA → 결제 플랜 화면으로 이동 */
 function newLandingCTA() {
+  document.documentElement.style.setProperty('--pay-landing','none');
+  document.documentElement.style.setProperty('--pay-app','block');
   document.getElementById('new-landing').style.display = 'none';
   var appEl = document.getElementById('main-app');
   if (appEl) appEl.style.display = '';
