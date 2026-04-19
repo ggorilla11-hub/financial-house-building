@@ -9034,7 +9034,7 @@ function mvpStartCheckup() {
               localStorage.setItem('fh_member_v1', '1');
               localStorage.setItem('fh_subscribed', '1');
               localStorage.setItem('fh_plan', d.plan || 'bronze-single');
-              localStorage.setItem('mvp_credit_min', String(d.creditMin || 10));
+              localStorage.setItem('mvp_credit_min', String(d.creditMin || 3));
               localStorage.setItem('fh_payer_email', user.email);
               if (d.payerName) localStorage.setItem('fh_payer_name', d.payerName);
               mpIsSubscribed = true;
@@ -9117,7 +9117,7 @@ function mvpStartCheckup() {
             localStorage.setItem('fh_member_v1', '1');
             localStorage.setItem('fh_subscribed', '1');
             localStorage.setItem('fh_plan', d.plan || 'bronze-staging');
-            localStorage.setItem('mvp_credit_min', String(d.creditMin || 5));
+            localStorage.setItem('mvp_credit_min', String(d.creditMin || 3));
             mpIsSubscribed = true;
           }
         }
@@ -12417,7 +12417,7 @@ function mpDoWithdraw() {
                 localStorage.setItem('fh_member_v1','1');
                 localStorage.setItem('fh_subscribed','1');
                 localStorage.setItem('fh_plan', d.plan||'silver-month');
-                localStorage.setItem('mvp_credit_min', String(d.creditMin||5));
+                localStorage.setItem('mvp_credit_min', String(d.creditMin||3));
                 mpIsSubscribed = true; mpSetMemberButton();
                 if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
                 showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
