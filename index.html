@@ -11665,6 +11665,28 @@ document.addEventListener('DOMContentLoaded', function() {
   var payResult = params.get('pay_result');
   if (payResult === 'success') {
     var oid = params.get('oid') || '';
+    var payPlan = params.get('plan') || '';
+    // ★ plan 파라미터로 실제 결제 플랜 복원
+    var _restoredPlan = '';
+    if (payPlan === '전문가' || payPlan === 'expert') {
+      _restoredPlan = 'expert-month';
+      localStorage.setItem('fh_is_agent', '1');
+    } else if (oid) {
+      // OID에서 플랜 추출 (FH_BRONZE_SINGLE_*, FC_BRONZE_MONTH_* 등)
+      if (oid.includes('FC_BRONZE')) _restoredPlan = 'expert-month';
+      else if (oid.includes('FC_SILVER')) _restoredPlan = 'expert-silver';
+      else if (oid.includes('FC_GOLD')) _restoredPlan = 'expert-gold';
+      else if (oid.includes('BRONZE_SINGLE')) _restoredPlan = 'bronze-single';
+      else if (oid.includes('BRONZE_MONTH')) _restoredPlan = 'bronze-month';
+      else if (oid.includes('BRONZE_YEAR')) _restoredPlan = 'bronze-year';
+      else if (oid.includes('SILVER')) _restoredPlan = 'silver-single';
+      else if (oid.includes('GOLD')) _restoredPlan = 'gold-single';
+      else if (oid.includes('PREMIUM')) _restoredPlan = 'premium-single';
+    }
+    if (_restoredPlan) {
+      localStorage.setItem('fh_plan', _restoredPlan);
+      selectedPlan = _restoredPlan;
+    }
     // 구독 상태 저장
     localStorage.setItem('fh_subscribed', '1');
     localStorage.setItem('fh_member_v1', '1');
