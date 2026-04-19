@@ -2478,6 +2478,19 @@ html{visibility:visible !important;}
     });
   </script>
 
+<script>
+if (window.location.search.includes('pay_result=success') || window.location.search.includes('pay_result=fail')) {
+  document.documentElement.style.setProperty('--pay-landing','none');
+  document.documentElement.style.setProperty('--pay-app','block');
+} else {
+  document.documentElement.style.setProperty('--pay-landing','block');
+  document.documentElement.style.setProperty('--pay-app','none');
+}
+</script>
+<style>
+#new-landing { display: var(--pay-landing, block) !important; }
+#main-app { display: var(--pay-app, none) !important; }
+</style>
 </head>
 <body>
 
