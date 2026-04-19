@@ -17568,6 +17568,22 @@ function diagParseAiSpeech(aiText) {
     }
   } catch(e) { console.warn('[v14 E4-1]', e.message); }
 
+  /* ★ 6~9단계 탭 자동 이동 */
+  try {
+    if (/포트폴리오|적립식.*저축투자|100-나이|100.*나이.*법칙|순투자재원/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(6);
+    }
+    if (/자산.*배분|부동산.*%.*금융|70.*30|리밸런싱/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(7);
+    }
+    if (/은퇴.*설계|노후.*꿈|부채.*설계|저축.*설계|투자.*설계|세금.*설계|부동산.*설계|보험.*설계|종합.*재무/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(7);
+    }
+    if (/최종.*의견|DESIRE|재무점수|강점.*개선|액션.*제시|클로징|마치겠습니다/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(8);
+    }
+  } catch(e) {}
+
   /* ★ [v14 C-1+C-4+C-10] 5단계 금융집짓기 SVG 빌드 애니메이션
    * 머니야가 한 문장으로 4개 단계를 다 말하므로, 시간차로 순차 빌드
    */
@@ -19384,6 +19400,8 @@ function renderHealthReport() {
     if (typeof _origDnGo9 === 'function') _origDnGo9(i);
     if (i === 9) { setTimeout(renderHealthReport, 100); }
     if (i === 11) snSyncAll();
+    /* ★ 편집 기능 재바인딩 (탭 이동 시) */
+    setTimeout(function() { if (typeof enableNoteFieldEditing === 'function') enableNoteFieldEditing(); }, 500);
   };
 })();
 
