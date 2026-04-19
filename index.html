@@ -11669,11 +11669,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var params = new URLSearchParams(window.location.search);
   var payResult = params.get('pay_result');
   if (payResult === 'success') {
-    /* ★ 결제 성공 시 new-landing 숨기기 + main-app 표시 */
+    /* ★ 결제 성공 시 즉시 화면 정리 (깜빡임 방지) */
     var _nlEl = document.getElementById('new-landing');
     if (_nlEl) _nlEl.style.display = 'none';
     var _maEl = document.getElementById('main-app');
     if (_maEl) _maEl.style.display = '';
+    var _fwEl = document.getElementById('funnel-wrap');
+    if (_fwEl) _fwEl.style.display = 'none';
+    var _simEl = document.getElementById('sim-wrap');
+    if (_simEl) _simEl.style.display = 'none';
     var oid = params.get('oid') || '';
     var payPlan = params.get('plan') || '';
     // ★ plan 파라미터로 실제 결제 플랜 복원
