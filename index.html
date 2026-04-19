@@ -5363,6 +5363,20 @@ function applyDocToNote(structuredData, docType) {
             /* 부동산 현황 */
             var reCur = D.reHome || D.reInv ? ((D.reHome || 0) + (D.reInv || 0)) + '억' : '';
             if (reCur) { _fillNewNote('f7_re_cur', reCur); noteFilled++; }
+            /* ★ 자산배분 진단 */
+            var reAmt = (D.reHome || 0) + (D.reInv || 0);
+            var reAmtWon = reAmt * 10000; /* 억→만 */
+            var totalAll = reAmtWon + finCur;
+            if (totalAll > 0) {
+              var rePct = Math.round(reAmtWon / totalAll * 100);
+              var finPct = 100 - rePct;
+              var diagMsg = '부동산 ' + rePct + '% / 금융 ' + finPct + '% → ';
+              if (rePct > 80) diagMsg += '부동산 과다 (기준 70%)';
+              else if (rePct < 50) diagMsg += '금융 비중 높음 (기준 30%)';
+              else diagMsg += '균형 양호 ✓';
+              _fillNewNote('f7_diag', diagMsg);
+              noteFilled++;
+            }
           }
           
           /* === 9단계: 재무점수 & DESIRE === */
@@ -5411,7 +5425,17 @@ function applyDocToNote(structuredData, docType) {
             
             var desireLabel = ['','D(신용대출)','E(비상자금)','S(저축투자)','I(10억달성)','R(담보대출)','E(상속증여)'][desireStage];
             _fillNewNote('f9_a1', 'DESIRE ' + desireStage + '단계: ' + desireLabel);
-            noteFilled++;
+            /* ★ 액션 2,3 — 핵심 개선 제안 */
+            var actions = [];
+            if (curSave < Math.round(monthlyIncome * 0.2)) actions.push('저축률 20% 이상 확보');
+            if (curIns < Math.round(monthlyIncome * 0.05)) actions.push('보험 점검 (수입 5% 기준)');
+            if (curPen < Math.round(monthlyIncome * 0.1)) actions.push('노후연금 수입 10% 확보');
+            if (D.debtCredit > 0) actions.push('신용대출 즉시 상환');
+            if (totalDebt > totalAsset * 0.4) actions.push('부채비율 40% 이하 관리');
+            if (actions.length === 0) actions.push('현재 재무 구조 양호');
+            _fillNewNote('f9_a2', actions[0] || '—');
+            if (actions.length > 1) _fillNewNote('f9_a3', actions[1] || '—');
+            noteFilled += 2;
           }
           
           /* ═════════════════════════════════════════════
