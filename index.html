@@ -12120,6 +12120,9 @@ function mpLogout() {
 }
 
 function mpDoLogout() {
+  // ★ 모달 닫기
+  var logoutModal = document.querySelector('div[style*="z-index:99999"]');
+  if (logoutModal) logoutModal.remove();
   // Google 로그아웃 + 로컬 세션 초기화
   if (window._fhAuth) {
     window._fhAuth.signOut().catch(function(){});
