@@ -7130,9 +7130,11 @@ function mpSelectPlan(plan) {
     amountEl.textContent = '₩' + planInfo.amount.toLocaleString();
   }
   
-  // 전문가 플랜 숨김 처리 — 추가정보 폼 비활성화
+  // ★ 전문가 플랜 선택 시 추가정보 폼 활성화
   var fcExtra = document.getElementById('fc-extra-info');
-  if (fcExtra) fcExtra.style.display = 'none'; // 전문가 플랜 출시 전 숨김
+  if (fcExtra) {
+    fcExtra.style.display = (tier === 'expert') ? 'block' : 'none';
+  }
 }
 
 function selPayMethod(el){
@@ -7322,6 +7324,12 @@ function onPaypleResult(data){
       var _fcCompany = (document.getElementById('fc-company')||{}).value || '';
       var _fcDept    = (document.getElementById('fc-dept')||{}).value || '';
       var _fcTitle   = (document.getElementById('fc-title')||{}).value || '';
+      var _fcNameInput = (document.getElementById('fc-name')||{}).value || '';
+      var _fcPhoneInput = (document.getElementById('fc-phone-input')||{}).value || '';
+      /* ★ FC 프로필 localStorage 저장 */
+      if (_fcNameInput) localStorage.setItem('fh_fc_name', _fcNameInput);
+      if (_fcPhoneInput) localStorage.setItem('fh_fc_phone', _fcPhoneInput);
+      if (_fcCompany) localStorage.setItem('fh_fc_company', _fcCompany);
       // 에이전트 코드 생성: AGT_ + 이름이니셜2자 + 랜덤3자리
       var _prefix = _payerName.replace(/\s/g,'').substring(0,2).toUpperCase() || 'FC';
       var _agentCode = 'AGT_' + _prefix + (Math.floor(Math.random()*900)+100);
@@ -20526,8 +20534,15 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       </div>
     </div>
     <div id="fc-extra-info" style="display:none;background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.3);">
-      <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:10px;">👔 설계사 추가 정보 입력</div>
+      <div style="font-size:11px;font-weight:900;color:var(--navy);margin-bottom:10px;">👔 설계사 프로필 설정</div>
+      <div style="font-size:9px;color:#6B7280;margin-bottom:8px;">※ 고객 리포트(원페이지)에 아래 정보가 표시됩니다</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="fc-name" type="text" placeholder="성명 (고객에게 표시됩니다) *필수"
+          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
+        <input id="fc-phone-input" type="tel" placeholder="연락처 (고객에게 표시됩니다) *필수"
+          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
         <input id="fc-company" type="text" placeholder="소속 회사 (예: 삼성생명, 한화생명) *필수"
           style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;"
           onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#ddd'">
