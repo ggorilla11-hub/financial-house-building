@@ -9085,7 +9085,7 @@ function mvpStartCheckup() {
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
   localStorage.setItem('fh_plan', 'bronze-staging');
-  localStorage.setItem('mvp_credit_min', '5');  /* 스테이징 맛보기 5분 */
+  localStorage.setItem('mvp_credit_min', '3');  /* 스테이징 맛보기 3분 */
   mpIsSubscribed = true;
   if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
   var btn = document.getElementById('btn-header-main');
