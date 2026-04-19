@@ -9176,7 +9176,11 @@ function mvpCompletePurchase() {
     if (_fc) localStorage.setItem('fh_fc_company', _fc.trim());
     localStorage.setItem('fh_is_agent', '1');
     localStorage.setItem('fh_plan', 'expert-month');
-    console.log('[FC프로필 저장]', _fn, _fp, _fc);
+    /* ★ 에이전트 코드 생성 (트로이 목마 링크용) */
+    var _prefix = (_fn || 'FC').replace(/\s/g,'').substring(0,2).toUpperCase();
+    var _agentCode = 'AGT_' + _prefix + (Math.floor(Math.random()*900)+100);
+    localStorage.setItem('fh_agent_code', _agentCode);
+    console.log('[FC프로필 저장]', _fn, _fp, _fc, '코드:', _agentCode);
   }
   // ★ 선택된 플랜으로 결제 실행
   confirmPay(selectedPlan);
