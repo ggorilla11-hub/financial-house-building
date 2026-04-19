@@ -9085,7 +9085,7 @@ function mvpStartCheckup() {
   localStorage.setItem('fh_member_v1', '1');
   localStorage.setItem('fh_sub_date', new Date().toISOString());
   localStorage.setItem('fh_plan', 'bronze-staging');
-  localStorage.setItem('mvp_credit_min', '20');
+  localStorage.setItem('mvp_credit_min', '5');  /* 스테이징 맛보기 5분 */
   mpIsSubscribed = true;
   if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
   var btn = document.getElementById('btn-header-main');
@@ -9117,7 +9117,7 @@ function mvpStartCheckup() {
             localStorage.setItem('fh_member_v1', '1');
             localStorage.setItem('fh_subscribed', '1');
             localStorage.setItem('fh_plan', d.plan || 'bronze-staging');
-            localStorage.setItem('mvp_credit_min', String(d.creditMin || 20));
+            localStorage.setItem('mvp_credit_min', String(d.creditMin || 5));
             mpIsSubscribed = true;
           }
         }
@@ -12417,7 +12417,7 @@ function mpDoWithdraw() {
                 localStorage.setItem('fh_member_v1','1');
                 localStorage.setItem('fh_subscribed','1');
                 localStorage.setItem('fh_plan', d.plan||'silver-month');
-                localStorage.setItem('mvp_credit_min', String(d.creditMin||20));
+                localStorage.setItem('mvp_credit_min', String(d.creditMin||5));
                 mpIsSubscribed = true; mpSetMemberButton();
                 if(typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
                 showToast('✅ ' + (user.displayName||'회원') + '님, 구독이 확인되었습니다!');
@@ -14460,7 +14460,7 @@ async function diagConnectVoice(isPaid) {
     var planKey      = planInfo.plan      || localStorage.getItem('fh_plan') || 'bronze-single';
     var planData     = fhGetPlan(planKey);  // FH_PLANS에서 가져옴
     var planLabel    = planData.shortLabel || planInfo.label || '브론즈';
-    var planMin      = planData.min       || planInfo.creditMin || 20;
+    var planMin      = planData.min       || planInfo.creditMin || 5;
     var remainMin    = planInfo.remainMin || planMin;
     var sessionNo    = planInfo.sessionNo || 1;
     var isResume     = planInfo.isResume  || false;
