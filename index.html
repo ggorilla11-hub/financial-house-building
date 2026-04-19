@@ -9063,20 +9063,19 @@ function mvpStartCheckup() {
           if (funnelWrap) funnelWrap.classList.add('fn-hidden');
           mpOpen();
         } else {
-          // Firestore에 구독 없음 → localStorage 초기화 후 결제 모달
-          ['fh_member_v1','fh_subscribed','fh_plan','mvp_credit_min'].forEach(function(k){ localStorage.removeItem(k); });
-          mpIsSubscribed = false;
-          mpOpenSubscribe();
+          /* ★ 스테이징: 구독 없어도 체험 진단 진입 */
+          if (typeof mvpUpdateGuideUI === 'function') mvpUpdateGuideUI();
+          mpOpen();
         }
       })
       .catch(function(e) {
         console.log('[구독확인 오류]', e.message);
-        // Firestore 오류 시 결제 모달로 안전하게 처리
-        mpOpenSubscribe();
+        /* ★ 스테이징: 에러 시에도 체험 진단 진입 */
+        mpOpen();
       });
   } else {
-    // Firestore 미연결 → 결제 모달
-    mpOpenSubscribe();
+    /* ★ 스테이징: Firestore 미연결 시에도 체험 진단 진입 */
+    mpOpen();
   }
 }
 
