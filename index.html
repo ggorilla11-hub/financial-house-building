@@ -9003,7 +9003,7 @@ function _mvpEnterCheckup() {
 }
 
 function mvpStartCheckup() {
-  /* ★ [v14 F2] 환경별 분기 — main=결제필수, dev=7일 무료체험 */
+  /* ★ [v14 F2] 환경별 분기 — main=결제필수, dev=1일 무료체험 */
   var IS_STAGING = location.hostname.includes('-dev') 
                 || location.hostname.includes('staging')
                 || location.hostname.includes('localhost')
@@ -9064,19 +9064,19 @@ function mvpStartCheckup() {
     return;
   }
   
-  /* ═══════ STAGING(dev): 7일 무료 체험 ═══════ */
+  /* ═══════ STAGING(dev): 1일 무료 체험 ═══════ */
   var trialStart = localStorage.getItem('fh_trial_start');
   if (!trialStart) {
     localStorage.setItem('fh_trial_start', new Date().toISOString());
     trialStart = new Date().toISOString();
   }
   var daysPassed = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000*60*60*24));
-  if (daysPassed >= 7) {
-    showToast('⏰ 7일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
+  if (daysPassed >= 1) {
+    showToast('⏰ 1일 무료 체험이 종료되었습니다. 유료 구독을 시작해주세요.');
     mpOpenSubscribe();
     return;
   }
-  var remaining = 7 - daysPassed;
+  var remaining = 1 - daysPassed;
   var simWrap = document.getElementById('sim-wrap');
   if (simWrap) simWrap.style.display = 'none';
   var funnelWrap = document.getElementById('funnel-wrap');
