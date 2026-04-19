@@ -7292,6 +7292,11 @@ function onPaypleResult(data){
   var ctaBtn = document.getElementById('mp-sub-cta');
   if(ctaBtn) { ctaBtn.disabled = false; ctaBtn.style.opacity = '1'; }
 
+  /* ★ 결제 콜백 시 new-landing 숨기기 */
+  var _nlEl = document.getElementById('new-landing');
+  if (_nlEl) _nlEl.style.display = 'none';
+  var _maEl = document.getElementById('main-app');
+  if (_maEl) _maEl.style.display = '';
   if(data.PCD_PAY_RST === 'success'){
     if(typeof closePayModal === 'function') { try { closePayModal(); } catch(e) {} }
     try { mpCloseSubscribe(); } catch(e) {}
