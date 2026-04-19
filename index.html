@@ -19730,11 +19730,13 @@ function fcMgmtSaveProfile() {
   showToast('✅ 프로필 저장 완료!');
   fcMgmtInit();
 }
-/* FC관리 탭 자동 표시 (전문가 플랜일 때) */
+/* FC관리 탭 자동 표시 (전문가 플랜 또는 에이전트일 때) */
 (function() {
   var plan = localStorage.getItem('fh_plan') || '';
   var isAgent = localStorage.getItem('fh_is_agent') === '1';
-  if (plan.startsWith('expert') || isAgent) {
+  var hasAgentCode = !!localStorage.getItem('fh_agent_code');
+  var hasFcName = !!localStorage.getItem('fh_fc_name');
+  if (plan.startsWith('expert') || isAgent || hasAgentCode || hasFcName) {
     var tab = document.getElementById('fc-mgmt-tab');
     if (tab) tab.style.display = '';
   }
