@@ -20236,7 +20236,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
       💎 프리미엄
     </button>
-    <button onclick="mpSelectTier('expert')" id="mp-tab-expert" style="display:none;flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
+    <button onclick="mpSelectTier('expert')" id="mp-tab-expert" style="flex:1;padding:7px 2px;border-radius:7px;border:none;font-size:9px;font-weight:700;font-family:var(--fn);cursor:pointer;transition:all .2s;background:rgba(11,29,58,.08);color:var(--muted);">
       👔 전문가
     </button>
   </div>
@@ -20449,13 +20449,13 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
   </div>
 
   <!-- ══ 전문가 FC플랜 패널 (다음주 오픈 예정) ══ -->
-  <div id="mp-tier-expert" class="mp-tier-panel" style="display:none;">
+  <div id="mp-tier-expert" class="mp-tier-panel">
     <div style="background:linear-gradient(135deg,var(--navy),#1a3260);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid rgba(201,151,42,.4);position:relative;">
-      <div style="position:absolute;top:8px;right:8px;background:#f59e0b;color:#fff;font-size:8px;font-weight:900;padding:3px 8px;border-radius:4px;">준비 중</div>
+      <div style="position:absolute;top:8px;right:8px;background:#10B981;color:#fff;font-size:8px;font-weight:900;padding:3px 8px;border-radius:4px;">NEW</div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
           <div style="font-size:11px;font-weight:900;color:var(--gold2);">👔 전문가 FC플랜</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;">보험설계사 전용 · 다음주 오픈</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;">보험설계사 · FC 전용 고객관리 도구</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:22px;font-weight:900;color:var(--gold2);">₩33,000</div>
@@ -20464,16 +20464,22 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 골드 플랜 60분 상담 본인 이용 포함
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 트로이 목마 링크 무제한 생성
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 전용 링크 발급 + 바이럴 자동화
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 수동 입력 + DB 관리 (100명)
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> AI 상담 중 자동 설계사 연결 트리거
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 원페이지·리포트에 내 이름/연락처 표시
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
-          <span style="color:var(--gold2);font-weight:700;">✓</span> 핫 리드 카톡 즉시 알림
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 고객 요청 시 자동 연결 알림
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.7);">
+          <span style="color:var(--gold2);font-weight:700;">✓</span> 평생 담당자로 어플에 남음
+        </div>
+        <div style="margin-top:8px;padding:8px 10px;background:rgba(201,151,42,.15);border-radius:8px;">
+          <div style="font-size:9px;color:var(--gold2);font-weight:700;">💰 ROI: 월 33,000원 → 고객 1명 보험 계약 = 수수료 30~100만원</div>
         </div>
       </div>
     </div>
