@@ -2491,6 +2491,16 @@ if (window.location.search.includes('pay_result=success') || window.location.sea
 #new-landing { display: var(--pay-landing, block) !important; }
 #main-app { display: var(--pay-app, none) !important; }
 </style>
+<script>
+if(location.search.includes('pay_result=')){
+  document.documentElement.style.setProperty('--pay-landing','none');
+  document.documentElement.style.setProperty('--pay-app','block');
+}
+</script>
+<style>
+#new-landing{display:var(--pay-landing,block)!important}
+#main-app{display:var(--pay-app,none)!important}
+</style>
 </head>
 <body>
 
@@ -9155,6 +9165,19 @@ function mvpCompletePurchase() {
   window._fhPayerEmail = emailVal.trim();
   window._fhPayerPhone = phoneVal.trim();
 
+  // ★ FC 프로필 결제 직전 저장 (AUTH 모드 대응)
+  var _fcTier = (FH_PLANS[selectedPlan]||{}).tier || selectedTier || '';
+  if (_fcTier === 'expert') {
+    var _fn = (document.getElementById('fc-name')||{}).value || '';
+    var _fp = (document.getElementById('fc-phone-input')||{}).value || '';
+    var _fc = (document.getElementById('fc-company')||{}).value || '';
+    if (_fn) localStorage.setItem('fh_fc_name', _fn.trim());
+    if (_fp) localStorage.setItem('fh_fc_phone', _fp.trim());
+    if (_fc) localStorage.setItem('fh_fc_company', _fc.trim());
+    localStorage.setItem('fh_is_agent', '1');
+    localStorage.setItem('fh_plan', 'expert-month');
+    console.log('[FC프로필 저장]', _fn, _fp, _fc);
+  }
   // ★ 선택된 플랜으로 결제 실행
   confirmPay(selectedPlan);
 }
