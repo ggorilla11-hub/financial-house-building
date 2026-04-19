@@ -7171,7 +7171,8 @@ function mpSelectPlan(plan) {
   // ★ 전문가 플랜 선택 시 추가정보 폼 활성화
   var fcExtra = document.getElementById('fc-extra-info');
   if (fcExtra) {
-    fcExtra.style.display = (tier === 'expert') ? 'block' : 'none';
+    var _curTier = (FH_PLANS[plan] || {}).tier || '';
+    fcExtra.style.display = (_curTier === 'expert') ? 'block' : 'none';
   }
 }
 
