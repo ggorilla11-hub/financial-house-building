@@ -11787,6 +11787,9 @@ function fcDashRender(data) {
 
   // localStorage에 코드 동기화
   if(code) localStorage.setItem('fh_agent_code', code);
+  if(data.name) localStorage.setItem('fh_fc_name', data.name);
+  if(data.phone) localStorage.setItem('fh_fc_phone', data.phone);
+  if(data.company) localStorage.setItem('fh_fc_company', data.company);
 }
 
 // 링크 복사
@@ -16242,6 +16245,19 @@ function diagBuildNotes() {
     h += '</div>';
     h += '</div>';
     
+    /* ★ FC 담당자 정보 삽입 (agent 코드 있을 때만) */
+    var _fcCode = localStorage.getItem('fh_agent_code') || '';
+    var _fcName = localStorage.getItem('fh_fc_name') || '';
+    var _fcPhone = localStorage.getItem('fh_fc_phone') || '';
+    var _fcCompany = localStorage.getItem('fh_fc_company') || '';
+    if (_fcCode || _fcName) {
+      h += '<div style="border-top:1.5px solid #C9972A;padding-top:4px;margin-top:4px;text-align:center;flex-shrink:0;">';
+      h += '<div style="font-size:6pt;color:#C9972A;font-weight:900;margin-bottom:2px;">👔 담당 재무설계사</div>';
+      h += '<div style="font-size:7pt;color:#0B1D3A;font-weight:900;">' + (_fcName || '전문 FC') + '</div>';
+      if (_fcCompany) h += '<div style="font-size:5.5pt;color:#6B7280;">' + _fcCompany + '</div>';
+      if (_fcPhone) h += '<div style="font-size:5.5pt;color:#6B7280;">📞 ' + _fcPhone + '</div>';
+      h += '</div>';
+    }
     /* 푸터 */
     h += '<div style="border-top:1px solid #d1d5db;padding-top:2px;margin-top:3px;text-align:center;font-size:5pt;color:#6B7280;font-weight:700;flex-shrink:0;">';
     h += '특허:제10-2202486호 · 상표:제41-0388261호 · 저작권:C-2020-008901호 · Copyright 오원트금융연구소';
