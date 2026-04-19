@@ -7126,6 +7126,17 @@ function mpSelectTier(tier) {
     expert:  'expert-month',
   };
   mpSelectPlan(defaults[tier]);
+  /* ★ 전문가 플랜은 카드 UI 없으므로 강제 설정 */
+  if (tier === 'expert') {
+    selectedPlan = 'expert-month';
+    window._fhCurrentPlan = 'expert-month';
+    /* 결제 버튼 텍스트 업데이트 */
+    var payBtn = document.getElementById('pay-confirm-btn');
+    if (payBtn) {
+      var ep = FH_PLANS['expert-month'];
+      payBtn.textContent = '지금 ₩' + (ep ? ep.amount.toLocaleString() : '33,000') + '/월 전문가 FC 브론즈 결제하기 →';
+    }
+  }
 }
 
 function selectPlan(plan){ mpSelectPlan(plan); } // 하위호환
