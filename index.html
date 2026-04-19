@@ -10466,7 +10466,8 @@ async function sendTextConsultMessage(txt) {
         financialContext: financialContext,
         conversationHistory: _textConsultHistory.slice(-10), // 최근 10개만
         resumeContext: resumeCtx,  // ★ 신규
-        planInfo: planInfoStr       // ★ 신규
+        planInfo: planInfoStr,      // ★ 신규
+        textModeInstruction: '반드시 질문은 한 번에 하나만 하세요. 고객이 답하면 공감 1줄 + 다음 질문 1개로 응답하세요. 절대 여러 단계를 한꺼번에 설명하지 마세요. 최대 3줄 이내로 짧게 말하세요. 음성 상담처럼 묻고 답하고 공감하고 다시 질문하는 방식으로 진행하세요.'
       })
     });
 
