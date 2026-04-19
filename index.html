@@ -15212,10 +15212,10 @@ function diagBuildNotes() {
         <div class="dncbody">
           <div class="dnfield"><span class="dnfl">진단 일자</span><span class="dnfv preset" id="f0_date">2026.04.08</span></div>
           <div class="dnfield"><span class="dnfl">회차</span><span class="dnfv preset" id="f0_session">1회차 (초회 종합진단)</span></div>
-          <div class="dnfield"><span class="dnfl">상담 주체</span><span class="dnfv preset">오원트금융연구소</span></div>
+          <div class="dnfield"><span class="dnfl">상담 주체</span><span class="dnfv preset" id="dn_org_name">오원트금융연구소</span></div>
           <div class="dnfield"><span class="dnfl">상담 내용</span><span class="dnfv preset">금융집짓기® 재무설계</span></div>
           <div class="dnfield"><span class="dnfl">담당</span><span class="dnfv preset">AI머니야</span></div>
-          <div class="dnfield"><span class="dnfl">책임</span><span class="dnfv preset">오상열 CFP 대표</span></div>
+          <div class="dnfield"><span class="dnfl">담당</span><span class="dnfv preset" id="dn_manager_name">오상열 CFP 대표</span></div>
           <div class="dnfield"><span class="dnfl">예상 시간</span><span class="dnfv preset">40분 (골드 플랜)</span></div>
 
           <!-- ★ [BUG-001 FIX 2026-04-10] 대화록 기록 동의 모달 삭제
@@ -15873,7 +15873,7 @@ function diagBuildNotes() {
         <!-- 푸터 서명 -->
         <div style="padding:8px 14px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
           <div style="font-size:8px;color:#9ca3af;">특허:제10-2202486호 · 상표:제41-0388261호 · 저작권:C-2020-008901호</div>
-          <div style="font-size:10px;font-weight:800;color:#C9972A;">오상열 CFP® · 오원트금융연구소</div>
+          <div style="font-size:10px;font-weight:800;color:#C9972A;"><span id="report_manager_name">오상열 CFP®</span> · <span id="report_org_name">오원트금융연구소</span></div>
         </div>
       </div>
 
@@ -19597,6 +19597,29 @@ function enableNoteFieldEditing() {
 }
 
 /* 주기적으로 체크 (새로 생성되는 필드 대응) */
+
+/* ★ 상담노트/검진결과표 담당자 동적 표시 */
+(function() {
+  var agentCode = localStorage.getItem('fh_agent_code') || '';
+  var fcName = localStorage.getItem('fh_fc_name') || '';
+  var fcCompany = localStorage.getItem('fh_fc_company') || '';
+  
+  if (agentCode && fcName) {
+    /* FC가 있으면 FC 정보로 교체 */
+    var orgEl = document.getElementById('dn_org_name');
+    if (orgEl) orgEl.textContent = fcCompany || '전문 FC';
+    
+    var mgrEl = document.getElementById('dn_manager_name');
+    if (mgrEl) mgrEl.textContent = fcName + ' FC';
+    
+    var rptMgr = document.getElementById('report_manager_name');
+    if (rptMgr) rptMgr.textContent = fcName;
+    
+    var rptOrg = document.getElementById('report_org_name');
+    if (rptOrg) rptOrg.textContent = fcCompany || '전문 FC';
+  }
+})();
+
 setInterval(enableNoteFieldEditing, 2000);
 document.addEventListener('DOMContentLoaded', enableNoteFieldEditing);
 
