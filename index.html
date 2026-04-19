@@ -13308,7 +13308,7 @@ const DIAG_DEMO = DIAG_IS_FIRST ? [
 ];
 
 /* ── 상태 ── */
-let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=0, diagUpKey='';
+let diagSec=0, diagInt=null, diagPaused=false, diagRec=false, diagMic=true, diagCam=false, diagCurPart=1, diagUpKey='';
 
 /* ═══════════════════════════════════════════════════════════
    ★ [BUG-010 FIX 2026-04-11] 크레딧 관리 시스템 완전 재설계
@@ -15348,8 +15348,8 @@ function diagBuildNotes() {
 <div id="dnWrap">
   <div id="dnTabs">
     <!-- ★ [#12] 탭 명칭 축약 / [#4] 원페이지 상담노트 뒤로 이동 -->
-    <button class="dnt active" onclick="dnGo(0)">📋 표지</button>
-    <button class="dnt" onclick="dnGo(1)">👤 인적</button>
+    <button class="dnt" onclick="dnGo(0)">📋 표지</button>
+    <button class="dnt active" onclick="dnGo(1)">👤 인적</button>
     <button class="dnt" onclick="dnGo(2)">💭 고민</button>
     <button class="dnt" onclick="dnGo(3)">💰 수지</button>
     <button class="dnt" onclick="dnGo(4)">🏦 자산</button>
@@ -17732,6 +17732,30 @@ function diagParseAiSpeech(aiText) {
     }
   } catch(e) { console.warn('[v14 E4-1]', e.message); }
 
+  /* ★ 0~4단계 탭 자동 이동 — 발화 키워드 감지 */
+  try {
+    var _cs = window._currentNoteStage || 0;
+    if (_cs <= 1 && /성함|이름.*어떻게|시간.*괜찮|시작하겠습니다|인적사항/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(1);
+      window._currentNoteStage = 1;
+    }
+    if (_cs <= 2 && /경제적.*고민|경제적.*관심|고민.*관심|고민이.*무엇|걱정.*무엇/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(2);
+      window._currentNoteStage = 2;
+    }
+    if (_cs <= 3 && /실수령액|세후.*수입|한.*달.*수입|수입지출|월급|월수입/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(3);
+      window._currentNoteStage = 3;
+    }
+    if (_cs <= 4 && /예적금|청약통장|연금.*적립|투자.*자산|부동산.*자가|자산부채/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(4);
+      window._currentNoteStage = 4;
+    }
+    if (_cs <= 5 && /집.*그릴|금융집짓기|기초공사|보험.*기초|저축.*기둥|투자.*지붕/.test(t)) {
+      if (typeof dnGo === 'function') dnGo(5);
+      window._currentNoteStage = 5;
+    }
+  } catch(e) {}
   /* ★ 6~9단계 탭 자동 이동 — 5단계 이후에만 작동 */
   try {
     var _curStage = window._currentNoteStage || 0;
