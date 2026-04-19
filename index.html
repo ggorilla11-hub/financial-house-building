@@ -18222,7 +18222,8 @@ function diagAutoFillNote(userText) {
           stage: curStage,
           aiOffer: offer.aiText,
           userPhone: (typeof D !== 'undefined' && D.phone) || '',
-          userEmail: (typeof D !== 'undefined' && D.email) || ''
+          userEmail: (typeof D !== 'undefined' && D.email) || '',
+          agentCode: localStorage.getItem('fh_agent_code') || ''
         };
         
         console.log('[v14 E4-2 매니저 알림 요청]', requestData);
