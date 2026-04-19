@@ -2583,11 +2583,19 @@ html{visibility:visible !important;}
 /* ★ 새 초화면 CTA → 결제 플랜 화면으로 이동 */
 function newLandingCTA() {
   document.getElementById('new-landing').style.display = 'none';
+  var appEl = document.getElementById('main-app');
+  if (appEl) appEl.style.display = '';
   if (typeof mpOpenSubscribe === 'function') {
     mpOpenSubscribe();
   } else if (typeof mpOpen === 'function') {
     mpOpen();
   }
+}
+/* ★ 결제 취소 시 새 초화면 복원 */
+function backToNewLanding() {
+  var appEl = document.getElementById('main-app');
+  if (appEl) appEl.style.display = 'none';
+  document.getElementById('new-landing').style.display = '';
 }
 </script>
 
@@ -2981,7 +2989,7 @@ function newLandingCTA() {
 
 
 
-<div class="app">
+<div class="app" id="main-app" style="display:none;">
 
 
 <div class="header">
@@ -7997,6 +8005,8 @@ function mpOpenSubscribe() {
   }
 }
 function mpCloseSubscribe() {
+  /* ★ 결제 취소 시 새 초화면 복원 */
+  if (typeof backToNewLanding === 'function') backToNewLanding();
   document.getElementById('mp-sub-bg').classList.remove('mp-sub-open');
   document.getElementById('mp-sub-modal').classList.remove('mp-sub-open');
 }
