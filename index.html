@@ -11265,6 +11265,8 @@ function mpTab(idx, btn) {
   if(idx === 4) mpInitDesire();
   if(idx === 1) mpInitHistory();
   if(idx === 6 && typeof mvpRenderRecordings === 'function') mvpRenderRecordings();
+  /* ★ FC관리 탭 초기화 */
+  if(idx === 7) fcMgmtInit();
 
   /* AI진단탭(2) 전용: 높이 체인 확보 */
   var mpContent = document.querySelector('.mp-content');
@@ -19686,6 +19688,56 @@ function enableNoteFieldEditing() {
 
 /* 주기적으로 체크 (새로 생성되는 필드 대응) */
 
+
+/* ═══ FC관리 탭 함수 ═══ */
+function fcMgmtInit() {
+  var name = localStorage.getItem('fh_fc_name') || '전문가 FC';
+  var phone = localStorage.getItem('fh_fc_phone') || '';
+  var company = localStorage.getItem('fh_fc_company') || '';
+  var code = localStorage.getItem('fh_agent_code') || '';
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  
+  var el = function(id) { return document.getElementById(id); };
+  if (el('fc-mgmt-name')) el('fc-mgmt-name').textContent = name;
+  if (el('fc-mgmt-company')) el('fc-mgmt-company').textContent = company || '소속 미입력';
+  if (el('fc-mgmt-url')) el('fc-mgmt-url').textContent = url;
+  if (el('fc-mgmt-edit-name')) el('fc-mgmt-edit-name').value = name;
+  if (el('fc-mgmt-edit-phone')) el('fc-mgmt-edit-phone').value = phone;
+  if (el('fc-mgmt-edit-company')) el('fc-mgmt-edit-company').value = company;
+  
+  var requests = [];
+  try { requests = JSON.parse(localStorage.getItem('fh_manager_requests') || '[]'); } catch(e) {}
+  if (el('fc-mgmt-connect')) el('fc-mgmt-connect').textContent = requests.length;
+}
+function fcMgmtCopyLink() {
+  var code = localStorage.getItem('fh_agent_code') || '';
+  var url = 'https://financial-house-building.vercel.app?agent=' + code;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url);
+    showToast('✅ 링크 복사 완료! 고객에게 보내세요.');
+  }
+}
+function fcMgmtSaveProfile() {
+  var name = (document.getElementById('fc-mgmt-edit-name')||{}).value || '';
+  var phone = (document.getElementById('fc-mgmt-edit-phone')||{}).value || '';
+  var company = (document.getElementById('fc-mgmt-edit-company')||{}).value || '';
+  if (!name.trim()) { showToast('성명을 입력해 주세요.'); return; }
+  localStorage.setItem('fh_fc_name', name.trim());
+  localStorage.setItem('fh_fc_phone', phone.trim());
+  localStorage.setItem('fh_fc_company', company.trim());
+  showToast('✅ 프로필 저장 완료!');
+  fcMgmtInit();
+}
+/* FC관리 탭 자동 표시 (전문가 플랜일 때) */
+(function() {
+  var plan = localStorage.getItem('fh_plan') || '';
+  var isAgent = localStorage.getItem('fh_is_agent') === '1';
+  if (plan.startsWith('expert') || isAgent) {
+    var tab = document.getElementById('fc-mgmt-tab');
+    if (tab) tab.style.display = '';
+  }
+})();
+
 /* ★ 상담노트/검진결과표 담당자 동적 표시 */
 (function() {
   var agentCode = localStorage.getItem('fh_agent_code') || '';
@@ -20903,6 +20955,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
     <button class="mp-tab-btn" onclick="mpTab(3,this)" style="display:none">📚 콘텐츠</button>
     <button class="mp-tab-btn" onclick="mpTab(4,this)" style="display:none">🗺️ DESIRE</button>
     <button class="mp-tab-btn" onclick="mpTab(5,this)" style="display:none">📋 서비스</button>
+    <button class="mp-tab-btn" onclick="mpTab(7,this)" id="fc-mgmt-tab" style="display:none;">👔 FC관리</button>
     <button class="mp-tab-btn" onclick="mpTab(6,this)">👤 마이페이지</button>
   </div>
 
@@ -21817,6 +21870,103 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
     <!-- ══════════════════════════════════
          탭6: 계정
     ══════════════════════════════════ -->
+    <!-- ═══ 탭7: FC관리 (전문가 전용) ═══ -->
+    <div class="mp-panel" id="mp-panel-7" style="padding:0;">
+      <div style="flex:1;overflow-y:auto;background:#f5f2eb;">
+        
+        <!-- FC 헤더 -->
+        <div style="background:linear-gradient(135deg,var(--navy),#1a3260);padding:16px;border-bottom:3px solid var(--gold);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--navy);">FC</div>
+            <div>
+              <div style="font-size:14px;font-weight:900;color:#fff;" id="fc-mgmt-name">전문가 FC</div>
+              <div style="font-size:10px;color:var(--gold2);" id="fc-mgmt-company">소속 회사</div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="background:rgba(201,151,42,.2);border:1px solid rgba(201,151,42,.4);border-radius:20px;padding:3px 10px;font-size:9px;color:var(--gold2);font-weight:700;" id="fc-mgmt-plan">FC 브론즈</div>
+          </div>
+        </div>
+
+        <!-- 통계 카드 -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;">
+          <div style="background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="font-size:22px;font-weight:900;color:var(--navy);" id="fc-mgmt-links">0</div>
+            <div style="font-size:9px;color:var(--gray);margin-top:2px;">링크 공유</div>
+          </div>
+          <div style="background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="font-size:22px;font-weight:900;color:var(--green);" id="fc-mgmt-done">0</div>
+            <div style="font-size:9px;color:var(--gray);margin-top:2px;">검진 완료</div>
+          </div>
+          <div style="background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid rgba(220,38,38,.2);">
+            <div style="font-size:22px;font-weight:900;color:#DC2626;" id="fc-mgmt-connect">0</div>
+            <div style="font-size:9px;color:var(--gray);margin-top:2px;">연결 요청</div>
+          </div>
+        </div>
+
+        <!-- 트로이 목마 링크 -->
+        <div style="margin:0 12px 12px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+          <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px;">🔗 나의 전용 고객 링크</div>
+          <div style="font-size:9px;color:var(--gray);margin-bottom:8px;">이 링크로 접속한 고객의 리포트에 내 이름이 표시됩니다</div>
+          <div id="fc-mgmt-url" style="background:#f5f2eb;border-radius:8px;padding:10px;font-size:10px;color:var(--navy);word-break:break-all;margin-bottom:8px;border:1px solid rgba(201,151,42,.2);">
+            로딩 중...
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+            <button onclick="fcMgmtCopyLink()" style="padding:10px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(201,151,42,.08);color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn);">📋 복사</button>
+            <button onclick="fcShareKakao()" style="padding:10px;border-radius:8px;border:none;background:#FEE500;color:#333;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn);">💬 카톡</button>
+            <button onclick="fcShareSMS()" style="padding:10px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fn);">📱 문자</button>
+          </div>
+        </div>
+
+        <!-- 고객에게 알림톡 발송 -->
+        <div style="margin:0 12px 12px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+          <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px;">📤 고객에게 카톡 알림톡</div>
+          <div style="display:flex;gap:6px;">
+            <input id="fc-mgmt-send-phone" type="tel" placeholder="010-0000-0000"
+              style="flex:1;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;">
+            <button onclick="fcSendKakao()" style="padding:10px 16px;border-radius:8px;border:none;background:var(--gold);color:var(--navy);font-size:12px;font-weight:900;cursor:pointer;font-family:var(--fn);">발송</button>
+          </div>
+        </div>
+
+        <!-- 고객 리스트 -->
+        <div style="margin:0 12px 12px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:900;color:var(--navy);">📋 나의 고객</div>
+            <div style="font-size:10px;color:var(--gray);" id="fc-mgmt-client-count">0 / 100명</div>
+          </div>
+          <div id="fc-mgmt-client-list" style="min-height:60px;">
+            <div style="text-align:center;padding:20px;color:var(--gray);font-size:11px;">
+              아직 고객이 없습니다.<br>위의 전용 링크를 고객에게 보내보세요!
+            </div>
+          </div>
+        </div>
+
+        <!-- 핫 리드 -->
+        <div style="margin:0 12px 12px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid rgba(220,38,38,.15);">
+          <div style="font-size:12px;font-weight:900;color:#DC2626;margin-bottom:8px;">🔔 연결 요청 고객 (핫 리드)</div>
+          <div id="fc-mgmt-hotlead-list">
+            <div style="text-align:center;padding:20px;color:var(--gray);font-size:11px;">
+              아직 연결 요청이 없습니다.<br>고객이 진단 중 전문가 연결을 요청하면 여기에 표시됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- FC 프로필 관리 -->
+        <div style="margin:0 12px 20px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+          <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px;">⚙️ 프로필 관리</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input id="fc-mgmt-edit-name" type="text" placeholder="성명"
+              style="padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;">
+            <input id="fc-mgmt-edit-phone" type="tel" placeholder="연락처"
+              style="padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;">
+            <input id="fc-mgmt-edit-company" type="text" placeholder="소속 회사"
+              style="padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-family:var(--fn);outline:none;">
+            <button onclick="fcMgmtSaveProfile()" style="padding:10px;background:var(--navy);color:#fff;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:var(--fn);">프로필 저장</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="mp-panel" id="mp-panel-6">
       <div class="mp-profile mp-fade-in">
         <div class="mp-profile-av" id="mp-profile-av">?</div>
