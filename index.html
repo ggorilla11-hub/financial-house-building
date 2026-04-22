@@ -2815,6 +2815,176 @@ html{visibility:visible !important;}
   font-size: 10px !important;
   font-weight: 500 !important;
 }
+
+/* ═══════════════════════════════════════════
+   AI진단 새 디자인 전체 CSS (ai_consultation_v1.html)
+   자문역 직접 삽입 — 모든 규칙 #mp-panel-2 스코프
+   ═══════════════════════════════════════════ */
+
+/* CSS 변수 (mp-panel-2 내부에서만 적용) */
+#mp-panel-2 {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f7f7f5;
+  --color-background-tertiary: #f0f0ec;
+  --color-background-info: #E6F1FB;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #5F5E5A;
+  --color-text-tertiary: #888780;
+  --color-border-tertiary: rgba(0,0,0,0.1);
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --brand-blue: #185FA5;
+  --brand-red: #C8102E;
+}
+
+/* 전체 배경 */
+#mp-panel-2 { background: var(--color-background-secondary) !important; }
+#mp-panel-2 #diagScreenA { background: var(--color-background-secondary) !important; }
+#mp-panel-2 #diagScreenB { background: var(--color-background-secondary) !important; display: flex !important; flex-direction: column !important; }
+
+/* 상단바 — 차콜 */
+#mp-panel-2 .c-topbar {
+  background: #1a1a1a !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+#mp-panel-2 .c-topbar * { color: white !important; }
+#mp-panel-2 .c-timer { color: #F5E6B8 !important; font-size: 16px !important; font-weight: 500 !important; }
+
+/* 컨트롤 버튼 */
+#mp-panel-2 .c-topbar button,
+#mp-panel-2 .c-topbar .c-tbtn {
+  background: rgba(255,255,255,0.08) !important;
+  border: 0.5px solid rgba(255,255,255,0.15) !important;
+  border-radius: 6px !important;
+  padding: 5px 8px !important;
+  font-size: 10px !important;
+  color: white !important;
+}
+#mp-panel-2 .c-tbtn-end {
+  background: rgba(200,16,46,0.2) !important;
+  border-color: rgba(200,16,46,0.4) !important;
+  color: #F09595 !important;
+}
+
+/* 상담노트 탭 — pill 스타일 */
+#mp-panel-2 .dn-tab,
+#mp-panel-2 [class*="dnTab"] {
+  background: white !important;
+  border: 0.5px solid var(--color-border-tertiary) !important;
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+  font-size: 10px !important;
+  color: var(--color-text-secondary) !important;
+}
+#mp-panel-2 .dn-tab.active,
+#mp-panel-2 .dn-tab-active,
+#mp-panel-2 [class*="dnTab"].active {
+  background: var(--brand-blue) !important;
+  color: white !important;
+  border-color: var(--brand-blue) !important;
+}
+
+/* 자막/채팅 영역 */
+#mp-panel-2 #diagStt,
+#mp-panel-2 .c-stt {
+  background: var(--color-background-secondary) !important;
+  padding: 14px !important;
+}
+
+/* AI 버블 */
+#mp-panel-2 .c-stt-bubble {
+  background: var(--color-background-secondary) !important;
+  color: var(--color-text-primary) !important;
+  border: none !important;
+  border-radius: 12px 12px 12px 2px !important;
+  padding: 8px 11px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+/* 고객 버블 */
+#mp-panel-2 .c-stt-msg.user .c-stt-bubble {
+  background: var(--brand-blue) !important;
+  color: white !important;
+  border-radius: 12px 12px 2px 12px !important;
+}
+
+/* AI 아바타 */
+#mp-panel-2 .c-stt-av {
+  background: var(--color-background-info) !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+}
+
+/* 입력바 */
+#mp-panel-2 .c-inp,
+#mp-panel-2 #diagTextInp {
+  background: var(--color-background-secondary) !important;
+  border: 0.5px solid var(--color-border-tertiary) !important;
+  border-radius: 999px !important;
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* 전송 버튼 */
+#mp-panel-2 .c-send {
+  background: var(--brand-blue) !important;
+  border-radius: 50% !important;
+  width: 38px !important;
+  height: 38px !important;
+  border: none !important;
+}
+
+/* 입력바 컨테이너 */
+#mp-panel-2 .c-inp-wrap {
+  background: white !important;
+  border-top: 0.5px solid var(--color-border-tertiary) !important;
+  padding: 10px 14px !important;
+}
+
+/* 비디오/카메라 바 숨김 */
+#mp-panel-2 .c-video-bar { display: none !important; }
+
+/* 상담노트 카드 */
+#mp-panel-2 .dn-card {
+  background: white !important;
+  border: 0.5px solid var(--color-border-tertiary) !important;
+  border-radius: 12px !important;
+}
+
+/* 상담노트 필드 */
+#mp-panel-2 .dn-field {
+  border-bottom: 0.5px solid var(--color-border-tertiary) !important;
+}
+
+/* LIVE 점 애니메이션 */
+@keyframes livePulsePhase1 {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* 상담 배너 */
+#mp-panel-2 .diag-banner {
+  background: var(--color-background-info) !important;
+  border: none !important;
+}
+#mp-panel-2 .diag-banner-title {
+  color: var(--brand-blue) !important;
+}
+
+/* 상담 시작 버튼 */
+#mp-panel-2 .start-btn {
+  background: var(--brand-blue) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+}
+
 </style>
 
   
