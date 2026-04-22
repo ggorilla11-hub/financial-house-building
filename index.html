@@ -10999,7 +10999,7 @@ function restoreChatLogUI(data) {
   
   /* ★ [BUG-003 FIX 2026-04-10] 음성 모드(diagStt)에서도 복원되도록 가드 완화 */
   var sttArea = document.getElementById('diagStt');
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   
   // 둘 다 없으면 진단 화면 미진입 — 종료
   if(!sttArea && !chatLog) return;
@@ -11274,7 +11274,7 @@ function collectConversationHistory() {
   }
   
   // 2) 텍스트 모드: dn_chat_log에서 수집
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(chatLog) {
     var bubbles = chatLog.querySelectorAll('[data-role]');
     bubbles.forEach(function(b) {
@@ -11338,19 +11338,33 @@ async function startTextConsultWithHistory(history) {
 }
 
 function addToChatLog(role, text) {
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(!chatLog || !text) return;
   var isUser = (role === 'user');
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
   bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
   bubble.setAttribute('data-text', text);
-  bubble.innerHTML =
-    '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-      (isUser ? '👤 고객' : '🤖 머니야') + '</div>' +
-    '<div class="dn-bubble-text" style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-      (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
-      text.replace(/</g, '&lt;') + '</div>';
+  var _now = new Date();
+  var _h = _now.getHours();
+  var _m = String(_now.getMinutes()).padStart(2, '0');
+  var _ts = (_h < 12 ? '오전 ' : '오후 ') + (_h % 12 || 12) + ':' + _m;
+  var _aiSvg = '<svg width="14" height="14" viewBox="0 0 100 115"><path d="M50 10 L85 30 L85 68 L62 87 L58 105 L50 90 L15 68 L15 30 Z" fill="#185FA5"/><text x="50" y="52" font-family="sans-serif" font-size="22" font-weight="700" fill="white" text-anchor="middle">AI</text></svg>';
+  if (isUser) {
+    bubble.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;justify-content:flex-end;';
+    bubble.innerHTML =
+      '<div style="max-width:75%;">' +
+        '<div style="padding:8px 11px;font-size:12px;color:#ffffff;line-height:1.5;border-radius:12px 12px 2px 12px;background:#185FA5;">' + text.replace(/</g, '&lt;') + '</div>' +
+        '<div style="font-size:9px;color:#888780;margin-top:3px;padding-right:3px;text-align:right;">' + _ts + '</div>' +
+      '</div>';
+  } else {
+    bubble.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+    bubble.innerHTML =
+      '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;">' + _aiSvg + '</div>' +
+      '<div style="flex:1;">' +
+        '<div style="padding:8px 11px;font-size:12px;color:#1a1a1a;line-height:1.5;border-radius:12px 12px 12px 2px;background:#f7f7f5;">' + text.replace(/</g, '&lt;') + '</div>' +
+        '<div style="font-size:9px;color:#888780;margin-top:3px;padding-left:3px;">' + _ts + '</div>' +
+      '</div>';
+  }
   chatLog.appendChild(bubble);
   chatLog.scrollTop = chatLog.scrollHeight;
   var ph = chatLog.querySelector('div[style*="text-align:center"]');
@@ -11430,7 +11444,7 @@ async function sendTextConsultMessage(txt) {
     var data = await response.json();
 
     // 로딩 메시지 제거 후 실제 응답 표시
-    var chatLog = document.getElementById('dn_chat_log');
+    var chatLog = document.getElementById('dn_chat');
     if(chatLog) {
       var lastBubble = chatLog.lastElementChild;
       if(lastBubble && lastBubble.textContent.trim() === '...') lastBubble.remove();
@@ -11451,7 +11465,7 @@ async function sendTextConsultMessage(txt) {
     }
   } catch(e) {
     console.error('[텍스트 상담] 오류:', e);
-    var chatLog2 = document.getElementById('dn_chat_log');
+    var chatLog2 = document.getElementById('dn_chat');
     if(chatLog2) {
       var last = chatLog2.lastElementChild;
       if(last && last.textContent.trim() === '...') last.remove();
@@ -13558,7 +13572,7 @@ function startTrainSession() {
 
 function _trainObserveStart() {
   // MutationObserver로 대화록 변화 감지
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(!chatLog) return;
   var observer = new MutationObserver(function(muts) {
     muts.forEach(function(m) {
@@ -15510,21 +15524,35 @@ async function diagConnectVoice(isPaid) {
         diagAddSTT(role, displayText, null);
 
         /* 대화록 탭(dnp9)에도 실시간 기록 */
-        var chatLog = document.getElementById('dn_chat_log');
+        var chatLog = document.getElementById('dn_chat');
         if(chatLog) {
           var isUser = (role === 'user');
           var bubble = document.createElement('div');
-          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:4px;';
+          bubble.style.cssText = 'display:flex;flex-direction:column;margin-bottom:10px;';
           bubble.setAttribute('data-role', isUser ? 'user' : 'ai');
           bubble.setAttribute('data-text', displayText);
-          bubble.innerHTML =
-            '<div style="font-size:9px;color:' + (isUser ? '#8896B0' : '#C9972A') + ';margin-bottom:2px;' + (isUser ? 'text-align:right;' : '') + '">' +
-              (isUser ? '👤 고객' : '🤖 머니야') +
-            '</div>' +
-            '<div style="max-width:87%;padding:8px 11px;border-radius:12px;font-size:11.5px;line-height:1.6;align-self:' + (isUser ? 'flex-end' : 'flex-start') + ';' +
-              (isUser ? 'background:#e8f0fe;color:#0B1D3A;border-bottom-right-radius:3px;' : 'background:#0B1D3A;color:#fff;border-bottom-left-radius:3px;') + '">' +
-              displayText.replace(/</g, '&lt;') +
-            '</div>';
+          /* ★ [Phase 1] 타임스탬프 (오전/오후 HH:MM) */
+          var _now = new Date();
+          var _h = _now.getHours();
+          var _m = String(_now.getMinutes()).padStart(2, '0');
+          var _ts = (_h < 12 ? '오전 ' : '오후 ') + (_h % 12 || 12) + ':' + _m;
+          var _aiSvg = '<svg width="14" height="14" viewBox="0 0 100 115"><path d="M50 10 L85 30 L85 68 L62 87 L58 105 L50 90 L15 68 L15 30 Z" fill="#185FA5"/><text x="50" y="52" font-family="sans-serif" font-size="22" font-weight="700" fill="white" text-anchor="middle">AI</text></svg>';
+          if (isUser) {
+            bubble.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;justify-content:flex-end;';
+            bubble.innerHTML =
+              '<div style="max-width:75%;">' +
+                '<div style="padding:8px 11px;font-size:12px;color:#ffffff;line-height:1.5;border-radius:12px 12px 2px 12px;background:#185FA5;">' + displayText.replace(/</g, '&lt;') + '</div>' +
+                '<div style="font-size:9px;color:#888780;margin-top:3px;padding-right:3px;text-align:right;">' + _ts + '</div>' +
+              '</div>';
+          } else {
+            bubble.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+            bubble.innerHTML =
+              '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;">' + _aiSvg + '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="padding:8px 11px;font-size:12px;color:#1a1a1a;line-height:1.5;border-radius:12px 12px 12px 2px;background:#f7f7f5;">' + displayText.replace(/</g, '&lt;') + '</div>' +
+                '<div style="font-size:9px;color:#888780;margin-top:3px;padding-left:3px;">' + _ts + '</div>' +
+              '</div>';
+          }
           chatLog.appendChild(bubble);
           chatLog.scrollTop = chatLog.scrollHeight;
           var placeholder = chatLog.querySelector('div[style*="text-align:center"]');
@@ -17597,10 +17625,11 @@ function diagAddSTT(role, text, tag) {
   const _h=_now.getHours();
   const _m=String(_now.getMinutes()).padStart(2,'0');
   const _ts=(_h<12?'오전 ':'오후 ')+(_h%12||12)+':'+_m;
+  var _aiSvg='<svg width="14" height="14" viewBox="0 0 100 115"><path d="M50 10 L85 30 L85 68 L62 87 L58 105 L50 90 L15 68 L15 30 Z" fill="#185FA5"/><text x="50" y="52" font-family="sans-serif" font-size="22" font-weight="700" fill="white" text-anchor="middle">AI</text></svg>';
   div.innerHTML=isAI
-    ?`<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖';this.parentElement.style.background='#185FA5';this.parentElement.style.color='#fff';this.parentElement.style.fontSize='13px'"></div>
-     <div style="flex:1;max-width:78%"><div style="padding:8px 11px;font-size:12px;color:#1a1a1a;line-height:1.5;border-radius:12px 12px 12px 2px;background:#f7f7f5">${text}</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-left:3px">${_ts}</div>${tag?`<div style="font-size:9.5px;color:#185FA5;margin-top:2px;padding-left:3px">💡 ${tag}</div>`:''}</div>`
-    :`<div style="max-width:75%"><div style="padding:8px 11px;font-size:12px;color:#ffffff;line-height:1.5;border-radius:12px 12px 2px 12px;background:#185FA5">${text}</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-right:3px;text-align:right">${_ts}</div></div>`;
+    ?'<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;">'+_aiSvg+'</div>'+
+     '<div style="flex:1;max-width:78%"><div style="padding:8px 11px;font-size:12px;color:#1a1a1a;line-height:1.5;border-radius:12px 12px 12px 2px;background:#f7f7f5">'+text+'</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-left:3px">'+_ts+'</div>'+(tag?'<div style="font-size:9.5px;color:#185FA5;margin-top:2px;padding-left:3px">💡 '+tag+'</div>':'')+'</div>'
+    :'<div style="max-width:75%"><div style="padding:8px 11px;font-size:12px;color:#ffffff;line-height:1.5;border-radius:12px 12px 2px 12px;background:#185FA5">'+text+'</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-right:3px;text-align:right">'+_ts+'</div></div>';
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
   
@@ -17802,7 +17831,7 @@ function diagEndConsult() {
   }
 
   // 채팅 로그에도 표시
-  var chatLog = document.getElementById('dn_chat_log');
+  var chatLog = document.getElementById('dn_chat');
   if(chatLog) {
     var endDiv = document.createElement('div');
     endDiv.innerHTML = endBannerHTML;
@@ -20839,7 +20868,7 @@ document.addEventListener('DOMContentLoaded', enableNoteFieldEditing);
 // 대화록 저장 (상담 종료 시 호출)
 function saveChatHistory() {
   try {
-    var chatLog = document.getElementById('dn_chat_log') || document.getElementById('dn_chat');
+    var chatLog = document.getElementById('dn_chat');
     var chatText = chatLog ? chatLog.innerText : '';
     if (!chatText || chatText.trim().length < 10) return;
 
