@@ -2688,8 +2688,132 @@ html{visibility:visible !important;}
 #mp-panel-2 .c-inp::placeholder { color: #888780 !important; }
 #mp-panel-2 .c-inp:focus { border-color: #185FA5 !important; }
 #mp-panel-2 .c-inp-row {
-  background: #f7f7f5 !important;
-  padding: 8px 10px !important;
+  background: #ffffff !important;
+  padding: 10px 14px !important;
+  border-top: 0.5px solid rgba(0,0,0,0.1) !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Phase 1: AI진단 상담화면(#mp-panel-2 #diagScreenB) 디테일
+   건 ② 입력바 전송버튼 + 힌트
+   건 ③ 상단바 디테일(LIVE/타이머/버튼)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ───── 건 ② 전송버튼: 원형 + 브랜드블루 + SVG ───── */
+#mp-panel-2 .c-send {
+  flex-shrink: 0 !important;
+  width: 40px !important;
+  height: 40px !important;
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  font-size: 0 !important;  /* 혹시 남은 text 숨김 */
+  transition: background 0.15s !important;
+}
+#mp-panel-2 .c-send:hover { background: #0F4A85 !important; }
+#mp-panel-2 .c-send:active { background: #0F4A85 !important; transform: scale(0.96) !important; }
+#mp-panel-2 .c-send svg { display: block !important; }
+
+/* ───── 건 ② 음성 진행 힌트 ───── */
+#mp-panel-2 .c-inp-hint {
+  background: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 0 14px 10px !important;
+  border-top: none !important;
+}
+#mp-panel-2 .c-inp-hint-dot {
+  width: 5px !important;
+  height: 5px !important;
+  background: #C8102E !important;
+  border-radius: 50% !important;
+  animation: livePulsePhase1 1.5s ease-in-out infinite;
+}
+#mp-panel-2 .c-inp-hint span:last-child {
+  font-size: 10px !important;
+  color: #888780 !important;
+  font-weight: 400 !important;
+}
+@keyframes livePulsePhase1 {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ───── 건 ③ 상단바(.c-topbar) 디테일 조정 ───── */
+#mp-panel-2 .c-topbar {
+  padding: 10px 14px !important;
+  align-items: center !important;
+}
+#mp-panel-2 .c-topbar .c-live {
+  gap: 6px !important;
+}
+#mp-panel-2 .c-topbar .c-live-dot {
+  width: 7px !important;
+  height: 7px !important;
+  background: #3B6D11 !important;
+  animation: livePulsePhase1 1.5s ease-in-out infinite;
+}
+#mp-panel-2 .c-topbar .c-live-txt {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.2px !important;
+}
+#mp-panel-2 .c-topbar .c-timer {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #F5E6B8 !important;
+  letter-spacing: 0.5px !important;
+  font-variant-numeric: tabular-nums;
+  line-height: 1 !important;
+}
+#mp-panel-2 #diagSessionInfo {
+  font-size: 9px !important;
+  color: rgba(255,255,255,0.55) !important;
+  margin-top: 2px !important;
+}
+
+/* 상단바 버튼들: 일시정지/텍스트전환/종료 */
+#mp-panel-2 .c-top-btns {
+  gap: 4px !important;
+  align-items: center !important;
+}
+#mp-panel-2 .c-tbtn-pause {
+  background: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+  border: 0.5px solid rgba(255,255,255,0.15) !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+#mp-panel-2 #diagTextSwitchBtn {
+  background: rgba(24,95,165,0.4) !important;
+  color: #ffffff !important;
+  border: 0.5px solid rgba(24,95,165,0.6) !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+#mp-panel-2 .c-tbtn-end {
+  background: rgba(200,16,46,0.2) !important;
+  color: #F09595 !important;
+  border: 0.5px solid rgba(200,16,46,0.4) !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
 }
 </style>
 
@@ -17467,12 +17591,16 @@ function diagAddSTT(role, text, tag) {
   const area=document.getElementById('diagStt'); if(!area) return;
   const isAI=role==='ai';
   const div=document.createElement('div');
-  div.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:flex-start'+(isAI?'':';flex-direction:row-reverse');
+  div.style.cssText='display:flex;gap:8px;margin-bottom:10px;align-items:flex-start'+(isAI?'':';justify-content:flex-end');
+  /* ★ [Phase 1 타임스탬프] 현재 시각 오전/오후 형식 생성 */
+  const _now=new Date();
+  const _h=_now.getHours();
+  const _m=String(_now.getMinutes()).padStart(2,'0');
+  const _ts=(_h<12?'오전 ':'오후 ')+(_h%12||12)+':'+_m;
   div.innerHTML=isAI
-    ?`<div style="width:19px;height:19px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖'"></div>
-     <div><div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:#1a1a1a;line-height:1.45;border-radius:0 7px 7px 7px;background:#ffffff;border:0.5px solid rgba(0,0,0,0.1)">${text}</div>${tag?`<div style="font-size:7.5px;color:#185FA5;margin-top:1px;padding-left:2px">💡 ${tag}</div>`:''}</div>`
-    :`<div style="width:19px;height:19px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>
-     <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:#0C447C;line-height:1.45;border-radius:7px 0 7px 7px;background:#E6F1FB;border:0.5px solid rgba(24,95,165,0.2)">${text}</div>`;
+    ?`<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖';this.parentElement.style.background='#185FA5';this.parentElement.style.color='#fff';this.parentElement.style.fontSize='13px'"></div>
+     <div style="flex:1;max-width:78%"><div style="padding:8px 11px;font-size:12px;color:#1a1a1a;line-height:1.5;border-radius:12px 12px 12px 2px;background:#f7f7f5">${text}</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-left:3px">${_ts}</div>${tag?`<div style="font-size:9.5px;color:#185FA5;margin-top:2px;padding-left:3px">💡 ${tag}</div>`:''}</div>`
+    :`<div style="max-width:75%"><div style="padding:8px 11px;font-size:12px;color:#ffffff;line-height:1.5;border-radius:12px 12px 2px 12px;background:#185FA5">${text}</div><div style="font-size:9px;color:#888780;margin-top:3px;padding-right:3px;text-align:right">${_ts}</div></div>`;
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
   
@@ -22486,7 +22614,12 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
           </div>
           <div class="c-inp-row">
             <input class="c-inp" id="diagTextInp" placeholder="텍스트로 입력..." onkeypress="if(event.key==='Enter')diagSendText()">
-            <div class="c-send" onclick="diagSendText()">➤</div>
+            <div class="c-send" onclick="diagSendText()" aria-label="전송"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+          </div>
+          <!-- ★ [Phase 1] 음성 대화 진행 힌트 -->
+          <div class="c-inp-hint">
+            <span class="c-inp-hint-dot"></span>
+            <span>음성 대화 진행 중 · 텍스트 입력 시에도 그대로 반영됩니다</span>
           </div>
         </div>
 
