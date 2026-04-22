@@ -2439,6 +2439,258 @@ html{visibility:visible !important;}
 }
 
 /* ━━━ AI진단탭 V4 CSS 끝 ━━━ */
+
+/* ═══ 시뮬레이터 시각 요소 숨김 (2차 리뉴얼) ═══
+   - main-app 내부 시뮬레이터 HTML은 JS 함수 458개 의존성 때문에
+     물리적으로 제거 불가 → CSS display:none으로 시각만 차단
+   - mp-panel-0~6 (진단안내/AI진단/콘텐츠/마이페이지 등)은 영향 없음
+*/
+#main-app > .header { display:none !important; }
+#main-app > .blueprint { display:none !important; }
+#main-app > .one-scroll { display:none !important; }
+#main-app > .prog-row { display:none !important; }
+#main-app > .sec { display:none !important; }
+.macro-toggle { display:none !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   2-1단계: 진단안내(#mp-panel-0) guide_v4 톤 오버라이드
+   - 모든 규칙은 #mp-panel-0 스코프로 한정 → 다른 패널/화면 영향 없음
+   - HTML/JS 변경 없이 색상·타이포·카드 룩만 교체
+   - 기존 mpc/doc-*/start-btn 원본 CSS를 덮어씀 (삭제 아님)
+   ═══════════════════════════════════════════════════════════ */
+
+/* 패널 배경 & 컨테이너 */
+#mp-panel-0 #mvp-checkup-guide {
+  background: #f7f7f5 !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 타이포 기본 - 시스템 폰트 스택 */
+#mp-panel-0,
+#mp-panel-0 * {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif !important;
+  letter-spacing: -0.2px;
+}
+
+/* ───── 상단 배너: 네이비/골드 → 화이트/브랜드블루 ───── */
+#mp-panel-0 .diag-banner {
+  background: #ffffff !important;
+  border-bottom: 0.5px solid rgba(0,0,0,0.1) !important;
+  box-shadow: none !important;
+  padding: 1.25rem 1.25rem !important;
+}
+#mp-panel-0 .diag-banner::before,
+#mp-panel-0 .diag-banner::after { display: none !important; }
+#mp-panel-0 .diag-banner-av {
+  width: 44px !important; height: 44px !important;
+  background: #E6F1FB !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  font-size: 20px !important;
+}
+#mp-panel-0 .diag-banner-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #1a1a1a !important;
+  margin-bottom: 3px !important;
+}
+#mp-panel-0 .diag-banner-sub {
+  font-size: 12px !important;
+  color: #5F5E5A !important;
+  font-weight: 400 !important;
+}
+
+/* ───── 카드: 네이비 그림자 → 은은한 보더 ───── */
+#mp-panel-0 .mpc {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  margin: 10px 14px !important;
+  overflow: hidden;
+}
+
+/* ───── 카드 헤더: 네이비 → 화이트 ───── */
+#mp-panel-0 .mpc-hd {
+  background: #ffffff !important;
+  padding: 13px 16px !important;
+  border-bottom: 0.5px solid rgba(0,0,0,0.06) !important;
+}
+#mp-panel-0 .mpc-hd .mpc-icon {
+  color: #185FA5 !important;
+  font-size: 15px !important;
+}
+#mp-panel-0 .mpc-hd .mpc-title {
+  color: #1a1a1a !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+#mp-panel-0 .mpc-hd .mpc-chevron {
+  color: #888780 !important;
+  font-size: 12px !important;
+}
+#mp-panel-0 .mpc-hd .mpc-badge {
+  background: #E6F1FB !important;
+  color: #0C447C !important;
+  font-weight: 500 !important;
+}
+
+/* 어코디언 본체 */
+#mp-panel-0 .accordion-body { background: #ffffff !important; }
+
+/* 어코디언 내부 아이콘 박스(골드 → 연한 블루) */
+#mp-panel-0 .accordion-body div[style*="rgba(201,151,42,.1)"] {
+  background: #E6F1FB !important;
+}
+
+/* ───── 사전 서류 카드 ───── */
+#mp-panel-0 .doc-req-wrap {
+  background: #E6F1FB !important;
+  border: 0.5px solid rgba(24,95,165,0.2) !important;
+  border-radius: 12px !important;
+}
+#mp-panel-0 .doc-req-title { color: #0C447C !important; font-weight: 500 !important; }
+#mp-panel-0 .doc-status-badge {
+  background: #FCE8EC !important;
+  color: #C8102E !important;
+  font-weight: 500 !important;
+}
+#mp-panel-0 .doc-req-card {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.08) !important;
+  border-radius: 10px !important;
+}
+#mp-panel-0 .doc-name { color: #1a1a1a !important; font-weight: 500 !important; }
+#mp-panel-0 .doc-desc { color: #5F5E5A !important; }
+
+/* 다운 버튼: 네이비톤 → 아웃라인 */
+#mp-panel-0 .btn-dl {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.15) !important;
+  color: #1a1a1a !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  padding: 9px !important;
+}
+/* 업로드 버튼: 골드 → 브랜드블루 */
+#mp-panel-0 .btn-up {
+  background: #185FA5 !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  padding: 9px !important;
+}
+#mp-panel-0 .doc-hint { color: #854F0B !important; font-size: 10px !important; }
+
+/* 선택 서류 */
+#mp-panel-0 .doc-opt-title { color: #1a1a1a !important; font-weight: 500 !important; font-size: 11px !important; }
+#mp-panel-0 .doc-opt-name { color: #1a1a1a !important; font-weight: 500 !important; }
+#mp-panel-0 .doc-opt-sub { color: #5F5E5A !important; }
+#mp-panel-0 .doc-opt-btn {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.15) !important;
+  color: #1a1a1a !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+#mp-panel-0 .doc-upload-hint {
+  background: #FEF4E9 !important;
+  border: 0.5px solid #FAC775 !important;
+  color: #854F0B !important;
+  border-radius: 8px !important;
+}
+
+/* ───── 개인정보 동의 체크박스 accent ───── */
+#mp-panel-0 #mvp-privacy-guide {
+  accent-color: #185FA5 !important;
+  width: 18px !important; height: 18px !important;
+}
+
+/* ───── 메인 CTA "시작하기" 버튼: 네이비 그라데이션 → 브랜드블루 ───── */
+#mp-panel-0 .start-btn,
+#mp-panel-0 #mvpStartBtn {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+  box-shadow: none !important;
+  letter-spacing: -0.2px !important;
+  transition: background 0.15s !important;
+}
+#mp-panel-0 .start-btn:active,
+#mp-panel-0 #mvpStartBtn:active { transform: none !important; background: #0F4A85 !important; }
+
+/* ───── KPI/빠른메뉴 (기존 홈은 숨김 상태이므로 스타일은 최소만) ───── */
+#mp-panel-0 .mp-kpi-card {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2-3단계: AI진단(#mp-panel-2) ai_consultation_v1 톤 오버라이드
+   - 모든 규칙은 #mp-panel-2 스코프로 한정 → 다른 패널 영향 없음
+   - HTML/JS 로직 변경 없이 색상·배경·라운드만 교체
+   - 자막 버블의 실제 색상은 diagAddSTT 함수 내 JS 인라인에서 제어됨
+     (이 CSS는 CSS원본 덮어쓰기 역할)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ───── 전체 배경: 네이비 → 뉴트럴 그레이 ───── */
+#mp-panel-2 .consult-wrap { background: #f7f7f5 !important; }
+
+/* ───── 상단바(.c-topbar): 다크 네이비 → 차콜(#1a1a1a) ───── */
+#mp-panel-2 .c-topbar {
+  background: #1a1a1a !important;
+  border-bottom: 0.5px solid rgba(255,255,255,0.1) !important;
+}
+#mp-panel-2 .c-live-txt { color: #ffffff !important; }
+#mp-panel-2 .c-timer { color: #E8B84B !important; }
+
+/* ───── 자막 영역 배경: 뉴트럴로 ───── */
+#mp-panel-2 .c-stt,
+#mp-panel-2 #diagStt { background: #f7f7f5 !important; }
+
+/* ───── 자막 버블 CSS 원본 덮어쓰기 (실제 적용은 JS 인라인) ───── */
+#mp-panel-2 .c-stt-bubble {
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+  border: 0.5px solid rgba(0,0,0,0.1) !important;
+  border-radius: 0 8px 8px 8px !important;
+}
+#mp-panel-2 .c-stt-msg.user .c-stt-bubble {
+  background: #E6F1FB !important;
+  color: #0C447C !important;
+  border: 0.5px solid rgba(24,95,165,0.2) !important;
+  border-radius: 8px 0 8px 8px !important;
+}
+#mp-panel-2 .c-stt-av {
+  background: #185FA5 !important;
+}
+#mp-panel-2 .c-stt-av.user {
+  background: #E6F1FB !important;
+}
+
+/* ───── 입력바(.c-inp): 어두운 반투명 → 라이트 그레이 + 둥근 999px ───── */
+#mp-panel-2 .c-inp {
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0,0,0,0.15) !important;
+  color: #1a1a1a !important;
+  border-radius: 999px !important;
+  padding: 10px 16px !important;
+  font-size: 12px !important;
+}
+#mp-panel-2 .c-inp::placeholder { color: #888780 !important; }
+#mp-panel-2 .c-inp:focus { border-color: #185FA5 !important; }
+#mp-panel-2 .c-inp-row {
+  background: #f7f7f5 !important;
+  padding: 8px 10px !important;
+}
 </style>
 
   
@@ -2505,155 +2757,730 @@ if(location.search.includes('pay_result=')){
 <body>
 
 
-<!-- ═══ 2차 프로젝트: 새 초화면 (AFTER) ═══ -->
+<!-- ═══ 새 초화면 style (scoped to #new-landing) ═══ -->
+<style>
+  #new-landing {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f7f7f5;
+    --color-background-tertiary: #f0f0ec;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #5F5E5A;
+    --color-text-tertiary: #888780;
+    --color-border-tertiary: rgba(0,0,0,0.1);
+    --color-border-secondary: rgba(0,0,0,0.2);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    --brand-blue: #185FA5;
+    --brand-red: #C8102E;
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  #new-landing * { box-sizing: border-box; }
+  #new-landing button { font-family: inherit; }
+  #new-landing details summary::-webkit-details-marker { display: none; }
+  #new-landing details[open] summary span:last-child { transform: rotate(45deg); }
+  #new-landing details summary span:last-child { transition: transform 0.2s; display: inline-block; }
+</style>
+
+<!-- ═══ 2차 프로젝트: 새 초화면 (AFTER / 디자이너 신버전) ═══ -->
 <div id="new-landing" style="position:fixed;inset:0;z-index:997;max-width:430px;margin:0 auto;overflow-y:auto;background:#FAFAF7;font-family:'Noto Sans KR',sans-serif;">
 
-  <!-- 상단 바 -->
-  <div style="background:#0B1D3A;padding:12px 20px;display:flex;align-items:center;gap:10px;">
-    <img src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/AI%EB%A8%B8%EB%8B%88%EC%95%BC%20%EB%A1%9C%EA%B3%A0%ED%99%95%EC%A0%95%EC%95%88.png?alt=media&token=f1902fc0-5594-4916-bf7e-ed81d00ce39f" style="width:32px;height:32px;border-radius:8px;object-fit:cover;" onerror="this.style.display='none'">
-    <div>
-      <div style="color:#fff;font-size:13px;font-weight:900;letter-spacing:0.5px;">AI머니야</div>
-      <div style="color:rgba(255,255,255,.4);font-size:8px;">by 오원트금융연구소</div>
+  <header style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); position: sticky; top: 0; z-index: 50;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg width="32" height="36" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 5 L88 28 L88 70 L65 90 L60 110 L50 92 L12 70 L12 28 Z" fill="#C8102E"/>
+        <text x="50" y="48" font-family="sans-serif" font-size="24" font-weight="700" fill="white" text-anchor="middle">AI</text>
+        <text x="50" y="70" font-family="sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="middle">Moneya</text>
+        <path d="M32 78 Q50 90 68 78" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div style="font-size: 15px; font-weight: 500; line-height: 1.2;">AI 머니야</div>
+        <div style="font-size: 10px; color: var(--color-text-secondary); line-height: 1.3; margin-top: 1px;">오원트금융연구소</div>
+      </div>
     </div>
-    <div style="flex:1"></div>
-  </div>
-
-  <!-- 히어로 -->
-  <div style="padding:28px 24px 16px;text-align:center;">
-    <div style="font-size:14px;color:#6B7280;line-height:2;margin-bottom:16px;letter-spacing:-0.3px;">
-      "재무설계사한테 가면<br><strong style="color:#0B1D3A">상품부터 권하잖아요</strong>"<br>
-      "유튜브 봐도<br><strong style="color:#0B1D3A">뭐가 맞는지 모르겠어요</strong>"
-    </div>
-    <div style="font-size:20px;font-weight:900;color:#0B1D3A;line-height:1.45;margin-bottom:4px;letter-spacing:-0.5px;">
-      상품을 먼저 권하지 않습니다.
-    </div>
-    <div style="font-size:20px;font-weight:900;color:#C9972A;line-height:1.45;margin-bottom:16px;letter-spacing:-0.5px;">
-      먼저 듣고, 진단합니다.
-    </div>
-    <div style="font-size:11px;color:#9CA3AF;margin-bottom:20px;">25년 경력 · FPSB 인증 CFP · 2,000+ 상담 실적</div>
-    <button onclick="newLandingCTA()" style="display:block;margin:0 auto 10px;padding:15px 28px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border-radius:14px;font-size:15px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);font-family:inherit;max-width:280px;width:100%;letter-spacing:-0.3px;">
-      10분 재무건강검진 받기 →
+    <button onclick="openPlanModal()" style="background: transparent; color: #185FA5; border: 0.5px solid #185FA5; padding: 7px 12px; font-size: 11px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer;">
+      플랜 보기
     </button>
-    <div style="font-size:10px;color:#10B981;font-weight:700;">7일 이내 100% 환불 보장 · ₩9,900</div>
-  </div>
+  </header>
 
-  <!-- 크리덴셜 -->
-  <div style="margin:0 20px 16px;background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.04);">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F7F4;border-radius:10px;">
-        <span style="font-size:18px;">📺</span>
-        <div><div style="font-size:12px;font-weight:900;color:#0B1D3A;">47,000+</div><div style="font-size:8px;color:#9CA3AF;">유튜브 구독자</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F7F4;border-radius:10px;">
-        <span style="font-size:18px;">🎓</span>
-        <div><div style="font-size:12px;font-weight:900;color:#0B1D3A;">금융연수원</div><div style="font-size:8px;color:#9CA3AF;">외래교수</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F7F4;border-radius:10px;">
-        <span style="font-size:18px;">🏛️</span>
-        <div><div style="font-size:12px;font-weight:900;color:#0B1D3A;">SBS 머니쇼</div><div style="font-size:8px;color:#9CA3AF;">출연 · 금감원 강의</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F8F7F4;border-radius:10px;">
-        <span style="font-size:18px;">📚</span>
-        <div><div style="font-size:12px;font-weight:900;color:#0B1D3A;">저서 2권</div><div style="font-size:8px;color:#9CA3AF;">소원을 말해봐 · 빚부터 갚아라</div></div>
-      </div>
+  <section style="padding: 2.25rem 1.25rem 2rem; text-align: center; border-bottom: 0.5px solid var(--color-border-tertiary);">
+    <div style="display: inline-block; background: #E6F1FB; color: #0C447C; font-size: 11px; padding: 4px 10px; border-radius: 999px; margin-bottom: 1rem; font-weight: 500;">
+      금융집짓기® 특허 방법론 기반
     </div>
-  </div>
-
-  <!-- 작동 방식 -->
-  <div style="margin:0 20px 16px;background:#0B1D3A;border-radius:14px;padding:18px;color:#fff;">
-    <div style="font-size:11px;font-weight:900;color:#C9972A;margin-bottom:14px;text-align:center;letter-spacing:1px;">HOW IT WORKS</div>
-    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(201,151,42,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🩺</div>
-      <div><div style="font-size:11px;font-weight:700;color:#C9972A;">STEP 1 · AI 청진기</div><div style="font-size:9px;color:rgba(255,255,255,.5);">AI 머니야가 재무 건강을 진단합니다</div></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(201,151,42,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👨‍⚕️</div>
-      <div><div style="font-size:11px;font-weight:700;color:#C9972A;">STEP 2 · 전문가 처방</div><div style="font-size:9px;color:rgba(255,255,255,.5);">오상열 CFP가 결과를 바탕으로 방향을 잡아드립니다</div></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(201,151,42,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💊</div>
-      <div><div style="font-size:11px;font-weight:700;color:#C9972A;">STEP 3 · 담당자 연결</div><div style="font-size:9px;color:rgba(255,255,255,.5);">필요할 때만, 전문가에게 연결해드립니다</div></div>
-    </div>
-  </div>
-
-  <!-- 샘플 영상 -->
-  <div style="margin:0 20px 16px;">
-    <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-bottom:8px;padding-left:2px;">▶ 실제 AI머니야 상담 미리보기</div>
-    <div style="border-radius:14px;overflow:hidden;background:#000;">
-      <video controls playsinline preload="metadata" poster="" style="width:100%;display:block;border-radius:14px;"
-        src="https://firebasestorage.googleapis.com/v0/b/moneya-72fe6.firebasestorage.app/o/%EB%A8%B8%EB%8B%88%EC%95%BC%EC%83%81%EB%8B%B4_1.mp4?alt=media&token=54d58906-1ec7-4e7c-8f98-415f507ba588">
-      </video>
-    </div>
-    <div style="font-size:9px;color:#9CA3AF;margin-top:4px;padding-left:2px;">실제 고객 상담 녹화 (개인정보 제거)</div>
-  </div>
-
-  <!-- 고객 후기 -->
-  <div style="margin:0 20px 16px;background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.04);">
-    <div style="font-size:11px;font-weight:900;color:#0B1D3A;margin-bottom:12px;">실제 상담 고객 후기</div>
-    <div style="padding:10px;background:#FFFBEA;border-radius:10px;margin-bottom:8px;">
-      <div style="font-size:10px;color:#C9972A;margin-bottom:3px;">★★★★★</div>
-      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"20년 고민이 10분 만에 방향 잡혔습니다. 한눈에 정리되는 건 처음이에요."</div>
-      <div style="font-size:9px;color:#9CA3AF;margin-top:3px;">— 40대 맞벌이 직장인</div>
-    </div>
-    <div style="padding:10px;background:#FFFBEA;border-radius:10px;margin-bottom:8px;">
-      <div style="font-size:10px;color:#C9972A;margin-bottom:3px;">★★★★★</div>
-      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"상품 권유 없이 순수하게 고민만 들어주셨어요. 보험 점검이 특히 유용했습니다."</div>
-      <div style="font-size:9px;color:#9CA3AF;margin-top:3px;">— 35세 자영업자</div>
-    </div>
-    <div style="padding:10px;background:#FFFBEA;border-radius:10px;">
-      <div style="font-size:10px;color:#C9972A;margin-bottom:3px;">★★★★★</div>
-      <div style="font-size:11px;color:#0B1D3A;line-height:1.5;">"원페이지 하나로 가족 재무 상태가 한눈에. 매달 점검하고 있습니다."</div>
-      <div style="font-size:9px;color:#9CA3AF;margin-top:3px;">— 50대 은퇴 준비자</div>
-    </div>
-  </div>
-
-  <!-- 하단 CTA -->
-  <div style="padding:0 24px 32px;">
-    <button onclick="newLandingCTA()" style="display:block;width:100%;padding:15px;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;border-radius:14px;font-size:15px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(201,151,42,.35);font-family:inherit;letter-spacing:-0.3px;">
-      ₩9,900으로 재무건강검진 시작 →
+    <h1 style="font-size: 22px; font-weight: 500; line-height: 1.35; margin: 0 0 0.75rem; letter-spacing: -0.3px;">
+      30년 CFP 노하우를 담은<br/>
+      <span style="color: #185FA5;">AI 재무코치 머니야</span>
+    </h1>
+    <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.7; margin: 0 0 1.5rem;">
+      상품 판매 없이, 오직 데이터로<br/>재무상태를 정확하게 진단합니다
+    </p>
+    <button onclick="openTrialModal()" style="background: #185FA5; color: white; border: none; padding: 14px 28px; font-size: 14px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; width: 100%; position: relative;">
+      오늘 하루 무료로 체험하기 →
+      <div style="position: absolute; top: -8px; right: 12px; background: #BA7517; color: white; font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500;">FREE</div>
     </button>
-    <div style="text-align:center;font-size:10px;color:#10B981;font-weight:700;margin-top:8px;">7일 이내 100% 환불 보장</div>
-    <div style="text-align:center;font-size:8px;color:#C4C4C4;margin-top:16px;line-height:1.6;">
+    <p style="font-size: 11px; color: var(--color-text-secondary); margin: 0.5rem 0 0; line-height: 1.5;">
+      음성 3분 + 텍스트 상담 무제한 · 가입 당일만 · 로그인 없이
+    </p>
+    <button onclick="openPlanModal()" style="background: transparent; color: var(--color-text-secondary); border: none; padding: 10px; font-size: 12px; cursor: pointer; width: 100%; margin-top: 0.5rem; text-decoration: underline; text-underline-offset: 3px;">
+      유료 플랜 살펴보기
+    </button>
+  </section>
+
+  <section style="padding: 1.5rem 1.25rem; background: var(--color-background-secondary);">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+      <div style="text-align: center;">
+        <div style="font-size: 20px; font-weight: 500; color: #185FA5;">30년</div>
+        <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.4;">CFP<br/>노하우</div>
+      </div>
+      <div style="text-align: center; border-left: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary);">
+        <div style="font-size: 20px; font-weight: 500; color: #185FA5;">2,000+</div>
+        <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.4;">실전<br/>상담 데이터</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 20px; font-weight: 500; color: #185FA5;">47,000</div>
+        <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.4;">YouTube<br/>구독자</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 1.75rem 1.25rem;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; display: flex; gap: 12px; align-items: center;">
+        <div style="flex-shrink: 0; width: 36px; height: 36px; background: #E6F1FB; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 2px;">상품 판매 없음</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.5;">특정 상품 추천을 배제합니다</div>
+        </div>
+      </div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; display: flex; gap: 12px; align-items: center;">
+        <div style="flex-shrink: 0; width: 36px; height: 36px; background: #E6F1FB; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 4 4 5-5"/></svg>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 2px;">객관적 데이터 분석</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.5;">감정 아닌 수치로 진단합니다</div>
+        </div>
+      </div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; display: flex; gap: 12px; align-items: center; position: relative;">
+        <div style="position: absolute; top: -7px; right: 10px; background: #0F6E56; color: white; font-size: 9px; padding: 2px 7px; border-radius: 999px; font-weight: 500;">무료</div>
+        <div style="flex-shrink: 0; width: 36px; height: 36px; background: #E1F5EE; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 2px;">언제나 무료 머니톡</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.5;">가벼운 돈 얘기, 로그인만으로 무제한</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 0 1.25rem 2rem;">
+    <h2 style="font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 1rem;">AI 머니야 샘플 영상</h2>
+    <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 0.5px solid var(--color-border-tertiary); position: relative; overflow: hidden;">
+      <div style="width: 52px; height: 52px; background: rgba(255,255,255,0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#185FA5"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px;">실제 상담 3분 미리보기</div>
+    </div>
+  </section>
+
+  <section style="padding: 2rem 1.25rem; background: var(--color-background-secondary);">
+    <h2 style="font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 0.375rem;">4단계 진행 과정</h2>
+    <p style="text-align: center; font-size: 12px; color: var(--color-text-secondary); margin: 0 0 1.5rem;">무료체험 또는 결제 후 동일하게 진행</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.875rem 1rem; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; color: #185FA5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 13px;">1</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">무료체험 또는 플랜 결제</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.55;">1일 무료체험은 로그인 없이 / 결제는 구글 로그인 후 진행</div>
+        </div>
+      </div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.875rem 1rem; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; color: #185FA5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 13px;">2</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">사전 재무정보 작성</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.55;">재무현황·현금흐름 서류를 업로드하면 AI가 자동 사전 분석</div>
+        </div>
+      </div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.875rem 1rem; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; color: #185FA5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 13px;">3</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">AI 머니야 재무 진단</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.55; margin-bottom: 6px;">음성·텍스트 상담과 실시간 상담노트로 정밀 진단</div>
+          <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 6px 8px; font-size: 10px; color: var(--color-text-secondary); line-height: 1.5; display: flex; gap: 6px; align-items: flex-start;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>상담 내용은 암호화 보관되며, 재무 플랜 업데이트 근거로만 활용됩니다. AI 학습에는 사용되지 않습니다.</span>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.875rem 1rem; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; color: #185FA5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 13px;">4</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">전문가 체크업 콜 (유료 플랜)</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.55;">유료 플랜 결제 시 1회 제공. 이후 문의는 카카오톡 채널</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 1.75rem 1.25rem;">
+    <div style="background: #FEF4E9; border: 0.5px solid #FAC775; border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; display: flex; gap: 12px; align-items: center;">
+      <div style="flex-shrink: 0; width: 40px; height: 40px; background: #FEE500; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.77 1.77 5.21 4.48 6.63l-.95 3.46c-.08.29.24.52.5.37L10.1 19.5c.62.08 1.25.12 1.9.12 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg>
+      </div>
+      <div style="flex: 1;">
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px; color: #633806;">카카오톡 채널로 문의하세요</div>
+        <div style="font-size: 11px; color: #854F0B; line-height: 1.5;">궁금한 점은 언제든지 편하게</div>
+      </div>
+      <button style="flex-shrink: 0; background: #FEE500; color: #3C1E1E; border: none; padding: 8px 12px; font-size: 11px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer;">채널 추가</button>
+    </div>
+  </section>
+
+  <section style="padding: 0.5rem 1.25rem 2rem;">
+    <div style="background: linear-gradient(135deg, #E1F5EE 0%, #F0FDF8 100%); border: 0.5px solid #9FE1CB; border-radius: var(--border-radius-lg); padding: 1.5rem 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div style="width: 32px; height: 32px; background: #0F6E56; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <div>
+          <div style="font-size: 15px; font-weight: 500; color: #04342C;">머니톡과 먼저 친해져 보세요</div>
+          <div style="font-size: 11px; color: #0F6E56; margin-top: 1px;">구글 로그인 시 평생 무료</div>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #085041; line-height: 1.7; margin: 0 0 1rem;">
+        재무진단만큼 거창하지 않아도 괜찮아요. 일상의 작은 궁금증, 편하게 머니야에게 물어보세요. 꼭 돈 얘기가 아니어도 좋습니다.
+      </p>
+      <div style="background: rgba(255,255,255,0.7); border-radius: var(--border-radius-md); padding: 0.75rem 0.875rem; margin-bottom: 1rem;">
+        <div style="font-size: 10px; color: #0F6E56; font-weight: 500; margin-bottom: 6px;">💬 이런 대화가 가능해요</div>
+        <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #085041; line-height: 1.5;">
+          <div>· "카드값 때문에 스트레스 받아..."</div>
+          <div>· "월급 받으면 뭐부터 해야 해?"</div>
+          <div>· "요즘 소비 습관이 좀 걱정돼"</div>
+          <div>· "오늘 기분이 별로네, 얘기 좀 들어줘"</div>
+        </div>
+      </div>
+      <button style="width: 100%; background: #0F6E56; color: white; border: none; padding: 11px; font-size: 13px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        구글 로그인하고 머니톡 시작하기
+      </button>
+    </div>
+  </section>
+
+  <section style="padding: 0 1.25rem 2rem;">
+    <h2 style="font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 1.25rem;">자주 묻는 질문</h2>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>무료체험은 어떻게 진행되나요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          로그인 없이 누구나 가입 당일 24시간 동안 음성 상담 3분과 텍스트 상담을 무료로 이용할 수 있습니다. 다음 날부터는 유료 플랜 결제가 필요하며, 결제는 구글 로그인 후 진행됩니다. 로그인 후에는 머니톡도 평생 무료로 이용 가능합니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>AI 머니야는 실제 사람 상담과 뭐가 다른가요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          오상열 CFP의 30년 노하우와 2,000여 건의 실전 상담 데이터가 학습된 엔진이라 실제 상담과 유사한 흐름으로 진행됩니다. 다만 특정 상품 추천은 일절 하지 않고, 객관적 데이터 기반 진단만 제공합니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>1회 이용권과 1년 이용권은 어떻게 다른가요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          1회 이용권은 한 번의 진단을 위한 결제입니다. 1년 이용권은 단순한 진단을 넘어, 1년 동안 고객님의 재무적 변화와 성취 과정을 곁에서 함께 진단하며 동행하는 플랜입니다. 정기적인 진단 업데이트와 월례 재테크 세미나를 통해 꾸준히 성장하실 수 있도록 곁에서 응원합니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>사전 재무정보는 꼭 작성해야 하나요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          필수는 아니지만, 작성해두시면 AI가 미리 정보를 분석해 훨씬 정확하고 수월한 진단이 가능합니다. 재무현황과 현금흐름 서류를 업로드해주시길 권장드립니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>진단 결과는 나중에 다시 볼 수 있나요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          네, 진단 내용은 마이페이지에서 언제든 다시 확인하실 수 있습니다. PDF 리포트(실버 이상 플랜)도 다운로드 가능하며, 추후 재진단 시 이전 상담 내용이 이어져 더 정밀한 플랜 업데이트가 가능합니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>체크업 콜은 무엇인가요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          유료 플랜 결제 후 1회 제공되는 전문가 피드백 세션입니다. 고객님이 AI 머니야를 잘 활용하고 계신지 사용 현황을 간단히 확인하고, 진단 과정에서 궁금하셨던 점이나 해석이 필요한 부분을 설명해드립니다. 보통 10~15분 정도 소요되며, 전화 또는 영상으로 진행됩니다. 체크업 콜 이후 추가 문의는 카카오톡 채널로 편하게 문의하실 수 있습니다.
+        </div>
+      </details>
+      <details style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px;">
+        <summary style="font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>머니톡은 재무진단과 어떻게 다른가요?</span><span style="color: var(--color-text-secondary); font-size: 14px;">+</span>
+        </summary>
+        <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary);">
+          둘 다 AI 머니야와의 대화지만 성격이 다릅니다. <strong style="font-weight: 500; color: var(--color-text-primary);">머니톡</strong>은 일상의 가벼운 돈 얘기나 소비 습관, 스트레스 등을 편하게 나누는 기능으로 구글 로그인 후 평생 무료입니다. 꼭 돈 얘기가 아니어도 괜찮아요. <strong style="font-weight: 500; color: var(--color-text-primary);">재무진단</strong>은 자산·부채·수입·지출 등 구체적인 재무정보를 바탕으로 정밀한 진단과 플랜을 받는 유료 서비스입니다.
+          <div style="margin-top: 8px; padding: 8px 10px; background: #FEF4E9; border-radius: 6px;">
+            <div style="font-size: 11px; color: #633806; font-weight: 500; margin-bottom: 4px;">✋ 이런 주제는 전문가를 찾아주세요</div>
+            <div style="font-size: 11px; color: #854F0B; line-height: 1.6;">
+              의료 상담은 의사, 법률 자문은 변호사, 세무 신고는 세무사에게 문의해주세요. 또한 특정 금융상품(보험·펀드·주식 종목 등) 추천은 머니야의 원칙상 제공하지 않습니다.
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section style="padding: 2.25rem 1.25rem; text-align: center; background: var(--color-background-secondary);">
+    <h2 style="font-size: 18px; font-weight: 500; margin: 0 0 0.5rem; line-height: 1.4;">부담 없이 먼저 경험해보세요</h2>
+    <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0 0 1.5rem;">오늘 가입하시면 24시간 동안 무료</p>
+    <button onclick="openTrialModal()" style="background: #185FA5; color: white; border: none; padding: 13px 28px; font-size: 14px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; width: 100%;">
+      오늘 하루 무료로 체험하기 →
+    </button>
+    <button onclick="openPlanModal()" style="background: transparent; color: var(--color-text-secondary); border: none; padding: 10px; font-size: 12px; cursor: pointer; margin-top: 0.25rem; text-decoration: underline; text-underline-offset: 3px;">
+      유료 플랜 살펴보기
+    </button>
+  </section>
+
+  <footer style="padding: 1.5rem 1.25rem; text-align: center; border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary);">
+    <div style="font-size: 12px; font-weight: 500; margin-bottom: 4px;">오원트금융연구소</div>
+    <div style="font-size: 10px; color: var(--color-text-tertiary); line-height: 1.7; margin-bottom: 10px;">
+      대표: 오상열 CFP | 사업자등록번호: XXX-XX-XXXXX<br/>
+      서울시 XXX | 문의: contact@owont.com<br/>
+      <span style="color: #185FA5; cursor: pointer;">이용약관</span> · <span style="color: #185FA5; cursor: pointer;">개인정보처리방침</span>
+    </div>
+    <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 10px;">
+      <div style="font-size: 10px; color: var(--color-text-tertiary);">
+        재무설계사(FC)이신가요? <span style="color: #185FA5; cursor: pointer; font-weight: 500;" onclick="openPlanModal()">FC 파트너 프로그램 →</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== 무료체험 모달 ========== -->
+  <div id="trial-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); align-items: flex-start; justify-content: center; padding: 1.5rem 0.75rem; z-index: 100; overflow-y: auto;" onclick="if(event.target===this) this.style.display='none'">
+    <div style="background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 1.25rem 1rem; max-width: 340px; width: 100%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 15px; font-weight: 500; margin: 0;">오늘 하루 무료체험 시작</h3>
+        <button onclick="closeTrialModal()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-text-secondary); padding: 0;">✕</button>
+      </div>
+      <div style="background: linear-gradient(135deg, #E6F1FB 0%, #F0F7FF 100%); border-radius: var(--border-radius-md); padding: 1rem; margin-bottom: 1rem; text-align: center;">
+        <div style="display: inline-block; background: #BA7517; color: white; font-size: 9px; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; font-weight: 500;">FREE TRIAL</div>
+        <div style="font-size: 16px; font-weight: 500; color: #0C447C; margin-bottom: 4px;">1일 맛보기 플랜</div>
+        <div style="font-size: 11px; color: #185FA5;">로그인 없이 24시간 무료 이용</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem;">
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">음성 재무진단 3분</div>
+            <div style="font-size: 11px; color: var(--color-text-secondary); line-height: 1.5;">실제 음성 진단을 미리 경험해보세요</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E6F1FB; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">텍스트 재무진단 무제한 (당일)</div>
+            <div style="font-size: 11px; color: var(--color-text-secondary); line-height: 1.5;">하루 동안 자유롭게 질문하고 답변받기</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <div style="flex-shrink: 0; width: 28px; height: 28px; background: #E1F5EE; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px; color: #04342C;">머니톡 체험 포함</div>
+            <div style="font-size: 11px; color: #0F6E56; line-height: 1.5;">로그인 시 평생 무료로 이용 가능</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <div style="flex-shrink: 0; width: 28px; height: 28px; background: #FEF7E7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 2px; color: #633806;">다음 날부터는 결제 필요</div>
+            <div style="font-size: 11px; color: #854F0B; line-height: 1.5;">재무진단에 한함. 결제는 구글 로그인 후 진행</div>
+          </div>
+        </div>
+      </div>
+      <button onclick="closeTrialModal(); newLandingCTA();" style="width: 100%; background: #185FA5; color: white; border: none; padding: 13px; font-size: 14px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer;">
+        바로 진단 시작하기 →
+      </button>
+      <p style="font-size: 10px; color: var(--color-text-tertiary); margin: 0.875rem 0 0; line-height: 1.6; text-align: center;">
+        별도 가입 없이 바로 진단을 시작합니다
+      </p>
+    </div>
+  </div>
+
+  <!-- ========== 플랜 모달 ========== -->
+  <div id="plan-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); align-items: flex-start; justify-content: center; padding: 1.5rem 0.75rem; z-index: 100; overflow-y: auto;" onclick="if(event.target===this) this.style.display='none'">
+    <div style="background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 1.25rem 1rem; max-width: 340px; width: 100%;">
+      <div id="plan-step-1">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h3 style="font-size: 15px; font-weight: 500; margin: 0;">유료 플랜 안내</h3>
+          <button onclick="closePlanModal()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-text-secondary); padding: 0;">✕</button>
+        </div>
+        <p style="font-size: 11px; color: var(--color-text-secondary); margin: 0 0 0.875rem;">처음이라면 <span style="color: #185FA5; cursor: pointer; text-decoration: underline;" onclick="closePlanModal(); openTrialModal();">무료체험</span>부터 추천드려요</p>
+
+        <div style="display: flex; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 3px; margin-bottom: 1rem;">
+          <button id="tab-once" onclick="switchTab('once')" style="flex: 1; background: white; color: var(--color-text-primary); border: none; padding: 7px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            1회 이용권
+          </button>
+          <button id="tab-yearly" onclick="switchTab('yearly')" style="flex: 1; background: transparent; color: var(--color-text-secondary); border: none; padding: 7px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; position: relative;">
+            1년 정기 이용권
+            <span style="position: absolute; top: -6px; right: 2px; background: #BA7517; color: white; font-size: 8px; padding: 1px 5px; border-radius: 999px; font-weight: 500;">할인</span>
+          </button>
+        </div>
+
+        <div id="savings-banner" style="display: none; background: linear-gradient(135deg, #FEF4E9 0%, #FEF7E7 100%); border: 0.5px solid #FAC775; border-radius: var(--border-radius-md); padding: 0.625rem 0.75rem; margin-bottom: 0.875rem; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2" style="flex-shrink: 0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01"/></svg>
+          <div style="font-size: 11px; color: #633806; line-height: 1.5;">
+            <strong style="font-weight: 500;">1년권 선택 시 2개월 무료</strong> · 연간 최대 ₩59,800 절약
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.875rem;">
+          <div onclick="landingSelectPlan('Bronze')" data-plan="Bronze" data-once="9,900" data-yearly="99,000" data-yearly-original="118,800" style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 500; color: #5F5E5A;">Bronze</div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩118,800</div>
+                <div style="font-size: 14px; font-weight: 500;"><span class="price">₩9,900</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩19,800</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li><span class="benefit-voice">AI 음성 재무진단 20분</span></li>
+              <li><span class="benefit-text">텍스트 재무진단 30일</span></li>
+              <li>재무진단점수 즉시 확인</li>
+              <li>월례 재테크 세미나 초대</li>
+            </ul>
+          </div>
+
+          <div onclick="landingSelectPlan('Silver')" data-plan="Silver" data-once="19,900" data-yearly="199,000" data-yearly-original="238,800" style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 500; color: #888780;">Silver</div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩238,800</div>
+                <div style="font-size: 14px; font-weight: 500;"><span class="price">₩19,900</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩39,800</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li><span class="benefit-voice">AI 음성 재무진단 40분</span></li>
+              <li><span class="benefit-text">텍스트 재무진단 30일</span></li>
+              <li>종합재무설계 10단계 진단</li>
+              <li>PDF 재무진단 리포트</li>
+              <li>월례 재테크 세미나 초대</li>
+            </ul>
+          </div>
+
+          <div onclick="landingSelectPlan('Gold')" data-plan="Gold" data-once="29,900" data-yearly="299,000" data-yearly-original="358,800" style="border: 2px solid #185FA5; border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer; position: relative;">
+            <div style="position: absolute; top: -8px; left: 12px; background: #185FA5; color: white; font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500;">인기</div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 500; color: #BA7517;">Gold</div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩358,800</div>
+                <div style="font-size: 14px; font-weight: 500;"><span class="price">₩29,900</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩59,800</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li><span class="benefit-voice">AI 음성 재무진단 60분</span></li>
+              <li><span class="benefit-text">텍스트 재무진단 30일</span></li>
+              <li>종합재무설계 10단계 + 심화 질문</li>
+              <li>PDF 재무진단 리포트</li>
+              <li>월례 재테크 세미나 초대</li>
+            </ul>
+          </div>
+
+          <div onclick="landingSelectPlan('Premium')" data-plan="Premium" class="premium-card" data-once="99,900" style="border: 0.5px solid var(--color-border-tertiary); background: #FAFAF8; border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 500; color: #534AB7;">Premium</div>
+              <div style="font-size: 14px; font-weight: 500;"><span class="price">₩99,900</span></div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li>골드 플랜 전체 혜택 포함</li>
+              <li>AI 음성 재무진단 60분</li>
+              <li><strong style="font-weight: 500; color: #534AB7;">오상열 CFP 1:1 대면상담 1회</strong></li>
+              <li>PDF 재무진단 리포트</li>
+              <li>월례 재테크 세미나 초대</li>
+            </ul>
+            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 6px; padding-top: 6px; border-top: 0.5px solid var(--color-border-tertiary); text-align: center;">
+              1회 이용권 한정 상품
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 10px; margin-bottom: 0.875rem;">
+          <div onclick="landingSelectPlan('FC')" style="border: 0.5px solid var(--color-border-tertiary); background: #FAFBFD; border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <div style="flex: 1;">
+                <div style="display: inline-block; background: #0F6E56; color: white; font-size: 8px; padding: 2px 6px; border-radius: 3px; font-weight: 500; margin-bottom: 4px; letter-spacing: 0.3px;">NEW</div>
+                <div style="font-size: 13px; font-weight: 500; color: #185FA5;">전문가 FC플랜</div>
+                <div style="font-size: 10px; color: var(--color-text-secondary); margin-top: 2px;">보험설계사 전용 고객관리 도구</div>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                <div style="font-size: 13px; font-weight: 500; color: #185FA5;"><span class="fc-price">₩33,000</span></div>
+                <div class="fc-period" style="font-size: 9px; color: var(--color-text-tertiary); margin-top: 1px;">/ 1개월 단일 결제</div>
+              </div>
+            </div>
+            <ul style="margin: 0 0 8px; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li>트로이 목마 링크 무제한 생성</li>
+              <li>고객 수동 입력 + DB 관리 (100명)</li>
+              <li>원페이지·리포트에 내 이름/연락처 표시</li>
+              <li>고객 요청 시 자동 연결 알림</li>
+              <li>평생 담당자로 어플에 남음</li>
+              <li>월례 재테크 세미나 초대</li>
+            </ul>
+            <div style="background: #E6F1FB; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;">
+              <div style="font-size: 10px; color: #0C447C; line-height: 1.5;">
+                💰 <strong style="font-weight: 500;">ROI:</strong> 월 ₩33,000 → 고객 1명 보험 계약 시 수수료 30~100만원
+              </div>
+            </div>
+            <div style="display: flex; gap: 5px; align-items: flex-start; padding: 0 2px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div style="font-size: 9px; color: var(--color-text-tertiary); line-height: 1.5;">
+                정기구독이 아닌 단일 결제입니다. 이용 연장을 원하시면 기간 만료 후 재결제가 필요합니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #E6F1FB; border-radius: var(--border-radius-md); padding: 0.75rem; margin-bottom: 0.875rem;">
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div style="font-size: 10px; color: #0C447C; line-height: 1.6;">
+              구글 계정으로 본인 인증 후 결제가 진행됩니다.<br/>입력하신 정보는 재무진단 안내에만 사용됩니다.
+            </div>
+          </div>
+        </div>
+
+        <button onclick="proceedToPayment()" style="width: 100%; background: white; color: var(--color-text-primary); border: 0.5px solid var(--color-border-secondary); padding: 12px; font-size: 13px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          구글로 로그인하고 결제하기
+        </button>
+      </div>
+
+      <!-- FC 프로필 입력 단계 -->
+      <div id="plan-step-2" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h3 style="font-size: 15px; font-weight: 500; margin: 0;">👤 설계사 프로필 설정</h3>
+          <button onclick="closePlanModal()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-text-secondary); padding: 0;">✕</button>
+        </div>
+        <p style="font-size: 11px; color: var(--color-text-secondary); margin: 0 0 0.875rem;">※ 고객 리포트(원페이지)에 아래 정보가 표시됩니다</p>
+        <div style="background: linear-gradient(135deg, #FEF4E9 0%, #FEF7E7 100%); border: 0.5px solid #FAC775; border-radius: var(--border-radius-md); padding: 0.75rem; margin-bottom: 0.875rem;">
+          <div style="font-size: 11px; color: #633806; line-height: 1.6;">
+            <strong style="font-weight: 500;">💰 ROI:</strong> 월 ₩33,000 → 고객 1명 보험 계약 시 수수료 30~100만원
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.875rem;">
+          <div>
+            <input type="text" placeholder="성명 (고객에게 표시됩니다) *필수" style="width: 100%; padding: 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-family: inherit;" />
+          </div>
+          <div>
+            <input type="tel" placeholder="연락처 (고객에게 표시됩니다) *필수" style="width: 100%; padding: 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-family: inherit;" />
+          </div>
+          <div>
+            <input type="text" placeholder="소속 회사 (예: 삼성생명, 한화생명) *필수" style="width: 100%; padding: 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-family: inherit;" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <select style="padding: 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-family: inherit; background: white; color: var(--color-text-secondary);">
+              <option>소속 선택 *필수</option>
+              <option>팀</option><option>지점</option><option>본부</option>
+              <option>지역단</option><option>FA센터</option><option>독립</option>
+            </select>
+            <select style="padding: 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-family: inherit; background: white; color: var(--color-text-secondary);">
+              <option>직책 선택</option>
+              <option>FC(설계사)</option><option>팀장</option><option>지점장</option>
+              <option>본부장</option><option>수석FP</option><option>대표</option>
+            </select>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin: 1rem 0 0.625rem;">📋 결제 정보 입력</div>
+        <div style="background: #E6F1FB; border-radius: var(--border-radius-md); padding: 0.75rem; margin-bottom: 0.875rem;">
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div style="font-size: 10px; color: #0C447C; line-height: 1.6;">
+              구글 계정으로 본인 인증 후 결제가 진행됩니다.<br/>입력하신 정보는 재무진단 안내에만 사용됩니다.
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="backToStep1()" style="background: transparent; color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); padding: 11px; font-size: 13px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; flex: 0 0 70px;">
+            이전
+          </button>
+          <button style="flex: 1; background: white; color: var(--color-text-primary); border: 0.5px solid var(--color-border-secondary); padding: 11px; font-size: 13px; font-weight: 500; border-radius: var(--border-radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google 계정으로 로그인
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 푸터 (기존 디자인 유지) ═══ -->
+  <div style="margin:16px 20px 24px;padding:16px 0;border-top:0.5px solid var(--color-border-tertiary);">
+    <div style="text-align:center;margin-bottom:10px;">
+      <a href="https://pf.kakao.com/_xnxaxbxj" target="_blank" style="display:inline-block;padding:8px 14px;background:#FEE500;color:#3C1E1E;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none;">💬 카카오톡 채널 상담</a>
+    </div>
+    <div style="text-align:center;font-size:9px;color:#9CA3AF;line-height:1.7;">
       오원트금융연구소 · 대표 오상열 CFP<br>
-      AI 재무설계사 머니야 · 010-5424-5332<br>
+      사업자등록번호 220-09-78255 · 서울시 강남구<br>
+      ggorilla11@gmail.com · 010-5424-5332<br>
       Copyright 2013. 오원트금융연구소 · 금융집짓기® 특허·상표권 All rights reserved.<br>
-      <a href="#" onclick="if(typeof mpTermsModal==='function')mpTermsModal();return false;" style="color:#C4C4C4;">이용약관</a> |
-      <a href="#" onclick="if(typeof mpPrivacyModal==='function')mpPrivacyModal();return false;" style="color:#C4C4C4;">개인정보처리방침</a>
+      <a href="#" onclick="if(typeof mpTermsModal==='function')mpTermsModal();return false;" style="color:#9CA3AF;">이용약관</a> |
+      <a href="#" onclick="if(typeof mpPrivacyModal==='function')mpPrivacyModal();return false;" style="color:#9CA3AF;">개인정보처리방침</a>
     </div>
   </div>
-
 </div>
 <!-- ═══ /새 초화면 ═══ -->
 
 <script>
-/* ★ 새 초화면 CTA → 결제 플랜 화면으로 이동 */
+/* ★ 새 초화면 CTA → 진단안내(mp-panel-0)로 이동. 결제는 이후 별도 단계에서 연결 */
 function newLandingCTA() {
   document.documentElement.style.setProperty('--pay-landing','none');
   document.documentElement.style.setProperty('--pay-app','block');
   document.getElementById('new-landing').style.display = 'none';
   var appEl = document.getElementById('main-app');
   if (appEl) appEl.style.display = '';
-  /* ★ 환경 분기: DEV/스테이징 → 바로 진단, PROD → 결제 화면 */
-  var _isStaging = location.hostname.includes('-dev') || location.hostname.includes('staging') || location.hostname.includes('localhost');
-  if (_isStaging) {
-    /* 스테이징: 결제 스킵 → 바로 진단 시작 */
-    if (typeof mvpStartCheckup === 'function') {
-      mvpStartCheckup();
-    }
-  } else {
-    /* PROD: 결제 화면 열기 */
-    if (typeof mpOpenSubscribe === 'function') {
-      mpOpenSubscribe();
-    } else if (typeof mpOpen === 'function') {
-      mpOpen();
-    }
-  }
+  /* 마이페이지 오버레이 열기 + 탭 0(검진안내) 활성화. 결제는 이후 별도 단계에서 연결 */
+  document.getElementById('mypageOverlay').classList.add('mp-open');
+  mpTab(0, document.querySelector('.mp-tab-btn'));
 }
 /* ★ 결제 취소 시 새 초화면 복원 */
 function backToNewLanding() {
   var appEl = document.getElementById('main-app');
   if (appEl) appEl.style.display = 'none';
   document.getElementById('new-landing').style.display = '';
+}
+</script>
+
+<script>
+/* ═══ 새 초화면 (디자이너 신버전) 전용 스크립트 — landingSelectPlan은 기존 selectPlan과 이름 분리 ═══ */
+let selectedPlanName = null;
+let currentTab = 'once';
+
+function openTrialModal() { document.getElementById('trial-modal').style.display = 'flex'; }
+function closeTrialModal() { document.getElementById('trial-modal').style.display = 'none'; }
+function openPlanModal() { document.getElementById('plan-modal').style.display = 'flex'; }
+function closePlanModal() { document.getElementById('plan-modal').style.display = 'none'; }
+function backToStep1() {
+  document.getElementById('plan-step-2').style.display = 'none';
+  document.getElementById('plan-step-1').style.display = 'block';
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  const onceTab = document.getElementById('tab-once');
+  const yearlyTab = document.getElementById('tab-yearly');
+  const savingsBanner = document.getElementById('savings-banner');
+  const premiumCard = document.querySelector('.premium-card');
+
+  if (tab === 'once') {
+    onceTab.style.background = 'white';
+    onceTab.style.color = 'var(--color-text-primary)';
+    onceTab.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    yearlyTab.style.background = 'transparent';
+    yearlyTab.style.color = 'var(--color-text-secondary)';
+    yearlyTab.style.boxShadow = 'none';
+    savingsBanner.style.display = 'none';
+    premiumCard.style.display = 'block';
+    document.querySelectorAll('.original-price').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.savings').forEach(el => el.style.display = 'none');
+
+    // 1회권 혜택 텍스트 복구
+    document.querySelectorAll('.benefit-voice').forEach(el => {
+      const minutes = el.dataset.onceMinutes || el.textContent.match(/\d+분/)?.[0] || '';
+      if (!el.dataset.onceMinutes) {
+        const m = el.textContent.match(/(\d+)분/);
+        if (m) el.dataset.onceMinutes = m[1];
+      }
+      if (el.dataset.onceMinutes) {
+        el.textContent = 'AI 음성 재무진단 ' + el.dataset.onceMinutes + '분';
+      }
+    });
+    document.querySelectorAll('.benefit-text').forEach(el => {
+      el.textContent = '텍스트 재무진단 30일';
+    });
+
+    // FC 플랜 가격 / 기간 복구
+    const fcPrice = document.querySelector('.fc-price');
+    const fcPeriod = document.querySelector('.fc-period');
+    if (fcPrice) fcPrice.textContent = '₩33,000';
+    if (fcPeriod) fcPeriod.textContent = '/ 1개월 단일 결제';
+  } else {
+    yearlyTab.style.background = 'white';
+    yearlyTab.style.color = 'var(--color-text-primary)';
+    yearlyTab.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    onceTab.style.background = 'transparent';
+    onceTab.style.color = 'var(--color-text-secondary)';
+    onceTab.style.boxShadow = 'none';
+    savingsBanner.style.display = 'flex';
+    premiumCard.style.display = 'none';
+    document.querySelectorAll('.original-price').forEach(el => el.style.display = 'block');
+    document.querySelectorAll('.savings').forEach(el => el.style.display = 'inline');
+
+    // 1년권 혜택 텍스트 - 음성은 월별, 텍스트는 1년 무제한
+    document.querySelectorAll('.benefit-voice').forEach(el => {
+      const m = el.textContent.match(/(\d+)분/);
+      if (m) {
+        if (!el.dataset.onceMinutes) el.dataset.onceMinutes = m[1];
+        el.textContent = 'AI 음성 재무진단 월 ' + el.dataset.onceMinutes + '분';
+      }
+    });
+    document.querySelectorAll('.benefit-text').forEach(el => {
+      el.textContent = '텍스트 재무진단 1년 무제한';
+    });
+
+    // FC 플랜 가격 / 기간 변경
+    const fcPrice = document.querySelector('.fc-price');
+    const fcPeriod = document.querySelector('.fc-period');
+    if (fcPrice) fcPrice.textContent = '₩330,000';
+    if (fcPeriod) fcPeriod.textContent = '/ 1년 단일 결제';
+  }
+
+  document.querySelectorAll('[data-plan]').forEach(card => {
+    const priceSpan = card.querySelector('.price');
+    if (priceSpan && card.dataset.yearly) {
+      const price = tab === 'once' ? card.dataset.once : card.dataset.yearly;
+      priceSpan.textContent = '₩' + price;
+    }
+  });
+}
+
+function landingSelectPlan(name) {
+  selectedPlanName = name;
+  if (name === 'FC') {
+    document.getElementById('plan-step-1').style.display = 'none';
+    document.getElementById('plan-step-2').style.display = 'block';
+  } else {
+    document.querySelectorAll('[data-plan]').forEach(card => {
+      if (card.dataset.plan === name) {
+        card.style.outline = '2px solid #185FA5';
+        card.style.outlineOffset = '-2px';
+      } else {
+        card.style.outline = 'none';
+      }
+    });
+  }
+}
+
+function proceedToPayment() {
+  if (!selectedPlanName) {
+    alert('플랜을 먼저 선택해주세요');
+    return;
+  }
+  // 실제 결제 로직 연결 위치 (payple.js 등)
+  alert(selectedPlanName + ' 플랜 결제 진행 (구글 로그인 연동 필요)');
 }
 </script>
 
@@ -16642,10 +17469,10 @@ function diagAddSTT(role, text, tag) {
   const div=document.createElement('div');
   div.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:flex-start'+(isAI?'':';flex-direction:row-reverse');
   div.innerHTML=isAI
-    ?`<div style="width:19px;height:19px;border-radius:50%;background:linear-gradient(135deg,#C9972A,#E8B84B);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖'"></div>
-     <div><div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.85);line-height:1.45;border-radius:0 7px 7px 7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.05)">${text}</div>${tag?`<div style="font-size:7.5px;color:#E8B84B;margin-top:1px;padding-left:2px">💡 ${tag}</div>`:''}</div>`
-    :`<div style="width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>
-     <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:rgba(255,255,255,.9);line-height:1.45;border-radius:7px 0 7px 7px;background:rgba(201,151,42,.13);border:1px solid rgba(201,151,42,.22)">${text}</div>`;
+    ?`<div style="width:19px;height:19px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;overflow:hidden"><img src="${DIAG_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='🤖'"></div>
+     <div><div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:#1a1a1a;line-height:1.45;border-radius:0 7px 7px 7px;background:#ffffff;border:0.5px solid rgba(0,0,0,0.1)">${text}</div>${tag?`<div style="font-size:7.5px;color:#185FA5;margin-top:1px;padding-left:2px">💡 ${tag}</div>`:''}</div>`
+    :`<div style="width:19px;height:19px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">👤</div>
+     <div style="max-width:78%;padding:5px 8px;font-size:9.5px;color:#0C447C;line-height:1.45;border-radius:7px 0 7px 7px;background:#E6F1FB;border:0.5px solid rgba(24,95,165,0.2)">${text}</div>`;
   area.appendChild(div);
   area.scrollTop=area.scrollHeight;
   
@@ -21430,7 +22257,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
     <div class="mp-panel" id="mp-panel-2">
 
       <!-- ━━━ 화면A: 준비 화면 ━━━ -->
-      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f2eb;">
+      <div id="diagScreenA" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f7f7f5;">
 
         <!-- 배너 -->
         <div class="diag-banner">
@@ -21448,7 +22275,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
         <!-- 세션 정보 -->
         <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;">
           <div id="diagTodayDate" style="font-size:9.5px;color:var(--muted);font-weight:500;"></div>
-          <div id="diagSessionChip" style="padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#C9972A,#E8B84B);color:#0B1D3A;"></div>
+          <div id="diagSessionChip" style="padding:4px 11px;border-radius:10px;font-size:9.5px;font-weight:900;background:#E6F1FB;color:#0C447C;"></div>
         </div>
         <div id="diagSessionSub" style="padding:3px 12px 8px;font-size:9px;color:var(--muted);"></div>
 
@@ -21552,7 +22379,7 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 
 
       <!-- ━━━ 화면B: 상담 화면 ━━━ -->
-      <div id="diagScreenB" style="display:none;flex-direction:column;height:100%;overflow:hidden;background:var(--navy);position:relative;">
+      <div id="diagScreenB" style="display:none;flex-direction:column;height:100%;overflow:hidden;background:#f7f7f5;position:relative;">
 
         <!-- 상단바 — 타이머 + 날짜/회차 한 줄 -->
         <div class="c-topbar">
