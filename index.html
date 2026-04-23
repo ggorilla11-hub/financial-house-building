@@ -3380,6 +3380,82 @@ if(location.search.includes('pay_result=')){
 
         </div>
 
+        <!-- [시즌2 Step 2] 전문가 플랜 -->
+        <div id="expert-plans" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 0.875rem;">
+          <!-- 전문가 안내 배너 -->
+          <div style="background: #f3f0ff; border-radius: var(--border-radius-md); padding: 10px 12px; border: 0.5px solid rgba(124,58,237,0.25);">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+              <span style="font-size: 13px;">🎯</span>
+              <span style="font-size: 11px; font-weight: 600; color: #7C3AED;">트로이목마 전략 — FC 전용</span>
+            </div>
+            <div style="font-size: 10px; color: #5b21b6; line-height: 1.5;">
+              전용 링크로 고객 발굴 · AI가 자동 연결 · 핫 리드만 카톡 알림
+            </div>
+          </div>
+
+          <!-- FC 브론즈 -->
+          <div onclick="landingSelectPlan('ExpertBronze')" data-plan="ExpertBronze" data-once="33,000" data-yearly="330,000" data-yearly-original="396,000" style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: #5F5E5A;">🥉 FC 브론즈</div>
+                <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 1px;">개인 FC · 고객 100명</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩396,000</div>
+                <div style="font-size: 14px; font-weight: 500;">월 <span class="price">₩33,000</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩66,000</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li>트로이목마 링크 무제한</li>
+              <li>고객 100명 DB 관리</li>
+              <li>골드플랜 전체 사용</li>
+              <li>재무설계 시스템</li>
+            </ul>
+          </div>
+
+          <!-- FC 실버 (추천) -->
+          <div onclick="landingSelectPlan('ExpertSilver')" data-plan="ExpertSilver" data-once="55,000" data-yearly="550,000" data-yearly-original="660,000" style="border: 2px solid #7C3AED; border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer; position: relative;">
+            <div style="position: absolute; top: -8px; left: 12px; background: #7C3AED; color: white; font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500;">추천</div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: #7C3AED;">🥈 FC 실버</div>
+                <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 1px;">중소 팀 · 고객 500명</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩660,000</div>
+                <div style="font-size: 14px; font-weight: 500;">월 <span class="price">₩55,000</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩110,000</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li>트로이목마 링크 무제한</li>
+              <li>고객 500명 DB 관리</li>
+              <li>골드플랜 전체 사용</li>
+              <li>재무설계 시스템</li>
+              <li>매니저 연결 알림</li>
+            </ul>
+          </div>
+
+          <!-- FC 골드 -->
+          <div onclick="landingSelectPlan('ExpertGold')" data-plan="ExpertGold" data-once="99,000" data-yearly="990,000" data-yearly-original="1,188,000" style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: #5F5E5A;">🥇 FC 골드</div>
+                <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 1px;">대규모 · 무제한</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="original-price" style="display: none; font-size: 10px; color: var(--color-text-tertiary); text-decoration: line-through;">₩1,188,000</div>
+                <div style="font-size: 14px; font-weight: 500;">월 <span class="price">₩99,000</span><span class="savings" style="display: none; font-size: 10px; font-weight: 400; color: #0F6E56; margin-left: 4px;">-₩198,000</span></div>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+              <li>트로이목마 링크 무제한</li>
+              <li>고객 무제한 DB 관리</li>
+              <li>골드플랜 전체 사용</li>
+              <li>재무설계 시스템 + 우선 지원</li>
+            </ul>
+          </div>
+        </div>
+
         <div style="background: #E6F1FB; border-radius: var(--border-radius-md); padding: 0.75rem; margin-bottom: 0.875rem;">
           <div style="display: flex; gap: 8px; align-items: flex-start;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -3610,7 +3686,14 @@ function proceedToPayment() {
     'Bronze-once':   'bronze-single',
     'Bronze-yearly': 'bronze-year',
     'Gold-once':     'gold-single',
-    'Gold-yearly':   'gold-year'
+    'Gold-yearly':   'gold-year',
+    /* [시즌2 Step 2] 전문가 FC 플랜 매핑 */
+    'ExpertBronze-once':   'expert-month',
+    'ExpertBronze-yearly': 'expert-year',
+    'ExpertSilver-once':   'expert-silver',
+    'ExpertSilver-yearly': 'expert-silver-year',
+    'ExpertGold-once':     'expert-gold',
+    'ExpertGold-yearly':   'expert-gold-year'
   };
   var planId = planIdMap[selectedPlanName + '-' + currentTab];
   if (!planId) {
