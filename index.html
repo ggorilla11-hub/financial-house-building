@@ -3314,6 +3314,16 @@ if(location.search.includes('pay_result=')){
         </div>
         <p style="font-size: 11px; color: var(--color-text-secondary); margin: 0 0 0.875rem;">25년 CFP 노하우가 담긴 AI 재무진단을 시작하세요</p>
 
+        <!-- [시즌2 Step 2] 일반/전문가 탭 (2026-04-23) -->
+        <div style="display: flex; background: #f3f0ff; border-radius: var(--border-radius-md); padding: 3px; margin-bottom: 0.75rem; border: 1px solid rgba(124,58,237,0.15);">
+          <button id="usertype-general" onclick="switchUserType('general')" style="flex: 1; background: white; color: #1a1a1a; border: none; padding: 8px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-family: inherit;">
+            👤 일반인
+          </button>
+          <button id="usertype-expert" onclick="switchUserType('expert')" style="flex: 1; background: transparent; color: #7C3AED; border: none; padding: 8px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; font-family: inherit;">
+            👔 전문가 (FC)
+          </button>
+        </div>
+
         <div style="display: flex; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 3px; margin-bottom: 1rem;">
           <button id="tab-once" onclick="switchTab('once')" style="flex: 1; background: white; color: var(--color-text-primary); border: none; padding: 7px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
             1회 이용권
@@ -3331,7 +3341,8 @@ if(location.search.includes('pay_result=')){
           </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.875rem;">
+        <!-- [시즌2] 일반인 플랜 -->
+        <div id="general-plans" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.875rem;">
           <div onclick="landingSelectPlan('Bronze')" data-plan="Bronze" data-once="5,500" data-yearly="55,000" data-yearly-original="66,000" style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.875rem; cursor: pointer;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
               <div style="font-size: 13px; font-weight: 500; color: #5F5E5A;">🥉 Bronze · 텍스트</div>
@@ -3441,6 +3452,52 @@ function backToNewLanding() {
 /* ═══ 새 초화면 (디자이너 신버전) 전용 스크립트 — landingSelectPlan은 기존 selectPlan과 이름 분리 ═══ */
 let selectedPlanName = null;
 let currentTab = 'once';
+let currentUserType = 'general';  // [시즌2] 'general' | 'expert'
+
+// [시즌2 Step 2] 일반/전문가 탭 전환
+function switchUserType(type) {
+  currentUserType = type;
+  var generalPlans = document.getElementById('general-plans');
+  var expertPlans = document.getElementById('expert-plans');
+  var btnGeneral = document.getElementById('usertype-general');
+  var btnExpert = document.getElementById('usertype-expert');
+
+  if (type === 'general') {
+    if (generalPlans) generalPlans.style.display = 'flex';
+    if (expertPlans) expertPlans.style.display = 'none';
+    if (btnGeneral) {
+      btnGeneral.style.background = 'white';
+      btnGeneral.style.color = '#1a1a1a';
+      btnGeneral.style.fontWeight = '600';
+      btnGeneral.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    }
+    if (btnExpert) {
+      btnExpert.style.background = 'transparent';
+      btnExpert.style.color = '#7C3AED';
+      btnExpert.style.fontWeight = '500';
+      btnExpert.style.boxShadow = 'none';
+    }
+  } else {
+    if (generalPlans) generalPlans.style.display = 'none';
+    if (expertPlans) expertPlans.style.display = 'flex';
+    if (btnGeneral) {
+      btnGeneral.style.background = 'transparent';
+      btnGeneral.style.color = '#5F5E5A';
+      btnGeneral.style.fontWeight = '500';
+      btnGeneral.style.boxShadow = 'none';
+    }
+    if (btnExpert) {
+      btnExpert.style.background = 'white';
+      btnExpert.style.color = '#7C3AED';
+      btnExpert.style.fontWeight = '600';
+      btnExpert.style.boxShadow = '0 1px 2px rgba(124,58,237,0.15)';
+    }
+  }
+  // 선택 초기화
+  selectedPlanName = null;
+  document.querySelectorAll('[data-plan]').forEach(function(c){ c.style.outline = 'none'; });
+}
+
 
 function openTrialModal() { document.getElementById('trial-modal').style.display = 'flex'; }
 function closeTrialModal() { document.getElementById('trial-modal').style.display = 'none'; }
