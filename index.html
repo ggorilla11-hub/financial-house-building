@@ -23509,5 +23509,126 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 }
 </style>
 
+
+<style id="step5-7-notepage-redesign">
+/* ══════════════════════════════════════════════════════════
+   [5-7단계 통합] 노트 탭 + 카드 제목 + 굿노트 배경 제거
+   기준: 첨부2 시뮬레이터 + 대표님 기획 (2026-04-23)
+   원칙: 모달 내부 모듈은 100% 유지 (발화 자동 입력 보호)
+   ══════════════════════════════════════════════════════════ */
+
+/* ═══ 타겟 1: 노랑 굿노트 배경 완전 제거 ═══ */
+#mp-panel-2 .c-note-body,
+#mp-panel-2 #diagNoteContainer,
+#mp-panel-2 #diagNoteContainer > div,
+#mp-panel-2 .note-bg,
+#mp-panel-2 [class*="note-body"] {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+/* 노트 내부 굿노트 효과 제거 (라인 16100 덮기) */
+#mp-panel-2 #diagNoteContainer *[style*="repeating-linear-gradient"],
+#mp-panel-2 #diagNoteContainer *[style*="#F0E5A3"] {
+  background-image: none !important;
+  background: #ffffff !important;
+}
+
+/* ═══ 타겟 2: 노트 탭 바 pill 라이트 ═══ */
+/* 탭 컨테이너 */
+#mp-panel-2 .dn-tabs,
+#mp-panel-2 .dn-tab-bar,
+#mp-panel-2 [class*="dn-tab"]:not(.dn-tab) {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+  padding: 10px 12px !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+#mp-panel-2 .dn-tabs::-webkit-scrollbar,
+#mp-panel-2 .dn-tab-bar::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 개별 탭 (라인 23307 회색 #e8e8e8 덮기) */
+#mp-panel-2 .dn-tab {
+  background: #ffffff !important;
+  color: #5F5E5A !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  border-radius: 999px !important;
+  padding: 7px 14px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s !important;
+}
+
+#mp-panel-2 .dn-tab:hover {
+  background: #f7f7f5 !important;
+}
+
+/* 활성 탭 */
+#mp-panel-2 .dn-tab.active {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border-color: #185FA5 !important;
+  font-weight: 600 !important;
+}
+
+/* ═══ 타겟 3: 노트 카드 제목 영역 (다크 네이비 → 라이트 네이비) ═══ */
+/* 카드 자체 */
+#mp-panel-2 .dn-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+}
+
+/* 카드 헤더 (첫 번째 자식 div가 보통 헤더) */
+#mp-panel-2 .dn-card > div:first-child {
+  background: #E6F1FB !important;
+  color: #185FA5 !important;
+  border-bottom: 1px solid rgba(24,95,165,0.15) !important;
+}
+
+/* 카드 헤더 내부 텍스트 강제 라이트 네이비 */
+#mp-panel-2 .dn-card > div:first-child,
+#mp-panel-2 .dn-card > div:first-child *,
+#mp-panel-2 .dn-card > div:first-child [style*="color:#fff"],
+#mp-panel-2 .dn-card > div:first-child [style*="color: #fff"],
+#mp-panel-2 .dn-card > div:first-child [style*="color:white"],
+#mp-panel-2 .dn-card > div:first-child [style*="color: white"] {
+  color: #185FA5 !important;
+}
+
+/* 카드 헤더 인라인 다크 배경 덮기 */
+#mp-panel-2 .dn-card > div:first-child[style*="background:#0B"],
+#mp-panel-2 .dn-card > div:first-child[style*="background: #0B"],
+#mp-panel-2 .dn-card > div:first-child[style*="background:#1a"],
+#mp-panel-2 .dn-card > div:first-child[style*="background: #1a"],
+#mp-panel-2 .dn-card > div:first-child[style*="background:#0b"],
+#mp-panel-2 .dn-card > div:first-child[style*="background: #0b"] {
+  background: #E6F1FB !important;
+}
+
+/* 카드 바디는 화이트 유지, 내부 텍스트는 검정 */
+#mp-panel-2 .dn-card > div:not(:first-child) {
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+}
+
+/* 보조: 혹시 다른 구조로 만든 경우 대응 */
+#mp-panel-2 [style*="background:#0B1D3A"],
+#mp-panel-2 [style*="background: #0B1D3A"] {
+  background: #E6F1FB !important;
+}
+
+/* ═══ 노트 하이라이트 배경 (대화 중 수집) — 주황 유지 ═══ */
+/* 기존 라인 16203 애니메이션은 건드리지 않음 */
+</style>
+
 </body>
 </html>
