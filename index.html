@@ -23715,5 +23715,115 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 }
 </style>
 
+
+<style id="task2-premium-finish">
+/* ══════════════════════════════════════════════════════════
+   [Task 2] 금융 프리미엄 마감 (2026-04-23)
+   A. 상단바 다크 복원 (첨부4 기준)
+   B. 노트 탭 바 다크박스 제거 + pill 전환 (첨부3 기준)
+   ══════════════════════════════════════════════════════════ */
+
+/* ═══ A. 상단바 다크 복원 ═══ */
+#mp-panel-2 .c-topbar {
+  background: #1a1a1a !important;
+  background-image: none !important;
+  border-bottom: 0.5px solid rgba(255,255,255,0.1) !important;
+  box-shadow: none !important;
+}
+#mp-panel-2 .c-topbar > * {
+  background: transparent !important;
+}
+#mp-panel-2 .c-topbar .c-live-txt {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+#mp-panel-2 .c-topbar .c-live-dot {
+  background: #3B6D11 !important;
+}
+#mp-panel-2 .c-topbar .c-timer {
+  color: #F5E6B8 !important;
+  background: transparent !important;
+}
+#mp-panel-2 .c-topbar #diagSessionInfo {
+  color: rgba(255,255,255,0.55) !important;
+  background: transparent !important;
+}
+#mp-panel-2 .c-top-btns {
+  background: transparent !important;
+}
+#mp-panel-2 .c-topbar .c-tbtn,
+#mp-panel-2 .c-topbar button {
+  background: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+  border: 0.5px solid rgba(255,255,255,0.15) !important;
+}
+#mp-panel-2 .c-topbar .c-tbtn-pause {
+  background: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+}
+#mp-panel-2 .c-topbar #diagTextSwitchBtn {
+  background: rgba(24,95,165,0.4) !important;
+  color: #ffffff !important;
+  border: 0.5px solid rgba(24,95,165,0.6) !important;
+}
+#mp-panel-2 .c-topbar .c-tbtn-end {
+  background: rgba(200,16,46,0.2) !important;
+  color: #F09595 !important;
+  border: 0.5px solid rgba(200,16,46,0.4) !important;
+}
+
+/* ═══ B. 노트 탭 바 다크박스 제거 + pill 전환 ═══ */
+/* 탭 바 컨테이너: 다크 네이비 → 화이트, 골드 언더라인 제거, 가로 스크롤 */
+#mp-panel-2 #dnTabs {
+  background: #ffffff !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+  padding: 10px 12px !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+#mp-panel-2 #dnTabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 개별 탭: 네모박스 → pill */
+#mp-panel-2 .dnt {
+  flex-shrink: 0 !important;
+  background: #ffffff !important;
+  color: #5F5E5A !important;
+  border: 0.5px solid rgba(0,0,0,0.1) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  transition: all 0.15s !important;
+}
+#mp-panel-2 .dnt:hover {
+  background: #f7f7f5 !important;
+  color: #1a1a1a !important;
+}
+
+/* 활성 탭: 크림색 → 파란색 */
+#mp-panel-2 .dnt.active {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border-color: #185FA5 !important;
+  font-weight: 600 !important;
+}
+
+/* done 탭 체크 표시 유지 */
+#mp-panel-2 .dnt.done {
+  color: #16a34a !important;
+}
+#mp-panel-2 .dnt.done.active {
+  color: #ffffff !important;
+}
+</style>
+
 </body>
 </html>
