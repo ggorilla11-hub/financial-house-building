@@ -3512,10 +3512,72 @@ function onPaymentSuccess(planId) {
   /* 플랜 모달 닫기 */
   var pm = document.getElementById('plan-modal');
   if (pm) pm.style.display = 'none';
-  /* 마이페이지 오버레이 열기 + 진단안내 탭 활성화 */
+  /* 마이페이지 오버레이 열기 */
   document.getElementById('mypageOverlay').classList.add('mp-open');
-  mpTab(0, document.querySelector('.mp-tab-btn'));
+
+  /* [시즌2 Step 3] 플랜별 라우팅 분기 */
+  var isExpert = planId && planId.indexOf('expert') === 0;
+
+  if (isExpert) {
+    /* ═══ 전문가 FC 플랜: mp-panel-7 (FC관리) 이동 ═══ */
+    try {
+      /* localStorage 저장 */
+      localStorage.setItem('fh_plan', planId);
+      localStorage.setItem('fh_is_agent', '1');
+
+      /* AGT 코드 발급 (없으면) */
+      if (!localStorage.getItem('fh_agent_code')) {
+        var payerName = window._fhPayerName || localStorage.getItem('fh_fc_name') || '';
+        var _prefix = 'FC';
+        if (payerName && payerName.length >= 2) {
+          /* 이름 이니셜 2자 (한글이면 초성 2자) */
+          _prefix = payerName.substring(0, 2).toUpperCase();
+        }
+        var _agentCode = 'AGT_' + _prefix + (Math.floor(Math.random()*900)+100);
+        localStorage.setItem('fh_agent_code', _agentCode);
+        console.log('[Step 3] AGT 코드 발급:', _agentCode);
+      }
+
+      /* FC관리 탭 버튼 표시 */
+      var fcTab = document.getElementById('fc-mgmt-tab');
+      if (fcTab) fcTab.style.display = '';
+
+      /* FC관리 탭으로 이동 */
+      if (fcTab) {
+        mpTab(7, fcTab);
+      } else {
+        mpTab(7);
+      }
+      console.log('[Step 3] 전문가 플랜 활성화:', planId);
+    } catch(e) {
+      console.error('[Step 3] expert 라우팅 에러:', e);
+      mpTab(0, document.querySelector('.mp-tab-btn'));
+    }
+  } else {
+    /* ═══ 일반 플랜: 기존대로 진단안내 ═══ */
+    mpTab(0, document.querySelector('.mp-tab-btn'));
+  }
 }
+
+/* [시즌2 Step 3] 재로딩 시 expert 플랜 구독자면 FC 탭 복구 */
+(function restoreExpertTab() {
+  try {
+    var plan = localStorage.getItem('fh_plan') || '';
+    var isAgent = localStorage.getItem('fh_is_agent') === '1';
+    if (plan.indexOf('expert') === 0 || isAgent) {
+      var attempt = 0;
+      var timer = setInterval(function() {
+        var fcTab = document.getElementById('fc-mgmt-tab');
+        if (fcTab) {
+          fcTab.style.display = '';
+          clearInterval(timer);
+          console.log('[Step 3] FC관리 탭 자동 복구');
+        }
+        if (++attempt > 20) clearInterval(timer);
+      }, 500);
+    }
+  } catch(e) {}
+})();
 /* ★ 결제 취소 시 새 초화면 복원 */
 function backToNewLanding() {
   var appEl = document.getElementById('main-app');
