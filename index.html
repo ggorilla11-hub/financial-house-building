@@ -23630,5 +23630,35 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 /* 기존 라인 16203 애니메이션은 건드리지 않음 */
 </style>
 
+
+<style id="task1-remove-notepad-bg">
+/* ══════════════════════════════════════════════════════════
+   [작업 1] 굿노트 노랑 배경 제거 (2026-04-23)
+   원본: 라인 16095~16100 .c-note-body repeating-linear-gradient
+   방식: 단색 #f7f7f5 덮기
+   스코프: #mp-panel-2 한정
+   ══════════════════════════════════════════════════════════ */
+
+/* .c-note-body 굿노트 제거 */
+#mp-panel-2 .c-note-body {
+  background: #f7f7f5 !important;
+  background-image: none !important;
+}
+
+/* 노트 컨테이너 자식까지 전부 단색화 */
+#mp-panel-2 #diagNoteContainer,
+#mp-panel-2 #diagNoteContainer > div,
+#mp-panel-2 #diagNoteContainer > * {
+  background-image: none !important;
+}
+
+/* 직접 노랑이 적용된 인라인도 덮기 */
+#mp-panel-2 [style*="#F0E5A3"],
+#mp-panel-2 [style*="repeating-linear-gradient"] {
+  background: #f7f7f5 !important;
+  background-image: none !important;
+}
+</style>
+
 </body>
 </html>
