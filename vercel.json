@@ -1,22 +1,15 @@
 {
-  "outputDirectory": ".",
-  "rewrites": [
-    {
-      "source": "/expert",
-      "destination": "/expert.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'self' https://moneya-develop.vercel.app https://moneya-frontend.vercel.app https://*.vercel.app https://moneya-72fe6.web.app https://moneya-72fe6.firebaseapp.com;"
+          "value": "frame-ancestors 'self' https://moneya-develop.vercel.app https://moneya-frontend.vercel.app https://*.vercel.app https://moneya-72fe6.web.app https://moneya-72fe6.firebaseapp.com"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
         }
       ]
     }
