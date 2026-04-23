@@ -23905,5 +23905,134 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 })();
 </script>
 
+
+<style id="task4-field-badge-indicator">
+#mp-panel-2 .dnfield {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 11px 14px !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+  border-top: none !important;
+}
+#mp-panel-2 .dnfield:last-child {
+  border-bottom: none !important;
+}
+#mp-panel-2 .dnfl {
+  color: #5F5E5A !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  flex-shrink: 0 !important;
+}
+#mp-panel-2 .dnfv {
+  color: #1a1a1a !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
+#mp-panel-2 .dnfv.preset::after {
+  content: '사전 입력' !important;
+  display: inline-block !important;
+  background: #E6F1FB !important;
+  color: #185FA5 !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  margin-left: 6px !important;
+}
+#mp-panel-2 .dnfv.confirmed::after {
+  content: '음성 확인' !important;
+  display: inline-block !important;
+  background: #E1F5EE !important;
+  color: #0F6E56 !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  margin-left: 6px !important;
+}
+#mp-panel-2 .dnfv.pending {
+  color: #9ca3af !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+}
+#mp-panel-2 .dnfv.pending::after {
+  content: '' !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  background: #EF9F27 !important;
+  border-radius: 50% !important;
+  margin-left: 6px !important;
+  animation: dnDotPulse 1.5s ease-in-out infinite;
+}
+#mp-panel-2 .dnfv.presubmit::after {
+  content: '사전 제출' !important;
+  display: inline-block !important;
+  background: #FEF4E9 !important;
+  color: #C9972A !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  margin-left: 6px !important;
+}
+#mp-panel-2 .dnfv.docfilled::after {
+  content: '문서' !important;
+  display: inline-block !important;
+  background: #F3E8FF !important;
+  color: #7C3AED !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  margin-left: 6px !important;
+}
+@keyframes dnDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+</style>
+<script id="task4-indicator-animator">
+(function() {
+  function addIndicator() {
+    try {
+      var panels = document.getElementById('dnPanels');
+      if (!panels) return;
+      if (document.getElementById('dnRealtimeIndicator')) return;
+      var ind = document.createElement('div');
+      ind.id = 'dnRealtimeIndicator';
+      ind.style.cssText = 'display:flex;align-items:center;gap:6px;padding:10px 14px 8px;background:#fff;border-bottom:1px solid rgba(0,0,0,0.04);position:sticky;top:0;z-index:10;';
+      ind.innerHTML = '<span style="display:inline-block;width:6px;height:6px;background:#3B6D11;border-radius:50%;animation:dnDotPulse 1.5s ease-in-out infinite;"></span><span style="font-size:10px;color:#5F5E5A;font-weight:500;">실시간 상담노트</span><span style="font-size:10px;color:#888780;">, 자동 업데이트 중</span>';
+      panels.insertBefore(ind, panels.firstChild);
+    } catch(e) { console.warn('[Task 4 indicator]', e); }
+  }
+  if (document.readyState !== 'loading') {
+    setTimeout(addIndicator, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(addIndicator, 500);
+    });
+  }
+  setInterval(function() {
+    var panels = document.getElementById('dnPanels');
+    if (panels && !document.getElementById('dnRealtimeIndicator')) {
+      addIndicator();
+    }
+  }, 2000);
+})();
+</script>
+
 </body>
 </html>
