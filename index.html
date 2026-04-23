@@ -23631,32 +23631,87 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 </style>
 
 
-<style id="task1-remove-notepad-bg">
+
+
+
+
+<style id="task-4fixes-unified">
 /* ══════════════════════════════════════════════════════════
-   [작업 1] 굿노트 노랑 배경 제거 (2026-04-23)
-   원본: 라인 16095~16100 .c-note-body repeating-linear-gradient
-   방식: 단색 #f7f7f5 덮기
-   스코프: #mp-panel-2 한정
+   [4가지 통합 수정] 대표님 요구사항 2026-04-23
+   ① 상담노트 영역 상단 50%
+   ② 자막공간 하단 50% 확장
+   ③ 노랑색 완전 삭제 (→ 회색/흰색)
+   ④ 다크 카드 제목 → 라이트 + 검은 볼드
+   
+   정확한 셀렉터:
+   - #dnPanels: 노트 전체 컨테이너
+   - .dncard: 카드
+   - .dnchd: 카드 헤더 (다크 네이비)
+   - .dnctitle / .dncsub: 제목/부제목
+   - .dnfield: 필드 행
+   - .c-stt, #diagStt: 자막 영역
+   - .c-note-body: 노트 래퍼
    ══════════════════════════════════════════════════════════ */
 
-/* .c-note-body 굿노트 제거 */
-#mp-panel-2 .c-note-body {
-  background: #f7f7f5 !important;
+/* ═══ ③ 노랑색 완전 삭제 ═══ */
+#mp-panel-2 #dnPanels {
+  background: #ffffff !important;
   background-image: none !important;
 }
-
-/* 노트 컨테이너 자식까지 전부 단색화 */
-#mp-panel-2 #diagNoteContainer,
-#mp-panel-2 #diagNoteContainer > div,
-#mp-panel-2 #diagNoteContainer > * {
+#mp-panel-2 #dnPanels * {
   background-image: none !important;
 }
+#mp-panel-2 .dncard {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: none !important;
+}
+#mp-panel-2 .dnfield {
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+}
 
-/* 직접 노랑이 적용된 인라인도 덮기 */
-#mp-panel-2 [style*="#F0E5A3"],
-#mp-panel-2 [style*="repeating-linear-gradient"] {
+/* ═══ ④ 다크 카드 제목 → 라이트 + 검은 볼드 ═══ */
+#mp-panel-2 .dnchd {
   background: #f7f7f5 !important;
   background-image: none !important;
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+}
+#mp-panel-2 .dnctitle {
+  color: #1a1a1a !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+}
+#mp-panel-2 .dncsub {
+  color: #5F5E5A !important;
+}
+#mp-panel-2 .dncicon {
+  /* 아이콘 색상은 기본 유지 */
+}
+
+/* ═══ ①② 상단 50% 노트 / 하단 50% 자막 ═══ */
+/* #diagScreenB flex 컨테이너 내부 비율 조정 */
+#mp-panel-2 #diagScreenB .c-note-body {
+  flex: 1 1 50% !important;
+  max-height: 50% !important;
+  overflow-y: auto !important;
+}
+#mp-panel-2 #diagScreenB .c-stt,
+#mp-panel-2 #diagScreenB #diagStt {
+  flex: 1 1 50% !important;
+  max-height: 50% !important;
+  min-height: 200px !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  padding: 12px 14px !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+/* ═══ 필드 내부 글자 정돈 ═══ */
+#mp-panel-2 .dnfl {
+  color: #5F5E5A !important;
+}
+#mp-panel-2 .dncbody {
+  padding: 11px 13px !important;
 }
 </style>
 
