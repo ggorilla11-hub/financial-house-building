@@ -23302,5 +23302,205 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 #mp-panel-2 .dn-card { background: white !important; border: 0.5px solid rgba(0,0,0,0.1) !important; border-radius: 12px !important; }
 </style>
 
+
+<style id="phase3-light-mode">
+/* ══════════════════════════════════════════════════════════
+   [Phase 3-1] AI진단 라이트 모드 전환 (2026-04-23)
+   - 다크 네이비 → 화이트/라이트 그레이
+   - 스코프: #mp-panel-2 한정 (다른 패널 영향 없음)
+   - 우선순위: </body> 직전 배치 + !important
+   - 음성 코드 22개 절대 불변
+   ══════════════════════════════════════════════════════════ */
+
+/* ───── 전체 배경: 라이트 그레이 ───── */
+#mp-panel-2 {
+  background: #f7f7f5 !important;
+}
+#mp-panel-2 #diagScreenA,
+#mp-panel-2 #diagScreenB {
+  background: #ffffff !important;
+}
+
+/* ───── 상단바: 다크 → 화이트 ───── */
+#mp-panel-2 .c-topbar {
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+}
+#mp-panel-2 .c-topbar * {
+  color: #1a1a1a !important;
+}
+#mp-panel-2 .c-live-txt {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+}
+#mp-panel-2 .c-live-dot {
+  background: #22c55e !important;
+}
+#mp-panel-2 .c-timer {
+  color: #185FA5 !important;
+  font-weight: 700 !important;
+}
+#mp-panel-2 #diagSessionInfo {
+  color: #888780 !important;
+}
+
+/* ───── 상단바 버튼들 ───── */
+#mp-panel-2 .c-top-btns .c-tbtn {
+  background: #f7f7f5 !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+}
+#mp-panel-2 .c-top-btns .c-tbtn-pause {
+  background: #f7f7f5 !important;
+  color: #5F5E5A !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+}
+#mp-panel-2 #diagTextSwitchBtn {
+  background: #E6F1FB !important;
+  color: #185FA5 !important;
+  border: 1px solid rgba(24,95,165,0.25) !important;
+}
+#mp-panel-2 .c-tbtn-end {
+  background: #FEE2E2 !important;
+  color: #C8102E !important;
+  border: 1px solid rgba(200,16,46,0.25) !important;
+}
+
+/* ───── 대화 영역 배경 ───── */
+#mp-panel-2 .c-stt,
+#mp-panel-2 #diagStt {
+  background: #ffffff !important;
+}
+
+/* ───── 입력바: 라이트 ───── */
+#mp-panel-2 .c-inp-row {
+  background: #ffffff !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+  padding: 10px 14px !important;
+}
+#mp-panel-2 .c-inp {
+  background: #f7f7f5 !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  border-radius: 999px !important;
+  padding: 10px 16px !important;
+}
+#mp-panel-2 .c-inp:focus {
+  border-color: #185FA5 !important;
+  background: #ffffff !important;
+}
+#mp-panel-2 .c-inp::placeholder {
+  color: #888780 !important;
+}
+#mp-panel-2 .c-send {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  border: none !important;
+}
+#mp-panel-2 .c-send:hover {
+  background: #0C447C !important;
+}
+
+/* ───── 음성 진행 힌트 ───── */
+#mp-panel-2 .c-inp-hint {
+  background: #ffffff !important;
+  color: #888780 !important;
+  padding: 6px 14px 8px !important;
+  border-top: none !important;
+}
+#mp-panel-2 .c-inp-hint span:last-child {
+  color: #888780 !important;
+  font-size: 10px !important;
+}
+
+/* ───── 하단 컨트롤 바 ───── */
+#mp-panel-2 .c-bottom {
+  background: #ffffff !important;
+  border-top: 1px solid rgba(0,0,0,0.04) !important;
+}
+#mp-panel-2 .c-mini-btn .ico {
+  background: #f7f7f5 !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+}
+#mp-panel-2 .c-mini-btn .lbl {
+  color: #5F5E5A !important;
+}
+
+/* ───── 버블: 머니야 흰색 + 사용자 파란색 확정 ───── */
+#mp-panel-2 .c-stt-bubble {
+  background: #f7f7f5 !important;
+  color: #1a1a1a !important;
+  border: none !important;
+  border-radius: 12px 12px 12px 2px !important;
+}
+#mp-panel-2 .c-stt-msg.user .c-stt-bubble {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border-radius: 12px 12px 2px 12px !important;
+}
+#mp-panel-2 .c-stt-av {
+  background: #E6F1FB !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+}
+#mp-panel-2 .c-stt-av.user {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+}
+
+/* ───── 노트 본문 영역 ───── */
+#mp-panel-2 .c-note-body {
+  background: #ffffff !important;
+}
+#mp-panel-2 #diagNoteContainer {
+  background: #ffffff !important;
+}
+
+/* ───── 화면A: 배너 라이트 톤 ───── */
+#mp-panel-2 #diagScreenA .diag-banner {
+  background: linear-gradient(135deg, #E6F1FB, #f7f7f5) !important;
+  border: 1px solid rgba(24,95,165,0.1) !important;
+  color: #1a1a1a !important;
+}
+#mp-panel-2 #diagScreenA .diag-banner-title {
+  color: #185FA5 !important;
+}
+#mp-panel-2 #diagScreenA .diag-banner-sub {
+  color: #5F5E5A !important;
+}
+#mp-panel-2 #diagScreenA .start-btn {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+#mp-panel-2 #diagScreenA .start-btn:hover {
+  background: #0C447C !important;
+}
+
+/* ───── 훈련 모드 모달 (나중) / 종료 모달 등 유지 ───── */
+
+/* ───── 일시정지 오버레이 ───── */
+#mp-panel-2 .pause-ov {
+  background: rgba(255,255,255,0.95) !important;
+  color: #1a1a1a !important;
+}
+#mp-panel-2 .pause-ov div {
+  color: #1a1a1a !important;
+}
+#mp-panel-2 .resume-btn {
+  background: #185FA5 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+</style>
+
 </body>
 </html>
