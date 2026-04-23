@@ -23825,5 +23825,85 @@ document.getElementById('privacy-modal-bg').addEventListener('click', function(e
 }
 </style>
 
+
+<style id="task3-premium-polish">
+/* ══════════════════════════════════════════════════════════
+   [Task 3] 프리미엄 마감 보완 (2026-04-23)
+   A. 테이블 th 다크 파란 복원 (검진결과/원페이지 표)
+   B. 일시정지 버튼 강제 표시
+   ══════════════════════════════════════════════════════════ */
+
+/* ═══ A. 모달 내부 테이블 th 복원 ═══ */
+#mp-panel-2 .dntable th,
+#mp-panel-2 table th[style*="background:#0B1D3A"],
+#mp-panel-2 table th[style*="background: #0B1D3A"] {
+  background: #0B1D3A !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* tr.tot (합계행) 복원 */
+#mp-panel-2 .dntable tr.tot td {
+  background: rgba(232,184,75,0.12) !important;
+  color: #0B1D3A !important;
+  font-weight: 900 !important;
+}
+
+/* td 첫 컬럼 (라벨) 복원 */
+#mp-panel-2 .dntable td:first-child {
+  color: #8896B0 !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+}
+
+/* 네이비 배경에 흰 글씨 필요한 요소들 전부 복원 */
+#mp-panel-2 [style*="background:#0B1D3A"][style*="color:#fff"],
+#mp-panel-2 [style*="background: #0B1D3A"][style*="color: #fff"],
+#mp-panel-2 [style*="background:#0B1D3A"][style*="color:white"] {
+  background: #0B1D3A !important;
+  color: #ffffff !important;
+}
+
+/* .dn-bubble.m (머니야 버블이 다크 네이비인 경우) 복원 */
+#mp-panel-2 .dn-bubble.m {
+  background: #0B1D3A !important;
+  color: #ffffff !important;
+}
+
+/* .dn-anum 번호 배지 복원 */
+#mp-panel-2 .dn-anum {
+  background: #0B1D3A !important;
+  color: #E8B84B !important;
+}
+
+/* ═══ B. 일시정지 버튼 강제 표시 ═══ */
+#mp-panel-2 #diagPauseBtn {
+  display: flex !important;
+  visibility: visible !important;
+}
+</style>
+
+
+<!-- [Task 3-C] 개발 모드 결제 우회 (2026-04-23) -->
+<script id="task3-dev-bypass">
+(function() {
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('dev') === '1') {
+      window.FH_DEV_BYPASS = true;
+      console.log('[DEV] 결제 우회 모드 활성화');
+      // 시각 표시
+      var banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#C8102E;color:#fff;text-align:center;padding:4px;font-size:11px;font-weight:700;z-index:99999;font-family:sans-serif;';
+      banner.textContent = '🔧 개발 모드 · 결제 우회 활성 (음성 테스트 가능)';
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.appendChild(banner);
+      });
+      if (document.body) document.body.appendChild(banner);
+    }
+  } catch(e) { console.warn('[DEV bypass] ', e); }
+})();
+</script>
+
 </body>
 </html>
